@@ -367,7 +367,7 @@
             } else if (area == "ACCatl") {
                 map_geogr_lim_lon <<- c(-80, 80)
                 map_geogr_lim_lat <<- c(-80, -50)
-            } else if (view == "nadja1") {
+            } else if (area == "nadja1") {
                 map_geogr_lim_lon <- c(-4, 8)
                 map_geogr_lim_lat <- c(51, 62)
             }
