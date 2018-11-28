@@ -83,7 +83,7 @@ if (!exists("datainpath")) {
     stop("No 'datainpath' provided.")
 }
 if (!exists("subroutinepath")) {
-    subroutinepath <- "./functions/" # path where subroutines are saved
+    subroutinepath <- "./lib/" # path where subroutines are saved
 }
 
 ## load r functions
