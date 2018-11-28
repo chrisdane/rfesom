@@ -111,15 +111,16 @@ if (runid == "demoid") {
 } else if (runid == "PI_CTRL_mw") {
     area <<- "global"
 } else {
-    area <<- "lsea"
+    #area <<- "lsea"
     #area <<- "lseawNAtilt"
     #area <<- "lseawNA"
     #area <<- "LS30l"
+    area <<- "nadja1"
 }
 
 ## Time Options (if user provide 'fnames_user', then 'years' and 'output' are ignored)
-years         <<- 2880:2881 # annual FESOM output files, woa13 overlap: 65-04
-recs          <<- 32:90 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
+years         <<- 2880 # annual FESOM output files, woa13 overlap: 65-04
+recs          <<- 32 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
                         # e.g. c(1,2,12) for DJF if output=="monthly"
 output        <<- "daily" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
                            # according to 'output_length_unit' in namelist.config

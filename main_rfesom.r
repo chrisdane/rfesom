@@ -63,7 +63,7 @@ fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 ############################## USER INPUT START #############################
 
 # change to your custom namelist.rfesom.r here
-source("~/scripts/r/test/preconfigured_namelists/namelist.rfesom.r")
+source("~/scripts/r/rfesom/preconfigured_namelists/namelist.rfesom.r")
 
 ############################### USER INPUT END ##############################
 
@@ -443,6 +443,9 @@ if (exists("fnames_user")) {
                     }
 
                     if (!exists("recs_leap")) stop("this should not happen?!")
+
+                } else {
+                    leap_tag <-F
 
                 } # if user indicates monthly output on daily fesom data
             } # if there are leap years
@@ -1432,7 +1435,7 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
     ## or choose data from projected coordinates (gives projected map
     ## with data everywhere in plot area)
     } else if (geogr_lims) {
-        if (verbose == 2 || verbose == 3) {
+        if (verbose > 1) {
             print(paste0(indent, "Find coordinates in plot area with geographic plot lims in '", 
                          projection, "' projection ..."))
         }
@@ -1511,10 +1514,10 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
         } else if (projection == "rectangular") {
 
             ## Find area inds in element space
-            if (any(map_geogr_lim_lon > 0) && any(map_geogr_lim_lon < 0)) {
+            if (F && any(map_geogr_lim_lon > 0) && any(map_geogr_lim_lon < 0)) {
             # Consider both pos. and neg. longitudes
             #if (map_geogr_lim_lon[1] < 0 && map_geogr_lim_lon[2] > 0) {
-                cyclic_plot <- T
+                cyclic_plot <- T # T
                 poly_inds_geogr1 <- unique(which(xc > poly_geogr_lim_lon[1] &
                                                  yc > poly_geogr_lim_lat[1] &
                                                  yc < poly_geogr_lim_lat[2], arr.ind=T)[,2])
