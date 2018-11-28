@@ -2976,7 +2976,11 @@ if (nfiles == 0) { # read data which are constant in time
                         fnames[file] <- paste0(datainpath, "fesom.", year, ".",
                                                typesuffix[file], diagsuffix[file],
                                                snapshotsuffix[file], "nc")
-                    
+                   
+                    } else if (setting == "htrans02") {
+                        fnames[file] <- paste0(datainpath, varname_fesom[file], "_fesom_", 
+                                               year, "0101_monmean.nc")
+
                     } else { # cpl default
                         fnames[file] <- paste0(datainpath, varname_fesom[file], "_fesom_", 
                                                year, "0101.nc")
