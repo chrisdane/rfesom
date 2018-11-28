@@ -367,6 +367,10 @@
             } else if (area == "ACCatl") {
                 map_geogr_lim_lon <<- c(-80, 80)
                 map_geogr_lim_lat <<- c(-80, -50)
+            } else if (view_nadja1) {
+                view <- "nadja1"
+                map_geogr_lim_lon <- c(-4, 8)
+                map_geogr_lim_lat <- c(51, 62)
             }
             if (area != "arctic") {
                 poly_geogr_lim_lon <<- map_geogr_lim_lon
