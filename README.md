@@ -8,6 +8,11 @@ Please note that the tool was only tested on linux so far and bugs do exist.
 
 ## 1 How to run
 
+Clone this repo with
+```bash
+git clone --recurse-submodules https://github.com/mo0zi/rfesom.git
+```
+
 Install R or load via module:
 ```bash
 $ module load r
