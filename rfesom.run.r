@@ -5,10 +5,10 @@
 # T = TRUE; F = FALSE
 
 ## Default rfesom options
-rfesom_path <<- getwd() # = pwd
+rfesom_path <- getwd() # = pwd
 
 ## Default Experiment options
-cpl_tag <<- F ## F: ocean-only, T: coupled
+cpl_tag <- F ## F: ocean-only, T: coupled
               ## this concerns the fesom filename convention, e.g.
               ## <runid>.YYYY.oce.mean.nc if cpl_tag = F or
               ## <varname_fesom>_fesom_YYYY0101.nc if cpl_tag = T and older esm version or
@@ -16,36 +16,36 @@ cpl_tag <<- F ## F: ocean-only, T: coupled
               ## (see <varname_fesom> definition in namelist.var.r)
 
 ## Default Mesh Options
-rotate_mesh <<- T # back from rotated to geographic coordinates 
-Ealpha      <<- 50 # Euler angles (from FESOMs namelist.config)
-Ebeta       <<- 15
-Egamma      <<- -90
-cycl        <<- T # treat cyclic element
+rotate_mesh <- T # back from rotated to geographic coordinates 
+Ealpha      <- 50 # Euler angles (from FESOMs namelist.config)
+Ebeta       <- 15
+Egamma      <- -90
+cycl        <- T # treat cyclic element
 
 ## User experiment and mesh options (overwrite defaults here)
 # demo
 if (F) { 
-    runid <<- "demoid"
-    meshid <<- "demomeshid"
-    cycl <<- F
-    meshpath <<- paste0(rfesom_path, "/example_data/mesh/demomeshid/")
-    imatpath <<- paste0(rfesom_path, "/example_data/mesh/demomeshid/interp/")
-    datainpath <<- paste0(rfesom_path, "/example_data/data/demoid/")
-    postpath <<- paste0(rfesom_path, "./post/")
-    plotpath <<- paste0(rfesom_path, "./plot/")
+    runid <- "demoid"
+    meshid <- "demomeshid"
+    cycl <- F
+    meshpath <- paste0(rfesom_path, "/example_data/mesh/demomeshid/")
+    imatpath <- paste0(rfesom_path, "/example_data/mesh/demomeshid/interp/")
+    datainpath <- paste0(rfesom_path, "/example_data/data/demoid/")
+    postpath <- paste0(rfesom_path, "./post/")
+    plotpath <- paste0(rfesom_path, "./plot/")
 
 # for martin 
 } else if (F) {
-    runid <<- "PI_CTRL_mw"
-    meshid <<- "core"
-    cpl_tag <<- T
-    rotate_mesh <<- F
-    meshpath <<- "/work/ab0995/a270046/meshes_default/core/"
-    imatpath <<- "/pf/a/a270106/snow_depth_PI_CTRL/interp/"
-    datainpath <<- "/pf/a/a270106/snow_depth_PI_CTRL/"
-    fnames_user <<- "tos_PI_CTRL_fesom.nc" 
-    postpath <<- datainpath
-    plotpath <<- datainpath
+    runid <- "PI_CTRL_mw"
+    meshid <- "core"
+    cpl_tag <- T
+    rotate_mesh <- F
+    meshpath <- "/work/ab0995/a270046/meshes_default/core/"
+    imatpath <- "/pf/a/a270106/snow_depth_PI_CTRL/interp/"
+    datainpath <- "/pf/a/a270106/snow_depth_PI_CTRL/"
+    fnames_user <- "tos_PI_CTRL_fesom.nc" 
+    postpath <- datainpath
+    plotpath <- datainpath
 
 # for testing
 } else {
@@ -53,37 +53,37 @@ if (F) {
 }
 
 ## General Options
-verbose <<- 3 # give some information while the script is running
+verbose <- 3 # give some information while the script is running
               # 0 = no info
               # 1 = what is happening
               # 2 = what is happening more detailed (default)
               # 3 = min/max of data in between
-ssh_aviso_correct <<- F ## special
+ssh_aviso_correct <- F ## special
 
 ## Global constants
-Rearth    <<- 6367.5 * 1e3 # [m] earth radius
-g         <<- 9.81 # [m s-2] acceleration due to gravity
-omega     <<- 2*pi/86400 # [s-1] angular frequency of earth (1 day here = 86400 sec)
-cp        <<- 3985 # [m2 s-2 K-1] specific heat capacity of water
-rho0      <<- 1027 # [kg m-3] average density
-sea_water <<- "TEOS10" # "EOS80": sw_* (obsolete) or 
+Rearth    <- 6367.5 * 1e3 # [m] earth radius
+g         <- 9.81 # [m s-2] acceleration due to gravity
+omega     <- 2*pi/86400 # [s-1] angular frequency of earth (1 day here = 86400 sec)
+cp        <- 3985 # [m2 s-2 K-1] specific heat capacity of water
+rho0      <- 1027 # [kg m-3] average density
+sea_water <- "TEOS10" # "EOS80": sw_* (obsolete) or 
                       # "TEOS10": gsw_* (Gibbs Sea Water; http://www.teos-10.org/) 
-pres_ref  <<- 0 # [dbar] reference pressure for potential density
+pres_ref  <- 0 # [dbar] reference pressure for potential density
                 # 0, 1000, 2000, 3000 or 4000
-mv        <<- NA # missing value for netcdf output
-prec      <<- "double" # precision of nc output
-base      <<- 10 # base for multiplication factors
-sd_method <<- "default" # how to calculate sd of a vector variable?
+mv        <- NA # missing value for netcdf output
+prec      <- "double" # precision of nc output
+base      <- 10 # base for multiplication factors
+sd_method <- "default" # how to calculate sd of a vector variable?
                         # "default" for sd of speed of vector only
                         # "ackermann83" for sd of both the speed and direction of a vector
 
 ## Variable Options
 if (runid == "demoid") {
-    varname <<- "ssh" # see namelist.var.r for available variables
+    varname <- "ssh" # see namelist.var.r for available variables
 } else if (runid == "PI_CTRL_mw") {
-    varname <<- "tos"
+    varname <- "tos"
 } else {
-    varname <<- "thetao"
+    varname <- "thetao"
 }
 
 ## Depth options [m]
@@ -92,86 +92,86 @@ if (runid == "demoid") {
 ## c(42, "max"): average between
 ## c("bottom"): only bottom layer
 if (runid == "demoid") {
-    depths <<- 0
-    integrate_depth <<- F
+    depths <- 0
+    integrate_depth <- F
 } else if (runid == "PI_CTRL_mw") {
-    depths <<- 0
-    integrate_depth <<- F
+    depths <- 0
+    integrate_depth <- F
 } else {
-    depths <<- 0
-    #depths <<- c(0, 150)
-    #depths <<- c(0, "max")
-    #depths <<- c(0, "MLD")
-    integrate_depth <<- F
+    depths <- 0
+    #depths <- c(0, 150)
+    #depths <- c(0, "max")
+    #depths <- c(0, "MLD")
+    integrate_depth <- F
 }
 
 ## Area and Projection Options
 if (runid == "demoid") {
-    area <<- "lsea" # see namelist.area.r for corresponding coordinates
+    area <- "lsea" # see namelist.area.r for corresponding coordinates
 } else if (runid == "PI_CTRL_mw") {
-    area <<- "global"
+    area <- "global"
 } else {
-    #area <<- "lsea"
-    #area <<- "lseawNAtilt"
-    #area <<- "lseawNA"
-    #area <<- "LS30l"
-    area <<- "nadja1"
+    #area <- "lsea"
+    #area <- "lseawNAtilt"
+    #area <- "lseawNA"
+    #area <- "LS30l"
+    area <- "nadja1"
 }
 
 ## Time Options (if user provide 'fnames_user', then 'years' and 'output' are ignored)
-years         <<- 2880 # annual FESOM output files, woa13 overlap: 65-04
-recs          <<- 32 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
+years         <- 2880 # annual FESOM output files, woa13 overlap: 65-04
+recs          <- 32 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
                         # e.g. c(1,2,12) for DJF if output=="monthly"
-output        <<- "daily" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
+output        <- "daily" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
                            # according to 'output_length_unit' in namelist.config
-snapshot      <<- F # true for snapshot if available or false for mean data (.mean.nc) or
+snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
                    # if snapshot not available
-all_recs      <<- T # read all records of one fesom output file if possible 
+all_recs      <- T # read all records of one fesom output file if possible 
                    # set to F if memory of computer is not big enough
-consider_leap <<- T # if 'output' == 'daily' and 365 is included in 'recs'
+consider_leap <- T # if 'output' == 'daily' and 365 is included in 'recs'
 
 ## Output Options
-ltm_out          <<- F # irregular time-mean .nc output (no time dimension)
-regular_ltm_out  <<- T # regular time-mean .nc output (no time dimension) 
-uv_out           <<- T # save u- and v- components of vector variable
+ltm_out          <- F # irregular time-mean .nc output (no time dimension)
+regular_ltm_out  <- T # regular time-mean .nc output (no time dimension) 
+uv_out           <- T # save u- and v- components of vector variable
 
 if (runid == "demoid") {
-    transient_out         <<- T
-    regular_transient_out <<- T
-    transient_mode        <<- "area" # what kind of netcdf output (see table below)
-    sd_out                <<- T
-    regular_dx            <<- 1/4 # 2 1 1/4 1/3 [deg]
+    transient_out         <- T
+    regular_transient_out <- T
+    transient_mode        <- "area" # what kind of netcdf output (see table below)
+    sd_out                <- T
+    regular_dx            <- 1/4 # 2 1 1/4 1/3 [deg]
 } else if (runid == "PI_CTRL_mw") {
-    transient_out         <<- F
-    regular_transient_out <<- T
-    transient_mode        <<- "area"
-    sd_out                <<- F
-    regular_dx            <<- 1
+    transient_out         <- F
+    regular_transient_out <- T
+    transient_mode        <- "area"
+    sd_out                <- F
+    regular_dx            <- 1
 } else {
-    transient_out         <<- T
-    regular_transient_out <<- F
-    transient_mode        <<- "mean"
-    sd_out                <<- F
-    regular_dx            <<- 0.1
-    #regular_dx          <<- 0.355
-    #regular_dx          <<- 0.25
-    #regular_dx          <<- 0.099
-    #regular_dy          <<- 0.185
-    #regular_dy          <<- 0.052
+    transient_out         <- T
+    regular_transient_out <- F
+    transient_mode        <- "mean"
+    sd_out                <- F
+    regular_dx            <- 0.1
+    #regular_dx          <- 0.355
+    #regular_dx          <- 0.25
+    #regular_dx          <- 0.099
+    #regular_dy          <- 0.185
+    #regular_dy          <- 0.052
 }
 
 if (!exists("regular_dy")) {
-    regular_dy          <<- regular_dx # regular_dx # [deg]
+    regular_dy          <- regular_dx # regular_dx # [deg]
 }
-output_type         <<- "nodes" # for spatial netcdf output on _irregular_ grid:
+output_type         <- "nodes" # for spatial netcdf output on _irregular_ grid:
                                # "nodes": output is vector of length nod2d_n
                                # "elems": output is matrix of dimensions (3 x elem2d_n)
-moc_ltm_out      <<- F # save moc ltm if transient_mode == "moc_depth"
-csec_ltm_out     <<- F # save cross section ltm if transient_mode == "csec_mean" or "csec_depth"
-force_v4         <<- T # T for saving as netcdf-4 (requieres R package ncdf4) or 
+moc_ltm_out      <- F # save moc ltm if transient_mode == "moc_depth"
+csec_ltm_out     <- F # save cross section ltm if transient_mode == "csec_mean" or "csec_depth"
+force_v4         <- T # T for saving as netcdf-4 (requieres R package ncdf4) or 
                        # F for saving as netcdf-3 aka "classic"
-horiz_deriv_node3d <<- T # method for calculating horizontal derivative of 3D variable
-horiz_deriv_elem2d <<- F # elem2d for testing
+horiz_deriv_node3d <- T # method for calculating horizontal derivative of 3D variable
+horiz_deriv_elem2d <- F # elem2d for testing
 
     ###############################################################################################
     # Output table                  what is saved               netcdf output dimensions
