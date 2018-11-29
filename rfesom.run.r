@@ -1,19 +1,18 @@
 #############################
 ## User input for rfesom.r ##
 #############################
-# define with '<<-' instead of '<-'
-# T = TRUE; F = FALSE
+# info for you: T = TRUE; F = FALSE
 
-## Default rfesom options
-rfesom_path <- getwd() # = pwd
+## clear work space and close open graphic devices (if interactive session)
+rm(list=ls()); graphics.off()
 
 ## Default Experiment options
 cpl_tag <- F ## F: ocean-only, T: coupled
-              ## this concerns the fesom filename convention, e.g.
-              ## <runid>.YYYY.oce.mean.nc if cpl_tag = F or
-              ## <varname_fesom>_fesom_YYYY0101.nc if cpl_tag = T and older esm version or
-              ## <runid>_<varname_fesom>_fesom_YYYY0101.nc if cpl_tag = T and newer esm version
-              ## (see <varname_fesom> definition in namelist.var.r)
+             ## this concerns the fesom filename convention, e.g.
+             ## <runid>.YYYY.oce.mean.nc if cpl_tag = F or
+             ## <varname_fesom>_fesom_YYYY0101.nc if cpl_tag = T and older esm version or
+             ## <runid>_<varname_fesom>_fesom_YYYY0101.nc if cpl_tag = T and newer esm version
+             ## (see <varname_fesom> definition in namelist.var.r)
 
 ## Default Mesh Options
 rotate_mesh <- T # back from rotated to geographic coordinates 
@@ -28,11 +27,11 @@ if (F) {
     runid <- "demoid"
     meshid <- "demomeshid"
     cycl <- F
-    meshpath <- paste0(rfesom_path, "/example_data/mesh/demomeshid/")
-    imatpath <- paste0(rfesom_path, "/example_data/mesh/demomeshid/interp/")
-    datainpath <- paste0(rfesom_path, "/example_data/data/demoid/")
-    postpath <- paste0(rfesom_path, "./post/")
-    plotpath <- paste0(rfesom_path, "./plot/")
+    meshpath <- paste0(rfesom_path, "example_data/mesh/demomeshid/")
+    imatpath <- paste0(rfesom_path, "example_data/mesh/demomeshid/interp/")
+    datainpath <- paste0(rfesom_path, "example_data/data/demoid/")
+    postpath <- paste0(rfesom_path, "post/")
+    plotpath <- paste0(rfesom_path, "plot/")
 
 # for martin 
 } else if (F) {
@@ -63,19 +62,19 @@ ssh_aviso_correct <- F ## special
 ## Global constants
 Rearth    <- 6367.5 * 1e3 # [m] earth radius
 g         <- 9.81 # [m s-2] acceleration due to gravity
-omega     <- 2*pi/86400 # [s-1] angular frequency of earth (1 day here = 86400 sec)
+omega     <- 2*pi/86400 # [s-1] angular frequency of earth 
 cp        <- 3985 # [m2 s-2 K-1] specific heat capacity of water
-rho0      <- 1027 # [kg m-3] average density
+rho0      <- 1027 # [kg m-3] constant reference density
 sea_water <- "TEOS10" # "EOS80": sw_* (obsolete) or 
                       # "TEOS10": gsw_* (Gibbs Sea Water; http://www.teos-10.org/) 
 pres_ref  <- 0 # [dbar] reference pressure for potential density
-                # 0, 1000, 2000, 3000 or 4000
+               # 0, 1000, 2000, 3000 or 4000
 mv        <- NA # missing value for netcdf output
 prec      <- "double" # precision of nc output
 base      <- 10 # base for multiplication factors
-sd_method <- "default" # how to calculate sd of a vector variable?
-                        # "default" for sd of speed of vector only
-                        # "ackermann83" for sd of both the speed and direction of a vector
+sd_method <- "default" # how to calculate standard deviation of a vector variable?
+                       # "default" for sd of speed of vector only
+                       # "ackermann83" for sd of both speed and direction of vector
 
 ## Variable Options
 if (runid == "demoid") {
@@ -111,18 +110,19 @@ if (runid == "demoid") {
 } else if (runid == "PI_CTRL_mw") {
     area <- "global"
 } else {
+    area <- "global"
     #area <- "lsea"
     #area <- "lseawNAtilt"
     #area <- "lseawNA"
     #area <- "LS30l"
-    area <- "nadja1"
+    #area <- "nadja1"
 }
 
 ## Time Options (if user provide 'fnames_user', then 'years' and 'output' are ignored)
-years         <- 2880 # annual FESOM output files, woa13 overlap: 65-04
-recs          <- 32 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
+years         <- 2009 # annual FESOM output files, woa13 overlap: 65-04
+recs          <- 1:12 #c(1, 2, 12) # records (ntime) per FESOM file (e.g. months, days, hours)
                         # e.g. c(1,2,12) for DJF if output=="monthly"
-output        <- "daily" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
+output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
                            # according to 'output_length_unit' in namelist.config
 snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
                    # if snapshot not available
@@ -212,13 +212,13 @@ horiz_deriv_elem2d <- F # elem2d for testing
     ###############################################################################################
 
 ## Load Area and Projection Options
-source(paste0(rfesom_path, "/preconfigured_namelists/namelist.area.r")) # change to your namelist here
+source(paste0(rfesom_path, "preconfigured_namelists/namelist.area.r")) # change to your namelist here
 
 ## Load Plot Options
-source(paste0(rfesom_path, "/preconfigured_namelists/namelist.plot.r")) # change to your namelist here
+source(paste0(rfesom_path, "preconfigured_namelists/namelist.plot.r")) # change to your namelist here
 
 ## Load Variable Options
-source(paste0(rfesom_path, "/preconfigured_namelists/namelist.var.r")) # change to your namelist here
+source(paste0(rfesom_path, "preconfigured_namelists/namelist.var.r")) # change to your namelist here
 
 ## Run rfesom
 source(paste0(rfesom_path, "lib/main_rfesom.r"))

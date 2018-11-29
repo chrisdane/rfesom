@@ -47,25 +47,21 @@
 ## Version 0.9, 30 Nov 2018                                                 #
 #############################################################################
 
-# clear work space and close open graphic devices
-rm(list=ls()); graphics.off()
-
-# show line number in case of errors
+## show line number in case of errors
 options(show.error.locations=T)
 #options(error=recover)
 #options(warn=2)
 
-# vector/array element-selection as in matlab
+## vector/array element-selection as in matlab
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
 ## check user input
-indent <- "   "
-if (!exists("runid")) {
-    runid <- "runid"
+if (!exists("rfesompath")) {
+    rfesompath <- paste0(getwd(), "/") # = pwd with trailing slash /
 }
-if (!exists("setting")) {
-    setting <- ""
+if (!exists("subroutinepath")) {
+    subroutinepath <- paste0(rfesompath, "lib/") # path where subroutines are saved
 }
 if (!exists("meshpath")) {
     stop("No 'meshpath' provided.")
@@ -73,23 +69,11 @@ if (!exists("meshpath")) {
 if (!exists("datainpath")) {
     stop("No 'datainpath' provided.")
 }
-if (!exists("subroutinepath")) {
-    subroutinepath <- "./lib/" # path where subroutines are saved
+if (!exists("runid")) {
+    runid <- "runid"
 }
-
-## load r functions
-rfunctions <- c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
-                "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
-                "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",  
-                "sub_vertical_average.r", "sub_vertical_integral.r",
-                "leap_function.r", "progress.r", "load_package.r",
-                "image.plot.pre.r", "colors/pals.r")
-for (i in rfunctions) {
-    source(paste0(subroutinepath, i))
-}
-if (plot_map && plot_type == "interp") {
-    source(paste0(subroutinepath, "m2lon.r"))
-    source(paste0(subroutinepath, "m2lat.r"))
+if (!exists("setting")) {
+    setting <- ""
 }
 
 ## add more directories to where to look for packages to load
@@ -111,15 +95,36 @@ if (exists("rpackagepaths")) {
     .libPaths(rpackagepaths) 
 }
 
+## load rfesom subroutines
+for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
+            "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
+            "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
+            "sub_vertical_average.r", "sub_vertical_integral.r")) {
+    source(paste0(subroutinepath, i))
+}
+
+## load misc subroutines
+for (i in c("leap_function.r", "progress.r", "load_package.r",
+            "image.plot.pre.r", "colors/pals.r")) {
+    source(paste0(subroutinepath, "functions/", i))
+}
+
 ## load ncdf4 package which is almost always needed
 success <- load_package("ncdf4")
 if (!success) stop()
 
-## check
+## load akima package and functions needed if
+if (plot_map && plot_type == "interp") {
+    success <- load_package("akima")
+    if (!success) stop()
+    source(paste0(subroutinepath, "m2lon.r"))
+    source(paste0(subroutinepath, "m2lat.r"))
+}
+
 if (is.null(varname_fesom)) {
-        nfiles <- 0
+    nfiles <- 0
 } else {
-        nfiles <- length(varname_fesom)
+    nfiles <- length(varname_fesom)
 }
 if (nfiles == 0) {
     transient_out <- F
@@ -6479,11 +6484,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (plot_type == "interp") {
 
                 ## spatial interpolation using akima::interp
-                indent_save <- indent; indent <- paste0(indent, "   ")
-                success <- load_package("akima")
-                if (!success) stop()
-                indent <- indent_save; rm(indent_save)
-
                 if (interp_method == "bilinear") {
                     interp_method_plot <- "Bilinear"
                 } else if (interp_method == "bicubuc_spline") {

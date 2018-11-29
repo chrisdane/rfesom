@@ -1,0 +1,7 @@
+## Ignore (if exists)
+plot/
+post/
+*.log
+*.pid
+example_data/mesh/demomeshid/interp/
+example_data/mesh/demomeshid/derivatives/
