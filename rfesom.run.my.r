@@ -220,4 +220,7 @@ source(paste0(rfesom_path, "/preconfigured_namelists/namelist.plot.r")) # change
 ## Load Variable Options
 source(paste0(rfesom_path, "/preconfigured_namelists/namelist.var.r")) # change to your namelist here
 
+## Run rfesom
+source(paste0(rfesom_path, "lib/main_rfesom.r"))
+
 

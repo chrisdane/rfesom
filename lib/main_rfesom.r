@@ -59,15 +59,6 @@ options(show.error.locations=T)
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
-
-############################## USER INPUT START #############################
-
-# change to your custom namelist.rfesom.r here
-source("~/scripts/r/rfesom/preconfigured_namelists/namelist.rfesom.r")
-
-############################### USER INPUT END ##############################
-
-
 ## check user input
 indent <- "   "
 if (!exists("runid")) {
