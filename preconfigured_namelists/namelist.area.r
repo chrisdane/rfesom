@@ -132,97 +132,97 @@
                 polycoords <- read.table(#"~/scripts/r/Low01_s1_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/Low01_s1_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldl2") {
                 polycoords <- read.table(#"~/scripts/r/Low01_s2_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/Low01_s2_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldl3") {
                 polycoords <- read.table(#"~/scripts/r/Low01_s3_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/Low01_s3_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldl4") {
                 polycoords <- read.table(#"~/scripts/r/Low01_s4_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/Low01_s4_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldl5") {
                 polycoords <- read.table(#"~/scripts/r/Low01_s5_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/Low01_s5_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldh1") {
                 polycoords <- read.table(#"~/scripts/r/LSea5_s1_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/LSea5_s1_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldh2") {
                 polycoords <- read.table(#"~/scripts/r/LSea5_s2_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/LSea5_s2_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldh3") {
                 polycoords <- read.table(#"~/scripts/r/LSea5_s3_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/LSea5_s3_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldh4") {
                 polycoords <- read.table(#"~/scripts/r/LSea5_s4_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/LSea5_s4_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSmldh5") {
                 polycoords <- read.table(#"~/scripts/r/LSea5_s5_mixlay_lsea_gt_1800m_Mar_1961-2009_ahull_alpha0.1.txt",
                                    "~/scripts/r/LSea5_s5_mixlay_lsea_gt_1800m_Mar_1961-2009_coords.txt", 
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS31l") {
                 polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_3100m_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS31h") {
                 polycoords <- read.table("~/scripts/r/LSea2_mesh_LS_ge_3100m_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS30l") {
                 polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_3000m_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS30l2") {
                 polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_6.1_cms-1_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS35h") {
                 polycoords <- read.table("~/scripts/r/LSea2_mesh_LS_ge_3500m_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LSkieke06") {
                 polycoords <- read.table("~/scripts/r/LSkieke06_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "lseawNAtilt") {
                 polycoords <- read.table("~/scripts/r/lseawNAtilt.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "icebox1") { # box for ice extend sum east of southern greenland
                 map_geogr_lim_lon <- c(-45, 10)
                 map_geogr_lim_lat <- c(57.5, 80)
@@ -550,8 +550,8 @@
             } else if (area == "LS30l") {
                 polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_3000m_chull.txt",
                                    header=F, col.names=c("x", "y"))
-                map_geogr_lim_lon <- polycoords[,1]$x
-                map_geogr_lim_lat <- polycoords[,2]$y
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "csec_S30") {
                 map_geogr_lim_lon <- c(-50, 25)
                 map_geogr_lim_lat <- c(-30, -30)

@@ -2136,8 +2136,8 @@ if (varname == "tos") {
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
     varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
-    if (any(projectid == c("Arc22_daily", "Arc22_sub_daily",
-                           "Arc22_sub", "Arc22_sub_small"))) {
+    if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
+                       "Arc22_sub", "Arc22_sub_small"))) {
         varname_fesom <- c("u", "v", "ut", "vt", "temp")
     }
     rotate_inds <- c(1, 2, 3, 4)
