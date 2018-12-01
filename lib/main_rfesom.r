@@ -836,15 +836,6 @@ if (!restart || # ... not a restart run
         nod3d_check <- T
         rm(tmp, nod3d)
 
-        interpolate_depths <- unique(nod3d_z)
-        ndepths <- length(interpolate_depths)
-        deltaz_all <- rep(0, t=ndepths-1)
-        deltaz_all[1] <- (interpolate_depths[1] - interpolate_depths[2])/2
-        deltaz_all[ndepths] <- (interpolate_depths[ndepths - 1]- interpolate_depths[ndepths])/2
-        for (n in 2:(ndepths-1)) {
-            deltaz_all[n] <- (interpolate_depths[n-1] - interpolate_depths[n])/2 + (interpolate_depths[n] - interpolate_depths[n+1])/2
-        }
-
         fid <- paste0(meshpath, "aux3d.out")
         aux3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
@@ -860,7 +851,22 @@ if (!restart || # ... not a restart run
             aux3d <- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
         }
         rm(tmp)
-    
+
+        ## fesom depths levels and dz
+        # never found a "correct" way for obtaining dz
+        fesom_depths <- abs(unique(nod3d_z))
+        ndepths_all <- length(fesom_depths)
+        deltaz_all <- rep(0, t=ndepths_all - 1)
+        deltaz_all[1] <- (fesom_depths[1] - fesom_depths[2])/2
+        deltaz_all[ndepths_all] <- (fesom_depths[ndepths_all - 1]- fesom_depths[ndepths_all])/2
+        for (n in 2:(ndepths_all - 1)) {
+            deltaz_all[n] <- (fesom_depths[n-1] - fesom_depths[n])/2 + (fesom_depths[n] - fesom_depths[n+1])/2
+        }
+
+        # note: it is possible that ndepths_all != aux3d_n.
+        #       this might be the case because no nodes exist in the 
+        #       bottom layer of aux3d (--> all(aux3d[aux3d_n,] == -999) is true)
+
     } # end if 3d
 
     fid <- paste0(meshpath, "elem2d.out")
@@ -2564,11 +2570,10 @@ if (nfiles > 0) {
 
             ## Here, only the case (cycl && rotate_mesh) is implemented.
             ## In the Matlab code, there is also the (cycl && !rotate_mesh) case.
-            de <- aux3d # de contains depths (ndepths_mesh x nnodes_2d)
+            de <- aux3d # de contains depths (ndepths_all x nnodes_2d)
             rnd <- which(aux3d > -999, arr.ind=T)
             de[rnd] <- -nod3d_z[aux3d[rnd]]
-            fesom_depths <- unique(de[-which(de == -999)])
-            #fesom_depths <- abs(unique(nod3d_z))
+            #fesom_depths <- unique(de[-which(de == -999)])
             # note: it is possible that length(fesom_depths) != aux3d_n.
             #       this might be the case because no nodes exist in the 
             #       bottom layer of aux3d (--> all(aux3d[aux3d_n,] == -999) is true)
@@ -2681,10 +2686,10 @@ if (nfiles > 0) {
             ## this deltaz is used for vertical average
             if (ndepths >= 3) {
                 ndepths <- length(interpolate_depths)
-                deltaz <- rep(0, t=ndepths-1)
+                deltaz <- rep(0, t=ndepths - 1)
                 deltaz[1] <- (interpolate_depths[1] - interpolate_depths[2])/2
                 deltaz[ndepths] <- (interpolate_depths[ndepths - 1]- interpolate_depths[ndepths])/2
-                for (n in 2:(ndepths-1)) {
+                for (n in 2:(ndepths - 1)) {
                     deltaz[n] <- (interpolate_depths[n-1] - interpolate_depths[n])/2 + (interpolate_depths[n] - interpolate_depths[n+1])/2
                 }
                 deltaz <- deltaz*-1 # to get positive dz values
@@ -3944,8 +3949,8 @@ if (nfiles == 0) { # read data which are constant in time
                             }
 
                             if (verbose > 1) {
-                                print(paste0(indent, "Calc 'transient_mode'='", transient_mode, 
-                                             "' in 'area'='",  area, "' ..."))
+                                print(paste0(indent, "Calc '", transient_mode, 
+                                             "' (=transient_mode) in region '", area, "' (=area) ..."))
                                 if (verbose > 2) {
                                     print(paste0(indent, "and save at 'time_inds'=",
                                                  paste(time_inds, collapse=",")))
@@ -4943,7 +4948,7 @@ if (nfiles == 0) { # read data which are constant in time
         if (transient_mode == "area") { # this is irregular
         #if (transient_mode == "area" || transient_mode == "areadepth") {
             if (verbose > 1) {
-                print(paste0(indent, "Save transient '", transient_mode, "' (='transient_mode') file:"))
+                print(paste0(indent, "Save transient '", transient_mode, "' (='transient_mode') file ('outname'):"))
                 print(paste0(indent, indent, outname))
             }
             nc_close(outnc)

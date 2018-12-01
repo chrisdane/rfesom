@@ -2073,11 +2073,11 @@ if (varname == "tos") {
                                   list(var1="m", var2="s",
                                        base=base, power_plot=-power_plot))
         
-        if (any(transient_mode == c("meanint", "depthin"))) {
+        if (any(transient_mode == c("meanint", "depthint"))) {
             units_out <- "degC m3 s-1"
         }
     } else {
-        if (any(transient_mode == c("meanin", "depthin"))) {
+        if (any(transient_mode == c("meanint", "depthint"))) {
             units_out <- "degC m2 s-1"
         }
     }
@@ -2093,52 +2093,43 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvteddy") {
-    longname <- "div_h(u_h't')"
-    subtitle <- ""
+    longname <- "Divergence of eddy horizontal temperature flux"
     power_plot <- 8
     multfac_plot <- base^power_plot
-    units_out <- paste0("degC s-1 x ", multfac_plot)
+    units_out <- "degC s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
                                      " [", var1, " ", var2^-1, 
-                                     "]  " %*% " ", base^power_plot),
+                                     "] " %*% " ", base^power_plot),
                                list(var1="°C", var2="s", 
                                     base=base, power_plot=-power_plot))
     if (integrate_depth) {
-        power_plot <- 5
+        power_plot <- 7
         multfac_plot <- base^power_plot
-        units_out <- paste0("degC m s-1 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
                                          " dz [°C ", var1, " ", var2^-1, 
                                          "]  " %*% " ", base^power_plot),
                                    list(var1="m", var2="s", 
                                         base=base, power_plot=-power_plot))
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_out <- "degC m3 s-1"
+        }
+    } else {
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_out <- "degC m2 s-1"
+        }
     }
-    if (!(transient_mode == "meanint" || transient_mode == "depthint") &&
-        integrate_depth) {
-        power_plot <- 0
-        multfac_plot <- base^power_plot
-        units_out <- paste0("degC m s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               !integrate_depth) {
-        power_plot <- 0
-        multfac_plot <- base^power_plot
-        units_out <- paste0("degC m2 s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               integrate_depth) {
-        power_plot <- 0
-        multfac_plot <- base^power_plot
-        units_out <- paste0("degC m3 s-1")
-    }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    derivative <- "geo"
+    horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
     varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
                        "Arc22_sub", "Arc22_sub_small"))) {
         varname_fesom <- c("u", "v", "ut", "vt", "temp")
+    }
+    if (cpl_tag) {
+        varname_fesom <- c("uo", "vo", "uto", "vto", "thetao")
     }
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T

@@ -131,8 +131,10 @@ sub_calc <- function(data) {
         if (any(is.na(varinds))) stop("Could not find data.")
        
         if (verbose > 1) {
-            print(paste0(indent, "Calc = ", 
+            print(paste0(indent, "Calc ",
+                         vars[1], "X", vars[3], " = ",
                          vars[varinds[1]], "*", vars[varinds[3]], ", ",
+                         vars[2], "X", vars[3], " = ",
                          vars[varinds[2]], "*", vars[varinds[3]], " ..."))
         }
 
@@ -142,7 +144,8 @@ sub_calc <- function(data) {
         dimnames(vtmp)[[1]] <<- paste0(vars[2], "X", vars[3])
 
         ## norm of mean flux is calculated now
-        if (any(varname == c("uvtemp"))) {
+        if (any(varname == c("uvtemp",  "uvsalt", "uvrho", "uvb",
+                             "uvsgstemp", "uvsgssalt", "uvsgsrho", "uvsgsb"))) {
         
             if (verbose > 1) {
                 print(paste0(indent, varname, " = sqrt[(", 
@@ -161,13 +164,17 @@ sub_calc <- function(data) {
             }
 
         ## norm of mean flux is calculated later
-        } else if (any(varname == c("divuvt"))) {
+        } else if (any(varname == c("divuvt",  "divuvs", "divuvrho", "divuvb",
+                                     "divuvsgst", "divuvsgss", "divuvsgsrho", "divuvsgsb"))) {
             
             data_node <<- abind(utmp, vtmp, along=1, use.dnns=T)
             
         } # norm of mean flux calculated nor or later
 
-    } # "uvtemp", "uvsalt", "uvrho", "uvb"
+    } # "uvtemp", "uvsalt", "uvrho", "uvb", 
+      # "uvsgstemp", "uvsgssalt", "uvsgsrho", "uvsgsb",
+      # "divuvt", "divuvs", "divuvrho", "divuvb",
+      # "divuvsgst", "divuvsgss", "divuvsgsrho", "divuvsgsb"
 
     ## norm of total flux 
     if (any(varname == c("uvtemptot", "uvsalttot", "uvrhotot", "uvbtot",
@@ -218,7 +225,10 @@ sub_calc <- function(data) {
             data_node <<- tmp
         }
 
-    } # "uvtemptot", "uvsalttot", "uvrhotot", "uvbtot", "sgs_uvttot", "sgs_uvstot"
+    } # "uvtemptot", "uvsalttot", "uvrhotot", "uvbtot",
+      # "uvsgstemptot", "uvsgssalttot",
+      # "divuvttot", "divuvstot", "divuvrhotot", "divuvbtot",
+      # "divuvsgsttot", "divuvsgsstot"
 
     ## norm of eddy flux
     if (any(varname == c("uvteddy", "uvseddy", "uvrhoeddy", "uvbeddy",
@@ -250,13 +260,13 @@ sub_calc <- function(data) {
                 stop(paste0("Error: _potential_ density fluxes are not available. 
                              Set 'potdens_tag' to F."))
             }
-        } else if (any(varname == c("uvsgsteddy", "divuvteddy"))) {
+        } else if (any(varname == c("uvsgsteddy", "divuvsgsteddy"))) {
             varinds <<- c(which(vars == "sgs_u"),
                           which(vars == "sgs_v"),
                           which(vars == "temp" | vars == "thetao"),
                           which(vars == "sgs_ut"),
                           which(vars == "sgs_vt"))
-        } else if (any(varname == c("uvsgsseddy", "divuvseddy"))) {
+        } else if (any(varname == c("uvsgsseddy", "divuvsgsseddy"))) {
             varinds <<- c(which(vars == "sgs_u"),
                           which(vars == "sgs_v"),
                           which(vars == "salt" | vars == "so"),
@@ -276,26 +286,49 @@ sub_calc <- function(data) {
         }
 
         if (verbose > 1) {
-            print(paste0(indent, varname, " = sqrt( [", vars[varinds[4]], 
-                         " - ", vars[varinds[1]], "*", vars[varinds[3]], 
-                         "]^2 + [", varname_fesom[inds[5]],  " - ", 
-                         vars[varinds[2]], "*", vars[varinds[3]], "]^2 )"))
+            print(paste0(indent, "Calc ", 
+                         vars[varinds[4]], "_eddy = ",
+                         vars[varinds[4]], " - ", vars[varinds[1]], "*", vars[varinds[3]], ", ",
+                         vars[varinds[5]], "_eddy = ", 
+                         vars[varinds[5]], " - ", vars[varinds[2]], "*", vars[varinds[3]], " ..."))
         }
 
         utmp <<- data_node[varinds[4],,,] - data_node[varinds[1],,,]*data_node[varinds[3],,,]
         dimnames(utmp)[[1]] <<- paste0(vars[varinds[4]], "_eddy")
         vtmp <<- data_node[varinds[5],,,] - data_node[varinds[2],,,]*data_node[varinds[3],,,]
         dimnames(vtmp)[[1]] <<- paste0(vars[varinds[5]], "_eddy")
-        tmp <<- sqrt(utmp^2 + vtmp^2)
-        dimnames(tmp)[[1]] <<- varname
-        if (uv_out || horiz_deriv_tag) {
-            data_node <<- abind(utmp, vtmp, tmp, along=1, use.dnns=T)
-        } else {
-            data_node <<- tmp
-        }
 
-    } # "uvteddy", "uvseddy", "uvrhoeddy", "uvbeddy"
+        ## norm of eddy flux is calculated now
+        if (any(varname == c("uvteddy", "uvseddy", "uvrhoeddy", "uvbeddy",
+                             "uvsgsteddy", "uvsgsseddy"))) {
 
+            if (verbose > 1) {
+                print(paste0(indent, varname, " = sqrt( [", vars[varinds[4]],
+                             " - ", vars[varinds[1]], "*", vars[varinds[3]],
+                             "]^2 + [", vars[varinds[5]],  " - ",
+                             vars[varinds[2]], "*", vars[varinds[3]], "]^2 )"))
+            }
+
+            tmp <<- sqrt(utmp^2 + vtmp^2)
+            dimnames(tmp)[[1]] <<- varname
+            if (uv_out) {
+                data_node <<- abind(utmp, vtmp, tmp, along=1, use.dnns=T)
+            } else {
+                data_node <<- tmp
+            }
+
+        ## norm of norm of eddy flux is calculated later
+        } else if (any(varname == c("divuvteddy", "divuvseddy", "diuvrhoeddy", "divuvbeddy",
+                                    "divuvsgsteddy", "divuvsgsseddy"))) {
+
+            data_node <<- abind(utmp, vtmp, along=1, use.dnns=T)
+
+        } # if  norm of eddy flux calculated nor or later 
+
+    } # "uvteddy", "uvseddy", "uvrhoeddy", "uvbeddy",
+      # "uvsgsteddy", "uvsgsseddy",
+      # "divuvteddy", "divuvseddy", "diuvrhoeddy", "divuvbeddy",
+      # "divuvsgsteddy", "divuvsgsseddy"
 
     ## mean(u)*mean(u), mean(v)*mean(v)
     if (any(varname == c("u_u", "v_v"))) {
@@ -1017,12 +1050,12 @@ sub_calc <- function(data) {
 
             if (verbose > 1) {
                 if (!is.null(dxinds)) {
-                    print(paste0(indent, "Calc dx(", 
-                                 paste0(dimnames(data_node)[[1]][dxinds], collapse=","), ") ..."))
+                    print(paste0(indent, "Calc ", 
+                                 paste0("dx_", dimnames(data_node)[[1]][dxinds], collapse=", "), " ..."))
                 }
                 if (!is.null(dxinds)) {
-                    print(paste0(indent, "Calc dy(", 
-                                 paste0(dimnames(data_node)[[1]][dyinds], collapse=","), ") ..."))
+                    print(paste0(indent, "Calc ", 
+                                 paste0("dy_", dimnames(data_node)[[1]][dyinds], collapse=", "), " ..."))
                 }
             }
 
@@ -1030,9 +1063,12 @@ sub_calc <- function(data) {
             time2 <<- time1
             `[` <<- fctbackup
 
+            #stop("asd")
+
             #for (i in 1:aux3d_n) {
-            for (i in 1:dim(data_node)[3]) { # for ndepths of data; can be 1 or ndepths
-                progress_function(aux3d_n, i, indent=paste0(indent, "      "))
+            for (i in 1:ndepths) {
+                #progress_function(aux3d_n, i, indent=paste0(indent, "      "))
+                progress_function(ndepths, i, indent=paste0(indent, "      "))
                 for (j in 1:elem2d_n) {
                     nds_surf <<- elem2d[,j]
                     nds_layer <<- aux3d[i,nds_surf]
@@ -1042,7 +1078,8 @@ sub_calc <- function(data) {
 
                         if (!is.null(dxinds)) {
                             #print(paste0(i, " ", j, " xxx"))
-                            #aux <<- adrop(bafux_2d_time_depth[,,j,,], drop=3)*data_node[dxinds,nds_layer,,] # c(nvars,3,ndepths=1,nrecspf)*c(nvars,3,ndepths=1,nrecspf)
+                            #aux <<- adrop(bafux_2d_time_depth[,,j,,], drop=3)*data_node[dxinds,nds_layer,,] 
+                            # c(nvars,3,ndepths=1,nrecspf)*c(nvars,3,ndepths=1,nrecspf)
                            
                             if (F) {
                                 ptm <<- proc.time()[3]
@@ -1067,7 +1104,7 @@ sub_calc <- function(data) {
                             } else if (T) { # with original `[`
                                 ptm <<- proc.time()[3]
                                 aux <<- bafux_2d_time_depth[,,j,,drop=F]*data_node[dxinds,nds_layer,,,drop=F]
-                                for (k in 1:dim(aux)[1]) {
+                                for (k in 1:dim(aux)[1]) { # for all vars
                                     aux <<- apply(aux[k,,,,drop=F], c(1, 4), sum)[1,]
                                     dvardx_node3d[k,nds_layer,,] <<- dvardx_node3d[k,nds_layer,1,] + t(array(aux, c(length(aux), 3)))
                                 }
@@ -1330,7 +1367,7 @@ sub_calc <- function(data) {
             print(paste0(indent, varname, " = d(K_h*dbdx)/dx + d(K_h*dbdy)/dy ..."))
         }
 
-        if (varname == "divuvt") {
+        if (any(varname == c("divuvt", "divuvteddy"))) {
 
             varinds <<- c(1, 1)
            
@@ -1369,7 +1406,7 @@ sub_calc <- function(data) {
                 data_node <<- data_node3d
             }
         
-        } # divuvt
+        } # "divuvt", "divuvteddy"
 
         if (any(varname == c("relvorti", "relvortif", "relvortisq", 
                              "curlwind", "curltau", 
