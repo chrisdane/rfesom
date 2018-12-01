@@ -1,7 +1,9 @@
-## Ignore (if exists)
-plot/
-post/
-*.log
-*.pid
-example_data/mesh/demomeshid/interp/
-example_data/mesh/demomeshid/derivatives/
+## Ignore everthing
+*
+
+## except 
+example_data/
+lib/
+preconfigured_namelists/
+README.md
+
