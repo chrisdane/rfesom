@@ -50,7 +50,7 @@
 ## show line number in case of errors
 options(show.error.locations=T)
 #options(error=recover)
-#options(warn=2)
+options(warn=2)
 
 ## vector/array element-selection as in matlab
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -2829,11 +2829,11 @@ if (nfiles == 0) { # read data which are constant in time
     if (verbose > 0) {
         print(paste0("5) Read variable", ifelse(nfiles > 1, "s", ""), " '", 
                      paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
-        print(paste0("   for output variable '", longname, "' (=longname)"))
+        print(paste0("      for output variable '", longname, "' (=longname)"))
         if (transient_out || regular_transient_out) {
-            print(paste0("   and save '", transient_mode, "' (=transient_mode) data"))
+            print(paste0("      and save '", transient_mode, "' (=transient_mode) data"))
         }
-        print(paste0("   in region ", area, " (=area) ..."))
+        print(paste0("      in region '", area, "' (=area) ..."))
     }
 
 
@@ -3059,13 +3059,13 @@ if (nfiles == 0) { # read data which are constant in time
                 for (nci in 1:length(ncids)) {
                     varsin <- ncdf.tools::infoNcdfVars(ncids[[nci]])
                     for (vari in 1:length(varname_fesom)) {
-                        if (any(varsin["name"] == varname_fesom[vari])) {
+                        if (any(varsin[["name"]] == varname_fesom[vari])) {
                             var_nc_inds[vari] <- nci
                         }
                     }
                 }
                 if (any(is.na(var_nc_inds))) {
-                    stop(paste0("could not find '",
+                    stop(paste0("could not find varname_fesom='",
                                 paste(varname_fesom[which(is.na(var_nc_inds))], collapse="','"),
                                 "' in ", runid, " fesom data ..."))
                 }
@@ -3101,6 +3101,12 @@ if (nfiles == 0) { # read data which are constant in time
                             mld_fname <- paste0(datainpath, setting, "_", mld_varname, "_fesom_",
                                                 year, "0101.nc")
                         }
+                        if (!file.exists(mld_fname)) {
+                            print("Error: cannot find MLD file:\n")
+                            stop(mld_fname)
+                        }
+                        ncids[[length(ncids) + 1]] <- ncdf4::nc_open(mld_fname)
+                        mld_nc_ind <- length(ncids)
                     }
 
                 } else if (!cpl_tag) {
@@ -3116,17 +3122,16 @@ if (nfiles == 0) { # read data which are constant in time
                         mld_fname <- paste0(substr(fnames[1], 1, 
                                                    regexpr(year,fnames[1]) + 4), 
                                             "oce.diag.nc")
+                        if (!file.exists(mld_fname)) {
+                            print("Error: cannot find MLD file:\n")
+                            stop(mld_fname)
+                        }
+                        ncids[[length(ncids) + 1]] <- ncdf4::nc_open(mld_fname)
+                        mld_nc_ind <- length(ncids)
                     }
                 
                 } # if cpl_tag
                         
-                if (!file.exists(mld_fname)) {
-                    print("Error: cannot find MLD file:\n")
-                    stop(mld_fname)
-                }
-                ncids[[length(ncids) + 1]] <- ncdf4::nc_open(mld_fname)
-                mld_nc_ind <- length(ncids)
-            
             } else if (ncdf.tools_tag == T) {
 
                 if (cpl_tag) {
@@ -3143,7 +3148,13 @@ if (nfiles == 0) { # read data which are constant in time
                             mld_fname <- paste0(datainpath, setting, "_", mld_varname, "_fesom_",
                                                 year, "0101.nc")
                         }
-                    }
+                        if (!file.exists(mld_fname)) {
+                            print("Error: cannot find MLD file:\n")
+                            stop(mld_fname)
+                        }
+                        ncids[[length(ncids) + 1]] <- mld_fname
+                        mld_nc_ind <- length(ncids)
+                    } # if mixlay file was already loaded due to varname_fesom
 
                 } else if (!cpl_tag) {
 
@@ -3156,18 +3167,16 @@ if (nfiles == 0) { # read data which are constant in time
                         mld_fname <- paste0(substr(fnames[1], 1,
                                                    regexpr(year,fnames[1]) + 4),
                                             "oce.diag.nc")
+                        if (!file.exists(mld_fname)) {
+                            print("Error: cannot find MLD file:\n")
+                            stop(mld_fname)
+                        }
+                        ncids[[length(ncids) + 1]] <- mld_fname
+                        mld_nc_ind <- length(ncids)
 
-                    }
+                    } # if oce.diag was already loaded due to varname_fesom
 
                 } # if cpl_tag
-
-                if (!file.exists(mld_fname)) {
-                    print("Error: cannot find MLD file:\n")
-                    stop(mld_fname)
-                }
-                ncids[[length(ncids) + 1]] <- mld_fname
-                mld_nc_ind <- length(ncids)
-
             } # if ncdf.tools_tag
         } # if load mld for integrate over MLD depth
        
@@ -6601,7 +6610,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
                 if (verbose > 1) {
                     print(paste0(indent, "   Note: you can define color levels with e.g."))
-                    print(paste0(indent, "         ", varnamei, "_levels <<- c(", 
+                    print(paste0(indent, "         ", varnamei, "_levels <- c(", 
                                  paste0(ip$axis.at, collapse=","), ")"))
                     print(paste0(indent, "         in namelist.plot.r ..."))
                 }
@@ -6616,7 +6625,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (all(user_zlim > zlim_orig) ||
                     all(user_zlim < zlim_orig)) {
                     if (verbose > 0) {
-                        print(paste0("Your povided '", varnamei, "_levels' <<- c(", 
+                        print(paste0("Your povided '", varnamei, "_levels' <- c(", 
                                      paste0(user_levels, collapse=","), 
                                      ") are out of range of the actual data min/max=", 
                                      zlim_orig[1], "/", zlim_orig[2], "."))
