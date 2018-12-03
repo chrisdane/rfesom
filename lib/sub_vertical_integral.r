@@ -50,6 +50,9 @@ sub_vertical_integral <- function(data_nod3) {
                 if (depths[2] == "MLD") {
                     # dim(mld_node) c(nvars=1,nod2d_n,ndephts=1,nrecspf)
                     z_mld <<- mld_node[,drop(indsurf[i,inds]),,]
+                    z_mld <<- adrop(z_mld, drop=1)
+                    z_mld <<- replicate(z_mld, n=dim(aux)[1]) # nvars
+                    z_mld <<- aperm(z_mld, c(4, 1, 2, 3))
                     z_inds <<- z_i <= z_mld
 
                 } else {

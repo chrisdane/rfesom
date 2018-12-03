@@ -2846,7 +2846,7 @@ if (nfiles == 0) { # read data which are constant in time
     if (verbose > 0) {
         print(paste0("5) Read variable", ifelse(nfiles > 1, "s", ""), " '", 
                      paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
-        print(paste0("      for output variable '", longname, "' (=longname)"))
+        print(paste0("      for output variable '", varname, "' (=varname) aka '", longname, "' (=longname)"))
         if (transient_out || regular_transient_out) {
             print(paste0("      and save '", transient_mode, "' (=transient_mode) data"))
         }
@@ -3632,7 +3632,9 @@ if (nfiles == 0) { # read data which are constant in time
                 if (verbose > 2) {
                     print(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
                 }
+                indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_prepare1(data_node) # overwrites data_node with the result of sub_prepare1()
+                indent <- indent_save; rm(indent_save)
 
                 ## At this point,
                 ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if dim_tag == "2D"
@@ -3649,7 +3651,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                             }
                         }
+                        indent_save <- indent; indent <- paste0(indent_save, "   ")
                         sub_n3_to_n2xde(data_node) # produces tmp
+                        indent <- indent_save; rm(indent_save)
                         data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                         rm(tmp)
 
@@ -3663,7 +3667,9 @@ if (nfiles == 0) { # read data which are constant in time
                             print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
                         }
                     }
+                    indent_save <- indent; indent <- paste0(indent_save, "   ")
                     sub_vertical_average(data_vert) # produces tmp
+                    indent <- indent_save; rm(indent_save)
                     data_node <- tmp # overwrite old data_node
                     # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
                     # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
@@ -3675,7 +3681,9 @@ if (nfiles == 0) { # read data which are constant in time
                 if (verbose > 2) {
                     print(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
                 }
+                indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_prepare2(data_node) # overwrites data_node with the result of sub_prepare2()
+                indent <- indent_save; rm(indent_save)
 
                 if (transient_out && any(transient_mode == c("csec_mean", "csec_depth"))) {
                     if (verbose > 1) { 
@@ -3685,7 +3693,9 @@ if (nfiles == 0) { # read data which are constant in time
                             print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                         }
                     }
+                    indent_save <- indent; indent <- paste0(indent_save, "   ")
                     sub_n3_to_n2xde(data_node) # produces tmp
+                    indent <- indent_save; rm(indent_save)
                     data_global_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                     rm(tmp)
                 }

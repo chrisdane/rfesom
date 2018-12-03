@@ -165,7 +165,7 @@ sub_calc <- function(data) {
 
         ## norm of mean flux is calculated later
         } else if (any(varname == c("divuvt",  "divuvs", "divuvrho", "divuvb",
-                                     "divuvsgst", "divuvsgss", "divuvsgsrho", "divuvsgsb"))) {
+                                    "divuvsgst", "divuvsgss", "divuvsgsrho", "divuvsgsb"))) {
             
             data_node <<- abind(utmp, vtmp, along=1, use.dnns=T)
             
@@ -209,20 +209,28 @@ sub_calc <- function(data) {
             vars <<- dimnames(data_node)[[1]]
         }
 
-        if (verbose > 1) {
-            print(paste0(indent, varname, " = sqrt(",
-                         vars[varinds[1]], "^2 + ", 
-                         vars[varinds[2]], "^2)"))
-        }
-
         utmp <<- data_node[varinds[1],,,]
         vtmp <<- data_node[varinds[2],,,]
-        tmp <<- sqrt(utmp^2 + vtmp^2)
-        dimnames(tmp)[[1]] <<- varname
-        if (uv_out || horiz_deriv_tag) {
-            data_node <<- abind(utmp, vtmp, tmp, along=1, use.dnns=T)
-        } else {
-            data_node <<- tmp
+
+        if (any(varname == c("uvtemptot", "uvsalttot", "uvrhotot", "uvbtot",
+                             "uvsgstemptot", "uvsgssalttot"))) {
+            if (verbose > 1) {
+                print(paste0(indent, varname, " = sqrt(",
+                             vars[varinds[1]], "^2 + ",
+                             vars[varinds[2]], "^2)"))
+            }
+            tmp <<- sqrt(utmp^2 + vtmp^2)
+            dimnames(tmp)[[1]] <<- varname
+            if (uv_out) {
+                data_node <<- abind(utmp, vtmp, tmp, along=1, use.dnns=T)
+            } else {
+                data_node <<- tmp
+            }
+
+        } else if (any(varname == c("divuvttot", "divuvstot", "divuvrhotot", "divuvbtot",
+                                    "divuvsgsttot", "divuvsgsstot"))) {
+            data_node <<- abind(utmp, vtmp, along=1, use.dnns=T)
+
         }
 
     } # "uvtemptot", "uvsalttot", "uvrhotot", "uvbtot",
@@ -1425,7 +1433,8 @@ sub_calc <- function(data) {
             print(paste0(indent, varname, " = d(K_h*dbdx)/dx + d(K_h*dbdy)/dy ..."))
         }
 
-        if (any(varname == c("divuvt", "divuvteddy"))) {
+        if (any(varname == c("divuvt", "divuvteddy", 
+                             "divuvsgst", "divuvsgsteddy", "divuvsgsttot"))) {
 
             varinds <<- c(1, 1)
            
@@ -1464,7 +1473,7 @@ sub_calc <- function(data) {
                 data_node <<- data_node3d
             }
         
-        } # "divuvt", "divuvteddy"
+        } # "divuvt", "divuvteddy", "divuvsgsttot"
 
         if (any(varname == c("relvorti", "relvortif", "relvortisq", 
                              "curlwind", "curltau", 
