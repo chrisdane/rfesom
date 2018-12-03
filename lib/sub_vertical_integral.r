@@ -10,68 +10,80 @@ sub_vertical_integral <- function(data_nod3) {
                   dimnames=c(dimnames(data_nod3)[1],
                              list(node=NULL),
                              dimnames(data_nod3)[3:4]))
-    dep_total <<- tmp[1,,,]
+    #dep_total <<- tmp[1,,,]
 
     # create progress bar
-    pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style, 
+    pb <<- txtProgressBar(min=0, max=ndepths, style=pb_style,
                           char=pb_char, width=pb_width)
-    
-    for (i in 1:nod2d_n) {
+    #timei <<- rep(NA, t=ndepths)
 
-        #progress_function(nod2d_n, i, indent=paste0(indent, "      "))
+    for (i in 1:ndepths) {
 
-        #for (j in 1:(aux3d_n-1)) {
-        for (j in 1:length(deltaz)) {
+        ptmi <<- proc.time()[3]
 
-            if (aux3d[j,i] > 0) { # not the -999 nodes (missing values)
+        if (any(aux3d[i,] > 0)) { # not the -999 nodes (missing values)
 
-                aux <<- data_nod3[,aux3d[j,i],,] # c(nvars,nnod=1,ndepths=1,nrecspf) 
+            inds <<- which(aux3d[i,] != -999) # vector; dim=NULL
 
-                # if integrate between specific depths
-                if (length(depths) == 2 && depths[2] != "max") {
+            if (F) {
+                for (i in 1:ndepths) {
+                    inds <- which(aux3d[i,] != -999)
+                    print(i)
+                    print(paste0(range(inds), collapse=","))
+                    print(paste0(range(drop(indsurf[i,inds])), collapse=","))
+                }
+            }
 
-                    if (depths[2] == "MLD") {
-                        # dim(mld_node) c(nvars=1,nod2d_n,ndephts=1,nrecspf)
-                        z_inds <<- which(abs(nod3d_z[aux3d[j,i]]) <= mld_node[,i,,]) 
-                        # length(z_inds) = nrecspf
-                        
-                    } else {
-                        z_inds <<- which(abs(nod3d_z[aux3d[j,i]]) <= rep(depths[2], t=dim(aux)[4])) # repeat in time
+            #print(paste0(i, ",", j))
+            #stop("asd")
+            aux <<- data_nod3[,drop(aux3d[i,inds]),,] # c(nvars,nnod=1,ndepths=1,nrecspf) 
 
-                    }
-                    #print(z_inds) 
+            #indlevel[i,inds]
+            #indsurf[i,inds]
+            #if (i == 105 && j == 30) stop("asd")
 
-                    # only some depths within MLD at some timepoints per year
-                    if (rec_tag && length(z_inds) > 0 && length(z_inds) != dim(aux)[4]) {
+            # if integrate between specific depths
+            if (length(depths) == 2) {
+                
+                z_i <<- array(interpolate_depths[i], dim(aux))
 
-                        # set values at depths greater than MLD to zero
-                        aux[,,,recs[-z_inds]] <<- 0
+                if (depths[2] == "MLD") {
+                    # dim(mld_node) c(nvars=1,nod2d_n,ndephts=1,nrecspf)
+                    z_mld <<- mld_node[,drop(indsurf[i,inds]),,]
+                    z_inds <<- z_i <= z_mld
 
-                    # all depths deeper than MLD at all timepoints
-                    } else if (length(z_inds) == 0) {
-                        aux[,,,] <<- 0
+                } else {
+                    z_max <<- array(interpolate_depths[ndepths], dim(aux))
+                    z_inds <<- z_i <= z_max # all TRUE
+                }
+                #print(str(z_inds)) 
 
-                    # all depths within MLD at all timepoints per year
-                    } else if ((rec_tag && length(z_inds) == dim(aux)[4]) ||
-                               (!rec_tag && length(z_inds) == 1)) {
-                        #print(paste0(paste0(z_inds, collapse=","),
-                        #             ": all depths within MLD..."))
-                        # nothing to do. j aux as it is
-                    }
+                # if some depths between levels
+                if (any(z_inds)) {
 
-                } # if integrate between specific depths
+                    #print(sum(aux*deltaz[i]))
+                    #print(sum(z_inds*aux*deltaz[i]))
+                    tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + z_inds*aux*deltaz[i]
+                    #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + z_inds*deltaz[i]
 
-                tmp[,i,,] <<- tmp[,i,,] + aux*deltaz[j]
-                dep_total[,i,,] <<- dep_total[,i,,] + deltaz[j]
+                }
 
-            } # if not -999
+            # else integrate between all depths
+            } else {
 
-        } # for j depths
+                tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + aux*deltaz[i]
+                #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + deltaz[i]
+
+            } # integrate between specific or all depths
+
+        } # if not -999
+
+        #timei[i] <<- proc.time()[3] - ptmi
 
         # update progress bar
         setTxtProgressBar(pb, i)
 
-    } # for i 2d nodes
+    } # for i depths
 
     # close progress bar
     close(pb)
@@ -81,5 +93,21 @@ sub_vertical_integral <- function(data_nod3) {
         tmp <<- tmp/dep_total
         stop("asd")
     }
+
+    if (F) {
+        types <- c(1, 2, 3)
+        typenames <- c("som", "non", "all")
+        ns <- rep(NA, t=length(types))
+        for (i in 1:length(types)) {
+            inds <- which(typeij == types[i])
+            ns[i] <- length(inds)
+        }
+        for (i in 1:length(types)) {
+            inds <- which(typeij == types[i])
+            print(paste0(typenames[i], ": (n=", sprintf(paste0("%", nchar(max(ns)), "i"), ns[i]), ") ", mean(as.vector(timeij)[inds]), " s --> ", sum(as.vector(timeij)[inds]), " total s"))
+        }
+        print(paste0("total: ", sum(timeij, na.rm=T)))
+    } # F
+            
 
 } # end sub_vertical_integral
