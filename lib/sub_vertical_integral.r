@@ -12,9 +12,13 @@ sub_vertical_integral <- function(data_nod3) {
                              dimnames(data_nod3)[3:4]))
     dep_total <<- tmp[1,,,]
 
+    # create progress bar
+    pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style, 
+                          char=pb_char, width=pb_width)
+    
     for (i in 1:nod2d_n) {
 
-        progress_function(nod2d_n, i, indent=paste0(indent, "      "))
+        #progress_function(nod2d_n, i, indent=paste0(indent, "      "))
 
         #for (j in 1:(aux3d_n-1)) {
         for (j in 1:length(deltaz)) {
@@ -61,8 +65,16 @@ sub_vertical_integral <- function(data_nod3) {
                 dep_total[,i,,] <<- dep_total[,i,,] + deltaz[j]
 
             } # if not -999
+
         } # for j depths
+
+        # update progress bar
+        setTxtProgressBar(pb, i)
+
     } # for i 2d nodes
+
+    # close progress bar
+    close(pb)
 
     if (F) {
         print("special /dep_total")

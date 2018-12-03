@@ -33,7 +33,6 @@
 ##  sub_*.r                         variable specific calculations          #
 ##  grid_rotate_r2g.r               rotate grid                             #
 ##  vec_rotate_r2g.r                rotate vector variables                 #
-##  progress.r                      progress bar                            #
 ##  leap_function.r                 check if year is leap year              #
 ##  sub_calc_load_regular_IMAT.r    calc and save regular                   #
 ##                                  interpolation matrix                    #
@@ -104,7 +103,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 }
 
 ## load misc subroutines
-for (i in c("leap_function.r", "progress.r", "load_package.r",
+for (i in c("leap_function.r", "load_package.r",
             "image.plot.pre.r", "colors/pals.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
@@ -282,7 +281,7 @@ if (plot_map || plot_csec) {
 } # check paths if plot_mat || plot_csec
 
 
-## Define some defaults; do not change
+## set defaults; do not change
 restart <- F # for rfesom
 var_coords <- "geo" # "rot" or "geo" # only geo for rfesom
 out_coords <- "geo" # "geo" or "rot", only "geo" implemented
@@ -291,6 +290,9 @@ nisobaths <- 0
 zave_method <- 1 # default = 1
     # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_global_vert[inds_2d]*deltaz[i]
     # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
+pb_char <- "#"
+pb_width <- 30
+pb_style <- 3
 
 ## Special SSH aviso correction !! special
 if (varname == "ssh" && ssh_aviso_correct) {
@@ -1876,9 +1878,13 @@ if (transient_out &&
 
     # points(xc[,elem_area_inds], yc[,elem_area_inds], col="red")
 
+    # create progress bar
+    pb <<- txtProgressBar(min=0, max=elem_area_inds_n, style=pb_style,
+                          char=pb_char, width=pb_width) 
+
     for (i in 1:elem_area_inds_n) { # check all 2d elems within area
 
-        progress_function(elem_area_inds_n, i, indent=paste0(indent, "   "))
+        #progress_function(elem_area_inds_n, i, indent=paste0(indent, "   "))
 
         for (j in 2:csec_n_vertices) { # check all csection edges
 
@@ -2053,7 +2059,13 @@ if (transient_out &&
 
     } # for j in length(map_geogr_lim_lon)
 
+    # update progress bar
+    setTxtProgressBar(pb, i)
+
 } # for i elem_area_inds_n
+
+# close progress bar
+close(pb)
 
 #stop("asd")
 
@@ -6679,7 +6691,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                 #print(paste0(i, ": ", coords[i,1], ", ", coords[i,2]))
                                 #print(xyinds)
                                 inds[i] <- T
-                                progress_function(dim(coords)[1], i, indent=paste0(indent, "      "))
+                                #progress_function(dim(coords)[1], i, indent=paste0(indent, "      "))
                             }
                         }
                     }
@@ -6739,7 +6751,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 cc <- system.time({
                 for (i in 1:dim(z)[2]) {
                     
-                    progress_function(dim(z)[2], i, indent=paste0(indent, "      "))
+                    #progress_function(dim(z)[2], i, indent=paste0(indent, "      "))
                     
                     x <- xp[,i]
                     y <- yp[,i]

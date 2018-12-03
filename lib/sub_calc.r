@@ -713,17 +713,27 @@ sub_calc <- function(data) {
         dimnames(dvardz)[[1]] <<- varname
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
-        for (k in 1:(aux3d_n-1)) {
-            progress_function(aux3d_n-1, k, indent=paste0(indent, "   "))
-            nodes_up <<- aux3d[k,]
-            nodes_low <<- aux3d[k+1,]
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                              char=pb_char, width=pb_width)
+
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
                 dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_low[inds],,] -
                                                data_node[,nodes_up[inds],,])/dz
             }
-        }
+
+            # update progress bar
+            setTxtProgressBar(pb, i)
+
+        } # for i aux3d_n-1
+
+        # close progress bar
+        close(pb)
 
         data_node <<- dvardz
 
@@ -768,17 +778,27 @@ sub_calc <- function(data) {
         dimnames(dvardz)[[1]] <<- varname
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
-        for (k in 1:(aux3d_n-1)) {
-            progress_function(aux3d_n-1, k, indent=paste0(indent, "   "))
-            nodes_up <<- aux3d[k,]
-            nodes_low <<- aux3d[k+1,]
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                              char=pb_char, width=pb_width)
+
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
                 dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_low[inds],,] -
                                                data_node[,nodes_up[inds],,])/dz
             }
-        }
+
+            # update progress bar
+            setTxtProgressBar(pb, i)
+
+        } # for i aux3d_n-1
+
+        # close progress bar
+        close(pb)
 
         data_node <<- dvardz
 
@@ -824,17 +844,27 @@ sub_calc <- function(data) {
         dimnames(dvardz1)[[1]] <<- paste0("dz_", vars[varinds[2]])
         dimnames(dvardz1)[2:4] <<- dimnames(data_node)[2:4]
 
-        for (k in 1:(aux3d_n-1)) {
-            progress_function(aux3d_n-1, k, indent=paste0(indent, "   "))
-            nodes_up <<- aux3d[k,]
-            nodes_low <<- aux3d[k+1,]
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
+                              char=pb_char, width=pb_width)
+
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
                 dvardz[,nodes_up[inds],,] <<- (data_node[varinds[2],nodes_low[inds],,] -
                                                data_node[varinds[2],nodes_up[inds],,])/dz
             }
-        }
+
+            # update progress bar
+            setTxtProgressBar(pb, i)
+
+        } # for i aux3d_n-1
+
+        # close progress bar
+        close(pb)
 
         # Kv times first vertical derivative of tracer
         Kv_dvardz1 <<- data_node[varind[1],,,] * dvar1dz
@@ -850,17 +880,27 @@ sub_calc <- function(data) {
         dimnames(dvardz2)[[1]] <<- varname
         dimnames(dvardz2)[2:4] <<- dimnames(data_node)[2:4]
 
-        for (k in 1:(aux3d_n-1)) {
-            progress_function(aux3d_n-1, k, indent=paste0(indent, "   "))
-            nodes_up <<- aux3d[k,]
-            nodes_low <<- aux3d[k+1,]
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
+                              char=pb_char, width=pb_width)
+
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
                 dvardz2[,nodes_up[inds],,] <<- (Kv_dvardz1[,nodes_low[inds],,] -
                                                 Kv_dvardz1[,nodes_up[inds],,])/dz
             }
-        }
+
+            # update progress bar
+            setTxtProgressBar(pb, i)
+        
+        } # for i aux3d_n
+
+        # close progress bar
+        close(pb)
 
         data_node <<- dvardz2
 
@@ -909,17 +949,27 @@ sub_calc <- function(data) {
         dimnames(dvardz)[[1]] <<- paste0("dz_", vars[varinds])
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
-        for (k in 1:(aux3d_n-1)) {
-            progress_function(aux3d_n-1, k, indent=paste0(indent, "   "))
-            nodes_up <<- aux3d[k,]
-            nodes_low <<- aux3d[k+1,]
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
+                              char=pb_char, width=pb_width)
+
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
                 dvardz[,nodes_up[inds],,] <<- (data_node[varinds,nodes_low[inds],,] -
                                                data_node[varinds,nodes_up[inds],,])/dz
             }
-        }
+
+            # update progress bar
+            setTxtProgressBar(pb, i)
+
+        } # for i aux3d_n-1
+
+        # close progress bar
+        close(pb)
 
         # calc VRS
         if (verbose > 1) {
@@ -1064,11 +1114,12 @@ sub_calc <- function(data) {
             `[` <<- fctbackup
 
             #stop("asd")
+            # create progress bar
+            pb <<- txtProgressBar(min=0, max=ndepths, style=pb_style,
+                                  char=pb_char, width=pb_width)
 
             #for (i in 1:aux3d_n) {
             for (i in 1:ndepths) {
-                #progress_function(aux3d_n, i, indent=paste0(indent, "      "))
-                progress_function(ndepths, i, indent=paste0(indent, "      "))
                 for (j in 1:elem2d_n) {
                     nds_surf <<- elem2d[,j]
                     nds_layer <<- aux3d[i,nds_surf]
@@ -1162,7 +1213,14 @@ sub_calc <- function(data) {
 
                     } # if not -999
                 } # for j elem2d_n
-            } # aux3d_n
+
+                # update progress bar
+                setTxtProgressBar(pb, i)
+
+            } # for i ndepths
+
+            # close progress bar
+            close(pb)
 
             fctbackup <<- `[`; `[` <<- function(...) { fctbackup(..., drop=F) }
 
@@ -1609,10 +1667,14 @@ sub_calc <- function(data) {
                                           dimnames(data)[3:4]))
             inds <<- data_node
 
+            # create progress bar
+            pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                                  char=pb_char, width=pb_width)
+
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
 
-                progress_function(elem2d_n, i, indent=paste0(indent, "   "))
+                #progress_function(elem2d_n, i, indent=paste0(indent, "   "))
                 elnodes <<- elem2d[,i]
 
                 if (dim(data)[3] == 1 &&
@@ -1637,7 +1699,15 @@ sub_calc <- function(data) {
 
                 }
                 inds[,elnodes,,] <<- inds[,elnodes,,] + 1
-            }
+
+                # update progress bar
+                setTxtProgressBar(pb, i)
+
+            } # for i elem2d_n
+
+            # close progress bar
+            close(pb)
+
             data_node <<- data_node/inds
             if (T) {
                 print("data_node")
@@ -1689,10 +1759,14 @@ sub_calc <- function(data) {
                                                       dimnames(laplace_inv_var_elem)[3:4]))
             inds <<- laplace_inv_var_node
 
+            # create progress bar
+            pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                                  char=pb_char, width=pb_width)
+
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
 
-                progress_function(elem2d_n, i, indent=paste0(indent, "   "))
+                #progress_function(elem2d_n, i, indent=paste0(indent, "   "))
                 elnodes <<- elem2d[,i]
 
                 if (dim(laplace_inv_var_elem)[3] == 1 && 
@@ -1717,7 +1791,15 @@ sub_calc <- function(data) {
 
                 }
                 inds[,elnodes,,] <<- inds[,elnodes,,] + 1
-            }
+
+                # update progress bar
+                setTxtProgressBar(pb, i)
+
+            } # for i elem2d_n
+
+            # close progress bar
+            close(pb)
+
             laplace_inv_var_node <<- laplace_inv_var_node/inds
             
             if (F) {
@@ -2107,8 +2189,12 @@ sub_calc <- function(data) {
             moc_topo <<- array(1, dim=c(length(moc_reg_lat_global), aux3d_n))
         } # only once
 
+        # create progress bar
+        pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                              char=pb_char, width=pb_width)
+
         for (i in 1:elem2d_n) {
-            progress_function(elem2d_n, i, indent=paste0(indent, "   "))
+            #progress_function(elem2d_n, i, indent=paste0(indent, "   "))
             elnodes <<- elem2d[,i]
             m <<- moc_mask[elnodes]
             
@@ -2131,8 +2217,15 @@ sub_calc <- function(data) {
                     } # if no boundary
                 } # for j aux3d_n
             } # if elem2d is in area for moc calculation
+        
+            # update progress bar
+            setTxtProgressBar(pb, i)
+        
         } # for i elem2d_n
-            
+
+        # close progress bar
+        close(pb)
+     
         # cumsum meridionally 
         if (view != "moc_global") {
             #moc <<- apply(moc, 2, cumsum)

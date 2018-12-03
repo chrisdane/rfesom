@@ -12,10 +12,14 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
                              dimnames(data_elem2d)[4:5]))
     inds <<- tmp
 
+    # create progress bar
+    pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style, 
+                          char=pb_char, width=pb_width)
+
     ## put 2D-element value on 3 nodes
     for (i in 1:elem2d_n) {
 
-        progress_function(elem2d_n, i, indent=paste0(indent, "      "))
+        #progress_function(elem2d_n, i, indent=paste0(indent, "      "))
         elnodes <<- elem2d[,i]
 
         aux <<- data_elem2d[,,i,,] # 2D-element value of ith elem; dim=c(nvars,node=1,elem=i,ndepths,nrecspf)
@@ -27,7 +31,13 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
         tmp[,elnodes,,,] <- aux
         inds[,elnodes,,,] <<- inds[,elnodes,,,] + 1
 
+        # update progress bar
+        setTxtProgressBar(pb, i)
+
     } # for i elem2d
+
+    # close progress bar
+    close(pb)
     
     tmp <<- tmp/inds
 
