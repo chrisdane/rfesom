@@ -1622,18 +1622,15 @@ if (varname == "tos") {
 
 } else if (varname == "mixlay") {
     longname <- "Mixed Layer Depth"
-    subtitle <- ""
     units_out <- "m"
-    var_label_plot <- "Mixed Layer Depth [m]"
-    var_label_plot_roundfac <- 0
-    multfac_plot <- 1
+    var_label_plot <- "MLD [m]"
     dim_tag <- "2D"
-    derivative <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
     varname_fesom <- "mixlay"
-    rotate_inds <- F
-    vec <- F
+    if (cpl_tag) {
+        varname_fesom <- "mlotst"
+    }
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
@@ -2183,6 +2180,10 @@ if (varname == "tos") {
 
 } else if (varname == "divuvsgsttot") {
     longname <- "Divergence of total horizontal SGS temperature flux"
+    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
+    ## inegration by parts. to obtain a correct tracer budget, these
+    ## terms need be multiplied by minus 1.
+    multfac_out <- -1
     power_plot <- 9
     multfac_plot <- base^power_plot
     units_out <- "degC s-1"

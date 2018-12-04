@@ -6605,9 +6605,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 interp <- akima::interp(x=xpsur, y=ypsur, z=z,
                                         xo=xo, yo=yo,
                                         linear=ifelse(interp_method == "bilinear", T, F))
-                if (ploti == 1) interp1 = interp
-                if (ploti == 2) interp2 = interp
-                if (ploti == 3) interp3 = interp
+                if (F) {
+                    if (ploti == 1) interp1 = interp
+                    if (ploti == 2) interp2 = interp
+                    if (ploti == 3) interp3 = interp
+                }
 
                 zlim_interp <- range(interp$z, na.rm=T)
                 if (verbose > 1) {
