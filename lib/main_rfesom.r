@@ -2686,7 +2686,7 @@ if (nfiles > 0) {
             }
 
             if (integrate_depth) {
-                if (length(depths) == 2 && depths[1] == "0" && depths[2] == "MLD") {
+                if (length(depths) == 2 && depths[2] == "MLD") {
                     depths_plot <- paste0("int", depths[1], "-MLD")
                     depths_fname <- paste0("_", depths_plot)
                 } else {
@@ -3090,8 +3090,7 @@ if (nfiles == 0) { # read data which are constant in time
         }
 
         # load mld for integrate over MLD depth
-        if (integrate_depth && length(depths) == 2 && 
-            depths[1] == "0" && depths[2] == "MLD") {
+        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
 
             if (cpl_tag) {
                 mld_varname <- "mlotst"
@@ -3344,8 +3343,7 @@ if (nfiles == 0) { # read data which are constant in time
                     }
                 } # if rec_tag or not
 
-                if (integrate_depth && length(depths) == 2 &&
-                    depths[1] == "0" && depths[2] == "MLD") {
+                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
 
                     if (rec_tag) {
                         if (leap_tag && is.leap(year)) {
@@ -3499,8 +3497,7 @@ if (nfiles == 0) { # read data which are constant in time
                 icounts[file,] <- icount
 
                 ## read MLD for integrating only over MLD depths
-                if (integrate_depth && length(depths) == 2 &&
-                    depths[1] == "0" && depths[2] == "MLD") {
+                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                                            
                     if (file == nfiles) { # read MLD only at the end
                         if (verbose > 1) {
@@ -3569,8 +3566,7 @@ if (nfiles == 0) { # read data which are constant in time
             } # for file nfiles per time step
             rm(raw_data)
             if (rec_tag) rm(ncids)
-            if (integrate_depth && length(depths) == 2 &&
-                depths[1] == "0" && depths[2] == "MLD") {
+            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                 rm(mld_raw_data)
             }
            
@@ -3747,13 +3743,14 @@ if (nfiles == 0) { # read data which are constant in time
                 if (!any(transient_mode == c("csec_mean", "csec_depth", "moc_mean", "moc_depth"))) {
 
                     ## Change to proper units if wanted
-                    if (multfac_out != 1) {
+                    if (multfac_transient != 1) {
                         for (i in 1:dim(data_node)[1]) {
                             if (verbose > 0) {
                                 print(paste0(indent, "Multiply data_node[", i, ":", 
-                                             dimnames(data_node)[[1]][i], ",,,] by 'multfac_out'=", multfac_out, " ..."))
+                                             dimnames(data_node)[[1]][i], ",,,] by 'multfac_transient'=", 
+                                             multfac_transient, " ..."))
                             }
-                            data_node[i,,,] <- data_node[i,,,]*multfac_out
+                            data_node[i,,,] <- data_node[i,,,]*multfac_transient
                         }
                     }
 
@@ -4199,7 +4196,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 for (i in 1:length(data_var)) {
                                     name <- dimnames(datamat)[[1]][i]
                                     data_var[[i]] <- ncvar_def(name=varname, 
-                                                               units=units_out, 
+                                                               units=units_transient, 
                                                                dim=list(node_dim, 
                                                                         elem_dim, 
                                                                         time_dim), 
@@ -4324,7 +4321,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                                     for (i in 1:length(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
-                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
+                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_transient,
                                                                        dim=list(lon_dim, lat_dim,
                                                                                 time_dim),
                                                                        missval=mv,
@@ -4342,7 +4339,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                                     for (i in 1:length(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
-                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
+                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_transient,
                                                                        dim=list(lon_dim, lat_dim, 
                                                                                 depth_dim, time_dim),
                                                                        missval=mv,
@@ -4772,6 +4769,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 } # if sd_out
 
+				## prepare and sum transient data for ltm
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map)) {
 
                     ## vertical average for ltm if not done before
@@ -4834,8 +4832,7 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                         } # if sd_out
 
-                        if (integrate_depth && length(depths) == 2 &&
-                            depths[1] == "0" && depths[2] == "MLD") {
+                        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                             mld_node_ltm <- mld_node
                             mld_node_ltm[] <- 0
                         } # if mld needed
@@ -4858,8 +4855,7 @@ if (nfiles == 0) { # read data which are constant in time
                         data_node_ltm <- data_node_ltm + data_node
                     }
 
-                    if (integrate_depth && length(depths) == 2 &&
-                        depths[1] == "0" && depths[2] == "MLD") {
+                    if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                         if (rec_tag) {
                             if (leap_tag && is.leap(year)) {
                                 mld_node_ltm[,,1,1:nrecspf_leap] <- mld_node_ltm[,,1,1:nrecspf_leap] + mld_node
@@ -4876,6 +4872,8 @@ if (nfiles == 0) { # read data which are constant in time
             # else if not transient or sd out
             } else { 
 
+				# here, no multfac_* is applied yet
+
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, plot_map)) {
              
                     if (verbose > 1) {
@@ -4888,8 +4886,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                dim=dim(data_node),
                                                dimnames=dimnames(data_node)) # c(nvar,nnod,ndepths=1,nrecspf)
 
-                        if (integrate_depth && length(depths) == 2 &&
-                            depths[1] == "0" && depths[2] == "MLD") {
+                        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                             mld_node_ltm <- mld_node
                             mld_node_ltm[] <- 0
                         }
@@ -4908,8 +4905,7 @@ if (nfiles == 0) { # read data which are constant in time
                         data_node_ltm[,1:icounts[,1],,] <- data_node_ltm[,1:icounts[,1],,] + data_node
                     }
 
-                    if (integrate_depth && length(depths) == 2 &&
-                        depths[1] == "0" && depths[2] == "MLD") {
+                    if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                         if (rec_tag) {
                             if (leap_tag && is.leap(year)) {
                                 mld_node_ltm[,1:nod2d_n,1,1:nrecspf_leap] <- mld_node_ltm[,1:nod2d_n,1,1:nrecspf_leap] + mld_node
@@ -5139,7 +5135,7 @@ if (nfiles == 0) { # read data which are constant in time
                 for (i in 1:length(data_fun_var)) {
                     name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_out,
+                                                   units=units_transient,
                                                    dim=time_dim,
                                                    missval=mv,
                                                    longname=longname,
@@ -5163,7 +5159,7 @@ if (nfiles == 0) { # read data which are constant in time
                 for (i in 1:length(data_fun_var)) {
                     name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_out,
+                                                   units=units_transient,
                                                    dim=list(time_dim, depth_dim),
                                                    missval=mv,
                                                    longname=longname,
@@ -5218,7 +5214,7 @@ if (nfiles == 0) { # read data which are constant in time
                 for (i in 1:length(data_fun_var)) {
                     name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_out,
+                                                   units=units_transient,
                                                    dim=list(moc_reg_lat_dim, depth_dim, time_dim),
                                                    missval=mv,
                                                    prec=prec)
@@ -5413,8 +5409,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (sd_out) {
                 data_node_sd <- data_node_sd/total_rec
             }
-            if (integrate_depth && length(depths) == 2 &&
-                depths[1] == "0" && depths[2] == "MLD") {
+            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                 mld_node_ltm <- mld_node_ltm/total_rec
             }
 
@@ -5432,8 +5427,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     if (sd_out) {
                         data_node_sd[,,,nrecspf_leap] <- data_node_sd[,,,nrecspf_leap]/nyears_leap
                     }
-                    if (integrate_depth && length(depths) == 2 &&
-                        depths[1] == "0" && depths[2] == "MLD") {
+                    if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                         mld_node_ltm[,,,nrecspf_leap] <- mld_node_ltm[,,,nrecspf_leap]/nyears_leap
                     }
                 }
@@ -5445,8 +5439,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (sd_out) {
                     data_node_sd[,,,1:nrecspf] <- data_node_sd[,,,1:nrecspf]/nyears
                 }
-                if (integrate_depth && length(depths) == 2 &&
-                    depths[1] == "0" && depths[2] == "MLD") {
+                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                     mld_node_ltm[,,,1:nrecspf] <- mld_node_ltm[,,,1:nrecspf]/nyears
                 }
 
@@ -5466,8 +5459,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                            list(depth=depths_plot,
                                                 time=timespan)))
             }
-            if (integrate_depth && length(depths) == 2 &&
-                depths[1] == "0" && depths[2] == "MLD") {
+            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                     tmp_mld <- array(0, c(dim(mld_node_ltm)[1:2], 1, 1),
                                      dimnames=c(dimnames(mld_node_ltm)[1:2],
                                                 list(depth=NULL,
@@ -5484,8 +5476,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (sd_out) {
                      tmp_sd[,,1,1] <- tmp_sd[,,1,1] + data_node_sd[,,1,i]
                 }
-                if (integrate_depth && length(depths) == 2 &&
-                    depths[1] == "0" && depths[2] == "MLD") {
+                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                     tmp_mld[,,1,1] <- tmp_mld[,,1,1] + mld_node_ltm[,,1,i]
                 }
             }
@@ -5498,28 +5489,25 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 data_node_sd <- tmp_sd/nrecspf
                 rm(tmp_sd)
             }
-            if (integrate_depth && length(depths) == 2 &&
-                depths[1] == "0" && depths[2] == "MLD") {
+            if (integrate_depth && length(depths) == 2 depths[2] == "MLD") {
                 mld_node_ltm <- tmp_mld/nrecspf
                 rm(tmp_mld)
             }
 
         } # if rec_tag or not
 
-        if (integrate_depth && length(depths) == 2 &&
-            depths[1] == "0" && depths[2] == "MLD") {
+        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
         }
 
     } # if total_rec > 1
 
-    ## calc varname with ltm data if not transient
+    ## calc varname with ltm data if not calculated before (=not transient)
     if (!any(transient_out, regular_transient_out, sd_out)) { 
 
         #stop("asd")
 
-        if (integrate_depth && length(depths) == 2 &&
-            depths[1] == "0" && depths[2] == "MLD") {
+        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
         }
 
@@ -5625,14 +5613,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
         sub_calc(data_node_ltm) # overwrites data_node_ltm with the result of sub_calc()
 
-        ## Change to proper units
-        if (multfac_out != 1) {
-            if (verbose > 1) {
-                print(paste0(indent, "Multiply data_node_ltm by 'multfac_out'=", multfac_out, " ..."))
-            }
-            data_node_ltm <- data_node_ltm*multfac_out
-        }
-       
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(data_node_ltm)[1]) {
@@ -5655,6 +5635,15 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(tmp)
 
         } # if integrate_depth
+
+        ## Change to proper units
+        if (multfac_ltm != 1) {
+            if (verbose > 1) {
+                print(paste0(indent, "Multiply data_node_ltm by 'multfac_ltm'=",
+                             multfac_ltm, " ..."))
+            }
+            data_node_ltm <- data_node_ltm*multfac_ltm
+        }
 
     } # calc varname with ltm data if !all(transient_out, regular_transient_out, sd_out))
 
@@ -5789,19 +5778,19 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
        
         ## interpolate on regular grid
         for (i in 1:dim(data_elem_ltm)[1]) { # nvars
-            if (dim(data_elem_ltm)[1] > 1 && verbose > 2) {
+            if (verbose > 2) {
                 print(paste0(indent, "   var = ", 
                              dimnames(data_elem_ltm)[[1]][i], " ..."))
             }
 
             for (j in 1:dim(data_elem_ltm)[4]) { # ndepths
-                if (dim(data_elem_ltm)[4] > 1 && verbose > 2) {
+                if (verbose > 2) {
                     print(paste0(indent, "      depth = ", 
                                  dimnames(data_elem_ltm)[[4]][j], " ..."))
                 }
 
                 for (k in 1:dim(data_elem_ltm)[5]) { # nrecspf
-                    if (dim(data_elem_ltm)[5] > 1 && verbose > 2) {
+                    if (verbose > 2) {
                         print(paste0(indent, "         time = ",
                                      dimnames(data_elem_ltm)[[5]][k], " ..."))
                     }
@@ -6016,7 +6005,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         for (i in 1:length(data_var)) {
             name <- dimnames(datamat_ltm)[[1]][i]
             data_var[[i]] <- ncvar_def(name=name, 
-                                       units=units_out, 
+                                       units=units_transient, 
                                        dim=dim_list,
                                        missval=mv, longname=longname,
                                        prec=prec)
@@ -6121,7 +6110,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         for (i in 1:length(datamat_reg_var)) {
             name <- dimnames(datamat_reg_ltm)[[1]][i]
             datamat_reg_var[[i]] <- ncvar_def(name=name, 
-                                              units=units_out, 
+                                              units=units_transient, 
                                               #dim=list(xi_dim, yi_dim), 
                                               dim=list(lon_dim, lat_dim),
                                               missval=mv, prec=prec)
@@ -6207,7 +6196,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         for (i in 1:length(data_fun_var)) {
             name <- paste0(dimnames(data)[[1]][i], "_", transient_mode)
             data_fun_var[[i]] <- ncvar_def(name=name,
-                                           units=units_out,
+                                           units=units_transient,
                                            dim=list(moc_reg_lat_dim, depth_dim),
                                            missval=mv,
                                            prec=prec)
@@ -6299,13 +6288,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (is.null(dim(z))) { # in case of only one element make a matrix again
                     z <- array(z, c(1, 3))
                 }
-            }
-
-            if (multfac_plot != 1) {
-                if (verbose > 0) {
-                     print(paste0(indent, "   Multiply data by 'multfac_plot'=", multfac_plot, " ..."))
-                }
-                z <- z*multfac_plot
             }
 
             plotname <- paste0(plotpath,  
@@ -6512,8 +6494,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             if (verbose > 1) {
                 print(paste0(indent, "   min/max of data = ",
-                             paste0(zlim_orig, collapse="/"), " ", units_plot,
-                             ifelse(multfac_plot != 1, paste0(" x 1e", -power_plot), "")))
+                             paste0(zlim_orig, collapse="/"), " ", units_ltm,
+                             ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
             }
 
             ## interpolate data for plot
@@ -6614,8 +6596,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 zlim_interp <- range(interp$z, na.rm=T)
                 if (verbose > 1) {
                     print(paste0(indent, "   min/max of ", interp_method, " interpolated data = ",
-                                 paste0(zlim_interp, collapse="/"), " ", units_plot,
-                                 ifelse(multfac_plot != 1, paste0(" x 1e", -power_plot), "")))
+                                 paste0(zlim_interp, collapse="/"), " ", units_ltm,
+                                 ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
                 }
                 zlim <- zlim_interp
 
@@ -6680,8 +6662,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             if (verbose > 1) {
                 print(paste0(indent, "   min/max of color levels = ",
-                             paste0(range(ip$axis.at), collapse="/"), " ", units_plot,
-                             ifelse(multfac_plot != 1, paste0(" x 1e", -power_plot), "")))
+                             paste0(range(ip$axis.at), collapse="/"), " ", units_ltm,
+                             ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
             }
 
             
@@ -6927,15 +6909,15 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                if (verbose > 1) {
                    if (quiver_mode == 1) {
                        print(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_plot), ""),
+                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
                                     " at every node to plot ..."))
                    } else if (quiver_mode == 2) {
                        print(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_plot), ""),
+                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
                                     " at every element to plot ..."))
                    } else if (quiver_mode == 3) {
                        print(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_plot), ""),
+                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
                                     " every ", quiver_degree_intervall, " deg to plot ..."))
                    }
                }
