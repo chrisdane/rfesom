@@ -2051,31 +2051,32 @@ if (varname == "tos") {
     longname <- "Divergence of mean horizontal temperature flux"
     power_ltm <- 5
     multfac_ltm <- base^power_ltm
-    units_transient <- "degC s-1"
-    units_ltm <- units_transient
+    units_ltm <- "degC s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
                                      " [", var1, " ", var2^-1,
                                      "] " %*% " ", base^power_ltm),
                                list(var1="°C", var2="s",
                                     base=base, power_ltm=-power_ltm))
+    multfac_transient <- multfac_ltm
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "degC m2 s-1"
+    }
     if (integrate_depth) {
         power_ltm <- 4
         multfac_ltm <- base^power_ltm
-        units_transient <- "degC m s-1"
-        units_ltm <- units_transient
+        units_ltm <- "degC m s-1"
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
                                          " dz [°C ", var1, " ", var2^-1,
                                          "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
-        
+        multfac_transient <- multfac_ltm
+        units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "degC m3 s-1"
-        }
-    } else {
-        if (any(transient_mode == c("meanint", "depthint"))) {
-            units_transient <- "degC m2 s-1"
         }
     }
     dim_tag <- "3D"
@@ -2093,27 +2094,32 @@ if (varname == "tos") {
     longname <- "Divergence of eddy horizontal temperature flux"
     power_ltm <- 8
     multfac_ltm <- base^power_ltm
-    units_transient <- "degC s-1"
+    units_ltm <- "degC s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
-                                     " [", var1, " ", var2^-1, 
+                                     " [", var1, " ", var2^-1,
                                      "] " %*% " ", base^power_ltm),
-                               list(var1="°C", var2="s", 
+                               list(var1="°C", var2="s",
                                     base=base, power_ltm=-power_ltm))
+    multfac_transient <- multfac_ltm
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "degC m2 s-1"
+    }
     if (integrate_depth) {
         power_ltm <- 7
         multfac_ltm <- base^power_ltm
+        units_ltm <- "degC m s-1"    
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
-                                         " dz [°C ", var1, " ", var2^-1, 
+                                         " dz [°C ", var1, " ", var2^-1,
                                          "] " %*% " ", base^power_ltm),
-                                   list(var1="m", var2="s", 
-                                        base=base, power_ltm=-power_ltm))
+                                  list(var1="m", var2="s",
+                                       base=base, power_ltm=-power_ltm))
+        multfac_transient <- multfac_ltm
+        units_transient <- units_ltm     
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "degC m3 s-1"
-        }
-    } else {
-        if (any(transient_mode == c("meanint", "depthint"))) {
-            units_transient <- "degC m2 s-1"
         }
     }
     dim_tag <- "3D"

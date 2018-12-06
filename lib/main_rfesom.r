@@ -1881,7 +1881,7 @@ if (transient_out &&
     # points(xc[,elem_area_inds], yc[,elem_area_inds], col="red")
 
     # create progress bar
-    pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+    pb <<- mytxtProgressBar(min=0, max=elem_area_inds_n, style=pb_style,
                             char=pb_char, width=pb_width,
                             indent=paste0("     ", indent)) # 5 " " for default print()
 

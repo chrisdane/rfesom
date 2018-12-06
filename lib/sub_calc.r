@@ -722,7 +722,7 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -788,7 +788,7 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -855,7 +855,7 @@ sub_calc <- function(data) {
         dimnames(dvardz1)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -892,7 +892,7 @@ sub_calc <- function(data) {
         dimnames(dvardz2)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -962,7 +962,7 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -1688,7 +1688,7 @@ sub_calc <- function(data) {
             inds <<- data_node
 
             # create progress bar
-            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+            pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                     char=pb_char, width=pb_width,
                                     indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -1781,7 +1781,7 @@ sub_calc <- function(data) {
             inds <<- laplace_inv_var_node
 
             # create progress bar
-            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+            pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                     char=pb_char, width=pb_width,
                                     indent=paste0("     ", indent)) # 5 " " for default print()
 
@@ -2212,7 +2212,7 @@ sub_calc <- function(data) {
         } # only once
 
         # create progress bar
-        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+        pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                 char=pb_char, width=pb_width,
                                 indent=paste0("     ", indent)) # 5 " " for default print()
 
