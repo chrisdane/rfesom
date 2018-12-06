@@ -13,8 +13,9 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
     inds <<- tmp
 
     # create progress bar
-    pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style, 
-                          char=pb_char, width=pb_width)
+    pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                            char=pb_char, width=pb_width,
+                            indent=paste0("     ", indent)) # 5 " " for default print()
 
     ## put 2D-element value on 3 nodes
     for (i in 1:elem2d_n) {

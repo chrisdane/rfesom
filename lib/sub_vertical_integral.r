@@ -13,8 +13,9 @@ sub_vertical_integral <- function(data_nod3) {
     #dep_total <<- tmp[1,,,]
 
     # create progress bar
-    pb <<- txtProgressBar(min=0, max=ndepths, style=pb_style,
-                          char=pb_char, width=pb_width)
+    pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                            char=pb_char, width=pb_width, 
+                            indent=paste0("     ", indent)) # 5 " " for default print()
     #timei <<- rep(NA, t=ndepths)
 
     for (i in 1:ndepths) {

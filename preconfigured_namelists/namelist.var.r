@@ -398,7 +398,7 @@ if (varname == "tos") {
             units_transient <- paste0("m2 s-2 x ", multfac_ltm)
             var_label_plot <- substitute(paste(bar(paste("u'v'")), " [",
                                              var1^2, " ", var2^-2, 
-                                             "]  " %*% " ", base^power_ltm),
+                                             "] " %*% " ", base^power_ltm),
                                        list(var1="m", var2="s", 
                                             base=base, power_ltm=-power_ltm))
 
@@ -736,7 +736,7 @@ if (varname == "tos") {
             units_transient <- paste0("psu m s-1 x ", multfac_ltm)
             var_label_plot <- substitute(paste("|", bar(paste(bold(u)[h], "'S'")), "| [psu ",
                                              var1, " ", var2^-1,
-                                             "]  " %*% " ", base^power_ltm),
+                                             "] " %*% " ", base^power_ltm),
                                        list(var1="m", var2="s",
                                             base=base, power_ltm=-power_ltm))
         } else if (integrate_depth) {
@@ -886,7 +886,7 @@ if (varname == "tos") {
             units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm)
             var_label_plot <- substitute(paste("|", bar(paste(bold(u)[h], "'", rho, "'")), "| [kg ",
                                              var1^-2, " ", var2^-1,
-                                             "]  " %*% " ", base^power_ltm),
+                                             "] " %*% " ", base^power_ltm),
                                        list(var1="m", var2="s",
                                             base=base, power_ltm=-power_ltm))
         } else if (integrate_depth) {
@@ -910,7 +910,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste("rel. Vort. ", zeta, " = ",
                                      partialdiff[x], "", bar(v), " - ", 
                                      partialdiff[y], "", bar(u), " [", 
-                                     var^-1, "]  " %*% " ", base^power_ltm), 
+                                     var^-1, "] " %*% " ", base^power_ltm), 
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D" # because vorticity is calculated from u and v, which are 3D variables
                     # in FESOM
@@ -965,7 +965,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-2 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Horizontal Strain (normal part) [", 
-                                     units_transient^-2, "]  " %*% " ", base^power_ltm),
+                                     units_transient^-2, "] " %*% " ", base^power_ltm),
                                list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -982,7 +982,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-2 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Horizontal Strain (shear part) [", 
-                                     units_transient^-2, "]  " %*% " ", base^power_ltm),
+                                     units_transient^-2, "] " %*% " ", base^power_ltm),
                                list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -999,7 +999,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-2 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Horizontal Strain [", units_transient^-2, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1016,7 +1016,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-2 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Squared Relative Vorticity [", 
-                                     units_transient^-2, "]  " %*% " ", base^power_ltm),
+                                     units_transient^-2, "] " %*% " ", base^power_ltm),
                                list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1033,7 +1033,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-2 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Okubo-Weiss Parameter [", units_transient^-2, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1050,7 +1050,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste("Ertel Potential Vorticity PV [", units_transient^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1067,7 +1067,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste("PV_bc [", units_transient^-3,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1084,7 +1084,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste("PV_vert [", units_transient^-3,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1247,7 +1247,7 @@ if (varname == "tos") {
         units_transient <- paste0("m2 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste("HRS [", 
                                         var1^2, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     } else if (integrate_depth) {
@@ -1256,7 +1256,7 @@ if (varname == "tos") {
         units_transient <- paste0("m3 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste(integral(), "HRS dz [",
                                         var1^3, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1277,7 +1277,7 @@ if (varname == "tos") {
         units_transient <- paste0("m2 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste("VRS [",
                                         var1^2, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     } else if (integrate_depth) {
@@ -1286,7 +1286,7 @@ if (varname == "tos") {
         units_transient <- paste0("m3 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste(integral(), "VRS dz [",
                                         var1^3, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1307,7 +1307,7 @@ if (varname == "tos") {
         units_transient <- paste0("m2 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste("K"[m], "K"[e], " [",
                                         var1^2, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     } else if (integrate_depth) {
@@ -1317,7 +1317,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          "K"[m], "K"[e], " dz [",
                                         var1^3, " ", var2^-3, 
-                                        "]  " %*% " ", base^power_ltm),
+                                        "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1339,7 +1339,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(#"P"[m], "K"[m], 
                                      bar(w), bar(b),       
                                      " [", var1^2, " ", var2^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -1348,7 +1348,7 @@ if (varname == "tos") {
                                          #"P"[m], "K"[m], 
                                          bar(w), bar(b),
                                          " dz [", var1^3, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1371,7 +1371,7 @@ if (varname == "tos") {
             units_transient <- paste0("m2 s-3 x ", multfac_ltm)
             var_label_plot <- substitute(paste(bar(bold(u))[h], " ", bar(b), 
                                              " [", var1^2, " ", var2^-3, 
-                                             "]  " %*% " ", base^power_ltm),
+                                             "] " %*% " ", base^power_ltm),
                                        list(var1="m", var2="s", 
                                             base=base, power_ltm=-power_ltm))
         } else if (integrate_depth) {
@@ -1379,7 +1379,7 @@ if (varname == "tos") {
             var_label_plot <- substitute(paste(integral(),
                                              bar(bold(u))[h], " ", bar(rho),
                                              " dz [", var1^3, " ", var2^-3, 
-                                             "]  " %*% " ", base^power_ltm),
+                                             "] " %*% " ", base^power_ltm),
                                       list(var1="m", var2="s", 
                                            base=base, power_ltm=-power_ltm))
         }
@@ -1416,7 +1416,7 @@ if (varname == "tos") {
     units_transient <- paste0("m2 s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste("P"[m], "P"[e], 
                                      " [", var1^2, " ", var2^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -1424,7 +1424,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(), 
                                          "P"[m], "P"[e], 
                                          " dz [", var1^3, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1448,7 +1448,7 @@ if (varname == "tos") {
                                          #"P"[e], "K"[e],
                                          bar(paste("w'b'")), 
                                          " dz [", var1^3, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
     } else {
@@ -1458,7 +1458,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(#"P"[e], "K"[e], 
                                          bar(paste("w'b'")),
                                          " [", var1^2, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1481,7 +1481,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          "|", bar(paste(bold(u)[h], "'b'")), 
                                          "| dz [", var1^3, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
     } else {
@@ -1490,7 +1490,7 @@ if (varname == "tos") {
         units_transient <- paste0("m2 s-3 x ", multfac_ltm)
         var_label_plot <- substitute(paste("|", bar(paste(bold(u)[h], "'b'")),
                                          "| [", var1^2, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
     }
@@ -1505,27 +1505,34 @@ if (varname == "tos") {
 
 } else if (varname == "vertvel") {
     longname <- "Vertical Velocity"
-    subtitle <- ""
-    multfac_ltm <- 100*3600 # [m s^(-1)] --> [cm h^(-1)]
-    units_transient <- "cm h-1"
-    var_label_plot <- expression(paste("Vertical Velocity w [cm h"^"-1","]"))
+    subtitle <- ">0 upwards"
+    multfac_ltm <- 100*3600 # m s-1 --> cm h-1
+    units_ltm <- "cm h-1"
+    var_label_plot <- expression(paste("w [cm h"^"-1","]"))
+    multfac_transient <- multfac_ltm
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m2 s-1"
+    }
     if (integrate_depth) {
         multfac_ltm <- 1
-        units_transient <- "m2 s-1"
-        var_label_plot <- substitute(paste(integral(),
-                                         " w",
-                                         " dz [", var1^2, " ", var2^-1,
-                                         "]"),
-                                  list(var1="m", var2="s"))
+        units_ltm <- "m2 s-1"
+        var_label_plot <- substitute(paste(integral(), " w dz [", var1^2, " ", var2^-1, "]"),
+                                     list(var1="m", var2="s"))
+        multfac_transient <- multfac_ltm
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m3 s-1"
+        }
     }
-    var_label_plot_roundfac <- 1
     dim_tag <- "3D"
-    derivative <- F
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_fesom <- "w"
-    rotate_inds <- F
-    vec <- F
+    if (cpl_tag) {
+        varname_fesom <- "wo"
+    }
 
 } else if (varname == "gradT") {
     longname <- "grad_h T"
@@ -1535,7 +1542,7 @@ if (varname == "tos") {
     units_transient <- paste0("K km-1 x ", multfac_ltm_plot)
     multfac_ltm <- multfac_ltm_plot * 1e3 # 1e3 for m -> km and 'power_ltm' for better range
     var_label_plot <- substitute(paste("|", bold(nabla)[h], "T|   [K ", units_transient^-1, 
-                                     "]  " %*% " ", base^power_ltm), 
+                                     "] " %*% " ", base^power_ltm), 
                               list(var="km", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
     derivative <- "geo"
@@ -1557,7 +1564,7 @@ if (varname == "tos") {
         units_transient <- paste0("s-2 m x ", multfac_ltm_plot)
         multfac_ltm <- multfac_ltm_plot
         var_label_plot <- substitute(paste("|", bold(nabla)[h], bar(b), "| [", 
-                                         units_transient^-2, " m]  " %*% " ", base^power_ltm),
+                                         units_transient^-2, " m] " %*% " ", base^power_ltm),
                                    list(var="s", base=base, power_ltm=-power_ltm))
         derivative3d <- T
     } else {
@@ -1566,7 +1573,7 @@ if (varname == "tos") {
         units_transient <- paste0("s-2 x ", multfac_ltm_plot)
         multfac_ltm <- multfac_ltm_plot
         var_label_plot <- substitute(paste("|", bold(nabla)[h], bar(b), "|  [", 
-                                         units_transient^-2, "]  " %*% " ", base^power_ltm),
+                                         units_transient^-2, "] " %*% " ", base^power_ltm),
                                    list(var="s", base=base, power_ltm=-power_ltm))
         derivative3d <- F
     }
@@ -1690,7 +1697,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          " K", ""[v], " ",
                                          " dz [", var1^3, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1710,7 +1717,7 @@ if (varname == "tos") {
     #units_transient <- paste0("m^2 s^-1 x ", multfac_ltm_plot)
     units_transient <- paste0("m2 s-1")
     multfac_ltm <- multfac_ltm_plot
-    #var_label_plot <- substitute(paste("Vertival Diffusivity ", K[v], " [", var1^2, " ", var2^-1, "]  " %*% " ", base^power_ltm),
+    #var_label_plot <- substitute(paste("Vertival Diffusivity ", K[v], " [", var1^2, " ", var2^-1, "] " %*% " ", base^power_ltm),
     #                          list(var1="m", var2="s", base=base, power_ltm=-power_ltm))
     var_label_plot <- substitute(paste("Horizontal Diffusivity ", K[h], " [", var1^2, " ", var2^-1, "]"),
                               list(var1="m", var2="s"))
@@ -1730,7 +1737,7 @@ if (varname == "tos") {
     #units_transient <- paste0("m^2 s^-1 x ", multfac_ltm_plot)
     units_transient <- paste0("m2 s-1")
     multfac_ltm <- multfac_ltm_plot
-    #var_label_plot <- substitute(paste("Vertival Diffusivity ", K[v], " [", var1^2, " ", var2^-1, "]  " %*% " ", base^power_ltm),
+    #var_label_plot <- substitute(paste("Vertival Diffusivity ", K[v], " [", var1^2, " ", var2^-1, "] " %*% " ", base^power_ltm),
     #                          list(var1="m", var2="s", base=base, power_ltm=-power_ltm))
     var_label_plot <- substitute(paste("GM Thickness Diffusivity ", K[GM], " [", var1^2, " ", var2^-1, "]"),
                               list(var1="m", var2="s"))
@@ -1775,7 +1782,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(rho[0]^-1, " ", bar(bold(u)[h]), 
                                      "" %.% "", bar(bold(tau)[0]), 
                                      "  [", var1^3, " ", units_transient^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                           list(var1="m", var2="s", 
                                base=base, power_ltm=-power_ltm))    
     dim_tag <- "3D"
@@ -1796,7 +1803,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(rho[0]^-1 , " ", 
                                      bar(paste(bold(u)[h], "'" %.% "", bold(tau)[0], "'")),
                                      " [", var1^3, " ", var2^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                           list(var1="m", var2="s", 
                                base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
@@ -1862,7 +1869,7 @@ if (varname == "tos") {
     units_transient <- paste0("kg m-3 s-1 x ", multfac_ltm)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'", rho, "'")),
                                      " [kg ", var1^-3, " ", var2^-1, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -1872,7 +1879,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'", rho, "'")),
                                          " dz [kg ", var1^-2, " ", var2^-1, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
     }
@@ -1909,7 +1916,7 @@ if (varname == "tos") {
     units_transient <- paste0("m s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))[h], bar(b), 
                                      " [", var1, " ", var2^-3, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -1919,7 +1926,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))[h], bar(b),
                                          " dz [", var1^2, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -1955,7 +1962,7 @@ if (varname == "tos") {
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("m s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'b'")),
-                                     " [", var1, " ", var2^-3, "]  " %*% " ", base^power_ltm),
+                                     " [", var1, " ", var2^-3, "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s", base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
         power_ltm <- 6
@@ -1964,7 +1971,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(), 
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'b'")), 
                                          " dz [", var1^2, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
     }
@@ -2001,7 +2008,7 @@ if (varname == "tos") {
     units_transient <- paste0("m s-3 x ", multfac_ltm)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(b),
                                      " [", var1, " ", var2^-3,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2011,7 +2018,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(b),
                                          " dz [", var1^2, " ", var2^-3, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2098,7 +2105,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
                                          " dz [°C ", var1, " ", var2^-1, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                    list(var1="m", var2="s", 
                                         base=base, power_ltm=-power_ltm))
         if (any(transient_mode == c("meanint", "depthint"))) {
@@ -2142,7 +2149,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)["h"], T)),
                                          " dz [°C ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2176,7 +2183,7 @@ if (varname == "tos") {
     ## in fesom 1, sgs_* are saved with _minus_ sign due to 
     ## inegration by parts. to obtain a correct tracer budget, these
     ## terms need be multiplied by minus 1.
-    multfac_out <- -1
+    multfac_transient <- -1
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
     units_transient <- "degC s-1"
@@ -2341,140 +2348,169 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvs") {
-    longname <- "div_h(u_h s)"
-    subtitle <- ""
+    longname <- "Divergence of mean horizontal salt flux"
     power_ltm <- 7
     multfac_ltm <- base^power_ltm
-    units_transient <- paste0("psu s-1 x ", multfac_ltm)
+    units_ltm <- "psu s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["h"], bar(S),
                                      " [", var1, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
+    multfac_transient <- multfac_ltm
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "psu m2 s-1"
+    }
     if (integrate_depth) {
         power_ltm <- 4
         multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1 x ", multfac_ltm)
+        units_ltm <- "psu m s-1"
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))["h"], bar(S),
                                          " dz [psu ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
+        multfac_transient <- multfac_ltm
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m3 s-1"
+        }
     }
-    if (!(transient_mode == "meanint" || transient_mode == "depthint") &&
-        integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               !integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m2 s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m3 s-1")
-    }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    derivative <- "geo"
+    horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
     varname_fesom <- c("u", "v", "salt")
+    if (cpl_tag) {
+        varname_fesom <- c("uo", "vo", "so")
+    }
     rotate_inds <- c(1, 2)
     vec <- T
 
 } else if (varname == "divuvseddy") {
-    longname <- "div_h(u_h's')"
-    subtitle <- ""
+    longname <- "Divergence of eddy horizontal salt flux"
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
-    units_transient <- paste0("psu s-1 x ", multfac_ltm)
+    units_ltm <- "psu s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'S'")),
-                                     " [", var1, " ", var2^-1, 
-                                     "]  " %*% " ", base^power_ltm),
-                               list(var1="psu", var2="s", 
+                                     " [", var1, " ", var2^-1,
+                                     "] " %*% " ", base^power_ltm),
+                               list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
+    multfac_transient <- multfac_ltm
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "psu m2 s-1"
+    }
     if (integrate_depth) {
-        power_ltm <- 6
+        power_ltm <- 4
         multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1 x ", multfac_ltm)
+        units_ltm <- "psu m s-1"
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'S'")),
-                                         " dz [psu ", var1, " ", var2^-1, 
-                                         "]  " %*% " ", base^power_ltm),
-                                   list(var1="m", var2="s", 
-                                        base=base, power_ltm=-power_ltm))
+                                         " dz [psu ", var1, " ", var2^-1,
+                                         "] " %*% " ", base^power_ltm),
+                                  list(var1="m", var2="s",
+                                       base=base, power_ltm=-power_ltm))
+        multfac_transient <- multfac_ltm
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m3 s-1"
+        }
     }
-    if (!(transient_mode == "meanint" || transient_mode == "depthint") &&
-        integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               !integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m2 s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m3 s-1")
-    }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    derivative <- "geo"
+    horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
     varname_fesom <- c("u", "v", "usalt", "vsalt", "salt")
+    if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
+                       "Arc22_sub", "Arc22_sub_small"))) {
+        varname_fesom <- c("u", "v", "us", "vs", "salt")
+    }
+    if (cpl_tag) {
+        varname_fesom <- c("uo", "vo", "uso", "vso", "so")
+    }
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
-} else if (varname == "divuvsgss") {
-    longname <- "div_h(u_sgs_h s)"
-    subtitle <- ""
+} else if (varname == "divuvsgsstot") {
+    longname <- "Divergence of total horizontal SGS salt flux"
+    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
+    ## inegration by parts. to obtain a correct tracer budget, these
+    ## terms need be multiplied by minus 1.
+    multfac_transient <- -1
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
-    units_transient <- paste0("psu s-1 x ", multfac_ltm)
-    var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(S),
+    units_transient <- "psu s-1"
+    var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "S")),
                                      " [", var1, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
         power_ltm <- 5
         multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1 x ", multfac_ltm)
+        units_transient <- "psu m s-1"
+        units_ltm <- units_transient
+        var_label_plot <- substitute(paste(integral(),
+                                         bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "S")),
+                                         " dz [psu ", var1, " ", var2^-1,
+                                         "] " %*% " ", base^power_ltm),
+                                  list(var1="m", var2="s",
+                                       base=base, power_ltm=-power_ltm))
+
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m3 s-1"
+        }
+    } else {
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m2 s-1"
+        }
+    }
+    dim_tag <- "3D"
+    horiz_deriv_tag <- T
+    typesuffix <- rep("oce.", t=2)
+    diagsuffix <- rep("diag.", t=2)
+    varname_fesom <- c("sgs_us", "sgs_vs")
+    rotate_inds <- c(1, 2)
+    vec <- T
+
+} else if (varname == "divuvsgss") {
+    longname <- "Divergence of mean horizontal SGS salt flux"
+    power_ltm <- 9
+    multfac_ltm <- base^power_ltm
+    units_transient <- paste0("psu s-1 x ", multfac_ltm)
+    var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(S),
+                                     " [", var1, " ", var2^-1,
+                                     "] " %*% " ", base^power_ltm),
+                               list(var1="psu", var2="s",
+                                    base=base, power_ltm=-power_ltm))
+    if (integrate_depth) {
+        power_ltm <- 5
+        multfac_ltm <- base^power_ltm
+        units_transient <- "psu m s-1"
+        units_ltm <- units_transient
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(S),
                                          " dz [psu ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
+
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m3 s-1"
+        }
+    } else {
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m2 s-1"
+        }
     }
-    if (!(transient_mode == "meanint" || transient_mode == "depthint") &&
-        integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               !integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m2 s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m3 s-1")
-    }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    derivative <- "geo"
+    horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c(rep("diag.", t=2), "")
     varname_fesom <- c("sgs_u", "sgs_v", "salt")
@@ -2482,46 +2518,37 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvsgsseddy") {
-    longname <- "div_h(u_sgs_h' s')"
-    subtitle <- ""
+    longname <- "Divergence of eddy horizontal SGS salt flux"
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
     units_transient <- paste0("psu s-1 x ", multfac_ltm)
-    var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(S),
+    var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u), "'", ""["sgs,h"], "S'")),
                                      " [", var1, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
         power_ltm <- 5
         multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1 x ", multfac_ltm)
+        units_transient <- "psu m s-1"
+        units_ltm <- units_transient
         var_label_plot <- substitute(paste(integral(),
-                                         bold(nabla)[h] %.% bar(bold(u))["sgs,h"], bar(S),
-                                         " dz [psu ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
-                                  list(var1="m", var2="s",
-                                       base=base, power_ltm=-power_ltm))
+                                           bold(nabla)[h] %.% bar(paste(bold(u), "'", ""["sgs,h"], "S'")),
+                                           " dz [psu ", var1, " ", var2^-1,
+                                           "] " %*% " ", base^power_ltm),
+                                    list(var1="m", var2="s",
+                                         base=base, power_ltm=-power_ltm))
+
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m3 s-1"
+        }
+    } else {
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "psu m2 s-1"
+        }
     }
-    if (!(transient_mode == "meanint" || transient_mode == "depthint") &&
-        integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               !integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m2 s-1")
-    } else if ((transient_mode == "meanint" || transient_mode == "depthint") &&
-               integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm <- base^power_ltm
-        units_transient <- paste0("psu m3 s-1")
-    }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    derivative <- "geo"
+    horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c(rep("diag.", t=4), "")
     varname_fesom <- c("sgs_u", "sgs_v", "sgs_us", "sgs_vs", "salt")
@@ -2634,7 +2661,7 @@ if (varname == "tos") {
     units_transient <- paste0("degC s-1 x ", multfac_ltm)
     var_label_plot <- substitute(paste(partialdiff[z], " ", bar(w), bar(T),
                                      " [", var1, " ", var2^-1, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="°C", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2644,7 +2671,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          partialdiff[z], " ", bar(w), bar(T),
                                          " dz [°C ", var1, " ", var2^-1, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2681,7 +2708,7 @@ if (varname == "tos") {
     units_transient <- paste0("psu s-1 x ", multfac_ltm)
     var_label_plot <- substitute(paste(partialdiff[z], " ", bar(w), bar(S),
                                      " [", var1, " ", var2^-1, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s", 
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2691,7 +2718,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(),
                                          partialdiff[z], " ", bar(w), bar(S),
                                          " dz [psu ", var1, " ", var2^-1, 
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s", 
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2778,7 +2805,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% "K", ""[h], 
                                      " ", bold(nabla)[h], " ", bar(b),
                                      " [", var1, " ", var2^-3,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2788,7 +2815,7 @@ if (varname == "tos") {
         var_label_plot <- substitute(paste(integral(), bold(nabla)[h] %.% "K", ""[h],
                                          bold(nabla)[h], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2810,7 +2837,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(partialdiff[z], " K", ""[v], " ",
                                      partialdiff[z], " ", bar(rho),
                                      " [kg ", var1^-3, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2821,7 +2848,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(rho),
                                          " dz [kg ", var1^-2, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2843,7 +2870,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(partialdiff[z], " K", ""[v], " ",
                                      partialdiff[z], " ", bar(b),
                                      " [", var1, " ", var2^-3,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="m", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2854,7 +2881,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2892,7 +2919,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(partialdiff[z], " K", ""[v], " ",
                                      partialdiff[z], " ", bar(T),
                                      " [", var1, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="°C", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2903,7 +2930,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(T),
                                          " dz [°C ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2941,7 +2968,7 @@ if (varname == "tos") {
     var_label_plot <- substitute(paste(partialdiff[z], " K", ""[v], " ",
                                      partialdiff[z], " ", bar(S),
                                      " [", var1, " ", var2^-1,
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
     if (integrate_depth) {
@@ -2952,7 +2979,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(S),
                                          " dz [psu ", var1, " ", var2^-1,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -2999,7 +3026,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -3030,7 +3057,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -3061,7 +3088,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -3092,7 +3119,7 @@ if (varname == "tos") {
                                          partialdiff[z], " K", ""[v], " ",
                                          partialdiff[z], " ", bar(b),
                                          " dz [", var1^2, " ", var2^-3,
-                                         "]  " %*% " ", base^power_ltm),
+                                         "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
     }
@@ -3114,7 +3141,7 @@ if (varname == "tos") {
     units_transient <- paste0("Nm/s3 x ", multfac_ltm_plot)
     multfac_ltm <- multfac_ltm_plot
     var_label_plot <- substitute(paste("Mean Bottom Stress Energy |", bold(u)[h], "" %.% "",
-                                     bold(tau)[-h], "|   [N m ", units_transient^-3, "]  " %*% " ",
+                                     bold(tau)[-h], "|   [N m ", units_transient^-3, "] " %*% " ",
                                      base^power_ltm),
                           list(var="s", base=base, power_ltm=-power_ltm))
     var_label_plot_roundfac <- 3
@@ -3137,7 +3164,7 @@ if (varname == "tos") {
     units_transient <- paste0("Nm/s3")
     multfac_ltm <- multfac_ltm_plot
     var_label_plot <- substitute(paste("Eddy Bottom Stress Energy |", bold(u)[h], "'" %.% "",
-                                     bold(tau)[-h], "'|   [N m ", units_transient^-3, "]  " %*% " ",
+                                     bold(tau)[-h], "'|   [N m ", units_transient^-3, "] " %*% " ",
                                      base^power_ltm),
                           list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "3D"
@@ -3287,8 +3314,6 @@ if (varname == "tos") {
     units_transient <- "W m-2"
     var_label_plot <- expression(paste("Qnet [W m"^"-2","]"))
     dim_tag <- "2D"
-    derivative <- F
-    multfac_ltm <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_fesom <- c("qnet")
@@ -3515,7 +3540,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("psu m s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Virtual Salt Flux [psu m ", units_transient^-1, 
-                                     "]  " %*% " ", base^power_ltm),
+                                     "] " %*% " ", base^power_ltm),
                               list(var="s", 
                                    base=base, power_ltm=-power_ltm))
     if (transient_mode == "meanint") {
@@ -3658,7 +3683,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot) 
     var_label_plot <- substitute(paste("Thermal density flux to ocean [kg ", 
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ", 
+                                     var1^-2, " ", var2^-1, "] " %*% "  ", 
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm)) 
@@ -3683,7 +3708,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Thermal density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3703,7 +3728,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Haline density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3728,7 +3753,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Haline density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3748,7 +3773,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3768,7 +3793,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("kg m-2 s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3794,7 +3819,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Thermal buoyancy flux to ocean [",
-                                     var1^2, " ", var2^-3, "]  " %*% "  ",
+                                     var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3814,7 +3839,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Thermal buoyancy flux to ocean [",
-                                     var1^2, " ", var2^-3, "]  " %*% "  ",
+                                     var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3834,7 +3859,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Haline buoyancy flux to ocean [",
-                                     var1^2, " ", var2^-3, "]  " %*% "  ",
+                                     var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3854,7 +3879,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Haline buoyancy flux to ocean [",
-                                     var1^2, " ", var2^-3, "]  " %*% "  ",
+                                     var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3874,7 +3899,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Buoyancy flux to ocean [",
-                                     var1^2, " ", var2^-3, "]  " %*% "  ",
+                                     var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -3919,7 +3944,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m2 s-3 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Buoyancy flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "]  " %*% "  ",
+                                     var1^-2, " ", var2^-1, "] " %*% "  ",
                                      base^power_ltm),
                               list(var1="m", var2="s", base=base,
                                    power_ltm=-power_ltm))
@@ -4088,7 +4113,7 @@ if (varname == "tos") {
     multfac_ltm_plot <- base^-power_ltm
     units_transient <- paste0("m s-1 x ", multfac_ltm_plot)
     var_label_plot <- substitute(paste("Thermodynamic Growth Rate of eff. Ice Thickness [m ", 
-                                    units_transient^-1, "]  " %*% " ", base^power_ltm),
+                                    units_transient^-1, "] " %*% " ", base^power_ltm),
                               list(var="s", base=base, power_ltm=-power_ltm))
     dim_tag <- "2D"
     derivative <- F
@@ -4266,7 +4291,7 @@ if (varname == "tos") {
     multfac_ltm <- base^-power_ltm * 1e-6 # m^2 --> 1e3 km^2
     multfac_ltm_plot <- base^power_ltm
     units_transient <- paste0("km2 x ", multfac_ltm_plot)
-    var_label_plot <- substitute(paste("Mesh Area [k", units_transient^2, "]  " %*% " ", base^power_ltm),
+    var_label_plot <- substitute(paste("Mesh Area [k", units_transient^2, "] " %*% " ", base^power_ltm),
                               list(var="m", base=base, power_ltm=power_ltm))
     dim_tag <- "2D"
     derivative <- "geo"
@@ -4305,8 +4330,8 @@ if (!exists("dim_tag")) {
 
 ## defaults can be overwritten by user
 if (!exists("subtitle")) subtitle <- ""
-if (!exists("power_out")) power_out <- 0
-if (!exists("multfac_out")) multfac_out <- base^power_out # = 10^0 = 1
+if (!exists("power_transient")) power_transient <- 0
+if (!exists("multfac_transient")) multfac_transient <- base^power_transient # = 10^0 = 1
 if (!exists("power_ltm")) power_ltm <- 0
 if (!exists("multfac_ltm")) multfac_ltm <- base^power_ltm # = 10^0 = 1
 if (!exists("horiz_deriv_tag")) horiz_deriv_tag <- F
@@ -4338,27 +4363,4 @@ if (!cpl_tag
                 " ocean-only file naming convention '<runid>.<year>.<typesuffix>.<diagsuffix>.nc'",
                 " to obtain e.g. 'demoid.2009.oce.mean.nc'."))
 }
-
-# template
-    if (integrate_depth) {
-        power_ltm <- -3
-        multfac_ltm <- base^power_ltm
-        units_transient <- "degC m"
-        units_ltm <- "degC m"
-        var_label_plot <- substitute(paste(integral(), " T dz [",
-                                         var1, " ", var2,
-                                         "] " %*% " ", base^power_ltm),
-                                  list(var1="°C", var2="m",
-                                       base=base, power_ltm=-power_ltm))
-        if (any(transient_mode == c("meanint", "depthint"))) {
-            units_transient <- "degC m3"
-            units_ltm <- "degC m"
-        }
-    } else {
-        if (any(transient_mode == c("meanint", "depthint"))) {
-            units_transient <- "degC m2"
-            units_ltm <- "degC"
-        }
-    }
-
 

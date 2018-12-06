@@ -250,7 +250,7 @@ sub_calc <- function(data) {
                           which(vars == "temp" | vars == "thetao"),
                           which(vars == "utemp" | vars == "uto"),
                           which(vars == "vtemp" | vars == "vto"))
-        } else if (any(varname == c("uvseddy", "divuvseedy"))) {
+        } else if (any(varname == c("uvseddy", "divuvseddy"))) {
             varinds <<- c(which(vars == "u" | vars == "uo"),
                           which(vars == "v" | vars == "vo"),
                           which(vars == "salt" | vars == "so"),
@@ -722,8 +722,9 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -787,8 +788,9 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -853,8 +855,9 @@ sub_calc <- function(data) {
         dimnames(dvardz1)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -889,8 +892,9 @@ sub_calc <- function(data) {
         dimnames(dvardz2)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -958,8 +962,9 @@ sub_calc <- function(data) {
         dimnames(dvardz)[2:4] <<- dimnames(data_node)[2:4]
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1123,8 +1128,9 @@ sub_calc <- function(data) {
 
             #stop("asd")
             # create progress bar
-            pb <<- txtProgressBar(min=0, max=ndepths, style=pb_style,
-                                  char=pb_char, width=pb_width)
+            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("     ", indent)) # 5 " " for default print()
 
             #for (i in 1:aux3d_n) {
             for (i in 1:ndepths) {
@@ -1434,7 +1440,9 @@ sub_calc <- function(data) {
         }
 
         if (any(varname == c("divuvt", "divuvteddy", 
-                             "divuvsgst", "divuvsgsteddy", "divuvsgsttot"))) {
+                             "divuvsgst", "divuvsgsteddy", "divuvsgsttot",
+                             "divuvs", "divuvseddy",
+                             "divuvsgss", "divuvsgsseddy", "divuvsgsstot"))) {
 
             varinds <<- c(1, 1)
            
@@ -1473,7 +1481,10 @@ sub_calc <- function(data) {
                 data_node <<- data_node3d
             }
         
-        } # "divuvt", "divuvteddy", "divuvsgsttot"
+        } # "divuvt", "divuvteddy",
+          # "divuvsgst", "divuvsgsteddy", "divuvsgsttot",
+          # "divuvs", "divuvseddy",
+          # "divuvsgss", "divuvsgsseddy", "divuvsgsstot"
 
         if (any(varname == c("relvorti", "relvortif", "relvortisq", 
                              "curlwind", "curltau", 
@@ -1677,8 +1688,9 @@ sub_calc <- function(data) {
             inds <<- data_node
 
             # create progress bar
-            pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
-                                  char=pb_char, width=pb_width)
+            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("     ", indent)) # 5 " " for default print()
 
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
@@ -1769,8 +1781,9 @@ sub_calc <- function(data) {
             inds <<- laplace_inv_var_node
 
             # create progress bar
-            pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
-                                  char=pb_char, width=pb_width)
+            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("     ", indent)) # 5 " " for default print()
 
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
@@ -2199,8 +2212,9 @@ sub_calc <- function(data) {
         } # only once
 
         # create progress bar
-        pb <<- txtProgressBar(min=0, max=elem2d_n, style=pb_style,
-                              char=pb_char, width=pb_width)
+        pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default print()
 
         for (i in 1:elem2d_n) {
             #progress_function(elem2d_n, i, indent=paste0(indent, "   "))

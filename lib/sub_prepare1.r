@@ -26,8 +26,10 @@ sub_prepare1 <- function(data_nod3d) {
 
         # vertical derivative (new and old yield the same result)
         if (F) { # old
-            pb <<- txtProgressBar(min=0, max=nod2d_n, style=pb_style,
-                                  char=pb_char, width=pb_width)
+            # create progress bar
+            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("     ", indent)) # 5 " " for default print()
             for (i in 1:nod2d_n) {
                 for (j in 1:(aux3d_n-1)) {
                     if (aux3d[j,i] > 0 && aux3d[j+1,i] > 0) {
@@ -43,8 +45,10 @@ sub_prepare1 <- function(data_nod3d) {
             } # i
         
         } else if (T) { # new
-            pb <<- txtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                                  char=pb_char, width=pb_width)
+            # create progress bar
+            pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("     ", indent)) # 5 " " for default print()
             for (i in 1:(aux3d_n-1)) {
                 nodes_up <<- aux3d[i,]
                 nodes_low <<- aux3d[i+1,]

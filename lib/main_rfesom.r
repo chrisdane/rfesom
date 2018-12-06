@@ -103,10 +103,12 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 }
 
 ## load misc subroutines
-for (i in c("leap_function.r", "load_package.r",
+for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "colors/pals.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
+
+indent <- "   " # needed for load_package()
 
 ## load ncdf4 package which is almost always needed
 success <- load_package("ncdf4")
@@ -1879,8 +1881,9 @@ if (transient_out &&
     # points(xc[,elem_area_inds], yc[,elem_area_inds], col="red")
 
     # create progress bar
-    pb <<- txtProgressBar(min=0, max=elem_area_inds_n, style=pb_style,
-                          char=pb_char, width=pb_width) 
+    pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
+                            char=pb_char, width=pb_width,
+                            indent=paste0("     ", indent)) # 5 " " for default print()
 
     for (i in 1:elem_area_inds_n) { # check all 2d elems within area
 
@@ -3477,7 +3480,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 if (verbose > 2) {
                     print(paste0(indent, "   min/max 'raw_data' = ",
-                                 paste0(round(range(raw_data), 3), collapse="/"), 
+                                 paste0(range(raw_data), collapse="/"), 
                                  " ", units_raw))
                 }
 
@@ -3574,7 +3577,7 @@ if (nfiles == 0) { # read data which are constant in time
             if (any(transient_out, regular_transient_out, sd_out)) {
 
                 if (verbose > 1) {
-                    print(paste0(indent, "Calc and save transient '", transient_mode, "' of area '", area, "' ..."))
+                    print(paste0(indent, "Calc and save transient ", transient_mode, " of area ", area, " ..."))
                 }
                 indent <- "         "
 
@@ -3719,10 +3722,22 @@ if (nfiles == 0) { # read data which are constant in time
                 sub_calc(data_node) # overwrites data_node with the result of sub_calc()
                 indent <- indent_save; rm(indent_save)
 
+                ## Change to proper units if wanted
+                if (multfac_transient != 1) {
+                    for (i in 1:dim(data_node)[1]) {
+                        if (verbose > 0) {
+                            print(paste0(indent, "Multiply data_node[", i, ":",
+                                         dimnames(data_node)[[1]][i], ",,,] by 'multfac_transient'=",
+                                         multfac_transient, " ..."))
+                        }
+                        data_node[i,,,] <- data_node[i,,,]*multfac_transient
+                    }
+                }
+
                 ## Check data so far
                 if (verbose > 2) {
                     for (i in 1:dim(data_node)[1]) {
-                        print(paste0(indent, "min/max data_node[", i, ":", 
+                        print(paste0(indent, "   min/max data_node[", i, ":", 
                                      dimnames(data_node)[[1]][i], ",,,] = ",
                                      paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
                     }
@@ -3741,18 +3756,6 @@ if (nfiles == 0) { # read data which are constant in time
                 #stop("asd")
 
                 if (!any(transient_mode == c("csec_mean", "csec_depth", "moc_mean", "moc_depth"))) {
-
-                    ## Change to proper units if wanted
-                    if (multfac_transient != 1) {
-                        for (i in 1:dim(data_node)[1]) {
-                            if (verbose > 0) {
-                                print(paste0(indent, "Multiply data_node[", i, ":", 
-                                             dimnames(data_node)[[1]][i], ",,,] by 'multfac_transient'=", 
-                                             multfac_transient, " ..."))
-                            }
-                            data_node[i,,,] <- data_node[i,,,]*multfac_transient
-                        }
-                    }
 
                     ## integrate vertically
                     if (integrate_depth) {
@@ -3834,7 +3837,7 @@ if (nfiles == 0) { # read data which are constant in time
                         ## Check data so far
                         if (verbose > 2) {
                             for (i in 1:dim(data_elem)[1]) {
-                                print(paste0(indent, "min/max data_elem[", i, ":", 
+                                print(paste0(indent, "   min/max data_elem[", i, ":", 
                                              dimnames(data_elem)[[1]][i], ",,,,] = ",
                                              paste0(range(data_elem[i,,,,], na.rm=T), collapse="/")))
                             }
@@ -3902,7 +3905,7 @@ if (nfiles == 0) { # read data which are constant in time
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(datamat_reg)[1]) {
-                                    print(paste0(indent, "min/max datamat_reg[", i, ":", 
+                                    print(paste0(indent, "   min/max datamat_reg[", i, ":", 
                                                  dimnames(datamat_reg)[[1]][i], ",,,,] = ",
                                                  paste0(range(datamat_reg[i,,,,], na.rm=T), collapse="/")))
                                 }
@@ -3946,7 +3949,7 @@ if (nfiles == 0) { # read data which are constant in time
                         ## Check data so far
                         if (verbose > 2) {
                             for (i in 1:dim(datamat)[1]) {
-                                print(paste0(indent, "min/max datamat[", i, ":", 
+                                print(paste0(indent, "   min/max datamat[", i, ":", 
                                              dimnames(datamat)[[1]][i], ",,,,] = ",
                                              paste0(range(datamat[i,,,,], na.rm=T), collapse="/")))
                             }
@@ -3968,12 +3971,7 @@ if (nfiles == 0) { # read data which are constant in time
                             }
 
                             if (verbose > 1) {
-                                print(paste0(indent, "Calc '", transient_mode, 
-                                             "' (=transient_mode) in region '", area, "' (=area) ..."))
-                                if (verbose > 2) {
-                                    print(paste0(indent, "and save at 'time_inds'=",
-                                                 paste(time_inds, collapse=",")))
-                                }   
+                                print(paste0(indent, "Select data from region ", area, " (=area) ..."))
                             }
                             
                             ## choose data from area in node space
@@ -4016,14 +4014,28 @@ if (nfiles == 0) { # read data which are constant in time
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(datavec)[1]) {
-                                    print(paste0(indent, "min/max datavec[", i, ":", 
+                                    print(paste0(indent, "   min/max datavec[", i, ":", 
                                                  dimnames(datavec)[[1]][i], ",,,] = ",
                                                  paste0(range(datavec[i,,,], na.rm=T), collapse="/")))
                                 }
                             }
 
                             if (any(transient_mode == c("mean", "depth", "meanint", "depthint"))) {
-                               
+                              
+                                if (verbose > 1) {
+                                    if (dim_tag == "2D") {
+                                        print(paste0(indent, "Calculate transient ", transient_mode, 
+                                                     " (=transient_mode) ..."))
+                                    } else if (dim_tag == "3D") {
+                                         print(paste0(indent, "Calculate transient ", depths_plot, "m (=depths_plot) ", 
+                                                      transient_mode, " (=transient_mode) ..."))
+                                    }
+                                    if (verbose > 2) {
+                                        print(paste0(indent, "and save at 'time_inds'=",
+                                                     paste(time_inds, collapse=",")))
+                                    }
+                                }
+
                                 if (rec_tag && leap_tag && is.leap(year)) {
                                     if (transient_mode == "mean" && zave_method == 2) { # special
                                         if (!exists("patch_vol_leap")) {
@@ -4135,9 +4147,10 @@ if (nfiles == 0) { # read data which are constant in time
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(data_funi)[1]) {
-                                    print(paste0(indent, "min/max data_funi[", i, ":", 
+                                    print(paste0(indent, "   min/max data_funi[", i, ":", 
                                                  dimnames(data_funi)[[1]][i], ",,] = ",
-                                                 paste0(range(data_funi[i,,], na.rm=T), collapse="/")))
+                                                 paste0(range(data_funi[i,,], na.rm=T), collapse="/"), 
+                                                 " ", units_transient))
                                 }
                             }
 
@@ -4741,34 +4754,6 @@ if (nfiles == 0) { # read data which are constant in time
 
                 } # if normal, csec, or moc output
 
-                if (sd_out) {
-
-                    if (verbose > 1) {
-                        print(paste0(indent, "Calc ", 
-                                     paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for sd ..."))
-                    }
-                    data_node_sd <- data_node_sd + data_node^2
-                    
-                    if (sd_method == "ackermann83") {                
-                        success <- load_package("abind")
-                        if (!success) stop()
-
-                        varinds <- c(1, 2)
-                        if (verbose > 1) {
-                            print(paste0("Save ", dimnames(data_node)[[1]][varinds[1]], " * ",
-                                         dimnmes(data_node)[[1]][varinds[2]], 
-                                         " for sd of direction of ", varname, " ..."))
-                        }
-                        uv_sd <- uv_sd + data_node[varinds[1],,,]*data_node[varinds[2],,,]
-                        if (total_rec == 0) {
-                            dimnames(tmp)[[1]] <- paste0(dimnames(data_node)[[1]][varinds[1]], "*", 
-                                                         dimnmes(data_node)[[1]][varinds[2]])
-                        }
-
-                    } # if sd_method == "ackermann83"
-
-                } # if sd_out
-
 				## prepare and sum transient data for ltm
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map)) {
 
@@ -4783,7 +4768,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                             if (zave_method == 1) { # level-wise dz                        
                                 if (verbose > 1) { # rearrange first
-                                    print(paste0(indent, "For ltm, bring data_node from (nod3d_n=", nod3d_n,
+                                    print(paste0(indent, "For ltm bring data_node from (nod3d_n=", nod3d_n,
                                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
                                         print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
@@ -4825,7 +4810,7 @@ if (nfiles == 0) { # read data which are constant in time
                             data_node_sd <- data_node_ltm
                             if (sd_method == "ackermann83") {
                                 uv_sd <- array(0, 
-                                               dim=c(2, dim(data_node_sd)[2:4]),
+                                               dim=c(1, dim(data_node_sd)[2:4]),
                                                dimnames=c(list(var=paste0(dimnames(data_node)[[1]][1], "*",
                                                                           dimnames(data_node)[[1]][2])),
                                                           dimnames(data_node_sd)[2:4]))
@@ -4866,6 +4851,43 @@ if (nfiles == 0) { # read data which are constant in time
                             mld_node_ltm <- mld_node_ltm + mld_node
                         }
                     } # if mld needed
+
+                    if (sd_out) {
+
+                        if (verbose > 1) {
+                            print(paste0(indent, "Sum ",
+                                         paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for sd ..."))
+                        }
+
+                        if (rec_tag) {
+                            if (leap_tag && is.leap(year)) {
+                                data_node_sd[,,1,1:nrecspf_leap] <- data_node_sd[,,1,1:nrecspf_leap] + data_node^2
+                            } else {
+                                data_node_sd[,,1,1:nrecspf] <- data_node_sd[,,1,1:nrecspf] + data_node^2
+                            }
+                        } else {
+                            data_node_sd <- data_node_sd + data_node^2
+                        }
+
+                        if (sd_method == "ackermann83") {
+                            varinds <- c(1, 2)
+                            if (verbose > 1) {
+                                print(paste0("Save ", dimnames(data_node)[[1]][varinds[1]], " * ",
+                                             dimnmes(data_node)[[1]][varinds[2]],
+                                             " for sd of direction of ", varname, " ..."))
+                            }
+                            if (rec_tag) {
+                                if (leap_tag && is.leap(year)) {
+                                    uv_sd[,,1,1:nrecspf_leap] <- uv_sd[,,1,1:nrecspf_leap] + data_node[varinds[1],,,]*data_node[varinds[2],,,]
+                                } else {
+                                    uv_sd[,,1,1:nrecspf] <- uv_sd[,,1,1:nrecspf] + data_node[varinds[1],,,]*data_node[varinds[2],,,]
+                                }
+                            } else {
+                                uv_sd <- uv_sd + data_node[varinds[1],,,]*data_node[varinds[2],,,]
+                            }
+                        } # if sd_method == "ackermann83"
+
+                    } # if sd_out
 
                 } # if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map))
 
@@ -4966,7 +4988,7 @@ if (nfiles == 0) { # read data which are constant in time
         if (transient_mode == "area") { # this is irregular
         #if (transient_mode == "area" || transient_mode == "areadepth") {
             if (verbose > 1) {
-                print(paste0(indent, "Save transient '", transient_mode, "' (='transient_mode') file ('outname'):"))
+                print(paste0(indent, "Save transient ", transient_mode, " (=transient_mode) file (=outname):"))
                 print(paste0(indent, indent, outname))
             }
             nc_close(outnc)
@@ -4974,17 +4996,6 @@ if (nfiles == 0) { # read data which are constant in time
         ## Save transient
         } else if (all(transient_mode != c("area", "areadepth"))) {
             
-            if (verbose > 1) {
-                if (dim_tag == "2D") {
-                    print(paste0(indent, "Put ", timespan, " transient ", varname, " area ",
-                                 transient_mode, " of ", area, " area to nc file ..."))
-                } else if (dim_tag == "3D") {
-                    print(paste0(indent, "Put ", timespan, " transient ", varname, " area ", 
-                                 transient_mode, " of ", area, " area in ", depths_plot, 
-                                 " m depths to nc file ..."))
-                }
-            } 
-    
             if (transient_mode == "csec_depth") {
                 csec_cond_depth <- csec_cond_vars
                 if (any(csec_cond_depth == "u")) {
@@ -5030,7 +5041,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
 
             if (verbose > 1) {
-                print(paste0(indent, "Save transient '", transient_mode, "' (='transient_mode') file ('outname'):"))
+                print(paste0(indent, "Save transient ", transient_mode, " (=transient_mode) file (=outname):"))
                 print(paste0(indent, indent, outname))
             }
 
@@ -5348,7 +5359,7 @@ if (nfiles == 0) { # read data which are constant in time
         
         if (any(transient_mode == c("area", "areadepth"))) {
             if (verbose > 1) {
-                print(paste0(indent, "Save transient regular ", transient_mode, " file: ('outname_reg')"))
+                print(paste0(indent, "Save transient regular ", transient_mode, " file: (=outname_reg)"))
                 print(paste0(indent, indent, outname_reg))
             }
             nc_close(outnc_reg)
@@ -5385,8 +5396,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             print(paste0("6) Calculate ", varname, " ..."))
         }
     }
-    
-    ## do stuff with transient data before time average
+   
+    ## continue with already calculated data
     if (any(transient_out, regular_transient_out, sd_out)) { # nfiles > 0
 
         # append sum(u*v) to sd if needed to only have one sd matrix
@@ -5397,7 +5408,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
     } # if any(transient_out, regular_transient_out, sd_out)
 
-    ## Calculate Mean for 'timespan'
+    ## Calculate Mean for 'timespan' of already calculated data
     if (total_rec > 1) {
 
         ## ltm average starts here
@@ -5489,7 +5500,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 data_node_sd <- tmp_sd/nrecspf
                 rm(tmp_sd)
             }
-            if (integrate_depth && length(depths) == 2 depths[2] == "MLD") {
+            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                 mld_node_ltm <- tmp_mld/nrecspf
                 rm(tmp_mld)
             }
@@ -5616,7 +5627,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(data_node_ltm)[1]) {
-                print(paste0(indent, "min/max data_node_ltm[", i, ":", 
+                print(paste0(indent, "   min/max data_node_ltm[", i, ":", 
                              dimnames(data_node_ltm)[[1]][i], ",,,] = ",
                              paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/")))
             }
@@ -5749,7 +5760,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(data_elem_ltm)[1]) {
-                print(paste0(indent, "min/max data_elem_ltm[", i, ":", 
+                print(paste0(indent, "   min/max data_elem_ltm[", i, ":", 
                              dimnames(data_elem_ltm)[[1]][i], ",,,,] = ",
                              paste0(range(data_elem_ltm[i,,,,], na.rm=T), collapse="/")))
             }
@@ -5806,7 +5817,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(datamat_reg_global_ltm)[1]) {
-                print(paste0(indent, "min/max datamat_reg_global_ltm[", i, ":", 
+                print(paste0(indent, "   min/max datamat_reg_global_ltm[", i, ":", 
                              dimnames(datamat_reg_global_ltm)[[1]][i], ",,,,] = ",
                              paste0(range(datamat_reg_global_ltm[i,,,,], na.rm=T), collapse="/")))
             }
@@ -5827,7 +5838,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(datamat_reg_ltm)[1]) {
-                print(paste0(indent, "min/max datamat_reg_ltm[", i, ":", 
+                print(paste0(indent, "   min/max datamat_reg_ltm[", i, ":", 
                              dimnames(datamat_reg_ltm)[[1]][i], ",,,,] = ",
                              paste0(range(datamat_reg_ltm[i,,,,], na.rm=T), collapse="/")))
             }
@@ -5924,14 +5935,16 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             for (i in 1:dim(datamat_ltm)[1]) {
                 if ((plot_map && plot_type == "interp") ||
                     (ltm_out && output_type == "nodes")) {
-                    print(paste0(indent, "min/max datamat_ltm[", i, ":", 
+                    print(paste0(indent, "   min/max datamat_ltm[", i, ":", 
                                  dimnames(datamat_ltm)[[1]][i], ",,,] = ",
-                                 paste0(range(datamat_ltm[i,,,], na.rm=T), collapse="/")))
+                                 paste0(range(datamat_ltm[i,,,], na.rm=T), collapse="/"),
+                                 " ", units_ltm))
                 } else if ((plot_map && plot_type == "const") ||
                            (ltm_out && output_type == "elems")) {
-                    print(paste0(indent, "min/max datamat_ltm[", i, ":", 
+                    print(paste0(indent, "   min/max datamat_ltm[", i, ":", 
                                  dimnames(datamat_ltm)[[1]][i], ",,,,] = ",
-                                 paste0(range(datamat_ltm[i,,,,], na.rm=T), collapse="/")))
+                                 paste0(range(datamat_ltm[i,,,,], na.rm=T), collapse="/"),
+                                 " ", units_ltm))
                 }
             }
         }
@@ -6082,7 +6095,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## nc out
         if (verbose > 1) {
-            print(paste0("   Save regular ltm file ('reg_outname'):"))
+            print(paste0("   Save regular ltm file (=reg_outname):"))
             print(paste0("      ", reg_outname))
         }
         
@@ -6276,7 +6289,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             
             varnamei <- dimnames(datamat_ltm)[[1]][ploti]
             if (verbose > 1) {
-                print(paste0(indent, "Open '", varnamei, "' plot device ..."))
+                print(paste0(indent, "Open plot device for '", varnamei, "' ..."))
             }
 
             if (plot_type == "interp") {
@@ -6495,7 +6508,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1) {
                 print(paste0(indent, "   min/max of data = ",
                              paste0(zlim_orig, collapse="/"), " ", units_ltm,
-                             ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
+                             ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")))
             }
 
             ## interpolate data for plot
@@ -6597,7 +6610,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (verbose > 1) {
                     print(paste0(indent, "   min/max of ", interp_method, " interpolated data = ",
                                  paste0(zlim_interp, collapse="/"), " ", units_ltm,
-                                 ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
+                                 ifelse(multfac_ltm != 1, paste0(" x 1e", -power_ltm), "")))
                 }
                 zlim <- zlim_interp
 
@@ -6620,10 +6633,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 ip <- image.plot.pre(zlim=zlim, verbose=F, center_include=T)
 
                 if (verbose > 1) {
-                    print(paste0(indent, "   Note: you can define color levels with e.g."))
-                    print(paste0(indent, "         ", varnamei, "_levels <- c(", 
+                    print(paste0(indent, "      Note: you can define own color levels with the line"))
+                    print(paste0(indent, "            ", varnamei, "_levels <- c(", 
                                  paste0(ip$axis.at, collapse=","), ")"))
-                    print(paste0(indent, "         in namelist.plot.r ..."))
+                    print(paste0(indent, "            in namelist.plot.r ..."))
                 }
 
             # else use user color levels
@@ -6636,11 +6649,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (all(user_zlim > zlim_orig) ||
                     all(user_zlim < zlim_orig)) {
                     if (verbose > 0) {
-                        print(paste0("Your povided '", varnamei, "_levels' <- c(", 
+                        print(paste0(indent, "   Your povided '", varnamei, "_levels' <- c(", 
                                      paste0(user_levels, collapse=","), 
                                      ") are out of range of the actual data min/max=", 
                                      zlim_orig[1], "/", zlim_orig[2], "."))
-                        print(paste0("Use default levels instead ..."))
+                        print(paste0("   Use default levels instead ..."))
                     }
                     ip <- image.plot.pre(zlim=zlim_orig)
                 
@@ -6663,7 +6676,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1) {
                 print(paste0(indent, "   min/max of color levels = ",
                              paste0(range(ip$axis.at), collapse="/"), " ", units_ltm,
-                             ifelse(multfac_ltm != 1, paste0(" x 1e", -power_plot), "")))
+                             ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")))
             }
 
             
