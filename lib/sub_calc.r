@@ -29,12 +29,7 @@
 
 sub_calc <- function(data) {
 
-    data_global <<- data
-
-    if (uv_out || horiz_deriv_tag) {
-        success <<- load_package("abind")
-        if (!success) stop()
-    }
+    data_global <<- data # for old stuff; need to update
 
     ## Select one component of loaded data
     if (any(varname == c("u", "v", "initudens", "potdens", "insitub", "potb"))) {
@@ -1124,7 +1119,7 @@ sub_calc <- function(data) {
 
             time1 <<- array(NA, c(aux3d_n, elem2d_n))
             time2 <<- time1
-            `[` <<- fctbackup
+            `[` <<- fctbackup # restore to default for loop
 
             #stop("asd")
             # create progress bar

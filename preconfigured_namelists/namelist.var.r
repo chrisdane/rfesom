@@ -2057,7 +2057,7 @@ if (varname == "tos") {
                                      "] " %*% " ", base^power_ltm),
                                list(var1="°C", var2="s",
                                     base=base, power_ltm=-power_ltm))
-    multfac_transient <- multfac_ltm
+    multfac_transient <- 1
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
         multfac_transient <- 1
@@ -2073,7 +2073,7 @@ if (varname == "tos") {
                                          "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
-        multfac_transient <- multfac_ltm
+        multfac_transient <- 1
         units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "degC m3 s-1"
@@ -2100,7 +2100,7 @@ if (varname == "tos") {
                                      "] " %*% " ", base^power_ltm),
                                list(var1="°C", var2="s",
                                     base=base, power_ltm=-power_ltm))
-    multfac_transient <- multfac_ltm
+    multfac_transient <- 1
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
         multfac_transient <- 1
@@ -2116,7 +2116,7 @@ if (varname == "tos") {
                                          "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
-        multfac_transient <- multfac_ltm
+        multfac_transient <- 1
         units_transient <- units_ltm     
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "degC m3 s-1"
@@ -2185,37 +2185,41 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvsgsttot") {
-    longname <- "Divergence of total horizontal SGS temperature flux"
     ## in fesom 1, sgs_* are saved with _minus_ sign due to 
-    ## inegration by parts. to obtain a correct tracer budget, these
-    ## terms need be multiplied by minus 1.
-    multfac_transient <- -1
-    power_ltm <- 9
-    multfac_ltm <- base^power_ltm
-    units_transient <- "degC s-1"
+    ## integration by parts. to obtain a correct tracer budget, these
+    ## terms must be multiplied by minus 1.
+    longname <- "Divergence of total horizontal SGS temperature flux"
+    multfac_ltm <- -1
+    units_ltm <- "degC s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "T")),
-                                     " [", var1, " ", var2^-1,
-                                     "] " %*% " ", base^power_ltm),
-                               list(var1="°C", var2="s",
-                                    base=base, power_ltm=-power_ltm))
+                                     " [", var1, " ", var2^-1, "]"
+                                     #, " " %*% " ", base^power_ltm
+                                     ),
+                               list(var1="°C", var2="s"
+                                    #, base=base, power_ltm=-power_ltm
+                                    ))
+    multfac_transient <- -1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- -1
+        units_transient <- "degC m2 s-1"
+    }
     if (integrate_depth) {
-        power_ltm <- 5
-        multfac_ltm <- base^power_ltm
-        units_transient <- "degC m s-1"
-        units_ltm <- units_transient
+        multfac_ltm <- -1
+        units_ltm <- "degC m s-1"
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "T")),
-                                         " dz [°C ", var1, " ", var2^-1,
-                                         "] " %*% " ", base^power_ltm),
-                                  list(var1="m", var2="s",
-                                       base=base, power_ltm=-power_ltm))
-
+                                         " dz [°C ", var1, " ", var2^-1, "]"
+                                         #, " " %*% " ", base^power_ltm
+                                         ),
+                                  list(var1="m", var2="s"
+                                       #, base=base, power_ltm=-power_ltm
+                                       ))
+        multfac_transient <- -1
+        units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
+            multfac_transient <- -1
             units_transient <- "degC m3 s-1"
-        }
-    } else {
-        if (any(transient_mode == c("meanint", "depthint"))) {
-            units_transient <- "degC m2 s-1"
         }
     }
     dim_tag <- "3D"
@@ -2227,6 +2231,9 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvsgst") {
+    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
+    ## inegration by parts. to obtain a correct tracer budget, these
+    ## terms need be multiplied by minus 1.
     longname <- "Divergence of mean horizontal SGS temperature flux"
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
@@ -2363,7 +2370,7 @@ if (varname == "tos") {
                                      "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
-    multfac_transient <- multfac_ltm
+    multfac_transient <- 1
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
         multfac_transient <- 1
@@ -2379,7 +2386,7 @@ if (varname == "tos") {
                                          "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
-        multfac_transient <- multfac_ltm
+        multfac_transient <- 1
         units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "psu m3 s-1"
@@ -2406,7 +2413,7 @@ if (varname == "tos") {
                                      "] " %*% " ", base^power_ltm),
                                list(var1="psu", var2="s",
                                     base=base, power_ltm=-power_ltm))
-    multfac_transient <- multfac_ltm
+    multfac_transient <- 1
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
         multfac_transient <- 1
@@ -2422,7 +2429,7 @@ if (varname == "tos") {
                                          "] " %*% " ", base^power_ltm),
                                   list(var1="m", var2="s",
                                        base=base, power_ltm=-power_ltm))
-        multfac_transient <- multfac_ltm
+        multfac_transient <- 1
         units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
             units_transient <- "psu m3 s-1"
@@ -4369,4 +4376,32 @@ if (!cpl_tag
                 " ocean-only file naming convention '<runid>.<year>.<typesuffix>.<diagsuffix>.nc'",
                 " to obtain e.g. 'demoid.2009.oce.mean.nc'."))
 }
+
+
+## template
+if (F) {    
+    longname <- "Divergence of mean horizontal temperature flux"
+    power_ltm <- 5
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "degC s-1"
+    var_label_plot <- substitute(paste("hi"))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "degC m2 s-1"
+    }
+    if (integrate_depth) {
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        units_ltm <- "degC m s-1"
+        var_label_plot <- substitute(paste("hi"))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "degC m3 s-1"
+        }
+    }
+} # template
+
 

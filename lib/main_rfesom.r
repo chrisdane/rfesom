@@ -132,10 +132,6 @@ if (nfiles == 0) {
     regular_transient_out <- F
     sd_out <- F
 }
-if (sd_out) {
-    success <- load_package("abind")
-    if (!success) stop()
-}
 if (transient_mode == "area" && regular_transient_out && transient_out) {
     stop("error: for transient_mode='area', set either 'transient_out' OR 'regular_transient_out' to TRUE")
 }
@@ -153,6 +149,10 @@ if (!uv_out && sd_method == "ackermann83") {
                  varname,
                  " is not a vector variable. continue with 'sd_method'=default ..."))
     sd_method <- "default"
+}
+if (uv_out || sd_out || horiz_deriv_tag) {
+    success <- load_package("abind")
+    if (!success) stop()
 }
 if ((transient_mode == "csec_mean" || transient_mode == "csec_depth") &&
     varname != "transport") {
@@ -2980,6 +2980,7 @@ if (nfiles == 0) { # read data which are constant in time
         for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
             
             if (exists("fnames_user")) {
+                ## check nc fast: library(raster); b <- brick("akhil.nc", var="hur")
                 fnames[file] <- paste0(datainpath, fnames_user[year_cnt])
 
             } else if (!exists("fnames_user")) {
@@ -4011,6 +4012,14 @@ if (nfiles == 0) { # read data which are constant in time
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
 
+                            if (F) {
+                                for (i in 1:ndepths) {
+                                    print(paste0(interpolate_depths[i], "m: ", 
+                                                 length(which(is.na(datavec[1,,1,i]))), 
+                                                 " NA values"))
+                                }
+                            }
+
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(datavec)[1]) {
@@ -4075,6 +4084,11 @@ if (nfiles == 0) { # read data which are constant in time
                                 } # if leap years are present
 
                                 # multiplay data by cluster area (in [unit of 'Rearth' in namelist.rfesom.r]^2)
+                                if (verbose > 2) {
+                                    print(paste0(indent, "Calc ",
+                                                 paste0(dimnames(datavec)[[1]], collapse=","),
+                                                 " x patch_area ..."))
+                                }
                                 if (transient_mode == "mean" && zave_method == 2) {
                                     if (rec_tag && leap_tag && is.leap(year)) {
                                         area_int <- datavec*patch_vol_leap
@@ -4089,8 +4103,17 @@ if (nfiles == 0) { # read data which are constant in time
                                     } 
                                 }
 
+                                if (F) {
+                                    for (i in 1:ndepths) {
+                                        print(paste0(interpolate_depths[i], "m: ",
+                                                     length(which(is.na(area_int[1,,1,i]))),
+                                                     " NA values"))
+                                    }
+                                }
+
                                 # sum data over nodes in area
                                 area_int <- apply(area_int, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
+                                area_int[area_int == 0] <- NA # where there are no values at depth
 
                                 if (transient_mode == "mean" && zave_method == 2) {
                                     area_mean <- area_int/sum(cluster_vol_3d[nod3d_z_inds])
@@ -4107,9 +4130,15 @@ if (nfiles == 0) { # read data which are constant in time
                                         } else {
                                             tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,i])),1,i])
                                         }
-                                        if (F) print(paste0("tmp_area=", tmp_area))
+                                        if (F && verbose > 2) {
+                                            print(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
+                                        }
                                         area_mean[,,i] <- area_mean[,,i]/tmp_area
                                     } # for i ndepths
+
+                                    # note that if deep depths have NA here, that simply means that 
+                                    # the max depth in 'area' is shallower than the max depth of
+                                    # the global mesh 'meshid'. 
                                     data_funi[,time_inds,] <- area_mean
                                 
                                 } else if (any(transient_mode == c("meanint", "depthint"))) {
