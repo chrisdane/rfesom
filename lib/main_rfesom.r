@@ -98,7 +98,8 @@ if (exists("rpackagepaths")) {
 for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
             "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
             "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
-            "sub_vertical_average.r", "sub_vertical_integral.r")) {
+            "sub_vertical_average.r", 
+            "sub_vertical_integral.r", "sub_vertical_integral_keepz.r")) {
     source(paste0(subroutinepath, i))
 }
 

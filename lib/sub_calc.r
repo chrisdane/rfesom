@@ -644,7 +644,6 @@ sub_calc <- function(data) {
                     print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
                 }
             }
-            source(paste0(subroutinepath, "sub_vertical_integral_keepz.r"))
             sub_vertical_integral_keepz(N_node)
             N_intz_z <<- tmp
             if (verbose > 2) {
