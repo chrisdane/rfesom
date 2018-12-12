@@ -40,7 +40,6 @@
 ##                                  to irregular data                       #
 ##  deriv_2d.r                      calc and save 2d horizontal derivative  #
 ##  deriv_3d.r                      calc and save 3d horizontal derivative  #
-##  get_memory.r                    special                                 #
 ##                                                                          #
 ## Coded by C. Danek (cdanek@awi.de)                                        # 
 ## Version 0.9, 30 Nov 2018                                                 #
@@ -106,7 +105,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "colors/pals.r",
-            "get_memory_of_workspace.r")) {
+            "lsos.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
 
@@ -3723,8 +3722,8 @@ if (nfiles == 0) { # read data which are constant in time
                 if (exists("tmp")) rm(tmp)
 
                 if (F) {
-                    ws <- get_memory_of_workspace_gb(ls(), "Mb")
-                    print(ws[1:15])
+                    ws <- lsos()
+                    print(ws[1:15,])
                     stop("asd")
                 }
 
