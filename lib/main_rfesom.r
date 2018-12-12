@@ -3988,26 +3988,48 @@ if (nfiles == 0) { # read data which are constant in time
                             } else {
 
                                 ## arrange to level-space for calculations
-                                if (dim_tag == "2D" || integrate_depth ||
-                                    average_depth || (dim_tag == "3D" && ndepths == 1)) {
+                                if (F) { # old
+                                    if (dim_tag == "2D" || integrate_depth ||
+                                        average_depth || (dim_tag == "3D" && ndepths == 1)) {
 
-                                    datavec <- data_node
-                                
-                                } else {
-                                    if (verbose > 1) {
-                                        print(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
-                                                     ") on (nod2d_n=", nod2d_n, " x ndepths=", dim(data_node)[3], ") ..."))
-                                        if (verbose > 2) {
-                                            print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                        datavec <- data_node
+                                    
+                                    } else {
+                                        if (verbose > 1) {
+                                            print(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
+                                                         ") on (nod2d_n=", nod2d_n, " x ndepths=", dim(data_node)[3], ") ..."))
+                                            if (verbose > 2) {
+                                                print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                            }
                                         }
+                                        sub_n3_to_n2xde(data_node) # produces tmp
+                                        datavec <- tmp
+                                        rm(tmp)
                                     }
-                                    sub_n3_to_n2xde(data_node) # produces tmp
-                                    datavec <- tmp
-                                    rm(tmp)
-                                }
+                                } else if (T) {
+                                    if (dim(data_node)[2] != nod2d_n) { # nod2d_n always defined
+                                        if (verbose > 1) {
+                                            print(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
+                                                         ") on (nod2d_n=", nod2d_n, " x ndepths=", 
+                                                         #dim(data_node)[3], 
+                                                         ndepths, 
+                                                         ") ..."))
+                                            if (verbose > 2) {
+                                                print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                            }
+                                        }
+                                        sub_n3_to_n2xde(data_node) # produces tmp
+                                        datavec <- tmp
+                                        rm(tmp)
+
+                                    } else { # data is already on 2d nodes
+                                        datavec <- data_node
+                                    }
+
+                                } # F T
                                 datavec <- datavec[,poly_node_inds_geogr,,] # inds in nod2d-space
                             
-                            }
+                            } # if transient_mode == "mean" && zave_method == 2
 
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
@@ -4121,7 +4143,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                                 } else if ((transient_mode == "mean" && zave_method == 1) || 
                                            transient_mode == "depth") {
-                                   
+                                  
                                     # divide by total cluster area in area and depth i
                                     area_mean <- area_int
                                     for (i in 1:dim(datavec)[4]) { # for all depths
@@ -4179,7 +4201,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     print(paste0(indent, "   min/max data_funi[", i, ":", 
                                                  dimnames(data_funi)[[1]][i], ",,] = ",
                                                  paste0(range(data_funi[i,,], na.rm=T), collapse="/"), 
-                                                 " ", units_transient))
+                                                 " ", units_transient[i]))
                                 }
                             }
 
@@ -4198,7 +4220,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                   depths_fname, "_", area, "_", 
                                                   projection, 
                                                   ssh_aviso_correct_fname, 
-                                                  ".nc")
+                                                  fname_suffix, ".nc")
 
                                 ## remove already existing data to avoid ncdf error:
                                 ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -4324,7 +4346,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                       projection, "_regular_dx",
                                                       sprintf("%.3f", regular_dx), "_dy",
                                                       sprintf("%.3f", regular_dy), 
-                                                      ssh_aviso_correct_fname, ".nc")
+                                                      ssh_aviso_correct_fname, 
+                                                      fname_suffix, ".nc")
                                 ## remove already existing data to avoid ncdf error:
                                 ## Error in R_nc4_create: Permission denied (creation mode was 4096)
                                 if (T) {
@@ -4788,12 +4811,9 @@ if (nfiles == 0) { # read data which are constant in time
 
                     ## vertical average for ltm if not done before
                     if (!integrate_depth && !average_depth) {
-                    
-                        if (dim_tag == "2D") {
-
-                            # nothing to to
-
-                        } else if (dim_tag == "3D") {
+                   
+                        ## rearrange first if necessary
+                        if (dim(data_node)[2] != nod2d_n) {
 
                             if (zave_method == 1) { # level-wise dz                        
                                 if (verbose > 1) { # rearrange first
@@ -4810,20 +4830,45 @@ if (nfiles == 0) { # read data which are constant in time
                             } else if (zave_method == 2) { # which zave_method
                                 data_vert <- data_node # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                             }
+                        } else {
+                            data_vert <- data_node
+                            
+                        } # if data is not on 2d yet
 
-                            if (verbose > 1 && ndepths > 1) {
-                                print(paste0(indent, "Average over ", depths_plot, " m depths ..."))
-                                if (verbose > 2) {
-                                    print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                        ## Check data so far
+                        if (verbose > 2) {
+                            for (i in 1:dim(data_node)[1]) {
+                                print(paste0(indent, "   min/max data_node[", i, ":",
+                                             dimnames(data_node)[[1]][i], ",,,] = ",
+                                             paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                if (F) {
+                                    for (j in 1:dim(data_node)[3]) {
+                                        print(range(data_node[i,,j,], na.rm=T))
+                                    }
                                 }
                             }
-                            sub_vertical_average(data_vert) # produces tmp
-                            data_node <- tmp # overwrite old data_node
-                            # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                            rm(tmp)
+                        }
 
-                        } # if dim_tag == "2D" or "3D"
+                        if (verbose > 1 && ndepths > 1) {
+                            print(paste0(indent, "Average over ", depths_plot, " m depths for ltm ..."))
+                            if (verbose > 2) {
+                                print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                            }
+                        }
+                        sub_vertical_average(data_vert) # produces tmp
+                        data_node <- tmp # overwrite old data_node
+                        # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+                        # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
+                        rm(tmp)
+
+                        ## Check data so far
+                        if (verbose > 2) {
+                            for (i in 1:dim(data_node)[1]) {
+                                print(paste0(indent, "   min/max data_node[", i, ":",
+                                             dimnames(data_node)[[1]][i], ",,,] = ",
+                                             paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                            }
+                        }
 
                     } # if !integrate_depth && !average_depth
 
@@ -4868,6 +4913,7 @@ if (nfiles == 0) { # read data which are constant in time
                     } else {
                         data_node_ltm <- data_node_ltm + data_node
                     }
+                    #print(range(data_node_ltm, na.rm=T))
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                         if (rec_tag) {
@@ -5040,13 +5086,13 @@ if (nfiles == 0) { # read data which are constant in time
                 if (is.null(sic_cond_fname)) {
                     outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
                                       varname, "_sic_transient_", transient_mode, "_", 
-                                      timespan, "_", area, "_", projection, 
+                                      timespan, "_", area, "_", projection, fname_suffix,
                                       ".nc")
                 } else {
                     outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
                                       varname, "_sic.", sic_cond_fname, ".", sic_thr*100, 
                                       "_transient_", transient_mode, "_",
-                                      timespan, "_", area, "_", projection,
+                                      timespan, "_", area, "_", projection, fname_suffix,
                                       ".nc")
                 }
             } else {
@@ -5059,7 +5105,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                 "_"), ""),
                                   ifelse(transient_mode == "csec_depth" && !is.null(csec_cond_depth),
                                          paste0("conds_", paste0(unique(csec_cond_depth), collapse="_"), "_"), ""),
-                                  projection, ssh_aviso_correct_fname, 
+                                  projection, ssh_aviso_correct_fname, fname_suffix,
                                   ".nc")
             }
             
@@ -5461,7 +5507,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (leap_tag && any(is.leap(years))) {
                     nyears_leap <- length(which(is.leap(years)))
                     if (verbose > 1) {
-                        print(paste0(indent, "Divide rec ", nrecspf_leap, " through 'nyears_leap'=", nyears_leap, " ..."))
+                        print(paste0(indent, "Divide rec ", nrecspf_leap, " by 'nyears_leap'=", nyears_leap, " ..."))
                     }
                     data_node_ltm[,,,nrecspf_leap] <- data_node_ltm[,,,nrecspf_leap]/nyears_leap # (var,node,time,depth)
                     if (sd_out) {
@@ -5473,7 +5519,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 }
 
                 if (verbose > 1) {
-                    print(paste0(indent, "Divide recs (1,...,", nrecspf, ") through 'nyears'=", nyears, " ..."))
+                    print(paste0(indent, "Divide recs (1,...,", nrecspf, ") by 'nyears'=", nyears, " ..."))
                 }
                 data_node_ltm[,,,1:nrecspf] <- data_node_ltm[,,,1:nrecspf]/nyears
                 if (sd_out) {
@@ -5511,13 +5557,15 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
             # sum over all times of a year (e.g. months)
+            #print("data_node_ltm")
             for (i in 1:dim(data_node_ltm)[4]) { # nrecspf
-                tmp[,,1,1] <- tmp[,,1,1] + data_node_ltm[,,1,i]
+                tmp[,,1,1] <- tmp[,,,1] + data_node_ltm[,,,i]
+                #print(range(data_node_ltm[,,,i], na.rm=T))
                 if (sd_out) {
-                     tmp_sd[,,1,1] <- tmp_sd[,,1,1] + data_node_sd[,,1,i]
+                     tmp_sd[,,,1] <- tmp_sd[,,,1] + data_node_sd[,,,i]
                 }
                 if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                    tmp_mld[,,1,1] <- tmp_mld[,,1,1] + mld_node_ltm[,,1,i]
+                    tmp_mld[,,,1] <- tmp_mld[,,,1] + mld_node_ltm[,,,i]
                 }
             }
 
@@ -5538,6 +5586,15 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
+        }
+
+        ## Check data so far
+        if (verbose > 2) {
+            for (i in 1:dim(data_node_ltm)[1]) {
+                print(paste0(indent, "   min/max data_node_ltm[", i, ":",
+                             dimnames(data_node_ltm)[[1]][i], ",,,] = ",
+                             paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/")))
+            }
         }
 
     } # if total_rec > 1
@@ -5995,12 +6052,14 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
                               varname, "_ltm_", timespan, depths_fname, "_", area, "_", 
                               projection, "_", output_type,
-                              ssh_aviso_correct_fname, ".nc")
+                              ssh_aviso_correct_fname, 
+                              fname_suffix, ".nc")
         } else if (nfiles == 0) {
             outname <- paste0(ltmpath, runid, "_", setting, "_",
                               varname, "_ltm", depths_fname, "_", area, "_",
                               projection, "_", output_type,
-                              ssh_aviso_correct_fname, ".nc")
+                              ssh_aviso_correct_fname, 
+                              fname_suffix, ".nc")
         } # if nfiles > 0
 
         ## remove already existing data to avoid ncdf error:
@@ -6105,6 +6164,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
                                   ssh_aviso_correct_fname, 
+                                  fname_suffix, 
                                   ".nc")
         } else if (nfiles == 0) {
             reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_",
@@ -6113,6 +6173,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
                                   ssh_aviso_correct_fname, 
+                                  fname_suffix,
                                   ".nc")
         } # if nfiles > 0
 
@@ -6181,7 +6242,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         moc_outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
                               varname, "_ltm_", timespan, depths_fname, "_", area,
-                              ".nc")
+                              fname_suffix, ".nc")
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -6335,7 +6396,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             plotname <- paste0(plotpath,  
                                runid, "_", setting, "_", varnamei,
                                timespan_fname, depths_fname, "_", area, "_", 
-                               projection, "_", plot_type, ".", plot_file)
+                               projection, fname_suffix, "_", plot_type, ".", plot_file)
             
             if (plot_file == "png") {
                 png(plotname, 

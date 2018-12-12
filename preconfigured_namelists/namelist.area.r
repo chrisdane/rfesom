@@ -310,6 +310,9 @@
             } else if (area == "stg") {
                 map_geogr_lim_lon <- c(-80, -20)
                 map_geogr_lim_lat <- c(20, 40) #c(-90, 90)
+            } else if (area == "Cstg") {
+                map_geogr_lim_lon <- c(-60, -20)
+                map_geogr_lim_lat <- c(25, 35) #c(-90, 90)
             } else if (area == "stghu") {
                 map_geogr_lim_lon <- c(-82.5, 0)
                 map_geogr_lim_lat <- c(8.4, 54.5) #c(-90, 90)

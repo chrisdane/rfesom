@@ -1634,51 +1634,146 @@ if (varname == "tos") {
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
-    subtitle <- ""
-    power_ltm <- -5
-    multfac_ltm_plot <- base^power_ltm
-    units_transient <- paste0("s-2 x ", multfac_ltm_plot)
-    multfac_ltm <- multfac_ltm_plot
-    var_label_plot <- expression(paste("N"^"2"," [s"^"-2","] " %*%" 10"^"-5"))
-    if (integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm_plot <- base^power_ltm
-        units_transient <- paste0("s-2")
-        multfac_ltm <- multfac_ltm_plot
-        var_label_plot <- expression(paste("N"^"2"," [s"^"-2","]"))
+    power_ltm <- 5
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "s-2"
+    var_label_plot <- substitute(paste(var1^2, " = -g/", rho[0], 
+                                       " ", partialdiff[z], rho, 
+                                     " [", var2^-2, "]"
+                                     , " " %*% " ", base^power_ltm
+                                     ),
+                               list(var1="N", var2="s"
+                                    , base=base, power_ltm=-power_ltm
+                                    ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m2 s-2"
     }
-    var_label_plot_roundfac <- 1
+    if (integrate_depth) {
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        units_ltm <- "m s-2"
+        var_label_plot <- substitute(paste(integral(), var1^2, " dz = ", 
+                                           integral(), " -g/", rho[0],
+                                           " ", partialdiff[z], rho,
+                                         " dz [", var2, " ", var3^-2, "]"
+                                         , " " %*% " ", base^power_ltm
+                                         ),
+                                   list(var1="N", var2="m", var3="s"
+                                        , base=base, power_ltm=-power_ltm
+                                        ))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m3 s-2"
+        }
+    }
     dim_tag <- "3D"
-    derivative <- F
-    typesuffix <- rep("oce.", t=nfiles)
+    typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_fesom <- c("temp", "salt")
-    rotate_inds <- F
-    vec <- F
 
-} else if (varname == "N2") {
-    longname <- "Buoyancy Frequency Squared"
-    subtitle <- ""
-    power_ltm <- -5
-    multfac_ltm_plot <- base^power_ltm
-    units_transient <- paste0("s-2 x ", multfac_ltm_plot)
-    multfac_ltm <- multfac_ltm_plot
-    var_label_plot <- expression(paste("N"^"2"," [s"^"-2","] " %*%" 10"^"-5"))
-    if (integrate_depth) {
-        power_ltm <- 0
-        multfac_ltm_plot <- base^power_ltm
-        units_transient <- paste0("s-2")
-        multfac_ltm <- multfac_ltm_plot
-        var_label_plot <- expression(paste("N"^"2"," [s"^"-2","]"))
+} else if (varname == "wkb_hvel_mode") {
+    longname <- "Horizontal velocity baroclinic m-mode"
+    mmodes <- 1:5
+    power_ltm <- 5
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "#"
+    #units_ltm <- c("s-1", "m s-1", "#") # N, c, R 
+    var_label_plot <- substitute(paste(R[m], "(z)", " " %~~% " ", "(",
+                                       c[m], "N(z) ", var1^-1, ")cos(",
+                                       var2[m]^-1, integral(), "N(z) dz) [#]"
+                                       , " " %*% " ", base^power_ltm
+                                       ),
+                                 list(#m=mmode, 
+                                      m="m",
+                                      var1="g", var2="c"
+                                      , base=base, power_ltm=-power_ltm
+                                      ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m2"
     }
-    var_label_plot_roundfac <- 1
+    if (integrate_depth) {
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        unitss_ltm <- "m"
+        #units_ltm <- c("m s-1", "m2 s-1", "m")
+        var_label_plot <- substitute(paste(integral(), R[m], "(z) dz", " " %~~% " ", 
+                                           integral(), " (",
+                                           c[m], "N(z) ", var1^-1, ")cos(",
+                                           var2[m]^-1, integral(), "N(z) dz) dz [m]"
+                                           , " " %*% " ", base^power_ltm
+                                           ),
+                                     list(#m=mmode, 
+                                          m="m",
+                                          var1="g", var2="c"
+                                          , base=base, power_ltm=-power_ltm
+                                          ))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m3"
+            #units_transient <- c("m3 s-1", "m4 s-1", "m3")
+        }
+    }
     dim_tag <- "3D"
-    derivative <- F
-    typesuffix <- "oce."
-    diagsuffix <- "diag."
-    varname_fesom <- "N2"
-    rotate_inds <- F
-    vec <- F
+    typesuffix <- rep("oce.", t=2)
+    diagsuffix <- c("", "")
+    varname_fesom <- c("temp", "salt")
+
+} else if (varname == "wkb_vertvel_mode") {
+    longname <- "Vertical velocity baroclinic m-mode"
+    mmodes <- 1:5
+    power_ltm <- 5
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "#"
+    #units_ltm <- c("s-1", "m s-1", "#") # N, c, R 
+    var_label_plot <- substitute(paste(S[m], "(z)", " " %~~% " ", var1[m]^0, " sin(",
+                                       var2[m]^-1, integral(), "N(z) dz) [#]"
+                                       , " " %*% " ", base^power_ltm
+                                       ),
+                                 list(#m=mmode, 
+                                      m="m",
+                                      var1="S", var2="c"
+                                      , base=base, power_ltm=-power_ltm
+                                      ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m2"
+    }
+    if (integrate_depth) {
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        unitss_ltm <- "m"
+        #units_ltm <- c("m s-1", "m2 s-1", "m")
+        var_label_plot <- substitute(paste(integral(), S[m], "(z) dz", " " %~~% " ", 
+                                           integral(), " ", var1[m]^0, " sin(",
+                                           var2[m]^-1, integral(), "N(z) dz) dz [#]"
+                                           , " " %*% " ", base^power_ltm
+                                           ),
+                                     list(#m=mmode, 
+                                          m="m",
+                                          var1="S", var2="c"
+                                          , base=base, power_ltm=-power_ltm
+                                          ))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m3"
+            #units_transient <- c("m3 s-1", "m4 s-1", "m3")
+        }
+    }
+    dim_tag <- "3D"
+    typesuffix <- rep("oce.", t=2)
+    diagsuffix <- c("", "")
+    varname_fesom <- c("temp", "salt")
 
 } else if (varname == "Kv") {
     longname <- "Vertical Diffusivity"
@@ -2185,11 +2280,7 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvsgsttot") {
-    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
-    ## integration by parts. to obtain a correct tracer budget, these
-    ## terms must be multiplied by minus 1.
     longname <- "Divergence of total horizontal SGS temperature flux"
-    multfac_ltm <- -1
     units_ltm <- "degC s-1"
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "T")),
                                      " [", var1, " ", var2^-1, "]"
@@ -2198,14 +2289,11 @@ if (varname == "tos") {
                                list(var1="°C", var2="s"
                                     #, base=base, power_ltm=-power_ltm
                                     ))
-    multfac_transient <- -1
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
-        multfac_transient <- -1
         units_transient <- "degC m2 s-1"
     }
     if (integrate_depth) {
-        multfac_ltm <- -1
         units_ltm <- "degC m s-1"
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)["sgs,h"], "T")),
@@ -2215,10 +2303,8 @@ if (varname == "tos") {
                                   list(var1="m", var2="s"
                                        #, base=base, power_ltm=-power_ltm
                                        ))
-        multfac_transient <- -1
         units_transient <- units_ltm
         if (any(transient_mode == c("meanint", "depthint"))) {
-            multfac_transient <- -1
             units_transient <- "degC m3 s-1"
         }
     }
@@ -2231,9 +2317,6 @@ if (varname == "tos") {
     vec <- T
 
 } else if (varname == "divuvsgst") {
-    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
-    ## inegration by parts. to obtain a correct tracer budget, these
-    ## terms need be multiplied by minus 1.
     longname <- "Divergence of mean horizontal SGS temperature flux"
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
@@ -2452,10 +2535,6 @@ if (varname == "tos") {
 
 } else if (varname == "divuvsgsstot") {
     longname <- "Divergence of total horizontal SGS salt flux"
-    ## in fesom 1, sgs_* are saved with _minus_ sign due to 
-    ## inegration by parts. to obtain a correct tracer budget, these
-    ## terms need be multiplied by minus 1.
-    multfac_transient <- -1
     power_ltm <- 9
     multfac_ltm <- base^power_ltm
     units_transient <- "psu s-1"
@@ -4366,6 +4445,9 @@ if (!exists("units_ltm") && !exists("units_transient")) {
 }
 if (!exists("var_label_plot")) {
     var_label_plot <- "define_'var_label_plot'_in_namelist.var.r"
+}
+if (!exists("fname_suffix")) {
+    fname_suffix <- ""
 }
 
 if (!cpl_tag 

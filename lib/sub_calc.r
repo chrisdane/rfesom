@@ -390,9 +390,13 @@ sub_calc <- function(data) {
 
     } # "wbeddy"
 
-    if (any(varname == c("Nsquared", "richardson", "rossbyrad", "PmPe"))) {
+    if (any(varname == c("Nsquared", "richardson", "rossbyrad", 
+                         "PmPe", 
+                         "wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
         success <<- load_package("gsw")
+        if (!success) stop()
+        success <<- load_package("abind")
         if (!success) stop()
 
         ## Calculate Absolute Salinity from Practical Salinity, pressure, longitude, and latitude.
@@ -405,17 +409,27 @@ sub_calc <- function(data) {
             print(paste0(indent, "Calc absolute salinity ..."))
             if (verbose > 1) {
                 print(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
-                print(paste0(indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]"))
-                print(paste0(indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                print(paste0(indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich."))
-                print(paste0(indent, "        latitude  latitude in decimal degrees, positive to the north of the equator."))
+                print(paste0(indent, "      with SP        Practical Salinity (PSS-78) [ unitless ]"))
+                print(paste0(indent, "           p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                print(paste0(indent, "           longitude longitude in decimal degrees, positive to the east of Greenwich."))
+                print(paste0(indent, "           latitude  latitude in decimal degrees, positive to the north of the equator."))
             }
         }
         saltind <<- which(vars == "salt" | vars == "so")
-        p_node <<- ...
-        longitude_node <<- ...
-        latitude_node <<- ...
-        SA_node <<- gsw::gsw_SA_from_SP(data_node[saltind,,,], p_node, longitude_node, latitude_node)
+        if (verbose > 0) {
+            print(paste0(indent, "   p = gsw_p_from_z(z, latitude, ",
+                         "geo_strf_dyn_height=0 [m2 s-2], sea_surface_geopotential=0 [m2 s-2])"))
+            print(paste0(indent, "      with z = zero at surface and positive upwards [ m ]"))
+        }
+        p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
+        # note: gsw::* functions do not keep the matrix dimensions!!!
+        SA_node <<- array(NA, dim=dim(data_node[1,,,]),
+                          dimnames=dimnames(data_node[saltind,,,]))
+        dimnames(SA_node)[[1]] <<- "SA"
+        for (i in 1:dim(data_node)[4]) { # for nrecspf
+            SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), p=p_node,
+                                                 longitude=nod_x, latitude=nod_y)
+        }
 
         ## Calculate Conservative Temperature from Potential Temperature
         ## gsw_CT_from_pt(SA, pt)
@@ -425,37 +439,99 @@ sub_calc <- function(data) {
             print(paste0(indent, "Calc Conservative Temperature ..."))
             if (verbose > 1) {
                 print(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
-                print(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
-                print(paste0(indent, "        pt potential temperature (ITS-90) [ degC ]"))
+                print(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
+                print(paste0(indent, "           pt potential temperature (ITS-90) [ degC ]"))
             }
         }
         tempind <<- which(vars == "temp" | vars == "thetao")
-        CT_node <<- gsw::gsw_CT_from_pt(SA_node, data_node[tempind,,,])
+        # note: gsw::* functions do not keep the matrix dimensions!!!
+        CT_node <<- array(NA, dim=dim(data_node[1,,,]),
+                          dimnames=dimnames(data_node[tempind,,,]))
+        dimnames(CT_node)[[1]] <<- "CT"
+        for (i in 1:dim(data_node)[4]) { # for nrecspf
+            CT_node[,,,i] <<- gsw::gsw_CT_from_pt(SA=drop(SA_node[,,,i]), 
+                                                 pt=drop(data_node[tempind,,,i]))
+        }   
 
-        ## The result is computed based on first-differencing a computed density with respect pressure, and
-        ## this can yield noisy results with CTD data that have not been smoothed and decimated. It also yields
-        ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
-        ## in the oce package)
-        # gsw_Nsquared(SA, CT, p, latitude = 0)
-        #   with SA         Absolute Salinity [ g/kg ]
-        #        CT         Conservative Temperature [ degC ]
-        #        p          sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
-        #        latitude   latitude in decimal degrees, positive to the north of the equator
+        ## Calc N2
         if (verbose > 0) {
             print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared (N2) ..."))
+        }
+
+        if (F) { # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
+            ## The result is computed based on first-differencing a computed density with respect pressure, and
+            ## this can yield noisy results with CTD data that have not been smoothed and decimated. It also yields
+            ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
+            ## in the oce package)
             if (verbose > 1) {
                 print(paste0(indent, "   N2 =  gsw_Nsquared(SA, CT, p, latitude)"))
-                print(paste0(indent, "   with SA       Absolute Salinity [ g/kg ]"))
-                print(paste0(indent, "        CT       Conservative Temperature [ degC ]"))
-                print(paste0(indent, "        p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                print(paste0(indent, "        latitude latitude in decimal degrees, positive to the north of the equator"))
+                print(paste0(indent, "      with SA       Absolute Salinity [ g/kg ]"))
+                print(paste0(indent, "           CT       Conservative Temperature [ degC ]"))
+                print(paste0(indent, "           p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                print(paste0(indent, "           latitude latitude in decimal degrees, positive to the north of the equator"))
             }
-        }
-        N2_node <<- gsw_Nsquared(SA_node, CT_node, p_node, latitude_node)
-        dimnames(data_node)[[1]] <<- varname
+            # note: gsw::* functions do not keep the matrix dimensions!!!
+            N2_node <<- array(NA, dim=dim(data_node[1,,,]),
+                              dimnames=dimnames(data_node[tempind,,,]))
+            dimnames(N2_node)[[1]] <<- "N2"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                tmp <<- gsw::gsw_Nsquared(SA=drop(SA_node[,,,i]),
+                                          CT=drop(CT_node[,,,i]),
+                                          p=p_node, latitude=nod_y)
+                # how to treat Inf and -Inf values?
+                tmp$N2[tmp$N2 == Inf] <<- NA
+                tmp$N2[tmp$N2 == -Inf] <<- NA
+                # replace 1st depth value
+                tmp$N2 <<- c(NA, tmp$N2)
+                N2_node[,,,i] <<- tmp$N2 # $p_mid
+            }
 
-        if (varaname == "Nsquared") {
+        } else if (T) { # use own vertical derivative of potential density
+            
+            if (verbose > 1) {
+                print(paste0(indent, "   N2 = -g/rho0 * drho/dz"))
+                print(paste0(indent, "      with rho = gsw::gsw_rho(SA, CT, p)"))
+                print(paste0(indent, "           SA Absolute Salinity [ g/kg ]"))
+                print(paste0(indent, "           CT Conservative Temperature [ degC ]"))
+                print(paste0(indent, "           p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+            }
+            # note: gsw::* functions do not keep the matrix dimensions!!!
+            potdens_node <<- array(NA, dim=dim(data_node[1,,,]),
+                                   dimnames=dimnames(data_node[tempind,,,]))
+            dimnames(potdens_node)[[1]] <<- "potdens"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                potdens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i], 
+                                                    CT=CT_node[,,,i],
+                                                    p=p_node)
+            }
+
+            # vertical derivative
+            pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                                    char=pb_char, width=pb_width,
+                                    indent=paste0("        ", indent)) # 5 " " for default print()
+            tmp <<- potdens_node
+            tmp[] <<- 0
+            for (i in 1:(aux3d_n-1)) {
+                nodes_up <<- aux3d[i,]
+                nodes_low <<- aux3d[i+1,]
+                inds <<- nodes_up > 0 & nodes_low > 0
+                if (any(!is.na(inds))) {
+                    dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
+                    tmp[,nodes_up[inds],,] <<- (potdens_node[,nodes_up[inds],,] -
+                                                potdens_node[,nodes_low[inds],,])/dz
+                }
+                # update progress bar
+                setTxtProgressBar(pb, i)
+            } # for i aux3d_n-1
+            
+            N2_node <<- -g/rho0*tmp
+            dimnames(N2_node)[[1]] <<- "N2"
+        
+        } # use gsw::gsw_Nsquared or own vertical derivative of potential density
+
+        if (varname == "Nsquared") {
             data_node <<- N2_node
+            dimnames(data_node)[[1]] <<- varname
 
         } else if (varname == "richardson") {
 
@@ -485,8 +561,8 @@ sub_calc <- function(data) {
                         node_low <<- aux3d[k+1,ii]
                         dz <<- nod3d_z[node_up] - nod3d_z[node_low]
 
-                        dvardz_node[,aux3d[k,ii],,] <<- (data_node[varinds,node_low,,] -
-                                                         data_node[varinds,node_up,,])/dz
+                        dvardz_node[,aux3d[k,ii],,] <<- (data_node[varinds,node_up,,] -
+                                                         data_node[varinds,node_low,,])/dz
                     }
                 }
             }
@@ -511,9 +587,259 @@ sub_calc <- function(data) {
             data_node <<- 1/(abs(coriolis_nod2d)*pi) * data_node # 1st bc rossby rad of def.
             dimnames(data_node)[[1]] <<- varname
 
-        } # rossbyrad
+        } else if (any(varname == c("wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
-    } # "Nsquared", "richardson", "rossbyrad"
+            if (!exists("mmodes") || any(mmodes == 0)) {
+                stop(paste0("Set 'mmodes=1' (or c(1,2,3,...)) for variable ", varname, " in namelist.var.r."))
+            }
+
+            ## N = sqrt(N2)
+            N_node <<- N2_node
+            N_node[N_node < 0] <<- 0 #NA # claudi uses 0 here
+            N_node <<- sqrt(N_node)
+            if (verbose > 2) {
+                finite_inds <<- is.finite(N_node)
+                if (any(finite_inds) && any(N_node > 0)) {
+                    print(paste0(indent, "   min/max N_node = ", 
+                                 paste0(range(N_node[finite_inds], na.rm=T), collapse="/"), " s-1"))
+                } else {
+                    stop(paste0(indent, "   Error: all values of N_node = sqrt(N_node) are < 0 and/or infinite.",
+                                " Change to another location/time."))
+                }
+            }
+            dimnames(N_node)[[1]] <<- "N"
+
+            ## rearrange N
+            if (verbose > 1) {
+                print(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
+                             ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                if (verbose > 2) {
+                    print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                }
+            }
+            sub_n3_to_n2xde(N_node) # produces tmp
+            N_vert <<- tmp
+
+            ## vertical integral of N
+            if (verbose > 1) {
+                print(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
+                if (verbose > 2) {
+                    print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                }
+            }
+            sub_vertical_integral(N_node) # produces tmp
+            N_intz_const <<- tmp
+            if (verbose > 2) {
+                finite_inds <<- is.finite(N_intz_const)
+                print(paste0(indent, "   min/max N_intz_const = ",
+                             paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
+            }
+            dimnames(N_intz_const)[[1]] <<- "int_N_dz_const"
+
+            ## vertical integral of N from bottom: keep z dim
+            if (verbose > 1) {
+                print(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
+                             "-", interpolate_depths[1], " m ..."))
+                if (verbose > 2) {
+                    print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
+                }
+            }
+            source(paste0(subroutinepath, "sub_vertical_integral_keepz.r"))
+            sub_vertical_integral_keepz(N_node)
+            N_intz_z <<- tmp
+            if (verbose > 2) {
+                finite_inds <<- is.finite(N_intz_z)
+                print(paste0(indent, "   min/max N_intz_z = ",
+                             paste0(range(N_intz_z[finite_inds], na.rm=T), collapse="/"), " m s-1"))
+            }
+            
+            ## rearrange N_intz_z
+            if (verbose > 1) {
+                print(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
+                             ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                if (verbose > 2) {
+                    print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                }
+            }
+            sub_n3_to_n2xde(N_intz_z) # produces tmp
+            N_intz_z_vert <<- tmp
+            dimnames(N_intz_z_vert)[[1]] <<- "int_N_dz_z"
+   
+            # for testing
+            if (F) {
+                N_vert_mean <<- N_vert[,poly_node_inds_geogr,,]
+                N_intz_const_mean <<- N_intz_const[,poly_node_inds_geogr,,]
+                N_intz_z_vert_mean <<- N_intz_z_vert[,poly_node_inds_geogr,,]
+                patch_area <<- cluster_area_2d[poly_node_inds_geogr]
+                patch_area <<- replicate(patch_area, n=dim(N_vert_mean)[3]) # ndepths
+                patch_area <<- replicate(patch_area, n=dim(N_vert_mean)[4]) # nrecspf
+                patch_area <<- replicate(patch_area, n=dim(N_vert_mean)[1]) # nvars
+                patch_area <<- aperm(patch_area, c(4, 1, 2, 3))
+                
+                # var * area
+                N_vert_mean <<- N_vert_mean*patch_area
+                N_intz_const_mean <<- N_intz_const_mean*patch_area[,,1,] # 1 depth
+                N_intz_z_vert_mean <<- N_intz_z_vert_mean*patch_area
+                
+                # sum over nodes (var * area)
+                N_vert_mean <<- apply(N_vert_mean, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
+                N_intz_const_mean <<- apply(N_intz_const_mean, c(1, 3, 4), sum, na.rm=T)
+                N_intz_z_vert_mean <<- apply(N_intz_z_vert_mean, c(1, 3, 4), sum, na.rm=T)
+                
+                # where there are no values at depth
+                N_vert_mean[N_vert_mean == 0] <<- NA
+                N_intz_const_mean[N_intz_const_mean == 0] <<- NA
+                N_intz_z_vert_mean[N_intz_z_vert_mean == 0] <<- NA
+               
+                # divide through area for all depths
+                for (i in 1:dim(N_vert_mean)[2]) { # for all depths
+                    if (rec_tag && leap_tag && is.leap(year)) {
+                        tmp_area <<- sum(patch_area_leap[1,,i,1]) # NA positions do not change in time
+                    } else {
+                        tmp_area <<- sum(patch_area[1,,i,1])
+                    }
+                    if (T && verbose > 2) {
+                        print(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
+                    }
+
+                    N_vert_mean[,i,] <<- N_vert_mean[,i,]/tmp_area
+                    if (i == 1) N_intz_const_mean[,i,] <<- N_intz_const_mean[,i,]/tmp_area
+                    N_intz_z_vert_mean[,i,] <<- N_intz_z_vert_mean[,i,]/tmp_area
+                } # for i ndepths
+
+                # average over time
+                N_vert_mean <<- apply(N_vert_mean, c(1, 2), mean, na.rm=T)
+                N_intz_const_mean <<- apply(N_intz_const_mean, c(1, 2), mean, na.rm=T) # single number
+                N_intz_z_vert_mean <<- apply(N_intz_z_vert_mean, c(1, 2), mean, na.rm=T)
+
+                xlim <<- range(N_vert_mean,
+                               N_intz_const_mean,
+                               N_intz_z_vert_mean,
+                               na.rm=T)
+                ylim <<- rev(range(interpolate_depths))
+                dev.new()
+                plot(N_vert_mean[1,], interpolate_depths, t="l",
+                     xlim=xlim, ylim=ylim)
+                lines(N_intz_z_vert_mean[1,], interpolate_depths, col="red")
+                abline(v=N_intz_const_mean[1,1], col="blue")
+                legend("top", c("N_vert", "N_intz_z_vert", "N_intz_const"),
+                       col=c("black", "red", "blue"), lty=1, bty="n", cex=1.5)
+            }
+            #stop("asd")
+
+            # mode-m baroclinic wavespeed
+            if (verbose > 0) {
+                print(paste0(indent, "Calc baroclinic wave speeds (Stewart et al. 2017) ..."))
+            }
+            c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_const)[2:4]),
+                             dimnames=c(list(mmodes=mmodes),
+                                        dimnames(N_intz_const)[2:4]))
+            for (i in 1:length(mmodes)) {
+                if (verbose > 0) {
+                    print(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " pi) * int_z N dz"))
+                }
+                c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_const
+                if (verbose > 2) {
+                    print(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
+                                 paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
+                }
+            } # for i mmodes
+            dimnames(c_vert)[[1]] <<- paste0("c_", mmodes)
+
+            ## repeat c_vert for matrix multiplication
+            c_vert <<- adrop(c_vert, drop=3) # drop depth placeholder dim
+            c_vert <<- replicate(c_vert, n=dim(N_vert)[3]) # ndepths
+            c_vert <<- aperm(c_vert, c(1, 2, 4, 3)) # c(mmodes,nod2d_n,ndepths,nrecspf)
+
+            ## constants for 
+            S0 <<- 1 # Ferrari et al. 2010
+            B <<- 1 # Chelton et al. 1998
+
+            if (varname == "wkb_hvel_mode") {
+
+                # mode-m baroclinic horizontal velocity
+                if (verbose > 0) {
+                    print(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010; Stewart et al. 2017) ..."))
+                }
+                R_vert <<- array(NA, dim=dim(c_vert),
+                                 dimnames=dimnames(c_vert))
+                dimnames(R_vert)[[1]] <<- paste0("R_", mmodes)
+                for (i in 1:length(mmodes)) {
+                    if (verbose > 0) {
+                        print(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
+                                     mmodes[i], " N(z) / g] * cos(int_z N(z) dz / c_", 
+                                     mmodes[i], ")"))
+                    }
+                    R_vert[i,,,] <<- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
+                    if (verbose > 2) {
+                        print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                                     paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
+                    }
+                } # for i mmodes
+                dimnames(R_vert)[[1]] <<- paste0(varname, mmodes)
+
+                # cat everything together
+                #data_node <<- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
+                data_node <<- R_vert
+                
+            } else if (varname == "wkb_vertvel_mode") {
+
+                # mode-m baroclinic vertical velocity
+                if (verbose > 0) {
+                    print(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998; Ferrari et al. 2010) ..."))
+                }
+                S_vert <<- array(NA, dim=dim(c_vert),
+                                 dimnames=dimnames(c_vert))
+                dimnames(S_vert)[[1]] <<- paste0("S_", mmodes)
+                for (i in 1:length(mmodes)) {
+                    if (verbose > 0) {
+                        if (T) { # ferrari
+                            print(paste0(indent, "   S_", mmodes[i], "(z) = S0_", mmodes[i], 
+                                         " sin(int_z N(z) dz / c_", mmodes[i], ")"))
+                        } else if (F) { # chelton
+                            print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) B",
+                                         " sin(int_z N(z) dz / c_", mmodes[i], ")"))
+                        }
+                    }
+                    
+                    if (T) { # ferrari
+                        S_vert[i,,,] <<- S0 * sin(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
+                    } else if (F) { # chelton
+                        S_vert[i,,,] <<- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * B * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
+                    }
+                    if (verbose > 2) {
+                        print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                                     paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
+                    }
+                } # for i mmodes
+                dimnames(S_vert)[[1]] <<- paste0(varname, mmodes)
+
+                if (F) {
+                    S_vert_mean <<- apply(S_vert[,poly_node_inds_geogr,,], c(1, 3, 4), mean, na.rm=T)
+                    S_vert_mean <<- apply(S_vert_mean, c(1, 2), mean, na.rm=T)
+                    dev.new()
+                    plot(S_vert_mean[1,], interpolate_depths, t="n", 
+                         xlim=range(S_vert_mean, na.rm=T), ylim=rev(range(interpolate_depths)))
+                    abline(v=0, col="gray")
+                    for (i in 1:dim(S_vert_mean)[1]) lines(S_vert_mean[i,], interpolate_depths, col=i)
+                    legend("bottomleft", paste0("S", mmodes),
+                           lty=1, col=mmodes, bty="n", cex=1.5)
+                    stop("asd")
+                }
+
+                #stop("asd")
+
+                # cat everything together
+                #data_node <<- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
+                data_node <<- S_vert
+
+            } # wkb_hvel_mode or wkb_vertvel_mode
+
+            #stop("asd")
+
+        } # which variable 
+
+    } # "Nsquared", "richardson", "rossbyrad", "PmPe", "wkb_hvel_mode", "wkb_vertvel_mode"
 
     if (varname == "mke") {
 
@@ -727,8 +1053,8 @@ sub_calc <- function(data) {
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_low[inds],,] -
-                                               data_node[,nodes_up[inds],,])/dz
+                dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_up[inds],,] -
+                                               data_node[,nodes_low[inds],,])/dz
             }
 
             # update progress bar
@@ -793,8 +1119,8 @@ sub_calc <- function(data) {
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_low[inds],,] -
-                                               data_node[,nodes_up[inds],,])/dz
+                dvardz[,nodes_up[inds],,] <<- (data_node[,nodes_up[inds],,] -
+                                               data_node[,nodes_low[inds],,])/dz
             }
 
             # update progress bar
@@ -860,8 +1186,8 @@ sub_calc <- function(data) {
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                dvardz[,nodes_up[inds],,] <<- (data_node[varinds[2],nodes_low[inds],,] -
-                                               data_node[varinds[2],nodes_up[inds],,])/dz
+                dvardz[,nodes_up[inds],,] <<- (data_node[varinds[2],nodes_up[inds],,] -
+                                               data_node[varinds[2],nodes_low[inds],,])/dz
             }
 
             # update progress bar
@@ -897,8 +1223,8 @@ sub_calc <- function(data) {
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                dvardz2[,nodes_up[inds],,] <<- (Kv_dvardz1[,nodes_low[inds],,] -
-                                                Kv_dvardz1[,nodes_up[inds],,])/dz
+                dvardz2[,nodes_up[inds],,] <<- (Kv_dvardz1[,nodes_up[inds],,] -
+                                                Kv_dvardz1[,nodes_low[inds],,])/dz
             }
 
             # update progress bar
@@ -967,8 +1293,8 @@ sub_calc <- function(data) {
             inds <<- nodes_up > 0 & nodes_low > 0
             if (any(!is.na(inds))) {
                 dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                dvardz[,nodes_up[inds],,] <<- (data_node[varinds,nodes_low[inds],,] -
-                                               data_node[varinds,nodes_up[inds],,])/dz
+                dvardz[,nodes_up[inds],,] <<- (data_node[varinds,nodes_up[inds],,] -
+                                               data_node[varinds,nodes_low[inds],,])/dz
             }
 
             # update progress bar
@@ -2245,6 +2571,7 @@ sub_calc <- function(data) {
         close(pb)
      
         # cumsum meridionally 
+        # dim(moc) = c(1,nregy,ndepths,nrecspf)
         if (view != "moc_global") {
             #moc <<- apply(moc, 2, cumsum)
             for (i in (length(moc_reg_lat_global) - 1):1) {

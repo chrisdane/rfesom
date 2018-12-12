@@ -18,6 +18,13 @@ sub_vertical_integral <- function(data_nod3) {
                             indent=paste0("     ", indent)) # 5 " " for default print()
     #timei <<- rep(NA, t=ndepths)
 
+    if (F) {
+        for (i in 1:ndepths) {
+            inds <-  which(aux3d[i,] != -999)
+            print(length(which(is.na(N_node[1,drop(aux3d[i,inds]),,]))))
+        }
+    }
+
     for (i in 1:ndepths) {
 
         ptmi <<- proc.time()[3]
@@ -28,7 +35,7 @@ sub_vertical_integral <- function(data_nod3) {
 
             if (F) {
                 for (i in 1:ndepths) {
-                    inds <- which(aux3d[i,] != -999)
+                    inds <<- which(aux3d[i,] != -999)
                     print(i)
                     print(paste0(range(inds), collapse=","))
                     print(paste0(range(drop(indsurf[i,inds])), collapse=","))
@@ -39,46 +46,52 @@ sub_vertical_integral <- function(data_nod3) {
             #stop("asd")
             aux <<- data_nod3[,drop(aux3d[i,inds]),,] # c(nvars,nnod=1,ndepths=1,nrecspf) 
 
-            #indlevel[i,inds]
-            #indsurf[i,inds]
-            #if (i == 105 && j == 30) stop("asd")
+            # only add non-NA values
+            #nonainds <<- !is.na(aux)
 
-            # if integrate between specific depths
-            if (length(depths) == 2) {
-                
-                z_i <<- array(interpolate_depths[i], dim(aux))
+            #if (any(nonainds)) {
 
-                if (depths[2] == "MLD") {
-                    # dim(mld_node) c(nvars=1,nod2d_n,ndephts=1,nrecspf)
-                    z_mld <<- mld_node[,drop(indsurf[i,inds]),,]
-                    z_mld <<- adrop(z_mld, drop=1)
-                    z_mld <<- replicate(z_mld, n=dim(aux)[1]) # nvars
-                    z_mld <<- aperm(z_mld, c(4, 1, 2, 3))
-                    z_inds <<- z_i <= z_mld
+                # if integrate between specific depths
+                if (length(depths) == 2) {
+                    
+                    z_i <<- array(interpolate_depths[i], dim(aux))
 
+                    if (depths[2] == "MLD") {
+                        # dim(mld_node) c(nvars=1,nod2d_n,ndephts=1,nrecspf)
+                        z_mld <<- mld_node[,drop(indsurf[i,inds]),,]
+                        z_mld <<- adrop(z_mld, drop=1)
+                        z_mld <<- replicate(z_mld, n=dim(aux)[1]) # nvars
+                        z_mld <<- aperm(z_mld, c(4, 1, 2, 3))
+                        z_inds <<- z_i <= z_mld
+
+                    } else {
+                        #z_max <<- array(interpolate_depths[ndepths], dim(aux))
+                        #z_inds <<- z_i <= z_max # all TRUE
+                        z_inds <<- array(T, dim=dim(aux))
+                    }
+                    #print(str(z_inds)) 
+
+                    # if some depths between levels
+                    if (any(z_inds)) {
+
+                        #print(paste0(length(which(is.na(aux*z_inds))), " NA inds ..."))
+
+                        #print(sum(aux*deltaz[i]))
+                        #print(sum(z_inds*aux*deltaz[i]))
+                        tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + z_inds*aux*deltaz[i]
+                        #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + z_inds*deltaz[i]
+
+                    }
+
+                # else integrate between all depths
                 } else {
-                    z_max <<- array(interpolate_depths[ndepths], dim(aux))
-                    z_inds <<- z_i <= z_max # all TRUE
-                }
-                #print(str(z_inds)) 
 
-                # if some depths between levels
-                if (any(z_inds)) {
+                    tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + aux*deltaz[i]
+                    #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + deltaz[i]
 
-                    #print(sum(aux*deltaz[i]))
-                    #print(sum(z_inds*aux*deltaz[i]))
-                    tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + z_inds*aux*deltaz[i]
-                    #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + z_inds*deltaz[i]
+                } # integrate between specific or all depths
 
-                }
-
-            # else integrate between all depths
-            } else {
-
-                tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + aux*deltaz[i]
-                #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + deltaz[i]
-
-            } # integrate between specific or all depths
+            #} # data not all NA
 
         } # if not -999
 

@@ -36,8 +36,8 @@ sub_prepare1 <- function(data_nod3d) {
                         node_up <<- aux3d[j,i]
                         node_low <<- aux3d[j+1,i]
                         dz <<- nod3d_z[node_up] - nod3d_z[node_low]
-                        tmp[sgsinds,aux3d[j,i],,] <<- (data_nod3d[sgsinds,node_low,,] -
-                                                       data_nod3d[sgsinds,node_up,,])/dz
+                        tmp[sgsinds,aux3d[j,i],,] <<- (data_nod3d[sgsinds,node_up,,] -
+                                                       data_nod3d[sgsinds,node_low,,])/dz
                     } # 
                 } # j
                 # update progress bar
@@ -55,8 +55,9 @@ sub_prepare1 <- function(data_nod3d) {
                 inds <<- nodes_up > 0 & nodes_low > 0
                 if (any(!is.na(inds))) {
                     dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                    tmp[sgsinds,nodes_up[inds],,] <<- (data_nod3d[sgsinds,nodes_low[inds],,] -
-                                                       data_nod3d[sgsinds,nodes_up[inds],,])/dz
+                    #print(dz)
+                    tmp[sgsinds,nodes_up[inds],,] <<- (data_nod3d[sgsinds,nodes_up[inds],,] -
+                                                       data_nod3d[sgsinds,nodes_low[inds],,])/dz
                 }
 
                 # update progress bar
