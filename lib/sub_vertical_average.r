@@ -58,6 +58,7 @@ sub_vertical_average <- function(data_vert) {
 
             tmp <<- tmp/dep_total
             tmp[is.nan(tmp)] <<- NA
+            rm(dep_total, envir = .GlobalEnv)
 
             if (F) { # special # soga = 34.72394 psu
                 patch_area <<- replicate(cluster_area_2d, n=dim(tmp)[4])

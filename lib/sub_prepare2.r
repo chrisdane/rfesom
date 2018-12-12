@@ -4,8 +4,6 @@
 
 sub_prepare2 <- function(data) {
 
-    data_global <<- data
-
     ## check user input
     if (insitudens_tag && ("rho" %in% varname_fesom)) {
         # in situ density calculation not necessary since it was already loaded from fesom data.

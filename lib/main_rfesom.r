@@ -105,7 +105,8 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "colors/pals.r")) {
+            "image.plot.pre.r", "colors/pals.r",
+            "get_memory_of_workspace.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
 
@@ -141,8 +142,8 @@ if (transient_mode == "areadepth" && !regular_transient_out) {
     transient_out <- F
 }
 if (regular_transient_out &&
-    !any(regular_mode == c("area", "areadepth"))) {
-    stop("If 'regular_transient_out'=T, 'regular_mode' must equal 'area' or 'areadepth'.")
+    !any(transient_mode == c("area", "areadepth"))) {
+    stop("If 'regular_transient_out'=T, 'transient_mode' must equal 'area' or 'areadepth'.")
 }
 if (!vec) uv_out <- F
 if (!uv_out && sd_method == "ackermann83") {
@@ -293,6 +294,7 @@ nisobaths <- 0
 zave_method <- 1 # default = 1
     # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_global_vert[inds_2d]*deltaz[i]
     # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
+keep_gsw <- F
 pb_char <- "#"
 pb_width <- 30
 pb_style <- 3
@@ -1088,24 +1090,25 @@ if (!restart || # ... not a restart run
     yc_global <- yc
 
     ## Save for restart run
-    if (dim_tag == "2D") {
-        nod_x_save_2d <- nod_x
-        nod_y_save_2d <- nod_y
-    } else if (dim_tag == "3D") {
-        nod_x_save_3d <- nod_x
-        nod_y_save_3d <- nod_y
-        nod_z_save_3d <- nod_z
-        aux3d_save_3d <- aux3d
-        deltaz_all_save <- deltaz_all
+    if (F) {
+        if (dim_tag == "2D") {
+            nod_x_save_2d <- nod_x
+            nod_y_save_2d <- nod_y
+        } else if (dim_tag == "3D") {
+            nod_x_save_3d <- nod_x
+            nod_y_save_3d <- nod_y
+            nod_z_save_3d <- nod_z
+            aux3d_save_3d <- aux3d
+            deltaz_all_save <- deltaz_all
+        }
+        xcsur_save <- xcsur
+        ycsur_save <- ycsur
+        xc_save <- xc
+        yc_save <- yc
+        xc_global_save <- xc_global
+        yc_global_save <- yc_global
+        elem2d_orig_save <- elem2d_orig
     }
-    xcsur_save <- xcsur
-    ycsur_save <- ycsur
-    xc_save <- xc
-    yc_save <- yc
-    xc_global_save <- xc_global
-    yc_global_save <- yc_global
-    elem2d_orig_save <- elem2d_orig
-
 } else {
     if (verbose > 0) {
         print(paste0("This is a restart run."))
@@ -1288,7 +1291,9 @@ if (zave_method == 2 &&
             tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 0, T, F))
             elem3d <- t(as.matrix(tmp))
         }
-        elem3d_save <- elem3d
+        if (F) {
+            elem3d_save <- elem3d
+        }
 
         # Elementwise derivation:
         source(paste0(subroutinepath, "deriv_3d.r"))
@@ -2806,12 +2811,17 @@ if (nfiles > 0) {
                 
                 } # for l ndepths
 
-                indlower_save <- indlower
-                indupper_save <- indupper
-                indsurf_save <- indsurf
-                indcoef_save <- indcoef
-                indlevel_save <- indlevel
-                deltaz_save <- deltaz
+                if (F) {
+                    indlower_save <- indlower
+                    indupper_save <- indupper
+                    indsurf_save <- indsurf
+                    indcoef_save <- indcoef
+                    indlevel_save <- indlevel
+                    deltaz_save <- deltaz
+                }
+
+                rm(rnd)
+                rm(de)
 
             } # if depths == "bottom" or not
 
@@ -2912,9 +2922,9 @@ if (nfiles == 0) { # read data which are constant in time
         narrays <- ifelse(transient_out || regular_transient_out, 4, 3)
         if (F && (verbose == 2 || verbose == 3)) {
             print(paste0(indent, "Allocate data matrices ..."))
-            source(paste0(subroutinepath, "get_memory_of_workspace_gb.r"))
-            source(paste0(subroutinepath, "get_memory_of_session_gb.r"))
-            source(paste0(subroutinepath, "get_free_memory_of_hostname_gb.r"))
+            source(paste0("~/scripts/r/functions/get_memory_of_workspace_gb.r"))
+            source(paste0("~/scripts/r/functions/get_memory_of_session_gb.r"))
+            source(paste0("~/scripts/r/functions/get_free_memory_of_hostname_gb.r"))
             print(paste0(indent, "   workspace memory = ", round(get_memory_of_workspace_gb(), 3), " Gb ..."))
             print(paste0(indent, "   session (pid=", pid, ") memory = ", round(get_memory_of_session_gb(pid), 3), " Gb ..."))
             print(paste0(indent, "   free memory (host=", host, ") = ", round(get_free_memory_of_hostname_gb(), 3), " Gb ..."))
@@ -2956,19 +2966,6 @@ if (nfiles == 0) { # read data which are constant in time
             nrecloop <- 1
         #}
     } # if rec_tag
-
-    if (F) {
-        if (F && (verbose == 2 || verbose == 3)) {
-            print(paste0(indent, "   workspace memory = ", round(get_memory_of_workspace_gb(), 3), " Gb ..."))
-            print(paste0(indent, "   session (pid=", pid, ") memory = ", round(get_memory_of_session_gb(pid), 3), " Gb ..."))
-            print(paste0(indent, "   free memory (host=", host, ") = ", round(get_free_memory_of_hostname_gb(), 3), " Gb ..."))
-            if (F) {
-                ws <- sort(sapply(ls(), function(x) object.size(get(x))), decreasing=T)/1024^2 # Mb
-                print(paste0(indent, "   10 biggest objects in draw_oce() [Mb]:"))
-                print(round(ws[1:10], 3))
-            }
-        }
-    }
 
     ## Year loop
     for (year in years_loop) { 
@@ -3723,6 +3720,13 @@ if (nfiles == 0) { # read data which are constant in time
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_calc(data_node) # overwrites data_node with the result of sub_calc()
                 indent <- indent_save; rm(indent_save)
+                if (exists("tmp")) rm(tmp)
+
+                if (F) {
+                    ws <- get_memory_of_workspace_gb(ls(), "Mb")
+                    print(ws[1:15])
+                    stop("asd")
+                }
 
                 ## Change to proper units if wanted
                 if (multfac_transient != 1) {
@@ -3769,6 +3773,7 @@ if (nfiles == 0) { # read data which are constant in time
                         }
                         sub_vertical_integral(data_node) # produces tmp
                         data_node <- tmp # dim(data_nod) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+                        rm(tmp)
                     } # if integrate_depth
 
                     ## at this point
@@ -3817,7 +3822,7 @@ if (nfiles == 0) { # read data which are constant in time
                         (regular_transient_out && transient_mode == "area") ||
                         (regular_transient_out && transient_mode == "areadepth")) {
                         if (verbose > 1) {
-                            print(paste0(indent, "Rearrange data_node from (nod2d_n=", nod2d_n, 
+                            print(paste0(indent, "For regular interpolation rearrange data_node from (nod2d_n=", nod2d_n, 
                                          " x ndepths=", ndepths, ") to (3 x elem2d_n=", 
                                          elem2d_n, " x ndepths=", ndepths, ") ...")) 
                         }
@@ -3848,14 +3853,14 @@ if (nfiles == 0) { # read data which are constant in time
                         ## Interpolation of transient data on regular grid
                         if (regular_transient_out) {
                             if (total_rec == 0) { # initialize matrices
-                                datamat_reg_global <- array(NA, 
-                                                            dim=c(dim(data_elem)[1],        # nvars
-                                                                  dim(XI)[2], dim(XI)[1],   # x, y
-                                                                  dim(data_elem)[4:5]),     # ndepths, nrecspf
-                                                            dimnames=c(dimnames(data_elem)[1],
-                                                                       list(xi=round(XI[1,], 2), 
-                                                                            yi=round(YI[,1], 2)),
-                                                                       dimnames(data_elem)[4:5]))
+                                datamat_reg <- array(NA, 
+                                                     dim=c(dim(data_elem)[1],        # nvars
+                                                           length(xinds), length(yinds),   # x, y
+                                                           dim(data_elem)[4:5]),     # ndepths, nrecspf
+                                                     dimnames=c(dimnames(data_elem)[1],
+                                                                list(xi=round(XI[1,xinds], 2), 
+                                                                     yi=round(YI[yinds,1], 2)),
+                                                                dimnames(data_elem)[4:5]))
                             } # if total_rec == 0
                            
                             if (verbose > 1) {
@@ -3879,31 +3884,21 @@ if (nfiles == 0) { # read data which are constant in time
                                     }
 
                                     for (k in 1:dim(data_elem)[5]) { # nrecspf
-                                        if (dim(data_elem)[5] > 1 && verbose > 2) {
+                                        if (dim(data_elem)[5] > 1 && verbose > 1) {
                                             print(paste0(indent, "         time = ",
                                                          dimnames(data_elem)[[5]][k], " ..."))
                                         }
                                     
-                                        datamat_reg_global[i,,,j,k] <- t(sub_calc_regular_2d_interp(
-                                                                         I_MAT=IMAT, XI=XI, YI=YI,
-                                                                         xp=xc_global, yp=yc_global,
-                                                                         datamat=drop(data_elem[i,,,j,k])))
+                                        datamat_reg[i,,,j,k] <- t(sub_calc_regular_2d_interp(
+                                                                  I_MAT=IMAT[yinds,xinds], 
+                                                                  XI=XI[yinds,xinds], 
+                                                                  YI=YI[yinds,xinds],
+                                                                  xp=xc_global, yp=yc_global,
+                                                                  datamat=drop(data_elem[i,,,j,k])))
                                     } # for k nrecspf
                                 } # for j ndepths
                             } # for i nvars
                             
-                            ## Select data in defined area
-                            if (verbose > 2) {
-                                print(paste0(indent, "Select data in '", area, "' area from 'datamat_reg_global':",
-                                             round(range(map_geogr_lim_lon)[1], 2), " to ",
-                                             round(range(map_geogr_lim_lon)[2], 2),
-                                             " deg longitude and ",
-                                             round(range(map_geogr_lim_lat)[1], 2), " to ",
-                                             round(range(map_geogr_lim_lat)[2], 2),
-                                             " deg latitude ..."))
-                            }
-                            datamat_reg <- datamat_reg_global[,xinds,yinds,,] # nvar, nlon, nlat, ndepth, ntime
-                        
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(datamat_reg)[1]) {
@@ -4461,14 +4456,16 @@ if (nfiles == 0) { # read data which are constant in time
                                              "), icount=c(", 
                                              paste0(transient_count_reg, collapse=","), ")"))
                                 print(paste0(indent, "   ", timei[1], " .."))
-                                if (length(timei) > 1) {
-                                    if (length(timei) > 3) {
-                                        print(paste0(indent, "   ", timei[2], " .."))
-                                        print(paste0(indent, "    .."))
-                                        print(paste0(indent, "   ", timei[length(timei)]))
-                                    } else {
-                                        for (i in 2:length(timei)) {
-                                            print(paste0(indent, "   ", timei[i], " .."))
+                                if (verbose > 2) {
+                                    if (length(timei) > 1) {
+                                        if (length(timei) > 3) {
+                                            print(paste0(indent, "   ", timei[2], " .."))
+                                            print(paste0(indent, "    .."))
+                                            print(paste0(indent, "   ", timei[length(timei)]))
+                                        } else {
+                                            for (i in 2:length(timei)) {
+                                                print(paste0(indent, "   ", timei[i], " .."))
+                                            }
                                         }
                                     }
                                 }
@@ -4860,7 +4857,7 @@ if (nfiles == 0) { # read data which are constant in time
                         data_node <- tmp # overwrite old data_node
                         # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
                         # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                        rm(tmp)
+                        rm(tmp, data_vert)
 
                         ## Check data so far
                         if (verbose > 2) {
@@ -5687,7 +5684,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
             sub_n3_to_n2xde(data_node_ltm) # produces tmp
             data_global_vert_ltm <- tmp # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf=1)
-            rm(tmp)
+            rm(tmp, data_vert_ltm)
         }
 
         # get varnames of data
@@ -5710,6 +5707,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
         }
         sub_calc(data_node_ltm) # overwrites data_node_ltm with the result of sub_calc()
+        if (exists("tmp")) rm(tmp)
 
         ## Check data so far
         if (verbose > 2) {
@@ -5865,14 +5863,14 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                          " deg) ..."))
         }
 
-        datamat_reg_global_ltm <- array(NA, 
-                                    dim=c(dim(data_elem_ltm)[1],        # nvars
-                                          dim(XI)[2], dim(XI)[1],       # x, y
-                                          dim(data_elem_ltm)[4:5]),     # ndepths, nrecspf
-                                    dimnames=c(dimnames(data_elem_ltm)[1],
-                                               list(xi=round(XI[1,], 2), 
-                                                    yi=round(YI[,1], 2)),
-                                               dimnames(data_elem_ltm)[4:5]))
+        datamat_reg_ltm <- array(NA, 
+                                 dim=c(dim(data_elem_ltm)[1],        # nvars
+                                       length(xinds), length(yinds),       # x, y
+                                       dim(data_elem_ltm)[4:5]),     # ndepths, nrecspf
+                                 dimnames=c(dimnames(data_elem_ltm)[1],
+                                            list(xi=round(XI[1,xinds], 2), 
+                                                 yi=round(YI[yinds,1], 2)),
+                                            dimnames(data_elem_ltm)[4:5]))
        
         ## interpolate on regular grid
         for (i in 1:dim(data_elem_ltm)[1]) { # nvars
@@ -5880,48 +5878,30 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 print(paste0(indent, "   var = ", 
                              dimnames(data_elem_ltm)[[1]][i], " ..."))
             }
-
             for (j in 1:dim(data_elem_ltm)[4]) { # ndepths
                 if (verbose > 2) {
                     print(paste0(indent, "      depth = ", 
                                  dimnames(data_elem_ltm)[[4]][j], " ..."))
                 }
-
                 for (k in 1:dim(data_elem_ltm)[5]) { # nrecspf
                     if (verbose > 2) {
                         print(paste0(indent, "         time = ",
                                      dimnames(data_elem_ltm)[[5]][k], " ..."))
                     }
-                
-                    datamat_reg_global_ltm[i,,,j,k] <- t(sub_calc_regular_2d_interp(
-                                                         I_MAT=IMAT, XI=XI, YI=YI,
-                                                         xp=xc_global, yp=yc_global,
-                                                         datamat=drop(data_elem_ltm[i,,,j,k])))
+                    datamat_reg_ltm[i,,,j,k] <- t(sub_calc_regular_2d_interp(I_MAT=IMAT[yinds,xinds],
+                                                  XI=XI[yinds,xinds],
+                                                  YI=YI[yinds,xinds],
+                                                  #xp=xc_global[,poly_inds_geogr],
+                                                  #yp=yc_global[,poly_inds_geogr],
+                                                  #datamat=drop(data_elem_ltm[i,,poly_inds_geogr,j,k]))
+                                                  xp=xc_global,
+                                                  yp=yc_global,
+                                                  datamat=drop(data_elem_ltm[i,,,j,k]))
+                                                 )
                 } # for k nrecspf
             } # for j ndepths
         } # for i nvars
 
-        ## Check data so far
-        if (verbose > 2) {
-            for (i in 1:dim(datamat_reg_global_ltm)[1]) {
-                print(paste0(indent, "   min/max datamat_reg_global_ltm[", i, ":", 
-                             dimnames(datamat_reg_global_ltm)[[1]][i], ",,,,] = ",
-                             paste0(range(datamat_reg_global_ltm[i,,,,], na.rm=T), collapse="/")))
-            }
-        }
-
-        ## Select data in defined area
-        if (verbose > 2) {
-            print(paste0(indent, "Select data in '", area, "' area from 'datamat_reg_global_ltm': ",
-                         round(range(map_geogr_lim_lon)[1], 2), " to ",
-                         round(range(map_geogr_lim_lon)[2], 2),
-                         " deg longitude and ",
-                         round(range(map_geogr_lim_lat)[1], 2), " to ",
-                         round(range(map_geogr_lim_lat)[2], 2),
-                         " deg latitude ..."))
-        }
-        datamat_reg_ltm <- datamat_reg_global_ltm[,xinds,yinds,,] # nvar, nlon, nlat, ndepth, ntime
-    
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(datamat_reg_ltm)[1]) {
@@ -6004,6 +5984,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
         } # which projection
+
+        rm(data_elem_ltm)
 
         ## Remove NA locations due to coordinate transformation
         if (length(na_inds) > 0) {

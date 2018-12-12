@@ -29,7 +29,7 @@
 
 sub_calc <- function(data) {
 
-    data_global <<- data # for old stuff; need to update
+    #data_global <<- data # for old stuff; need to update
 
     ## Select one component of loaded data
     if (any(varname == c("u", "v", "initudens", "potdens", "insitub", "potb"))) {
@@ -505,6 +505,10 @@ sub_calc <- function(data) {
                                                     p=p_node)
             }
 
+            if (!keep_gsw) {
+                rm(SA_node, CT_node, p_node, envir=.GlobalEnv)
+            }
+
             # vertical derivative
             pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                     char=pb_char, width=pb_width,
@@ -523,7 +527,11 @@ sub_calc <- function(data) {
                 # update progress bar
                 setTxtProgressBar(pb, i)
             } # for i aux3d_n-1
-            
+            # close progress bar
+            close(pb)
+
+            if (!keep_gsw) rm(potdens_node, envir=.GlobalEnv)
+
             N2_node <<- -g/rho0*tmp
             dimnames(N2_node)[[1]] <<- "N2"
         
@@ -594,7 +602,7 @@ sub_calc <- function(data) {
             }
 
             ## N = sqrt(N2)
-            N_node <<- N2_node
+            N_node <<- N2_node # R does not use more memory here
             N_node[N_node < 0] <<- 0 #NA # claudi uses 0 here
             N_node <<- sqrt(N_node)
             if (verbose > 2) {
@@ -608,6 +616,7 @@ sub_calc <- function(data) {
                 }
             }
             dimnames(N_node)[[1]] <<- "N"
+            if (!keep_gsw) rm(N2_node,  envir=.GlobalEnv)
 
             ## rearrange N
             if (verbose > 1) {
@@ -621,31 +630,34 @@ sub_calc <- function(data) {
             N_vert <<- tmp
 
             ## vertical integral of N
-            if (verbose > 1) {
-                print(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
-                if (verbose > 2) {
-                    print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+            if (F) { # not needed since N is also integrated from depth one step later
+                if (verbose > 1) {
+                    print(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
+                    if (verbose > 2) {
+                        print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                    }
                 }
-            }
-            sub_vertical_integral(N_node) # produces tmp
-            N_intz_const <<- tmp
-            if (verbose > 2) {
-                finite_inds <<- is.finite(N_intz_const)
-                print(paste0(indent, "   min/max N_intz_const = ",
-                             paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
-            }
-            dimnames(N_intz_const)[[1]] <<- "int_N_dz_const"
+                sub_vertical_integral(N_node) # produces tmp
+                N_intz_const <<- tmp
+                if (verbose > 2) {
+                    finite_inds <<- is.finite(N_intz_const)
+                    print(paste0(indent, "   min/max N_intz_const = ",
+                                 paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
+                }
+                dimnames(N_intz_const)[[1]] <<- "int_N_dz_const"
+            } # F
 
             ## vertical integral of N from bottom: keep z dim
             if (verbose > 1) {
                 print(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
-                             "-", interpolate_depths[1], " m ..."))
+                             "-", interpolate_depths[1], " m and keep z dim ..."))
                 if (verbose > 2) {
                     print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
                 }
             }
             sub_vertical_integral_keepz(N_node)
             N_intz_z <<- tmp
+            if (!keep_gsw) rm(N_node, envir=.GlobalEnv)
             if (verbose > 2) {
                 finite_inds <<- is.finite(N_intz_z)
                 print(paste0(indent, "   min/max N_intz_z = ",
@@ -662,6 +674,7 @@ sub_calc <- function(data) {
             }
             sub_n3_to_n2xde(N_intz_z) # produces tmp
             N_intz_z_vert <<- tmp
+            if (!keep_gsw) rm(N_intz_z, envir=.GlobalEnv)
             dimnames(N_intz_z_vert)[[1]] <<- "int_N_dz_z"
    
             # for testing
@@ -723,21 +736,24 @@ sub_calc <- function(data) {
                 abline(v=N_intz_const_mean[1,1], col="blue")
                 legend("top", c("N_vert", "N_intz_z_vert", "N_intz_const"),
                        col=c("black", "red", "blue"), lty=1, bty="n", cex=1.5)
-            }
+            } # F for testing
             #stop("asd")
 
             # mode-m baroclinic wavespeed
             if (verbose > 0) {
-                print(paste0(indent, "Calc baroclinic wave speeds (Stewart et al. 2017) ..."))
+                print(paste0(indent, "Calc baroclinic wave speeds (Chelton et al. 1998; Ferrari et al. 2010; Stewart et al. 2017) ..."))
             }
-            c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_const)[2:4]),
+            c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
                              dimnames=c(list(mmodes=mmodes),
-                                        dimnames(N_intz_const)[2:4]))
+                                        dimnames(N_intz_z_vert)[2],
+                                        list(depths=NULL),
+                                        dimnames(N_intz_z_vert)[4]))
             for (i in 1:length(mmodes)) {
                 if (verbose > 0) {
-                    print(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " pi) * int_z N dz"))
+                    print(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
                 }
-                c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_const
+                #c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_const
+                c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_z_vert[,,1,] # same at the surface
                 if (verbose > 2) {
                     print(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
                                  paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
@@ -781,6 +797,8 @@ sub_calc <- function(data) {
                 #data_node <<- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
                 data_node <<- R_vert
                 
+                if (!keep_gsw) rm(R_vert, envir=.GlobalEnv)
+
             } else if (varname == "wkb_vertvel_mode") {
 
                 # mode-m baroclinic vertical velocity
@@ -832,9 +850,11 @@ sub_calc <- function(data) {
                 #data_node <<- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
                 data_node <<- S_vert
 
+                if (!keep_gsw) rm(S_vert, envir=.GlobalEnv)
+
             } # wkb_hvel_mode or wkb_vertvel_mode
 
-            #stop("asd")
+            if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, envir=.GlobalEnv)
 
         } # which variable 
 
