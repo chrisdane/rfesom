@@ -3375,9 +3375,9 @@ if (nfiles == 0) { # read data which are constant in time
 
             }) # declare_time
 
+            indent <- "         "
             ## Read raw FESOM output
             for (file in 1:nfiles) {
-                indent <- "      "
                 if (verbose > 1) {
                     print(paste0(indent, "Get '", varname_fesom[file],
                                  "' from ", fnames[file]))
@@ -3574,6 +3574,7 @@ if (nfiles == 0) { # read data which are constant in time
             ## Calculate and save transient data for each timestep if wanted
             if (any(transient_out, regular_transient_out, sd_out)) {
 
+                indent <- "            "
                 if (verbose > 1) {
                     print(paste0(indent, "Calc and save transient ", transient_mode, " of area ", area, " ..."))
                 }
@@ -3829,132 +3830,163 @@ if (nfiles == 0) { # read data which are constant in time
                         #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
                         #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
                         #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
- 
-                        data_elem <- array(data_node[,pos[elem2d],,], 
-                                           dim=c(dim(data_node)[1],    # nvars
-                                                 3,                    # 3 nodes per element
-                                                 elem2d_n,             # elem2d_n
-                                                 dim(data_node)[3:4]), # ndepths, nrecspf
-                                           dimnames=c(dimnames(data_node)[1],
-                                                      list(node=1:3, 
-                                                           elem=NULL), 
-                                                      dimnames(data_node)[3:4]))
 
-                        ## Check data so far
-                        if (verbose > 2) {
-                            for (i in 1:dim(data_elem)[1]) {
-                                print(paste0(indent, "   min/max data_elem[", i, ":", 
-                                             dimnames(data_elem)[[1]][i], ",,,,] = ",
-                                             paste0(range(data_elem[i,,,,], na.rm=T), collapse="/")))
-                            }
-                        } 
+                        # new: save memory; do for every depth?
+                        if (length(poly_inds_geogr) == 0) {
+                            stop("this should not happen")
+                        }
 
-                        ## Interpolation of transient data on regular grid
+                        # save regular interpolated data in region _area_
+                        datamat <- array(NA, 
+                                         dim=c(dim(data_node)[1],           # nvars
+                                               3,                           # 3 nodes per element
+                                               length(poly_inds_geogr),     # elems in area
+                                               dim(data_node)[3:4]),        # ndepths, nrecspf
+                                         dimnames=c(dimnames(data_node)[1],
+                                                    list(node=1:3,
+                                                         elem=NULL),
+                                                    dimnames(data_node)[3:4]))
+
                         if (regular_transient_out) {
-                            if (total_rec == 0) { # initialize matrices
-                                datamat_reg <- array(NA, 
-                                                     dim=c(dim(data_elem)[1],        # nvars
-                                                           length(xinds), length(yinds),   # x, y
-                                                           dim(data_elem)[4:5]),     # ndepths, nrecspf
-                                                     dimnames=c(dimnames(data_elem)[1],
-                                                                list(xi=round(XI[1,xinds], 2), 
-                                                                     yi=round(YI[yinds,1], 2)),
-                                                                dimnames(data_elem)[4:5]))
-                            } # if total_rec == 0
-                           
                             if (verbose > 1) {
-                                print(paste0(indent, "Regular interpolation ('regular_dx'=",
-                                             sprintf("%.3f", regular_dx), " deg,'regular_dy'=", 
+                                print(paste0(indent, "Interpolate on regular grid ('regular_dx'=",
+                                             sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                                              sprintf("%.3f", regular_dy),
-                                             " deg) ..."))
+                                             " deg) and "))
+                                print(paste0(indent, "   select data in '", area, "' area: ",
+                                             round(range(map_geogr_lim_lon)[1], 2), " to ",
+                                             round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
+                                             round(range(map_geogr_lim_lat)[1], 2), " to ",
+                                             round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
                             }
-                           
-                            ## interpolate on regular grid
-                            for (i in 1:dim(data_elem)[1]) { # nvars
-                                if (dim(data_elem)[1] > 1 && verbose > 2) {
-                                    print(paste0(indent, "   var = ", 
-                                                 dimnames(data_elem)[[1]][i], " ..."))
-                                }
+                        }
 
-                                for (j in 1:dim(data_elem)[4]) { # ndepths
-                                    if (dim(data_elem)[4] > 1 && verbose > 2) {
-                                        print(paste0(indent, "      depth = ", 
-                                                     dimnames(data_elem)[[4]][j], " ..."))
+                        # create progress bar
+                        pb <- mytxtProgressBar(min=0, max=dim(data_node)[3], style=pb_style,
+                                               char=pb_char, width=pb_width,
+                                               indent=paste0("     ", indent)) # 5 " " for default print()
+
+                        for (di in 1:dim(data_node)[3]) {
+
+                            data_elem <- array(data_node[,pos[elem2d],di,], 
+                                               dim=c(dim(data_node)[1],    # nvars
+                                                     3,                    # 3 nodes per element
+                                                     elem2d_n,             # elem2d_n
+                                                     1,                    # 1 depth
+                                                     dim(data_node)[4]),   # nrecspf
+                                               dimnames=c(dimnames(data_node)[1],
+                                                          list(node=1:3, 
+                                                               elem=NULL),
+                                                          dimnames(data_node)[3][di],
+                                                          dimnames(data_node)[4]))
+
+                            ## Check data so far
+                            if (verbose > 2) {
+                                for (i in 1:dim(data_elem)[1]) {
+                                    print(paste0(indent, "   min/max data_elem[", i, ":", 
+                                                 dimnames(data_elem)[[1]][i], ",,,,] = ",
+                                                 paste0(range(data_elem[i,,,,], na.rm=T), collapse="/")))
+                                }
+                            } 
+
+                            ## Interpolation of transient data on regular grid
+                            if (regular_transient_out) {
+                                if (total_rec == 0 && di == 1) { # initialize matrices
+                                    datamat_reg <- array(NA, 
+                                                         dim=c(dim(data_node)[1],              # nvars
+                                                               length(xinds), length(yinds),   # x, y of _area_
+                                                               dim(data_node)[3:4]),           # ndepths, nrecspf
+                                                         dimnames=c(dimnames(data_node)[1],
+                                                                    list(xi=round(xi, 2), 
+                                                                         yi=round(yi, 2)),
+                                                                    dimnames(data_node)[3:4]))
+                                } # if total_rec == 0
+                               
+                                ## interpolate on regular grid
+                                for (i in 1:dim(data_elem)[1]) { # nvars
+                                    if (dim(data_elem)[1] > 1 && verbose > 2) {
+                                        print(paste0(indent, "   var = ", 
+                                                     dimnames(data_elem)[[1]][i], " ..."))
                                     }
 
-                                    for (k in 1:dim(data_elem)[5]) { # nrecspf
-                                        if (dim(data_elem)[5] > 1 && verbose > 1) {
-                                            print(paste0(indent, "         time = ",
-                                                         dimnames(data_elem)[[5]][k], " ..."))
+                                    for (j in 1:dim(data_elem)[5]) { # nrecspf
+                                        if (dim(data_elem)[5] > 1 && verbose > 2) {
+                                            print(paste0(indent, "      time = ",
+                                                         dimnames(data_elem)[[5]][j], " ..."))
                                         }
-                                    
-                                        datamat_reg[i,,,j,k] <- t(sub_calc_regular_2d_interp(
+                                   
+                                        datamat_reg[i,,,di,j] <- t(sub_calc_regular_2d_interp(
                                                                   I_MAT=IMAT[yinds,xinds], 
                                                                   XI=XI[yinds,xinds], 
                                                                   YI=YI[yinds,xinds],
                                                                   xp=xc_global, yp=yc_global,
-                                                                  datamat=drop(data_elem[i,,,j,k])))
-                                    } # for k nrecspf
-                                } # for j ndepths
-                            } # for i nvars
-                            
+                                                                  datamat=drop(data_elem[i,,,,j])))
+                                    } # for j nrecspf
+                                } # for i nvars
+                                
+                                ## Check data so far
+                                if (verbose > 2) {
+                                    for (i in 1:dim(datamat_reg)[1]) {
+                                        if (!all(is.na(datamat_reg[i,,,di,]))) {
+                                            print(paste0(indent, "   min/max datamat_reg[", i, ":", 
+                                                         dimnames(datamat_reg)[[1]][i], ",,,", di, ",] = ",
+                                                         paste0(range(datamat_reg[i,,,di,], na.rm=T), collapse="/")))
+                                        }
+                                    }
+                                }
+
+                            } # if regular_transient_out
+
+                            ## Pick data from plot area
+                            if (projection != "orthographic") {
+                                if (proj_lims) {
+                                    if (length(poly_inds_geogr) > 0) {
+                                        datamat[,,,di,] <- data_elem[,,poly_inds_geogr,,]
+                                    }
+
+                                } else if (geogr_lims) {
+                                    if (projection != "rectangular") {
+                                        if (length(poly_inds_proj) > 0) {
+                                            datamat[,,,di,] <- data_elem[,,poly_inds_proj,,]
+                                        }
+                                    } else if (projection == "rectangular") {
+                                        if (length(poly_inds_geogr) > 0) {
+                                            datamat[,,,di,] <- data_elem[,,poly_inds_geogr,,]
+                                        }
+                                    }
+                                }
+                            } else if (projection == "orthographic") {
+                                datamat[,,,di,] <- data_elem[,,poly_inds_proj,,]
+                            }
+
+                            ## Remove NA locations due to coordinate transformation
+                            if (length(na_inds) > 0) datamat <- datamat[,,-na_inds,,]
+
                             ## Check data so far
                             if (verbose > 2) {
-                                for (i in 1:dim(datamat_reg)[1]) {
-                                    print(paste0(indent, "   min/max datamat_reg[", i, ":", 
-                                                 dimnames(datamat_reg)[[1]][i], ",,,,] = ",
-                                                 paste0(range(datamat_reg[i,,,,], na.rm=T), collapse="/")))
-                                }
-                            }
-
-                        } # if regular_transient_out
-
-                        ## Pick data from plot area
-                        if (verbose > 2) {
-                            print(paste0(indent, "Select data in '", area, "' area from 'data_elem': ",
-                                         round(range(map_geogr_lim_lon)[1], 2), " to ",
-                                         round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
-                                         round(range(map_geogr_lim_lat)[1], 2), " to ",
-                                         round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
-                        }
-
-                        if (projection != "orthographic") {
-                            if (proj_lims) {
-                                if (length(poly_inds_geogr) > 0) {
-                                    datamat <- data_elem[,,poly_inds_geogr,,]
-                                }
-
-                            } else if (geogr_lims) {
-                                if (projection != "rectangular") {
-                                    if (length(poly_inds_proj) > 0) {
-                                        datamat <- data_elem[,,poly_inds_proj,,]
-                                    }
-                                } else if (projection == "rectangular") {
-                                    if (length(poly_inds_geogr) > 0) {
-                                        datamat <- data_elem[,,poly_inds_geogr,,]
+                                for (i in 1:dim(datamat)[1]) {
+                                    if (!all(is.na(datamat[i,,,di,]))) {
+                                        print(paste0(indent, "   min/max datamat[", i, ":", 
+                                                     dimnames(datamat)[[1]][i], ",,,", di, ",] = ",
+                                                     paste0(range(datamat[i,,,di,], na.rm=T), collapse="/")))
                                     }
                                 }
                             }
-                        } else if (projection == "orthographic") {
-                            datamat <- data_elem[,,poly_inds_proj,,]
-                        }
 
-                        ## Remove NA locations due to coordinate transformation
-                        if (length(na_inds) > 0) datamat <- datamat_elem[,,-na_inds,,]
+                            # update progress bar
+                            setTxtProgressBar(pb, di)
 
-                        ## Check data so far
-                        if (verbose > 2) {
-                            for (i in 1:dim(datamat)[1]) {
-                                print(paste0(indent, "   min/max datamat[", i, ":", 
-                                             dimnames(datamat)[[1]][i], ",,,,] = ",
-                                             paste0(range(datamat[i,,,,], na.rm=T), collapse="/")))
-                            }
-                        }
+                        } # di dim(data_node)[3] # ndepths
+
+                        # close progress bar
+                        close(pb)
+
+                        rm(data_elem)
 
                     } # if plot || transient_mode == "area" 
                     
                     ## Calc transient mean
-                    if (transient_out) {
+                    if (transient_out) { # the non-regular part
                         if (transient_mode != "area") {
                             if (rec_tag) {
                                 if (leap_tag && is.leap(year)) {
@@ -4814,7 +4846,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                             if (zave_method == 1) { # level-wise dz                        
                                 if (verbose > 1) { # rearrange first
-                                    print(paste0(indent, "For ltm bring data_node from (nod3d_n=", nod3d_n,
+                                    print(paste0(indent, "For ltm/plot bring data_node from (nod3d_n=", nod3d_n,
                                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
                                         print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
@@ -4847,7 +4879,7 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         if (verbose > 1 && ndepths > 1) {
-                            print(paste0(indent, "Average over ", depths_plot, " m depths for ltm ..."))
+                            print(paste0(indent, "Average over ", depths_plot, " m depths for ltm/plot ..."))
                             if (verbose > 2) {
                                 print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
                             }
@@ -4897,7 +4929,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                     if (verbose > 1) {
                             print(paste0(indent, "Sum ", 
-                                          paste0(dimnames(data_node)[[1]], collapse=","), " for ltm ..."))
+                                          paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
                     }   
                     
                     ## Save data in array (vars,nodes,depths=1,nrecspf)
@@ -4972,7 +5004,7 @@ if (nfiles == 0) { # read data which are constant in time
              
                     if (verbose > 1) {
                         print(paste0(indent, "Sum ", 
-                                     paste0(dimnames(data_node)[[1]], collapse=","), " for ltm ..."))
+                                     paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
                     }
 
                     if (total_rec == 0) { 
@@ -5877,7 +5909,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 print(paste0(indent, "   var = ", 
                              dimnames(data_elem_ltm)[[1]][i], " ..."))
             }
-            for (j in 1:dim(data_elem_ltm)[4]) { # ndepths
+            for (j in 1:dim(data_elem_ltm)[4]) { # ndepths is always 1
                 if (verbose > 2) {
                     print(paste0(indent, "      depth = ", 
                                  dimnames(data_elem_ltm)[[4]][j], " ..."))
@@ -5915,19 +5947,19 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## Pick data from plot area
     if (any(plot_map, ltm_out)) { 
 
-            if (verbose > 1) {
-                if ((plot_map && plot_type == "interp") || 
-                    (ltm_out && output_type == "nodes")) {
-                    print(paste0(indent, "Select data in '", area, "' area from 'data_node_ltm': "))
-                } else if ((plot_map && plot_type == "const") ||
-                           (ltm_out && output_type == "elems")) {
-                    print(paste0(indent, "Select data in '", area, "' area from 'data_elem_ltm': "))
-                }
-                print(paste0(indent, "   ", round(range(map_geogr_lim_lon)[1], 2), " to ",
-                             round(range(map_geogr_lim_lon)[2], 2), " deg longitude and ",
-                             round(range(map_geogr_lim_lat)[1], 2), " to ",
-                             round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
+        if (verbose > 1) {
+            if ((plot_map && plot_type == "interp") || 
+                (ltm_out && output_type == "nodes")) {
+                print(paste0(indent, "Select data in '", area, "' area from 'data_node_ltm': "))
+            } else if ((plot_map && plot_type == "const") ||
+                       (ltm_out && output_type == "elems")) {
+                print(paste0(indent, "Select data in '", area, "' area from 'data_elem_ltm': "))
             }
+            print(paste0(indent, "   ", round(range(map_geogr_lim_lon)[1], 2), " to ",
+                         round(range(map_geogr_lim_lon)[2], 2), " deg longitude and ",
+                         round(range(map_geogr_lim_lat)[1], 2), " to ",
+                         round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
+        }
 
         if (projection != "orthographic") {
 
