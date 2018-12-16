@@ -766,10 +766,12 @@ sub_calc <- function(data) {
             c_vert <<- replicate(c_vert, n=dim(N_vert)[3]) # ndepths
             c_vert <<- aperm(c_vert, c(1, 2, 4, 3)) # c(mmodes,nod2d_n,ndepths,nrecspf)
 
-            ## constants for 
-            S0 <<- 1 # Ferrari et al. 2010
-            B <<- 1 # Chelton et al. 1998
-
+            ## S0
+            # Chelton et al. 1998: S0_C98 = (N/c)^(-1/2)
+            # Ferrari et al. 2010: "S0 must have an inverse relation to the buoyancy frequency"
+            # Vallis 2017 (p- 117): S0_V17 = (c/N)^(1/2) 
+            # --> S0_C98 = S0_V17 !!!
+            
             if (varname == "wkb_hvel_mode") {
 
                 # mode-m baroclinic horizontal velocity
@@ -782,9 +784,10 @@ sub_calc <- function(data) {
                 for (i in 1:length(mmodes)) {
                     if (verbose > 0) {
                         print(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
-                                     mmodes[i], " N(z) / g] * cos(int_z N(z) dz / c_", 
+                                     mmodes[i], " * N(z) * S0 / g] * cos(int_z N(z) dz / c_", 
                                      mmodes[i], ")"))
                     }
+                    S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
                     R_vert[i,,,] <<- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
                     if (verbose > 2) {
                         print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
@@ -814,15 +817,15 @@ sub_calc <- function(data) {
                             print(paste0(indent, "   S_", mmodes[i], "(z) = S0_", mmodes[i], 
                                          " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                         } else if (F) { # chelton
-                            print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) B",
+                            print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
                                          " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                         }
                     }
-                    
+                    S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
                     if (T) { # ferrari
                         S_vert[i,,,] <<- S0 * sin(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
                     } else if (F) { # chelton
-                        S_vert[i,,,] <<- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * B * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
+                        S_vert[i,,,] <<- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
                     }
                     if (verbose > 2) {
                         print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",

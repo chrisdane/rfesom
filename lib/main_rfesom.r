@@ -170,8 +170,10 @@ if (dim_tag == "2D" ||
     #horiz_deriv_tag || 
     (transient_out && 
      any(transient_mode == c("depth", "depthint", "depthmax", "max3D", "areadepth",
-                             "csec_mean", "csec_depth")))
-    || any(varname == c("MOCw"))) {
+                             "csec_mean", "csec_depth"))) ||
+    (regular_transient_out &&
+     any(transient_mode == c("areadepth"))) ||
+    any(varname == c("MOCw"))) {
     average_depth <- F
 } else {
     average_depth <- T
@@ -3821,8 +3823,26 @@ if (nfiles == 0) { # read data which are constant in time
                         (transient_out && transient_mode == "areadepth") ||
                         (regular_transient_out && transient_mode == "area") ||
                         (regular_transient_out && transient_mode == "areadepth")) {
+
+                        if (!average_depth && !integrate_depth) {
+                            if (dim_tag == "3D" && dim(data_node) == 1 && ndepths > 1) {
+                                if (verbose > 1) { # rearrange first
+                                    print(paste0(indent, "For regular interpolateion bring data_node from (nod3d_n=", nod3d_n,
+                                                 ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                                    if (verbose > 2) {
+                                        print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                    }
+                                }
+                                indent_save <- indent; indent <- paste0(indent_save, "   ")
+                                sub_n3_to_n2xde(data_node) # produces tmp
+                                indent <- indent_save; rm(indent_save)
+                                data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
+                                rm(tmp)
+                            } # dim_tag == "3D"
+                        } # if !average_depth && !integrate_depth
+
                         if (verbose > 1) {
-                            print(paste0(indent, "For regular interpolation rearrange data_node from (nod2d_n=", nod2d_n, 
+                            print(paste0(indent, "For regular interpolation rearrange data_vert from (nod2d_n=", nod2d_n, 
                                          " x ndepths=", ndepths, ") to (3 x elem2d_n=", 
                                          elem2d_n, " x ndepths=", ndepths, ") ...")) 
                         }
@@ -3838,14 +3858,14 @@ if (nfiles == 0) { # read data which are constant in time
 
                         # save regular interpolated data in region _area_
                         datamat <- array(NA, 
-                                         dim=c(dim(data_node)[1],           # nvars
+                                         dim=c(dim(data_vert)[1],           # nvars
                                                3,                           # 3 nodes per element
                                                length(poly_inds_geogr),     # elems in area
-                                               dim(data_node)[3:4]),        # ndepths, nrecspf
-                                         dimnames=c(dimnames(data_node)[1],
+                                               dim(data_vert)[3:4]),        # ndepths,nrecspf
+                                         dimnames=c(dimnames(data_vert)[1],
                                                     list(node=1:3,
                                                          elem=NULL),
-                                                    dimnames(data_node)[3:4]))
+                                                    dimnames(data_vert)[3:4]))
 
                         if (regular_transient_out) {
                             if (verbose > 1) {
@@ -3862,23 +3882,23 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         # create progress bar
-                        pb <- mytxtProgressBar(min=0, max=dim(data_node)[3], style=pb_style,
+                        pb <- mytxtProgressBar(min=0, max=dim(data_vert)[3], style=pb_style,
                                                char=pb_char, width=pb_width,
                                                indent=paste0("     ", indent)) # 5 " " for default print()
 
-                        for (di in 1:dim(data_node)[3]) {
+                        for (di in 1:dim(data_vert)[3]) {
 
-                            data_elem <- array(data_node[,pos[elem2d],di,], 
-                                               dim=c(dim(data_node)[1],    # nvars
+                            data_elem <- array(data_vert[,pos[elem2d],di,], 
+                                               dim=c(dim(data_vert)[1],    # nvars
                                                      3,                    # 3 nodes per element
                                                      elem2d_n,             # elem2d_n
                                                      1,                    # 1 depth
-                                                     dim(data_node)[4]),   # nrecspf
-                                               dimnames=c(dimnames(data_node)[1],
+                                                     dim(data_vert)[4]),   # nrecspf
+                                               dimnames=c(dimnames(data_vert)[1],
                                                           list(node=1:3, 
-                                                               elem=NULL),
-                                                          dimnames(data_node)[3][di],
-                                                          dimnames(data_node)[4]))
+                                                               elem=NULL,
+                                                               depth=dimnames(data_vert)[[3]][di]),
+                                                          dimnames(data_vert)[4]))
 
                             ## Check data so far
                             if (verbose > 2) {
@@ -3893,13 +3913,13 @@ if (nfiles == 0) { # read data which are constant in time
                             if (regular_transient_out) {
                                 if (total_rec == 0 && di == 1) { # initialize matrices
                                     datamat_reg <- array(NA, 
-                                                         dim=c(dim(data_node)[1],              # nvars
+                                                         dim=c(dim(data_vert)[1],              # nvars
                                                                length(xinds), length(yinds),   # x, y of _area_
-                                                               dim(data_node)[3:4]),           # ndepths, nrecspf
-                                                         dimnames=c(dimnames(data_node)[1],
+                                                               dim(data_vert)[3:4]),           # ndepths, nrecspf
+                                                         dimnames=c(dimnames(data_vert)[1],
                                                                     list(xi=round(xi, 2), 
                                                                          yi=round(yi, 2)),
-                                                                    dimnames(data_node)[3:4]))
+                                                                    dimnames(data_vert)[3:4]))
                                 } # if total_rec == 0
                                
                                 ## interpolate on regular grid
@@ -3975,6 +3995,8 @@ if (nfiles == 0) { # read data which are constant in time
 
                             # update progress bar
                             setTxtProgressBar(pb, di)
+
+                            #stop("asd")
 
                         } # di dim(data_node)[3] # ndepths
 
