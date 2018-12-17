@@ -784,8 +784,9 @@ sub_calc <- function(data) {
                 for (i in 1:length(mmodes)) {
                     if (verbose > 0) {
                         print(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
-                                     mmodes[i], " * N(z) * S0 / g] * cos(int_z N(z) dz / c_", 
+                                     mmodes[i], " * N(z) * S_", mmodes[i], "^0 / g] * cos(int_z N(z) dz / c_", 
                                      mmodes[i], ")"))
+                        print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                     }
                     S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
                     R_vert[i,,,] <<- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
@@ -820,6 +821,7 @@ sub_calc <- function(data) {
                             print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
                                          " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                         }
+                        print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                     }
                     S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
                     if (T) { # ferrari
@@ -857,7 +859,7 @@ sub_calc <- function(data) {
 
             } # wkb_hvel_mode or wkb_vertvel_mode
 
-            if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, envir=.GlobalEnv)
+            if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, S0, envir=.GlobalEnv)
 
         } # which variable 
 

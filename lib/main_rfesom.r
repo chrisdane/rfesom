@@ -3838,6 +3838,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 indent <- indent_save; rm(indent_save)
                                 data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                                 rm(tmp)
+                            } else { # already in level space
+                                data_vert <- data_node
+                            
                             } # dim_tag == "3D"
                         } # if !average_depth && !integrate_depth
 
@@ -3856,7 +3859,7 @@ if (nfiles == 0) { # read data which are constant in time
                             stop("this should not happen")
                         }
 
-                        # save regular interpolated data in region _area_
+                        # save regular interpolated data in area
                         datamat <- array(NA, 
                                          dim=c(dim(data_vert)[1],           # nvars
                                                3,                           # 3 nodes per element
