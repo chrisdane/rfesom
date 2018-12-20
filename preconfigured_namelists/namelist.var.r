@@ -1675,9 +1675,80 @@ if (varname == "tos") {
     diagsuffix <- c("", "")
     varname_fesom <- c("temp", "salt")
 
+} else if (varname == "c_barotrop") {
+    longname <- "Barotropic wavespeed"
+    units_ltm <- "m s-1"
+    var_label_plot <- substitute(paste(c[0], " = ", sqrt(gH), " ",
+                                       "[m ", var^-1, "]"
+                                       #, " " %*% " ", base^power_ltm
+                                       ),
+                                 list(#m=mmode, 
+                                      m="m",
+                                      var="s"
+                                      #, base=base, power_ltm=-power_ltm
+                                      ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m3 s-1"
+    }
+    dim_tag <- "3D" # so that aux3d is read
+
+} else if (varname == "c_barocline") {
+    longname <- "Mode-m baroclinic wavespeed"
+    mmodes <- 1:5
+    #mmodes <- c(1, 10, 20, 30, 40)
+    fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
+    power_ltm <- 5
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "m s-1"
+    var_label_plot <- substitute(paste(c[m], " " %~~% " (m", pi, ")"^-1, 
+                                       " ", integral(), "N(z) dz ",
+                                       "[m ", var^-1, "]"
+                                       , " " %*% " ", base^power_ltm
+                                       ),
+                                 list(#m=mmode, 
+                                      m="m",
+                                      var="s"
+                                      , base=base, power_ltm=-power_ltm
+                                      ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m3 s-1"
+    }
+    if (integrate_depth) {
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        units_ltm <- "m"
+        var_label_plot <- substitute(paste(integral(), c[m], " dz " %~~% " ", 
+                                           integral(), "[ (m", pi, ")"^-1,
+                                           " ", integral(), "N(z) dz ] dz ",
+                                           "[", var1^2, " ", var2^-1, "]"
+                                           , " " %*% " ", base^power_ltm
+                                           ),
+                                     list(#m=mmode, 
+                                          m="m",
+                                          var1="m", var2="s"
+                                          , base=base, power_ltm=-power_ltm
+                                          ))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m4 s-1"
+        }
+    }
+    dim_tag <- "3D"
+    typesuffix <- rep("oce.", t=2)
+    diagsuffix <- c("", "")
+    varname_fesom <- c("temp", "salt")
+
 } else if (varname == "wkb_hvel_mode") {
     longname <- "Horizontal velocity baroclinic m-mode"
     mmodes <- 1:5
+    fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
     power_ltm <- 5
     multfac_ltm <- base^power_ltm
     units_ltm <- "#"
@@ -1701,7 +1772,7 @@ if (varname == "tos") {
     if (integrate_depth) {
         power_ltm <- 4
         multfac_ltm <- base^power_ltm
-        unitss_ltm <- "m"
+        units_ltm <- "m"
         #units_ltm <- c("m s-1", "m2 s-1", "m")
         var_label_plot <- substitute(paste(integral(), R[m], "(z) dz", " " %~~% " ", 
                                            integral(), " (",
@@ -1729,6 +1800,7 @@ if (varname == "tos") {
 } else if (varname == "wkb_vertvel_mode") {
     longname <- "Vertical velocity baroclinic m-mode"
     mmodes <- 1:5
+    fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
     power_ltm <- 5
     multfac_ltm <- base^power_ltm
     units_ltm <- "#"
@@ -1751,7 +1823,7 @@ if (varname == "tos") {
     if (integrate_depth) {
         power_ltm <- 4
         multfac_ltm <- base^power_ltm
-        unitss_ltm <- "m"
+        units_ltm <- "m"
         #units_ltm <- c("m s-1", "m2 s-1", "m")
         var_label_plot <- substitute(paste(integral(), S[m], "(z) dz", " " %~~% " ", 
                                            integral(), " ", var1[m]^0, " sin(",
@@ -4316,7 +4388,6 @@ if (varname == "tos") {
     multfac_ltm <- 1
     dim_tag <- "3D"
     derivative <- F
-    varname_fesom <- varname
     rotate_inds <- F
     vec <- F
 
@@ -4354,7 +4425,6 @@ if (varname == "tos") {
     var_label_plot_roundfac <- 0
     dim_tag <- "2D"
     derivative <- "geo"
-    varname_fesom <- varname
     rotate_inds <- F
     vec <- F
     #pal <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
@@ -4370,7 +4440,6 @@ if (varname == "tos") {
     multfac_ltm <- 1
     dim_tag <- "2D"
     derivative <- "geo"
-    varname_fesom <- varname
     rotate_inds <- F
     vec <- F
     pal <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
@@ -4387,7 +4456,6 @@ if (varname == "tos") {
                               list(var="m", base=base, power_ltm=power_ltm))
     dim_tag <- "2D"
     derivative <- "geo"
-    varname_fesom <- varname
     rotate_inds <- F
     vec <- F
     pal <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
@@ -4450,9 +4518,10 @@ if (!exists("fname_suffix")) {
     fname_suffix <- ""
 }
 
-if (!cpl_tag 
-    && !exists("fnames_user")
-    && !all(c(exists("typesuffix"), c(exists("diagsuffix"))))) {
+if (!cpl_tag &&
+    !exists("fnames_user") &&
+    !is.null(varname_fesom) &&
+    !all(c(exists("typesuffix"), c(exists("diagsuffix"))))) {
     stop(paste0("'cpl_tag'=", cpl_tag, " and you did not provide your own data fname.",
                 " so you must define 'typesuffix' and 'diagsuffix' for the fesom",
                 " ocean-only file naming convention '<runid>.<year>.<typesuffix>.<diagsuffix>.nc'",

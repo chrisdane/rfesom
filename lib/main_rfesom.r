@@ -1572,7 +1572,10 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                             # library(sp)
                             tmp[[i]] <- point.in.polygon(xc[i,], yc[i,], 
                                                          poly_geogr_lim_lon, poly_geogr_lim_lat, 
-                                                         mode.checked=F)
+                                                         mode.checked=F) 
+                                                         # = default FALSE, used internally to save time when all the
+                                                         #   other argument are known to be of storage mode double
+
                         }
                     } # i:3
                     
@@ -2857,6 +2860,8 @@ if (nfiles == 0) { # read data which are constant in time
         print("==============================================")
     }
 
+    total_rec <- 0 
+
 } else if (nfiles > 0) { # read data which are not constant in time
     if (verbose > 0) {
         print(paste0("5) Read variable", ifelse(nfiles > 1, "s", ""), " '", 
@@ -3593,7 +3598,8 @@ if (nfiles == 0) { # read data which are constant in time
                     if (exists("fnames_user")) {
                         timei <- time[recsi[rec]]
                     } else if (!exists("fnames_user")) {
-                        timei <- timevec[recsi[rec]]
+                        timei <- recsi + (year_cnt - 1)*length(recsi)
+                        timei <- timevec[timei[rec]]
                     }
                 }
                 if (!exists("fnames_user")) {
@@ -3824,10 +3830,14 @@ if (nfiles == 0) { # read data which are constant in time
                         (regular_transient_out && transient_mode == "area") ||
                         (regular_transient_out && transient_mode == "areadepth")) {
 
+                        if (length(poly_inds_geogr) == 0) {
+                            stop("this should not happen")
+                        }
+
                         if (!average_depth && !integrate_depth) {
                             if (dim_tag == "3D" && dim(data_node) == 1 && ndepths > 1) {
                                 if (verbose > 1) { # rearrange first
-                                    print(paste0(indent, "For regular interpolateion bring data_node from (nod3d_n=", nod3d_n,
+                                    print(paste0(indent, "For regular interpolation bring data_node from (nod3d_n=", nod3d_n,
                                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
                                         print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
@@ -3842,21 +3852,16 @@ if (nfiles == 0) { # read data which are constant in time
                                 data_vert <- data_node
                             
                             } # dim_tag == "3D"
+                        
+                        } else {
+                            data_vert <- data_node
+
                         } # if !average_depth && !integrate_depth
 
                         if (verbose > 1) {
                             print(paste0(indent, "For regular interpolation rearrange data_vert from (nod2d_n=", nod2d_n, 
-                                         " x ndepths=", ndepths, ") to (3 x elem2d_n=", 
-                                         elem2d_n, " x ndepths=", ndepths, ") ...")) 
-                        }
-                        # old:
-                        #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
-                        #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
-                        #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
-
-                        # new: save memory; do for every depth?
-                        if (length(poly_inds_geogr) == 0) {
-                            stop("this should not happen")
+                                         " x ndepths=", dim(data_vert)[3], ") to (3 x elem2d_n=", 
+                                         elem2d_n, " x ndepths=", dim(data_vert)[3], ") ...")) 
                         }
 
                         # save regular interpolated data in area
@@ -3889,8 +3894,14 @@ if (nfiles == 0) { # read data which are constant in time
                                                char=pb_char, width=pb_width,
                                                indent=paste0("     ", indent)) # 5 " " for default print()
 
-                        for (di in 1:dim(data_vert)[3]) {
+                        for (di in 1:dim(data_vert)[3]) { # ndepths
 
+                            # old:
+                            #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
+                            #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
+                            #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
+
+                            # new: save memory; do for every dept
                             data_elem <- array(data_vert[,pos[elem2d],di,], 
                                                dim=c(dim(data_vert)[1],    # nvars
                                                      3,                    # 3 nodes per element
@@ -4009,7 +4020,9 @@ if (nfiles == 0) { # read data which are constant in time
                         rm(data_elem)
 
                     } # if plot || transient_mode == "area" 
-                    
+                   
+                    #stop("asd")
+
                     ## Calc transient mean
                     if (transient_out) { # the non-regular part
                         if (transient_mode != "area") {
@@ -4367,6 +4380,18 @@ if (nfiles == 0) { # read data which are constant in time
                             # nothing to do
                         
                         } else if (transient_mode == "area" || transient_mode == "areadepth") {
+
+                            # if mode == "areadepth", check first whether calculated data actually has a depth dim
+                            if (transient_mode == "areadepth") {
+                                if (length(dim(datamat_reg)[4] == 1)) { # only 1 depth, e.g. varname "c_baroclinic"
+                                    transient_mode <- "area"
+                                    # check again if new path exist
+                                    reg_transient_outpath <- paste0(postpath, runid, "/", setting,
+                                                               "/regular_grid/",
+                                                               transient_mode, "/", area, "/", varname, "/")
+                                    dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+                                }
+                            }
 
                             # Prepare regular output file
                             if (total_rec == 0) {
@@ -4903,26 +4928,33 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                         }
 
-                        if (verbose > 1 && ndepths > 1) {
-                            print(paste0(indent, "Average over ", depths_plot, " m depths for ltm/plot ..."))
-                            if (verbose > 2) {
-                                print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                        # if data_vert has more than 1 depth
+                        if (dim(data_vert)[3] > 1) { 
+                            if (verbose > 1) {
+                                print(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
+                                if (verbose > 2) {
+                                    print(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                                }
                             }
-                        }
-                        sub_vertical_average(data_vert) # produces tmp
-                        data_node <- tmp # overwrite old data_node
-                        # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                        # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                        rm(tmp, data_vert)
+                            sub_vertical_average(data_vert) # produces tmp
+                            data_node <- tmp # overwrite old data_node
+                            # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
+                            rm(tmp, data_vert)
 
-                        ## Check data so far
-                        if (verbose > 2) {
-                            for (i in 1:dim(data_node)[1]) {
-                                print(paste0(indent, "   min/max data_node[", i, ":",
-                                             dimnames(data_node)[[1]][i], ",,,] = ",
-                                             paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                            ## Check data so far
+                            if (verbose > 2) {
+                                for (i in 1:dim(data_node)[1]) {
+                                    print(paste0(indent, "   min/max data_node[", i, ":",
+                                                 dimnames(data_node)[[1]][i], ",,,] = ",
+                                                 paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                }
                             }
-                        }
+                        } else {
+                            
+                            data_node <- data_vert
+                        
+                        } # if data_vert has more than 1 depth
 
                     } # if !integrate_depth && !average_depth
 
@@ -5527,7 +5559,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     }
    
     ## continue with already calculated data
-    if (any(transient_out, regular_transient_out, sd_out)) { # nfiles > 0
+    if (any(transient_out, regular_transient_out, sd_out) && nfiles > 0) { # nfiles > 0 for not bathy, resolution, etc.
 
         # append sum(u*v) to sd if needed to only have one sd matrix
         if (sd_method == "ackermann83") {
@@ -5654,7 +5686,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if total_rec > 1
 
     ## calc varname with ltm data if not calculated before (=not transient)
-    if (!any(transient_out, regular_transient_out, sd_out)) { 
+    if (!any(transient_out, regular_transient_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
 
         #stop("asd")
 
@@ -5692,7 +5724,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## dim(data_node_ltm) = c(nvars,nod3d_n,ndepths=1,nrecspf) if dim_tag == "3D" 
 
         ## Save memory by depth averaging data if possible
-        if (average_depth) {
+        if (average_depth && nfiles > 0) {
 
             if (zave_method == 1) { # level-wise dz                        
                 if (verbose > 1) { # rearrange first
@@ -5743,10 +5775,16 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(tmp, data_vert_ltm)
         }
 
+        # dummy data for resolution, bathy, etc.
+        if (nfiles == 0) {
+            data_node_ltm <- array(NA, dim=c(1, 1, 1, 1),
+                                   dimnames=list(var=varname, NULL, NULL, NULL))
+        }
+
         # get varnames of data
         vars <- dimnames(data_node_ltm)[[1]]
         nvars <- length(vars)
-
+        
         ## At this point,
         ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
         ##  (dim_tag == "2D") or (dim_tag == "3D" && average_depth && zave_method == 1)
@@ -5762,7 +5800,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 print(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
             }
         }
-        sub_calc(data_node_ltm) # overwrites data_node_ltm with the result of sub_calc()
+        indent_save <- indent; indent <- paste0(indent_save, "   ")
+        sub_calc(data_node_ltm) # data_node is result of sub_calc()
+        indent <- indent_save; rm(indent_save)
+        data_node_ltm <- data_node
+        rm(data_node)
         if (exists("tmp")) rm(tmp)
 
         ## Check data so far
@@ -5775,7 +5817,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## integrate vertically
-        if (integrate_depth) {
+        if (integrate_depth && nfiles > 0) {
             if (verbose > 1) {
                 print(paste0(indent, "Integrate between ", depths_plot, " m ..."))
                 if (verbose > 2) {
