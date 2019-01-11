@@ -27,7 +27,7 @@
 ##     needs 'data_node'
 ##
 
-sub_calc <- function(data) {
+sub_calc <- function(data_node) {
 
     #data_global <<- data # for old stuff; need to update
 
@@ -392,7 +392,8 @@ sub_calc <- function(data) {
 
     if (any(varname == c("Nsquared", "richardson", "rossbyrad", 
                          "PmPe", 
-                         "c_barocline", "wkb_hvel_mode", "wkb_vertvel_mode"))) {
+                         "c_barocline", "c_long_rossby", 
+                         "wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
         success <<- load_package("gsw")
         if (!success) stop()
@@ -595,7 +596,8 @@ sub_calc <- function(data) {
             data_node <<- 1/(abs(coriolis_nod2d)*pi) * data_node # 1st bc rossby rad of def.
             dimnames(data_node)[[1]] <<- varname
 
-        } else if (any(varname == c("c_barocline", "wkb_hvel_mode", "wkb_vertvel_mode"))) {
+        } else if (any(varname == c("c_barocline", "c_long_rossby", 
+                                    "wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
             if (!exists("mmodes") || any(mmodes == 0)) {
                 stop(paste0("Set 'mmodes=1' (or c(1,2,3,...)) for variable ", varname, " in namelist.var.r."))
@@ -741,12 +743,12 @@ sub_calc <- function(data) {
 
             # mode-m baroclinic wavespeed
             if (verbose > 0) {
-                print(paste0(indent, "Calc baroclinic wave speeds (Chelton et al. 1998; Ferrari et al. 2010; Stewart et al. 2017) ..."))
+                print(paste0(indent, "Calc baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010; Vallis 2017) ..."))
             }
             c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
-                             dimnames=c(list(mmodes=mmodes),
+                             dimnames=c(list(paste0("c_", mmodes)),
                                         dimnames(N_intz_z_vert)[2],
-                                        list(depths=NULL),
+                                        list(depths=paste0("int", depths_fname)),
                                         dimnames(N_intz_z_vert)[4]))
             for (i in 1:length(mmodes)) {
                 if (verbose > 0) {
@@ -759,10 +761,48 @@ sub_calc <- function(data) {
                                  paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
                 }
             } # for i mmodes
-            dimnames(c_vert)[[1]] <<- paste0("c_", mmodes)
 
             if (varname == "c_barocline") {
                 data_node <<- c_vert
+
+            } else if (any(varname == c("c_long_rossby", "internal_rossbyrad"))) {
+
+                f_vert <<- 2*2*pi/86400*sin(ycsur*pi/180)
+                beta_vert <<- 2*2*pi/86400*cos(ycsur*pi/180)/Rearth
+                f_vert <<- replicate(f_vert, n=dim(c_vert)[1]) # nvars
+                f_vert <<- replicate(f_vert, n=dim(c_vert)[3]) # ndepths = 1
+                f_vert <<- replicate(f_vert, n=dim(c_vert)[4]) # nrecspf
+                f_vert <<- aperm(f_vert, c(2, 1, 3, 4))
+                beta_vert <<- replicate(beta_vert, n=dim(c_vert)[1]) # nvars
+                beta_vert <<- replicate(beta_vert, n=dim(c_vert)[3]) # ndepths = 1
+                beta_vert <<- replicate(beta_vert, n=dim(c_vert)[4]) # nrecspf
+                beta_vert <<- aperm(beta_vert, c(2, 1, 3, 4))
+
+                if (verbose > 0) {
+                    print(paste0(indent, "internal_rossbyrad = c_barocline/|f|               for  |phi| >= 5° latitude"))
+                    print(paste0(indent, "                   = sqrt( c_barocline/(2*beta) )  for  |phi| <= 5° latitude (Chelton et al. 1998) ..."))
+                }
+                int_rossbyrad_node <<- c_vert/abs(f_vert)
+                eq_inds <<- which(abs(ycsur) <= 5)
+                if (length(eq_inds) > 0) {
+                    int_rossbyrad_node[,eq_inds,,] <<- sqrt( c_vert[,eq_inds,,]/(2*beta_vert[,eq_inds,,]) )
+                }
+                #rm(eq_inds, envir=.GlobalEnv)
+
+                if (varname == "internal_rossbyrad") {
+                    data_node <<- int_rossbyrad_node
+                    dimnames(data_node)[[1]] <<- paste0(varname, "_", mmodes)
+                
+                } else if (varname == "c_long_rossby") {
+                    if (verbose > 0) {
+                        print(paste0(indent, varname, " = -beta * internal_rossbyrad^2 = -beta/f^2 * c_barocline^2 (Killworth et al. 1997; Chelton et al. 1998) ..."))
+                    }
+                    data_node <<- -beta_vert * int_rossbyrad_node^2
+                    dimnames(data_node)[[1]] <<- paste0(varname, "_", mmodes)
+
+                } # "c_long_rossby" "internal_rossbyrad"
+
+                rm(f_vert, beta_vert, envir=.GlobalEnv)
 
             } else if (any(varname == c("wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
@@ -774,7 +814,7 @@ sub_calc <- function(data) {
                 ## S0
                 # Chelton et al. 1998: S0_C98 = (N/c)^(-1/2)
                 # Ferrari et al. 2010: "S0 must have an inverse relation to the buoyancy frequency"
-                # Vallis 2017 (p- 117): S0_V17 = (c/N)^(1/2) 
+                # Vallis 2017 (p. 117): S0_V17 = (c/N)^(1/2) 
                 # --> S0_C98 = S0_V17 !!!
                
                 if (varname == "wkb_hvel_mode") {
@@ -870,9 +910,9 @@ sub_calc <- function(data) {
 
             if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, envir=.GlobalEnv)
 
-        } # "c_barocline", "wkb_hvel_mode", "wkb_vertvel_mode"
+        } # "c_barocline", "c_long_rossby", "wkb_hvel_mode", "wkb_vertvel_mode"
 
-    } # "Nsquared", "richardson", "rossbyrad", "PmPe", "c_barocline", "wkb_hvel_mode", "wkb_vertvel_mode"
+    } # "Nsquared", "richardson", "rossbyrad", "PmPe", "c_barocline", "c_long_rossby", "wkb_hvel_mode", "wkb_vertvel_mode"
 
     if (varname == "mke") {
 

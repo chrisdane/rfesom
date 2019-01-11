@@ -136,7 +136,7 @@ if (nfiles == 0) {
 if (transient_mode == "area" && regular_transient_out && transient_out) {
     stop("error: for transient_mode='area', set either 'transient_out' OR 'regular_transient_out' to TRUE")
 }
-if (transient_mode == "areadepth" && !regular_transient_out) {
+if (transient_mode == "areadepth" && transient_out) {
     regular_transient_out <- T
     transient_out <- F
 }
@@ -173,7 +173,7 @@ if (dim_tag == "2D" ||
                              "csec_mean", "csec_depth"))) ||
     (regular_transient_out &&
      any(transient_mode == c("areadepth"))) ||
-    any(varname == c("MOCw"))) {
+    any(varname == c("MOCw", "c_long_rossby"))) {
     average_depth <- F
 } else {
     average_depth <- T
@@ -217,7 +217,6 @@ if (transient_out && (any(transient_mode == c("moc_mean", "moc_depth")))) {
     regular_transient_out <- F
     regular_ltm_out <- F
 }
-
 
 ## check paths
 if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out, 
@@ -295,7 +294,7 @@ nisobaths <- 0
 zave_method <- 1 # default = 1
     # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_global_vert[inds_2d]*deltaz[i]
     # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
-keep_gsw <- F
+keep_gsw <- T
 pb_char <- "#"
 pb_width <- 30
 pb_style <- 3
@@ -3293,6 +3292,35 @@ if (nfiles == 0) { # read data which are constant in time
             
             } # benchmark
 
+
+            ## Transient time variable
+            if (rec_tag) {
+                if (leap_tag && is.leap(year)) {
+                    timei <- timevec[(total_rec+1):(total_rec+nrecspf_leap)]
+                } else {
+                    timei <- timevec[(total_rec+1):(total_rec+nrecspf)]
+                }
+            } else if (!rec_tag) {
+                if (exists("fnames_user")) {
+                    timei <- time[recsi[rec]]
+                } else if (!exists("fnames_user")) {
+                    timei <- recsi + (year_cnt - 1)*length(recsi)
+                    timei <- timevec[timei[rec]]
+                }
+            }
+            if (!exists("fnames_user")) {
+                if (snapshot) {
+                    timei <- paste0(timei, "_snapshot")
+                } else {
+                    timei <- paste0(timei, "_mean")
+                }
+            }
+
+            # need to take care of leap year: clean time of last year
+            # because it could include day 366 of leap year
+            #dimnames(data_node)[[4]] <- rep(NA, t=dim(data_node)[4])
+            #dimnames(data_node)[[4]][1:length(timei)] <- timei
+
             # declare matrix necessary for every year
             declare_time <- system.time({
                 if (rec_tag) {
@@ -3303,7 +3331,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=list(var=varname_fesom,
                                                              node=NULL,
                                                              depth=depths_plot,
-                                                             rec=recs_leap))
+                                                             rec=timei))
                             icount_leap <- c(nod2d_n, nrecspf_leap)
                         } else {
                             data_node <- array(0,
@@ -3311,7 +3339,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=list(var=varname_fesom,
                                                              node=NULL,
                                                              depth=depths_plot,
-                                                             rec=recs))
+                                                             rec=timei))
                         }
 
                     } else if (dim_tag == "3D") {
@@ -3321,7 +3349,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=list(var=varname_fesom,
                                                              node=NULL,
                                                              depth=depths_plot,
-                                                             rec=recs_leap))
+                                                             rec=timei))
                             icount_leap <- c(nod3d_n, nrecspf_leap)
                         } else {
                             data_node <- array(0,
@@ -3329,7 +3357,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=list(var=varname_fesom,
                                                              node=NULL,
                                                              depth=depths_plot,
-                                                             rec=recs))
+                                                             rec=timei))
                         }
                     } # if dim_tag == "2D" or "3D"
 
@@ -3360,14 +3388,14 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=list(var="mld",
                                                              node=NULL,
                                                              depth=NULL,
-                                                             rec=recs_leap))
+                                                             rec=timei))
                         } else {
                             mld_node <- array(0,
                                                dim=c(1, nod2d_n, 1, nrecspf),
                                                dimnames=list(var="mld",
                                                              node=NULL,
                                                              depth=NULL,
-                                                             rec=recs))
+                                                             rec=timei))
                         }
                     } else if (!rec_tag) {
                         mld_node <- array(0,
@@ -3587,34 +3615,6 @@ if (nfiles == 0) { # read data which are constant in time
                 }
                 indent <- "         "
 
-                ## Transient time variable
-                if (rec_tag) {
-                    if (leap_tag && is.leap(year)) {
-                        timei <- timevec[(total_rec+1):(total_rec+nrecspf_leap)]
-                    } else {
-                        timei <- timevec[(total_rec+1):(total_rec+nrecspf)]
-                    }
-                } else if (!rec_tag) {
-                    if (exists("fnames_user")) {
-                        timei <- time[recsi[rec]]
-                    } else if (!exists("fnames_user")) {
-                        timei <- recsi + (year_cnt - 1)*length(recsi)
-                        timei <- timevec[timei[rec]]
-                    }
-                }
-                if (!exists("fnames_user")) {
-                    if (snapshot) {
-                        timei <- paste0(timei, "_snapshot")
-                    } else {
-                        timei <- paste0(timei, "_mean")
-                    }
-                }
-                
-                # need to take care of leap year: clean time of last year
-                # because it could include day 366 of leap year
-                dimnames(data_node)[[4]] <- rep(NA, t=dim(data_node)[4])
-                dimnames(data_node)[[4]][1:length(timei)] <- timei
-                
                 ## Rotate vector components
                 if (rotate_mesh && all(!!rotate_inds)) { # some entries of 'varname_fesom' need to be rotated
                     for (i in 1:(length(rotate_inds)/2)) {
@@ -4383,7 +4383,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                             # if mode == "areadepth", check first whether calculated data actually has a depth dim
                             if (transient_mode == "areadepth") {
-                                if (length(dim(datamat_reg)[4] == 1)) { # only 1 depth, e.g. varname "c_baroclinic"
+                                if (dim(datamat_reg)[4] == 1) { # only 1 depth, e.g. varname "c_baroclinic"
                                     transient_mode <- "area"
                                     # check again if new path exist
                                     reg_transient_outpath <- paste0(postpath, runid, "/", setting,
@@ -5078,14 +5078,16 @@ if (nfiles == 0) { # read data which are constant in time
 
                     ## Save data in array (vars,nodes,time,depths)
                     # need to use 1:icount[1] for indexing since both 2D and 3D variables may be used
-                    if (rec_tag) {
-                        if (leap_tag && is.leap(year)) {
-                            data_node_ltm[,1:icounts[,1],1,1:nrecspf_leap] <- data_node_ltm[,1:icounts[,1],1,1:nrecspf_leap] + data_node
+                    for (i in 1:dim(data_node)[1]) { # nvars
+                        if (rec_tag) {
+                            if (leap_tag && is.leap(year)) {
+                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] + data_node[i,,,]
+                            } else {
+                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] + data_node[i,,,]
+                            }
                         } else {
-                            data_node_ltm[,1:icounts[,1],1,1:nrecspf] <- data_node_ltm[,1:icounts[,1],1,1:nrecspf] + data_node
+                            data_node_ltm[i,1:icounts[i,1],,] <- data_node_ltm[i,1:icounts[i,1],,] + data_node[i,,,]
                         }
-                    } else {
-                        data_node_ltm[,1:icounts[,1],,] <- data_node_ltm[,1:icounts[,1],,] + data_node
                     }
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -5688,8 +5690,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## calc varname with ltm data if not calculated before (=not transient)
     if (!any(transient_out, regular_transient_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
 
-        #stop("asd")
-
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
         }
@@ -5786,11 +5786,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         nvars <- length(vars)
         
         ## At this point,
-        ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
+        ## dim(data_node_ltm) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
         ##  (dim_tag == "2D") or (dim_tag == "3D" && average_depth && zave_method == 1)
-        ## dim(data_node) = c(nvars,nod3d_n,ndepths=1,nrecspf) if 
+        ## dim(data_node_ltm) = c(nvars,nod3d_n,ndepths=1,nrecspf) if 
         ##  (dim_tag == "3D" && !average_depth)
-        ## dim(data_node) = c(nvars,nod_n=1,ndepths=1,nrecspf) if 
+        ## dim(data_node_ltm) = c(nvars,nod_n=1,ndepths=1,nrecspf) if 
         ##  (dim_tag == "3D" && average_depth && zave_method == 2) # special!
 
         ## variable specific calculations
@@ -5802,7 +5802,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_calc(data_node_ltm) # data_node is result of sub_calc()
-        indent <- indent_save; rm(indent_save)
         data_node_ltm <- data_node
         rm(data_node)
         if (exists("tmp")) rm(tmp)
@@ -5955,7 +5954,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     if (regular_ltm_out) {
 
         if (verbose > 1) {
-            print(paste0(indent, "Interpolate 'data_elem_ltm' on regular grid ('regular_dx'=",
+            print(paste0(indent, "Interpolate data_elem_ltm on regular grid ('regular_dx'=",
                          sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                          sprintf("%.3f", regular_dy),
                          " deg) ..."))
@@ -5971,20 +5970,19 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                             dimnames(data_elem_ltm)[4:5]))
        
         ## interpolate on regular grid
+        if (verbose > 1) {
+            cat(paste0("     ", indent))
+        }
         for (i in 1:dim(data_elem_ltm)[1]) { # nvars
-            if (verbose > 2) {
-                print(paste0(indent, "   var = ", 
-                             dimnames(data_elem_ltm)[[1]][i], " ..."))
-            }
             for (j in 1:dim(data_elem_ltm)[4]) { # ndepths is always 1
-                if (verbose > 2) {
-                    print(paste0(indent, "      depth = ", 
-                                 dimnames(data_elem_ltm)[[4]][j], " ..."))
-                }
                 for (k in 1:dim(data_elem_ltm)[5]) { # nrecspf
-                    if (verbose > 2) {
-                        print(paste0(indent, "         time = ",
-                                     dimnames(data_elem_ltm)[[5]][k], " ..."))
+                    if (verbose > 1) {
+                        cat(paste0(dimnames(data_elem_ltm)[[1]][i], " ", 
+                                   dimnames(data_elem_ltm)[[4]][j], " ", 
+                                   dimnames(data_elem_ltm)[[5]][k], ", "))
+                        if (i == dim(data_elem_ltm)[1] && j == dim(data_elem_ltm)[4] && k == dim(data_elem_ltm)[5]) {
+                            cat("\n")
+                        }
                     }
                     datamat_reg_ltm[i,,,j,k] <- t(sub_calc_regular_2d_interp(I_MAT=IMAT[yinds,xinds],
                                                   XI=XI[yinds,xinds],

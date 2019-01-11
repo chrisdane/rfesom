@@ -1696,9 +1696,11 @@ if (varname == "tos") {
     dim_tag <- "3D" # so that aux3d is read
 
 } else if (varname == "c_barocline") {
-    longname <- "Mode-m baroclinic wavespeed"
+    longname <- "Mode-m baroclinic gravity-wave speed"
     mmodes <- 1:5
-    #mmodes <- c(1, 10, 20, 30, 40)
+    #mmodes <- 6:9
+    #mmodes <- c(10, 15, 20, 25, 30)
+    #mmodes <- c(40, 50, 60, 70, 80)
     fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
     power_ltm <- 5
     multfac_ltm <- base^power_ltm
@@ -1745,9 +1747,67 @@ if (varname == "tos") {
     diagsuffix <- c("", "")
     varname_fesom <- c("temp", "salt")
 
+} else if (varname == "c_long_rossby") {
+    longname <- "Mode-m baroclinic long rossby-wave speed"
+    mmodes <- 1:5
+    #mmodes <- 6:9
+    #mmodes <- c(10, 15, 20, 25, 30)
+    #mmodes <- c(40, 50, 60, 70, 80)
+    fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
+    power_ltm <- 2 # m/s --> cm/s
+    multfac_ltm <- base^power_ltm
+    units_ltm <- "cm s-1"
+    var_label_plot <- substitute(paste(c[m], " " %~~% "-", beta, " f"^-2, 
+                                       " ( (m", pi, ")"^-1,
+                                       " ", integral(), "N(z)dz )"^2, " ",
+                                       " [cm ", var^-1, "]"
+                                       #, " " %*% " ", base^power_ltm
+                                       ),
+                                 list(#m=mmode, 
+                                      m="m",
+                                      var="s"
+                                      #, base=base, power_ltm=-power_ltm
+                                      ))
+    multfac_transient <- 1
+    units_transient <- units_ltm
+    if (any(transient_mode == c("meanint", "depthint"))) {
+        multfac_transient <- 1
+        units_transient <- "m3 s-1"
+    }
+    if (integrate_depth) {
+        stop("asd")
+        power_ltm <- 4
+        multfac_ltm <- base^power_ltm
+        units_ltm <- "m"
+        var_label_plot <- substitute(paste(integral(), c[m], " dz " %~~% " ",
+                                           integral(), "[ (m", pi, ")"^-1,
+                                           " ", integral(), "N(z) dz ] dz ",
+                                           "[", var1^2, " ", var2^-1, "]"
+                                           , " " %*% " ", base^power_ltm
+                                           ),
+                                     list(#m=mmode, 
+                                          m="m",
+                                          var1="m", var2="s"
+                                          , base=base, power_ltm=-power_ltm
+                                          ))
+        multfac_transient <- 1
+        units_transient <- units_ltm
+        if (any(transient_mode == c("meanint", "depthint"))) {
+            units_transient <- "m4 s-1"
+        }
+    }
+    dim_tag <- "3D"
+    typesuffix <- rep("oce.", t=2)
+    diagsuffix <- c("", "")
+    varname_fesom <- c("temp", "salt")
+
+
 } else if (varname == "wkb_hvel_mode") {
     longname <- "Horizontal velocity baroclinic m-mode"
     mmodes <- 1:5
+    #mmodes <- 6:9
+    #mmodes <- c(10, 15, 20, 25, 30)
+    #mmodes <- c(40, 50, 60, 70, 80)
     fname_suffix <- paste0("_modes_", paste0(mmodes, collapse="_"))
     power_ltm <- 5
     multfac_ltm <- base^power_ltm

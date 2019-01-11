@@ -313,9 +313,27 @@
             } else if (area == "Cstg") {
                 map_geogr_lim_lon <- c(-60, -20)
                 map_geogr_lim_lat <- c(25, 35) #c(-90, 90)
+            } else if (area == "N20") {
+                map_geogr_lim_lon <- c(-70, -15)
+                map_geogr_lim_lat <- c(19, 21)
+            } else if (area == "N25") {
+                map_geogr_lim_lon <- c(-80, -10)
+                map_geogr_lim_lat <- c(24, 26)
             } else if (area == "Cstg2") {
                 map_geogr_lim_lon <- c(-82, -5)
                 map_geogr_lim_lat <- c(29, 31) #c(-90, 90)
+            } else if (area == "N35") {
+                map_geogr_lim_lon <- c(-80, 0)
+                map_geogr_lim_lat <- c(34, 36)
+            } else if (area == "N40") {
+                map_geogr_lim_lon <- c(-77, -5)
+                map_geogr_lim_lat <- c(39, 41)
+            } else if (area == "N45") {
+                map_geogr_lim_lon <- c(-65, 0)
+                map_geogr_lim_lat <- c(44, 46)
+            } else if (area == "N50") {
+                map_geogr_lim_lon <- c(-60, 7)
+                map_geogr_lim_lat <- c(49, 51)
             } else if (area == "stghu") {
                 map_geogr_lim_lon <- c(-82.5, 0)
                 map_geogr_lim_lat <- c(8.4, 54.5) #c(-90, 90)
