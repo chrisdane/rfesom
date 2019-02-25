@@ -105,7 +105,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "colors/pals.r", "gcd.r",
-            "lsos.r")) {
+            "ls2.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
 
@@ -3811,7 +3811,7 @@ if (nfiles == 0) { # read data which are constant in time
                 if (exists("tmp")) rm(tmp)
 
                 if (F) {
-                    ws <- lsos()
+                    ws <- ls2()
                     print(ws[1:15,])
                     stop("asd")
                 }
