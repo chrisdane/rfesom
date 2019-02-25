@@ -455,11 +455,11 @@ sub_calc <- function(data_node) {
         }   
 
         ## Calc N2
-        if (verbose > 0) {
-            print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared (N2) ..."))
-        }
-
-        if (F) { # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
+        if (F) { 
+            if (verbose > 0) {
+                print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 ..."))
+            }
+            # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
             ## The result is computed based on first-differencing a computed density with respect pressure, and
             ## this can yield noisy results with CTD data that have not been smoothed and decimated. It also yields
             ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
@@ -488,26 +488,31 @@ sub_calc <- function(data_node) {
             }
 
         } else if (T) { # use own vertical derivative of potential density
-            
-            if (verbose > 1) {
-                print(paste0(indent, "   N2 = -g/rho0 * drho/dz"))
-                print(paste0(indent, "      with rho = gsw::gsw_rho(SA, CT, p)"))
-                print(paste0(indent, "           SA Absolute Salinity [ g/kg ]"))
+         
+            if (verbose > 0) {
+                print(paste0(indent, "Calc potential density rho = gsw::gsw_rho(SA, CT, p) ..."))
+                print(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
                 print(paste0(indent, "           CT Conservative Temperature [ degC ]"))
                 print(paste0(indent, "           p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+
             }
+ 
             # note: gsw::* functions do not keep the matrix dimensions!!!
             potdens_node <<- array(NA, dim=dim(data_node[1,,,]),
                                    dimnames=dimnames(data_node[tempind,,,]))
             dimnames(potdens_node)[[1]] <<- "potdens"
             for (i in 1:dim(data_node)[4]) { # for nrecspf
-                potdens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i], 
+                potdens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i],
                                                     CT=CT_node[,,,i],
                                                     p=p_node)
             }
 
             if (!keep_gsw) {
                 rm(SA_node, CT_node, p_node, envir=.GlobalEnv)
+            }
+
+            if (verbose > 1) {
+                print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
             }
 
             # vertical derivative
@@ -533,9 +538,13 @@ sub_calc <- function(data_node) {
 
             if (!keep_gsw) rm(potdens_node, envir=.GlobalEnv)
 
-            N2_node <<- -g/rho0*tmp
+            N2_node <<- -g/potdens_node*tmp
             dimnames(N2_node)[[1]] <<- "N2"
-        
+            
+            if (F) {
+                N2_node_rh0 <<- -g/rho0*tmp
+            }
+
         } # use gsw::gsw_Nsquared or own vertical derivative of potential density
 
         if (varname == "Nsquared") {
@@ -620,6 +629,12 @@ sub_calc <- function(data_node) {
             dimnames(N_node)[[1]] <<- "N"
             if (!keep_gsw) rm(N2_node,  envir=.GlobalEnv)
 
+            if (F) {
+                N_node_rho0 <<- N2_node_rh0
+                N_node_rho0[N_node_rho0 < 0] <<- 0
+                N_node_rho0 <<- sqrt(N_node_rho0)
+            }
+
             ## rearrange N
             if (verbose > 1) {
                 print(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
@@ -630,6 +645,11 @@ sub_calc <- function(data_node) {
             }
             sub_n3_to_n2xde(N_node) # produces tmp
             N_vert <<- tmp
+
+            if (F) {
+                sub_n3_to_n2xde(N_node_rho0)
+                N_vert_rho0 <<- tmp
+            }
 
             ## vertical integral of N
             if (F) { # not needed since N is also integrated from depth one step later
@@ -665,6 +685,11 @@ sub_calc <- function(data_node) {
                 print(paste0(indent, "   min/max N_intz_z = ",
                              paste0(range(N_intz_z[finite_inds], na.rm=T), collapse="/"), " m s-1"))
             }
+
+            if (F) {
+                sub_vertical_integral_keepz(N_node_rho0)
+                N_intz_z_rho0 <<- tmp
+            }
             
             ## rearrange N_intz_z
             if (verbose > 1) {
@@ -678,7 +703,12 @@ sub_calc <- function(data_node) {
             N_intz_z_vert <<- tmp
             if (!keep_gsw) rm(N_intz_z, envir=.GlobalEnv)
             dimnames(N_intz_z_vert)[[1]] <<- "int_N_dz_z"
-   
+  
+            if (F) {
+                sub_n3_to_n2xde(N_intz_z_rho0)
+                N_intz_z_vert_rho0 <<- tmp
+            }
+            
             # for testing
             if (F) {
                 N_vert_mean <<- N_vert[,poly_node_inds_geogr,,]
@@ -741,15 +771,19 @@ sub_calc <- function(data_node) {
             } # F for testing
             #stop("asd")
 
-            # mode-m baroclinic wavespeed
+            # mode-m baroclinic gravity-wave speed
             if (verbose > 0) {
-                print(paste0(indent, "Calc baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010; Vallis 2017) ..."))
+                print(paste0(indent, "Calc mode-m baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
             }
             c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
                              dimnames=c(list(paste0("c_", mmodes)),
                                         dimnames(N_intz_z_vert)[2],
                                         list(depths=paste0("int", depths_fname)),
                                         dimnames(N_intz_z_vert)[4]))
+            if (F) {
+                c_vert_rho0 <<- c_vert
+            }
+
             for (i in 1:length(mmodes)) {
                 if (verbose > 0) {
                     print(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
@@ -759,6 +793,9 @@ sub_calc <- function(data_node) {
                 if (verbose > 2) {
                     print(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
                                  paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
+                }
+                if (F) {
+                    c_vert_rho0[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_z_vert_rho0[,,1,]
                 }
             } # for i mmodes
 
@@ -789,6 +826,10 @@ sub_calc <- function(data_node) {
                 }
                 #rm(eq_inds, envir=.GlobalEnv)
 
+                if (F) {
+                    int_rossbyrad_node_rho0 <<- c_vert_rho0/abs(f_vert)
+                }
+
                 if (varname == "internal_rossbyrad") {
                     data_node <<- int_rossbyrad_node
                     dimnames(data_node)[[1]] <<- paste0(varname, "_", mmodes)
@@ -799,6 +840,11 @@ sub_calc <- function(data_node) {
                     }
                     data_node <<- -beta_vert * int_rossbyrad_node^2
                     dimnames(data_node)[[1]] <<- paste0(varname, "_", mmodes)
+
+                    if (F) {
+                        data_node_rho0 <<- -beta_vert * int_rossbyrad_node_rho0^2
+                        data_node <<- data_node_rho0 # differences between /rho0 and /rho are very small
+                    }
 
                 } # "c_long_rossby" "internal_rossbyrad"
 
@@ -821,7 +867,7 @@ sub_calc <- function(data_node) {
 
                     # mode-m baroclinic horizontal velocity
                     if (verbose > 0) {
-                        print(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010; Stewart et al. 2017) ..."))
+                        print(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
                     }
                     R_vert <<- array(NA, dim=dim(c_vert),
                                      dimnames=dimnames(c_vert))
@@ -833,7 +879,7 @@ sub_calc <- function(data_node) {
                                          mmodes[i], ")"))
                             print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                         }
-                        S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
+                        S0 <<- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
                         R_vert[i,,,] <<- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
                         if (verbose > 2) {
                             print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
@@ -852,26 +898,28 @@ sub_calc <- function(data_node) {
 
                     # mode-m baroclinic vertical velocity
                     if (verbose > 0) {
-                        print(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998; Ferrari et al. 2010) ..."))
+                        print(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998 Appendix; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
                     }
                     S_vert <<- array(NA, dim=dim(c_vert),
                                      dimnames=dimnames(c_vert))
                     dimnames(S_vert)[[1]] <<- paste0("S_", mmodes)
                     for (i in 1:length(mmodes)) {
                         if (verbose > 0) {
+                            # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
                             if (T) { # ferrari
-                                print(paste0(indent, "   S_", mmodes[i], "(z) = S0_", mmodes[i], 
-                                             " sin(int_z N(z) dz / c_", mmodes[i], ")"))
+                                print(paste0(indent, "   S_", mmodes[i], "(z) = S_", mmodes[i], 
+                                             "^0 sin(int_z N(z) dz / c_", mmodes[i], ")"))
                             } else if (F) { # chelton
                                 print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
                                              " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                             }
                             print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                         }
-                        S0 <<- (c_vert[i,,,]/N_vert)^(1/2)
+                        S0 <<- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
+                        # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
                         if (T) { # ferrari
                             S_vert[i,,,] <<- S0 * sin(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
-                        } else if (F) { # chelton
+                        } else if (F) { # chelton (B = 1)
                             S_vert[i,,,] <<- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
                         }
                         if (verbose > 2) {

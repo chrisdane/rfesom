@@ -394,6 +394,9 @@
             } else if (area == "nadja1") {
                 map_geogr_lim_lon <- c(-4, 8)
                 map_geogr_lim_lat <- c(51, 62)
+            } else if (area == "wunsch97") {
+                map_geogr_lim_lon <- -20
+                map_geogr_lim_lat <- 47.4
             }
             if (area != "arctic") {
                 poly_geogr_lim_lon <- map_geogr_lim_lon

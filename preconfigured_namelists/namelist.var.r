@@ -1749,7 +1749,8 @@ if (varname == "tos") {
 
 } else if (varname == "c_long_rossby") {
     longname <- "Mode-m baroclinic long rossby-wave speed"
-    mmodes <- 1:5
+    mmodes <- 1
+    #mmodes <- 1:5
     #mmodes <- 6:9
     #mmodes <- c(10, 15, 20, 25, 30)
     #mmodes <- c(40, 50, 60, 70, 80)
@@ -1768,7 +1769,7 @@ if (varname == "tos") {
                                       var="s"
                                       #, base=base, power_ltm=-power_ltm
                                       ))
-    multfac_transient <- 1
+    multfac_transient <- multfac_ltm
     units_transient <- units_ltm
     if (any(transient_mode == c("meanint", "depthint"))) {
         multfac_transient <- 1

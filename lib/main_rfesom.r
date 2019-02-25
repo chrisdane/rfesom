@@ -104,7 +104,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "colors/pals.r",
+            "image.plot.pre.r", "colors/pals.r", "gcd.r",
             "lsos.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
@@ -144,6 +144,20 @@ if (regular_transient_out &&
     !any(transient_mode == c("area", "areadepth"))) {
     stop("If 'regular_transient_out'=T, 'transient_mode' must equal 'area' or 'areadepth'.")
 }
+# check if spatial interpolation to regualr is even necessary 
+# depending on the user choice area
+if (length(map_geogr_lim_lon) == 1) { # a single point
+    if (regular_transient_out) {
+        transient_out <- T
+        if (transient_mode == "area") {
+            transient_mode <- "mean"
+        } else if (transient_mode == "areadepth") {
+            transient_mode <- "depth"
+        }
+    }
+    regular_transient_out <- F
+    regular_ltm_out <- F
+}   
 if (!vec) uv_out <- F
 if (!uv_out && sd_method == "ackermann83") {
     print(paste0("warning: you set 'sd_method'=ackermann83 but 'varname'=",
@@ -165,18 +179,20 @@ if (transient_out && integrate_depth && dim_tag == "3D" &&
     print(paste0("         Switch variable 'transient_mode' to 'mean' or 'mean_int' or do something else ..."))
     stop()
 }
-if (dim_tag == "2D" || 
-    integrate_depth || 
-    #horiz_deriv_tag || 
-    (transient_out && 
-     any(transient_mode == c("depth", "depthint", "depthmax", "max3D", "areadepth",
-                             "csec_mean", "csec_depth"))) ||
-    (regular_transient_out &&
-     any(transient_mode == c("areadepth"))) ||
-    any(varname == c("MOCw", "c_long_rossby"))) {
-    average_depth <- F
-} else {
-    average_depth <- T
+if (!exists("average_depth")) { # potentially set by user in namelist.var
+    if (dim_tag == "2D" || 
+        integrate_depth || 
+        #horiz_deriv_tag || 
+        (transient_out && 
+         any(transient_mode == c("depth", "depthint", "depthmax", "max3D",
+                                 "csec_mean", "csec_depth"))) ||
+        (regular_transient_out &&
+         any(transient_mode == c("areadepth"))) ||
+        any(varname == c("MOCw", "c_long_rossby"))) {
+        average_depth <- F
+    } else {
+        average_depth <- T
+    }
 }
 if (moc_ltm_out && regexpr("MOC", varname) == -1) {
     moc_ltm_out <- F # calc MOC only when varname is MOCx
@@ -1382,7 +1398,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
     yinds <- which(yi >= range(map_geogr_lim_lat)[1] & 
                    yi <= range(map_geogr_lim_lat)[2])
     if (length(xinds) == 0 || length(yi) == 0) {
-        stop("STOP: Cannot find ", area, " coordinates in regular xi,yi!")
+        stop("Error: Cannot find '", area, "# coordinates in regular xi,yi!")
     }
     xi <- xi[xinds]
     yi <- yi[yinds]
@@ -1526,8 +1542,8 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
         } else if (projection == "rectangular") {
 
             ## Find area inds in element space
-            if (F && any(map_geogr_lim_lon > 0) && any(map_geogr_lim_lon < 0)) {
             # Consider both pos. and neg. longitudes
+            if (F && any(map_geogr_lim_lon > 0) && any(map_geogr_lim_lon < 0)) {
             #if (map_geogr_lim_lon[1] < 0 && map_geogr_lim_lon[2] > 0) {
                 cyclic_plot <- T # T
                 poly_inds_geogr1 <- unique(which(xc > poly_geogr_lim_lon[1] &
@@ -1539,8 +1555,8 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                                                  yc < poly_geogr_lim_lat[2], arr.ind=T)[,2])
                 poly_inds_geogr <- c(poly_inds_geogr1, poly_inds_geogr2)
             
+            # all other cases
             } else {
-                # all other cases 
                 cyclic_plot <- F
                 poly_inds_geogr <- which(xc > range(poly_geogr_lim_lon)[1] & 
                                          xc < range(poly_geogr_lim_lon)[2] &
@@ -1548,8 +1564,9 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                                          yc < range(poly_geogr_lim_lat)[2], arr.ind=T)
                 poly_inds_geogr <- unique(poly_inds_geogr[,2])
 
-                if (poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
-                    # closed polygon of arbitrary shape
+                # closed polygon of arbitrary shape
+                if (length(poly_geogr_lim_lon) > 1 && # not a single point
+                    poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
                     success <- load_package("splancs")
                     if (!success) stop()
 
@@ -1568,7 +1585,8 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                                                        #poly=test,
                                                        bound=T, quiet=F)
                         } else if (T) {
-                            # library(sp)
+                            success <- load_package("sp")
+                            if (!success) stop()
                             tmp[[i]] <- point.in.polygon(xc[i,], yc[i,], 
                                                          poly_geogr_lim_lon, poly_geogr_lim_lat, 
                                                          mode.checked=F) 
@@ -1579,21 +1597,50 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                     } # i:3
                     
                     if (T) {
-                        tmp <- lapply(tmp, function(x) which(x == 1))
+                        tmp <- lapply(tmp, function(x) which(x == 1)) # 1 = interior; 2 = on edge
                     }
                     
                     # only elements whose all 3 nodes are within xlim/ylim
                     poly_inds_geogr <- Reduce(intersect, tmp)
                     rm(tmp)
-                
-                } else {
-                    # simple 4-corner box
+               
+                # 4-corner box
+                } else if (length(map_geogr_lim_lon) == 2) {
                     poly_inds_geogr <- which(xc > range(poly_geogr_lim_lon)[1] &
                                              xc < range(poly_geogr_lim_lon)[2] &
                                              yc > range(poly_geogr_lim_lat)[1] &
                                              yc < range(poly_geogr_lim_lat)[2], arr.ind=T)
+                    # all nodes of elements 
                     poly_inds_geogr <- unique(poly_inds_geogr[,2])
-                }
+                
+                # 1 single location
+                } else if (length(map_geogr_lim_lon) == 1) {
+                    
+                    # find polygon in which the point is located
+                    success <- load_package("sp")
+                    if (!success) stop()
+                    for (i in 1:elem2d_n) {
+                        poly <- cbind(xc[,i], yc[,i])
+                        poly <- rbind(poly, poly[1,])
+                        ind <- point.in.polygon(map_geogr_lim_lon, map_geogr_lim_lat,
+                                                poly[,1], poly[,2])
+                        if (ind == 1) {
+                            poly_inds_geogr <- i
+                            break
+                        }
+                        if (i == elem2d_n) {
+                            stop(paste0("The single-point '", area, "' location (x=", 
+                                        map_geogr_lim_lon, ",y=", map_geogr_lim_lat, 
+                                        ") is not contained in your mesh. choose another location."))
+                        }
+                    }
+                    # check
+                    if (F) {
+                        plot(map_geogr_lim_lon, map_geogr_lim_lat, pch=4, 
+                             xlim=range(xc[,poly_inds_geogr]), ylim=range(yc[,poly_inds_geogr]))
+                        polygon(xc[,poly_inds_geogr], yc[,poly_inds_geogr]) 
+                    }
+                } # arbitrary
             }
 
             # Cut area in element space
@@ -1608,8 +1655,9 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
             ypsur <- ycsur
             
             ## Find area inds in node space
-            if (poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
-                # closed polygon of arbitrary shape
+            # closed polygon of arbitrary shape
+            if (length(poly_geogr_lim_lon) > 1 &&
+                poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
                 success <- load_package("splancs")
                 if (!success) stop()
 
@@ -1617,14 +1665,46 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
                                                        cbind(poly_geogr_lim_lon, 
                                                              poly_geogr_lim_lat), 
                                                        bound=T)
-            
-            } else {
-                # simple 4-corner box
+
+            # 4-corner box 
+            } else if (length(poly_geogr_lim_lon) == 2) {
                 poly_node_inds_geogr <- which(xcsur > range(poly_geogr_lim_lon)[1] &
                                               xcsur < range(poly_geogr_lim_lon)[2] &
                                               ycsur > range(poly_geogr_lim_lat)[1] &
                                               ycsur < range(poly_geogr_lim_lat)[2])
-            }
+            # single-point location
+            } else if (length(poly_geogr_lim_lon) == 1) {
+
+                # find polygon in which the point is located
+                success <- load_package("sp")
+                if (!success) stop()
+                for (i in 1:elem2d_n) {
+                    poly <- cbind(xc[,i], yc[,i])
+                    poly <- rbind(poly, poly[1,])
+                    ind <- point.in.polygon(map_geogr_lim_lon, map_geogr_lim_lat,
+                                            poly[,1], poly[,2])
+                    if (ind == 1) {
+                        poly_node_inds_geogr <- i
+                        break
+                    }
+                    if (i == elem2d_n) {
+                        stop(paste0("The single-point '", area, "' location (x=",
+                                    map_geogr_lim_lon, ",y=", map_geogr_lim_lat,
+                                    ") is not contained in your mesh. choose another location."))
+                    }
+                }
+                # from element to nodes
+                poly_node_inds_geogr <- elem2d[,poly_node_inds_geogr]
+
+                # check
+                if (F) {
+                    plot(map_geogr_lim_lon, map_geogr_lim_lat, pch=4,
+                         xlim=range(xcsur[poly_node_inds_geogr]), ylim=range(ycsur[poly_node_inds_geogr]))
+                    polygon(xcsur[poly_node_inds_geogr], ycsur[poly_node_inds_geogr])
+                }
+            
+            } # arbitrary polygon, box, or single-point location
+
             if (length(poly_inds_geogr) == 0) {
                 stop(paste0(indent, 
                             "Error: not any nodes within the chosen area. Choose another!"))
@@ -3835,7 +3915,9 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         if (!average_depth && !integrate_depth) {
-                            if (dim_tag == "3D" && dim(data_node) == 1 && ndepths > 1) {
+                            # wtf i did here:?
+                            #if (dim_tag == "3D" && dim(data_node) == 1 && ndepths > 1) {
+                            if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
                                 if (verbose > 1) { # rearrange first
                                     print(paste0(indent, "For regular interpolation bring data_node from (nod3d_n=", nod3d_n,
                                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
@@ -6844,10 +6926,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             if (verbose > 1) {
                 print(paste0(indent, "   min/max of color levels = ",
-                             paste0(range(ip$axis.at), collapse="/"), " ", units_ltm,
-                             ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")))
+                             paste0(range(ip$axis.at), collapse="/"), " ", units_ltm
+                             #, ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")
+                             ))
             }
-
             
             ## Add fesom data to plot
             if (plot_type == "interp") {
