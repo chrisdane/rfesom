@@ -23,7 +23,7 @@ cluster_vol_3d <- rep(0, t=length(nod_x))
 derivative_stdbafu_x_3D <- cbind(rep(-1, t=3), diag(3))
 
 for (i in 1:elem3d_n) {
-    if (i %% 1e5 == 0) print(paste0(i, "/", elem3d_n))
+    if (i %% 1e5 == 0) message(paste0(i, "/", elem3d_n))
                                
     # cartesion coordinates on elements
     node <- elem3d[,i]

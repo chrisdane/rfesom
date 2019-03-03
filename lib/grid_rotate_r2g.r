@@ -46,12 +46,6 @@ glon[a] <- 0
 glat <- glat/rad
 glon <- glon/rad
 
-if (F) {
-    ws <- sort(sapply(ls(), function(x) object.size(get(x))), decreasing=T)/1024^2 # Mb
-    print(paste0(indent, "   10 biggest objects in grid_rotate_r2g() [Mb]:"))
-    print(round(ws[1:10], 3))
-}
-
 return(list(glon=glon, glat=glat, rot_mat=rotate_matrix))
 
 rm(list=ls())

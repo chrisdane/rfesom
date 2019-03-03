@@ -44,7 +44,7 @@ sub_calc <- function(data_node) {
 
         varinds <<- c(1, 2)
         if (verbose > 1) {
-            print(paste0(indent, varname, " = sqrt(",
+            message(paste0(indent, varname, " = sqrt(",
                          vars[varinds[1]], "^2 + ",
                          vars[varinds[2]], "^2) ..."))
         }
@@ -126,7 +126,7 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
        
         if (verbose > 1) {
-            print(paste0(indent, "Calc ",
+            message(paste0(indent, "Calc ",
                          vars[1], "X", vars[3], " = ",
                          vars[varinds[1]], "*", vars[varinds[3]], ", ",
                          vars[2], "X", vars[3], " = ",
@@ -143,7 +143,7 @@ sub_calc <- function(data_node) {
                              "uvsgstemp", "uvsgssalt", "uvsgsrho", "uvsgsb"))) {
         
             if (verbose > 1) {
-                print(paste0(indent, varname, " = sqrt[(", 
+                message(paste0(indent, varname, " = sqrt[(", 
                              vars[varinds[1]], "*", 
                              vars[varinds[3]], ")^2 + (", 
                              vars[varinds[2]], "*", 
@@ -210,7 +210,7 @@ sub_calc <- function(data_node) {
         if (any(varname == c("uvtemptot", "uvsalttot", "uvrhotot", "uvbtot",
                              "uvsgstemptot", "uvsgssalttot"))) {
             if (verbose > 1) {
-                print(paste0(indent, varname, " = sqrt(",
+                message(paste0(indent, varname, " = sqrt(",
                              vars[varinds[1]], "^2 + ",
                              vars[varinds[2]], "^2)"))
             }
@@ -289,7 +289,7 @@ sub_calc <- function(data_node) {
         }
 
         if (verbose > 1) {
-            print(paste0(indent, "Calc ", 
+            message(paste0(indent, "Calc ", 
                          vars[varinds[4]], "_eddy = ",
                          vars[varinds[4]], " - ", vars[varinds[1]], "*", vars[varinds[3]], ", ",
                          vars[varinds[5]], "_eddy = ", 
@@ -306,7 +306,7 @@ sub_calc <- function(data_node) {
                              "uvsgsteddy", "uvsgsseddy"))) {
 
             if (verbose > 1) {
-                print(paste0(indent, varname, " = sqrt( [", vars[varinds[4]],
+                message(paste0(indent, varname, " = sqrt( [", vars[varinds[4]],
                              " - ", vars[varinds[1]], "*", vars[varinds[3]],
                              "]^2 + [", vars[varinds[5]],  " - ",
                              vars[varinds[2]], "*", vars[varinds[3]], "]^2 )"))
@@ -353,7 +353,7 @@ sub_calc <- function(data_node) {
                       which(vars == "insitub"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, varname, " = ", varinds[1], " * ", varinds[2], " ..."))
+            message(paste0(indent, varname, " = ", varinds[1], " * ", varinds[2], " ..."))
         }
 
         data_node <<- data_node[varinds[1],,,]*data_node[varinds[2],,,]
@@ -368,7 +368,7 @@ sub_calc <- function(data_node) {
                       which(vars == "wrho"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, varname, " = mean(", vars[varinds[3]], 
+            message(paste0(indent, varname, " = mean(", vars[varinds[3]], 
                          ") - mean(", vars[varinds[1]], ")*mean(",
                          vars[varinds[2]], ") ..."))
         }
@@ -407,20 +407,20 @@ sub_calc <- function(data_node) {
         ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
         ##  latitude    latitude in decimal degrees, positive to the north of the equator.
         if (verbose > 0) {
-            print(paste0(indent, "Calc absolute salinity ..."))
+            message(paste0(indent, "Calc absolute salinity ..."))
             if (verbose > 1) {
-                print(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
-                print(paste0(indent, "      with SP        Practical Salinity (PSS-78) [ unitless ]"))
-                print(paste0(indent, "           p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                print(paste0(indent, "           longitude longitude in decimal degrees, positive to the east of Greenwich."))
-                print(paste0(indent, "           latitude  latitude in decimal degrees, positive to the north of the equator."))
+                message(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
+                message(paste0(indent, "      with SP        Practical Salinity (PSS-78) [ unitless ]"))
+                message(paste0(indent, "           p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                message(paste0(indent, "           longitude longitude in decimal degrees, positive to the east of Greenwich."))
+                message(paste0(indent, "           latitude  latitude in decimal degrees, positive to the north of the equator."))
             }
         }
         saltind <<- which(vars == "salt" | vars == "so")
         if (verbose > 0) {
-            print(paste0(indent, "   p = gsw_p_from_z(z, latitude, ",
+            message(paste0(indent, "   p = gsw_p_from_z(z, latitude, ",
                          "geo_strf_dyn_height=0 [m2 s-2], sea_surface_geopotential=0 [m2 s-2])"))
-            print(paste0(indent, "      with z = zero at surface and positive upwards [ m ]"))
+            message(paste0(indent, "      with z = zero at surface and positive upwards [ m ]"))
         }
         p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
         # note: gsw::* functions do not keep the matrix dimensions!!!
@@ -437,11 +437,11 @@ sub_calc <- function(data_node) {
         ##  SA  Absolute Salinity [ g/kg ]
         ##  pt  potential temperature (ITS-90) [ degC ]
         if (verbose > 0) {
-            print(paste0(indent, "Calc Conservative Temperature ..."))
+            message(paste0(indent, "Calc Conservative Temperature ..."))
             if (verbose > 1) {
-                print(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
-                print(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
-                print(paste0(indent, "           pt potential temperature (ITS-90) [ degC ]"))
+                message(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
+                message(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
+                message(paste0(indent, "           pt potential temperature (ITS-90) [ degC ]"))
             }
         }
         tempind <<- which(vars == "temp" | vars == "thetao")
@@ -457,7 +457,7 @@ sub_calc <- function(data_node) {
         ## Calc N2
         if (F) { 
             if (verbose > 0) {
-                print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 ..."))
+                message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 ..."))
             }
             # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
             ## The result is computed based on first-differencing a computed density with respect pressure, and
@@ -465,11 +465,11 @@ sub_calc <- function(data_node) {
             ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
             ## in the oce package)
             if (verbose > 1) {
-                print(paste0(indent, "   N2 =  gsw_Nsquared(SA, CT, p, latitude)"))
-                print(paste0(indent, "      with SA       Absolute Salinity [ g/kg ]"))
-                print(paste0(indent, "           CT       Conservative Temperature [ degC ]"))
-                print(paste0(indent, "           p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                print(paste0(indent, "           latitude latitude in decimal degrees, positive to the north of the equator"))
+                message(paste0(indent, "   N2 =  gsw_Nsquared(SA, CT, p, latitude)"))
+                message(paste0(indent, "      with SA       Absolute Salinity [ g/kg ]"))
+                message(paste0(indent, "           CT       Conservative Temperature [ degC ]"))
+                message(paste0(indent, "           p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                message(paste0(indent, "           latitude latitude in decimal degrees, positive to the north of the equator"))
             }
             # note: gsw::* functions do not keep the matrix dimensions!!!
             N2_node <<- array(NA, dim=dim(data_node[1,,,]),
@@ -490,10 +490,10 @@ sub_calc <- function(data_node) {
         } else if (T) { # use own vertical derivative of potential density
          
             if (verbose > 0) {
-                print(paste0(indent, "Calc potential density rho = gsw::gsw_rho(SA, CT, p) ..."))
-                print(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
-                print(paste0(indent, "           CT Conservative Temperature [ degC ]"))
-                print(paste0(indent, "           p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                message(paste0(indent, "Calc potential density rho = gsw::gsw_rho(SA, CT, p) ..."))
+                message(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
+                message(paste0(indent, "           CT Conservative Temperature [ degC ]"))
+                message(paste0(indent, "           p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
 
             }
  
@@ -512,13 +512,13 @@ sub_calc <- function(data_node) {
             }
 
             if (verbose > 1) {
-                print(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
+                message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
             }
 
             # vertical derivative
             pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("        ", indent)) # 5 " " for default print()
+                                    indent=paste0("        ", indent)) # 5 " " for default message()
             tmp <<- potdens_node
             tmp[] <<- 0
             for (i in 1:(aux3d_n-1)) {
@@ -554,12 +554,12 @@ sub_calc <- function(data_node) {
         } else if (varname == "richardson") {
 
             if (verbose > 1) {
-                print(paste0(indent, varname_plot, " = N^2/[sqrt(dudz^2 + dvdz^2)]^2 ... (Thomas et al. 2008)"))
+                message(paste0(indent, varname_plot, " = N^2/[sqrt(dudz^2 + dvdz^2)]^2 ... (Thomas et al. 2008)"))
             }
 
             # vertical derivative needs 'data_node'
             if (verbose > 1) {
-                print(paste0(indent, "Calc global vertical derivative for all depths ..."))
+                message(paste0(indent, "Calc global vertical derivative for all depths ..."))
             }
 
             varinds <<- c(which(vars == "u" | vars == "uo"),
@@ -591,13 +591,13 @@ sub_calc <- function(data_node) {
         } else if (varname == "rossbyrad") {
 
             if (verbose > 1) {
-                print(paste0(indent, varname, "_{m=1} = 1/(m*|f|*pi) * int_{z=-H}^{z=0} N dz ..."))
+                message(paste0(indent, varname, "_{m=1} = 1/(m*|f|*pi) * int_{z=-H}^{z=0} N dz ..."))
             }
 
             data_node <<- sqrt(N2_node)
 
             if (verbose > 1) {
-                print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integral.r ..."))
+                message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integral.r ..."))
             }
             sub_vertical_integral(data_node) # produces tmp
             data_node <<- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
@@ -619,7 +619,7 @@ sub_calc <- function(data_node) {
             if (verbose > 2) {
                 finite_inds <<- is.finite(N_node)
                 if (any(finite_inds) && any(N_node > 0)) {
-                    print(paste0(indent, "   min/max N_node = ", 
+                    message(paste0(indent, "   min/max N_node = ", 
                                  paste0(range(N_node[finite_inds], na.rm=T), collapse="/"), " s-1"))
                 } else {
                     stop(paste0(indent, "   Error: all values of N_node = sqrt(N_node) are < 0 and/or infinite.",
@@ -637,10 +637,10 @@ sub_calc <- function(data_node) {
 
             ## rearrange N
             if (verbose > 1) {
-                print(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
+                message(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 2) {
-                    print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                 }
             }
             sub_n3_to_n2xde(N_node) # produces tmp
@@ -654,16 +654,16 @@ sub_calc <- function(data_node) {
             ## vertical integral of N
             if (F) { # not needed since N is also integrated from depth one step later
                 if (verbose > 1) {
-                    print(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
+                    message(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
                     if (verbose > 2) {
-                        print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                        message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
                     }
                 }
                 sub_vertical_integral(N_node) # produces tmp
                 N_intz_const <<- tmp
                 if (verbose > 2) {
                     finite_inds <<- is.finite(N_intz_const)
-                    print(paste0(indent, "   min/max N_intz_const = ",
+                    message(paste0(indent, "   min/max N_intz_const = ",
                                  paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
                 }
                 dimnames(N_intz_const)[[1]] <<- "int_N_dz_const"
@@ -671,10 +671,10 @@ sub_calc <- function(data_node) {
 
             ## vertical integral of N from bottom: keep z dim
             if (verbose > 1) {
-                print(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
+                message(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
                              "-", interpolate_depths[1], " m and keep z dim ..."))
                 if (verbose > 2) {
-                    print(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
+                    message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
                 }
             }
             sub_vertical_integral_keepz(N_node)
@@ -682,7 +682,7 @@ sub_calc <- function(data_node) {
             if (!keep_gsw) rm(N_node, envir=.GlobalEnv)
             if (verbose > 2) {
                 finite_inds <<- is.finite(N_intz_z)
-                print(paste0(indent, "   min/max N_intz_z = ",
+                message(paste0(indent, "   min/max N_intz_z = ",
                              paste0(range(N_intz_z[finite_inds], na.rm=T), collapse="/"), " m s-1"))
             }
 
@@ -693,10 +693,10 @@ sub_calc <- function(data_node) {
             
             ## rearrange N_intz_z
             if (verbose > 1) {
-                print(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
+                message(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 2) {
-                    print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                 }
             }
             sub_n3_to_n2xde(N_intz_z) # produces tmp
@@ -743,7 +743,7 @@ sub_calc <- function(data_node) {
                         tmp_area <<- sum(patch_area[1,,i,1])
                     }
                     if (T && verbose > 2) {
-                        print(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
+                        message(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
                     }
 
                     N_vert_mean[,i,] <<- N_vert_mean[,i,]/tmp_area
@@ -773,7 +773,7 @@ sub_calc <- function(data_node) {
 
             # mode-m baroclinic gravity-wave speed
             if (verbose > 0) {
-                print(paste0(indent, "Calc mode-m baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                message(paste0(indent, "Calc mode-m baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
             }
             c_vert <<- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
                              dimnames=c(list(paste0("c_", mmodes)),
@@ -786,12 +786,12 @@ sub_calc <- function(data_node) {
 
             for (i in 1:length(mmodes)) {
                 if (verbose > 0) {
-                    print(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
+                    message(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
                 }
                 #c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_const
                 c_vert[i,,,] <<- 1/(mmodes[i]*pi) * N_intz_z_vert[,,1,] # same at the surface
                 if (verbose > 2) {
-                    print(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
+                    message(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
                                  paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
                 }
                 if (F) {
@@ -816,8 +816,8 @@ sub_calc <- function(data_node) {
                 beta_vert <<- aperm(beta_vert, c(2, 1, 3, 4))
 
                 if (verbose > 0) {
-                    print(paste0(indent, "internal_rossbyrad = c_barocline/|f|               for  |phi| >= 5° latitude"))
-                    print(paste0(indent, "                   = sqrt( c_barocline/(2*beta) )  for  |phi| <= 5° latitude (Chelton et al. 1998) ..."))
+                    message(paste0(indent, "internal_rossbyrad = c_barocline/|f|               for  |phi| >= 5° latitude"))
+                    message(paste0(indent, "                   = sqrt( c_barocline/(2*beta) )  for  |phi| <= 5° latitude (Chelton et al. 1998) ..."))
                 }
                 int_rossbyrad_node <<- c_vert/abs(f_vert)
                 eq_inds <<- which(abs(ycsur) <= 5)
@@ -836,7 +836,7 @@ sub_calc <- function(data_node) {
                 
                 } else if (varname == "c_long_rossby") {
                     if (verbose > 0) {
-                        print(paste0(indent, varname, " = -beta * internal_rossbyrad^2 = -beta/f^2 * c_barocline^2 (Killworth et al. 1997; Chelton et al. 1998) ..."))
+                        message(paste0(indent, varname, " = -beta * internal_rossbyrad^2 = -beta/f^2 * c_barocline^2 (Killworth et al. 1997; Chelton et al. 1998) ..."))
                     }
                     data_node <<- -beta_vert * int_rossbyrad_node^2
                     dimnames(data_node)[[1]] <<- paste0(varname, "_", mmodes)
@@ -867,22 +867,22 @@ sub_calc <- function(data_node) {
 
                     # mode-m baroclinic horizontal velocity
                     if (verbose > 0) {
-                        print(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                        message(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
                     }
                     R_vert <<- array(NA, dim=dim(c_vert),
                                      dimnames=dimnames(c_vert))
                     dimnames(R_vert)[[1]] <<- paste0("R_", mmodes)
                     for (i in 1:length(mmodes)) {
                         if (verbose > 0) {
-                            print(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
+                            message(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
                                          mmodes[i], " * N(z) * S_", mmodes[i], "^0 / g] * cos(int_z N(z) dz / c_", 
                                          mmodes[i], ")"))
-                            print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
+                            message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                         }
                         S0 <<- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
                         R_vert[i,,,] <<- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
                         if (verbose > 2) {
-                            print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                            message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
                                          paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
                         }
                     } # for i mmodes
@@ -898,7 +898,7 @@ sub_calc <- function(data_node) {
 
                     # mode-m baroclinic vertical velocity
                     if (verbose > 0) {
-                        print(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998 Appendix; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                        message(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998 Appendix; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
                     }
                     S_vert <<- array(NA, dim=dim(c_vert),
                                      dimnames=dimnames(c_vert))
@@ -907,13 +907,13 @@ sub_calc <- function(data_node) {
                         if (verbose > 0) {
                             # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
                             if (T) { # ferrari
-                                print(paste0(indent, "   S_", mmodes[i], "(z) = S_", mmodes[i], 
+                                message(paste0(indent, "   S_", mmodes[i], "(z) = S_", mmodes[i], 
                                              "^0 sin(int_z N(z) dz / c_", mmodes[i], ")"))
                             } else if (F) { # chelton
-                                print(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
+                                message(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
                                              " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                             }
-                            print(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
+                            message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                         }
                         S0 <<- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
                         # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
@@ -923,7 +923,7 @@ sub_calc <- function(data_node) {
                             S_vert[i,,,] <<- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
                         }
                         if (verbose > 2) {
-                            print(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                            message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
                                          paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
                         }
                     } # for i mmodes
@@ -968,7 +968,7 @@ sub_calc <- function(data_node) {
                       which(vars == "v" | vars == "vo"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "MKE = 1/2 mean(", vars[varinds[1]], 
+            message(paste0(indent, "MKE = 1/2 mean(", vars[varinds[1]], 
                          "^2 + ", vars[varinds[2]], "^2) ..."))
         }
 
@@ -984,7 +984,7 @@ sub_calc <- function(data_node) {
                       which(vars == "vv" | vars == "v2o"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "TKE = 1/2 mean(", vars[varinds[1]], 
+            message(paste0(indent, "TKE = 1/2 mean(", vars[varinds[1]], 
                          "^2 + ", vars[varinds[2]], "^2) ..."))
         }
 
@@ -1002,7 +1002,7 @@ sub_calc <- function(data_node) {
                       which(vars == "v" | vars == "vo"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "EKE = 1/2 [ mean(",
+            message(paste0(indent, "EKE = 1/2 [ mean(",
                          vars[varinds[1]], ") - mean(",
                          vars[varinds[2]], ")^2 + mean(",
                          vars[varinds[3]], ") - mean(",
@@ -1039,7 +1039,7 @@ sub_calc <- function(data_node) {
                       which(vars == "vtauy"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 2) {
-            print(paste0(indent, "TWE = ", vars[varinds[1]], 
+            message(paste0(indent, "TWE = ", vars[varinds[1]], 
                          " + ", vars[varinds[2]], " ... (Waterhouse et al. 2014)"))
         }
 
@@ -1056,11 +1056,11 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
             if (varname == "mwindenergy") {
-                print(paste0(indent, "MWE = mean(", vars[varinds[1]], ")*mean(", vars[varinds[3]], 
+                message(paste0(indent, "MWE = mean(", vars[varinds[1]], ")*mean(", vars[varinds[3]], 
                              ") + mean(", vars[varinds[2]], ")*mean(", vars[varinds[4]], 
                              ") ... (Waterhouse et al. 2014)"))
             } else if (varname == "FmKm") {
-                print(paste0(indent, varname, " = 1/rho0 * mean(", vars[varinds[1]], 
+                message(paste0(indent, varname, " = 1/rho0 * mean(", vars[varinds[1]], 
                              ")*mean(", vars[varinds[3]], ") + mean(", vars[varinds[2]], 
                              ")*mean(", vars[varinds[4]], ") ... (Renault et al. 2016)"))
             }
@@ -1085,12 +1085,12 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
             if (varname == "ewindenergy") {
-                print(paste0(indent, "EWE = (", vars[varinds[5]], " - mean(", 
+                message(paste0(indent, "EWE = (", vars[varinds[5]], " - mean(", 
                              vars[varinds[1]], ")*mean(", vars[varinds[3]], 
                              ") + ", vars[varinds[6]], " - mean(", vars[varinds[2]], 
                              ")*mean(", vars[varinds[4]], ") ... (Waterhouse et al. 2014)"))
             } else if (varname == "FeKe") {
-                print(paste0(indent, varname, "= 1/rho0 * (", vars[varinds[5]], " - mean(",
+                message(paste0(indent, varname, "= 1/rho0 * (", vars[varinds[5]], " - mean(",
                              vars[varinds[1]], ")*mean(", vars[varinds[3]],
                              ") + ", vars[varinds[6]], " - mean(", vars[varinds[2]],
                              ")*mean(", vars[varinds[4]], ") ... (Renault et al. 2016)"))
@@ -1146,7 +1146,7 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
 
         if (verbose > 1) {
-            print(paste0(indent, varname, " = d(", vars[varinds[1]], "*", 
+            message(paste0(indent, varname, " = d(", vars[varinds[1]], "*", 
                          vars[varinds[2]], ")/dz ..."))
         }
 
@@ -1155,7 +1155,7 @@ sub_calc <- function(data_node) {
 
         # vertical derivative
         if (verbose > 1) {
-            print(paste0(indent, "Calc global vertical derivative of '",
+            message(paste0(indent, "Calc global vertical derivative of '",
                          dimnames(data_node)[[1]], "' for all depths ..."))
         }
 
@@ -1166,7 +1166,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1212,7 +1212,7 @@ sub_calc <- function(data_node) {
         }
 
         if (verbose > 1) {
-            print(paste0(indent, varname, " = d(", vars[varinds[3]], " - ", 
+            message(paste0(indent, varname, " = d(", vars[varinds[3]], " - ", 
                          vars[varinds[1]], "*", vars[varinds[2]], ")/dz ..."))
         }
 
@@ -1221,7 +1221,7 @@ sub_calc <- function(data_node) {
 
         # vertical derivative
         if (verbose > 1) {
-            print(paste0(indent, "Calc global vertical derivative of '",
+            message(paste0(indent, "Calc global vertical derivative of '",
                          dimnames(data_node)[[1]], "' for all depths ..."))
         }
 
@@ -1232,7 +1232,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1259,7 +1259,7 @@ sub_calc <- function(data_node) {
     ## vertical tracer diffusion
     if (any(varname == c("vdifft", "vdiffs", "vdiffrho", "vdiffb"))) {
 
-        print(paste0(indent, "Warning: Kv is probably snapshot data!!!!"))
+        message(paste0(indent, "Warning: Kv is probably snapshot data!!!!"))
 
         varinds <<- which(vars == "Kv")
         if (varname == "vdifft") {
@@ -1282,13 +1282,13 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
 
         if (verbose > 1) {
-            print(paste0(indent, varname, " = d[", vars[varinds[1]], 
+            message(paste0(indent, varname, " = d[", vars[varinds[1]], 
                          " d(", vars[varinds[2]], ")/dz]/dz ..."))
         }
 
         # 1st vertical derivative
         if (verbose > 1) {
-            print(paste0(indent, "Calc global vertical derivative of '",
+            message(paste0(indent, "Calc global vertical derivative of '",
                          dimnames(data_node)[[1]][varinds[2]], "' for all depths ..."))
         }
 
@@ -1299,7 +1299,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1325,7 +1325,7 @@ sub_calc <- function(data_node) {
 
         # 2nd vertical derivative
         if (verbose > 1) {
-            print(paste0(indent, "Calc global vertical derivative of '",
+            message(paste0(indent, "Calc global vertical derivative of '",
                          dimnames(Kv_dvardz1)[[1]], "' for all depths ..."))
         }
 
@@ -1336,7 +1336,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1371,7 +1371,7 @@ sub_calc <- function(data_node) {
                       which(vars == "uw"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "u'w' = ", vars[varinds[3]], " - ", 
+            message(paste0(indent, "u'w' = ", vars[varinds[3]], " - ", 
                          vars[varinds[1]], " * ", vars[varinds[2]], " ..."))
         }
         utmp <<- data_node[varinds[3],,,] - data_node[varinds[1],,,]*data_node[varinds[2],,,]
@@ -1383,7 +1383,7 @@ sub_calc <- function(data_node) {
                       which(vars == "vw"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "v'w' = ", vars[varinds[3]], " - ", 
+            message(paste0(indent, "v'w' = ", vars[varinds[3]], " - ", 
                          vars[varinds[1]], " * ", vars[varinds[2]], " ..."))
         }
         vtmp <<- data_node[varinds[3],,,] - data_node[varinds[1],,,]*data_node[varinds[2],,,]
@@ -1394,7 +1394,7 @@ sub_calc <- function(data_node) {
                       which(vars == "v" | vars == "vo")) 
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            print(paste0(indent, "Calc global vertical derivative of '",
+            message(paste0(indent, "Calc global vertical derivative of '",
                          paste0(vars[varinds], collapse="','"),
                          "' for all depths ..."))
         }
@@ -1406,7 +1406,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:(aux3d_n-1)) {
             nodes_up <<- aux3d[i,]
@@ -1428,7 +1428,7 @@ sub_calc <- function(data_node) {
 
         # calc VRS
         if (verbose > 1) {
-            print(paste0(indent, "VRS = - u'w'*dudz - v'w'*dvdz"))
+            message(paste0(indent, "VRS = - u'w'*dudz - v'w'*dvdz"))
         }
         vrs <<- -utmp*dvardz[1,,,] - vtmp*dvardz[2,,,]
         dimnames(tmp)[[1]] <<- "VRS"
@@ -1511,7 +1511,7 @@ sub_calc <- function(data_node) {
         ## do stuff before horizontal derivative
         if (varname == "ekmanP") {
             if (verbose > 1) {
-                print(paste0(indent, varname, " = d(", varname_fesom[2], "/f)",
+                message(paste0(indent, varname, " = d(", varname_fesom[2], "/f)",
                              "dx - d(", varname_fesom[1], "/f)dy ..."))
             }
             # divide through f
@@ -1555,11 +1555,11 @@ sub_calc <- function(data_node) {
 
             if (verbose > 1) {
                 if (!is.null(dxinds)) {
-                    print(paste0(indent, "Calc ", 
+                    message(paste0(indent, "Calc ", 
                                  paste0("dx_", dimnames(data_node)[[1]][dxinds], collapse=", "), " ..."))
                 }
                 if (!is.null(dxinds)) {
-                    print(paste0(indent, "Calc ", 
+                    message(paste0(indent, "Calc ", 
                                  paste0("dy_", dimnames(data_node)[[1]][dyinds], collapse=", "), " ..."))
                 }
             }
@@ -1572,7 +1572,7 @@ sub_calc <- function(data_node) {
             # create progress bar
             pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("     ", indent)) # 5 " " for default print()
+                                    indent=paste0("     ", indent)) # 5 " " for default message()
 
             #for (i in 1:aux3d_n) {
             for (i in 1:ndepths) {
@@ -1584,7 +1584,7 @@ sub_calc <- function(data_node) {
                         #stop("asd")
 
                         if (!is.null(dxinds)) {
-                            #print(paste0(i, " ", j, " xxx"))
+                            #message(paste0(i, " ", j, " xxx"))
                             #aux <<- adrop(bafux_2d_time_depth[,,j,,], drop=3)*data_node[dxinds,nds_layer,,] 
                             # c(nvars,3,ndepths=1,nrecspf)*c(nvars,3,ndepths=1,nrecspf)
                            
@@ -1708,9 +1708,9 @@ sub_calc <- function(data_node) {
             } else {
 
                 if (verbose > 1) { # rearrange first
-                    print(paste0(indent, "Bring data from (nod3d_n=", nod3d_n,
+                    message(paste0(indent, "Bring data from (nod3d_n=", nod3d_n,
                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                    print(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                 }
                 sub_n3_to_n2xde(data_node) # produces tmp
                 data_vert <<- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
@@ -1732,7 +1732,7 @@ sub_calc <- function(data_node) {
 
             ## put data from nodes on elems
             if (verbose > 1) {
-                print(paste0(indent, "Bring data from (nod2d_n=", nod2d_n, " x ndepths=", 
+                message(paste0(indent, "Bring data from (nod2d_n=", nod2d_n, " x ndepths=", 
                              dim(data_vert)[3], ") on (3 x elem2d_n=", elem2d_n, " x ndepths=", 
                              dim(data_vert)[3], ") for horizontal derivative ..."))
             }
@@ -1747,7 +1747,7 @@ sub_calc <- function(data_node) {
             ## horizontal derivatives
             if (!is.null(dxinds)) {
                 if (verbose > 1) {
-                    print(paste0(indent, "Calc dx for interpolated depths ..."))
+                    message(paste0(indent, "Calc dx for interpolated depths ..."))
                 }
                 dvardx_elem <<- array(0, 
                                       dim=c(length(dxinds), 1, dim(data_elem)[3:5]),
@@ -1765,7 +1765,7 @@ sub_calc <- function(data_node) {
             }
             if (!is.null(dyinds)) {
                 if (verbose > 1) {
-                    print(paste0(indent, "Calc dy for interpolated depths ..."))
+                    message(paste0(indent, "Calc dy for interpolated depths ..."))
                 }
                 dvardy_elem <<- array(0,
                                       dim=c(length(dyinds), 1, dim(data_elem)[3:5]),
@@ -1781,10 +1781,10 @@ sub_calc <- function(data_node) {
 
             ## bring derivative back from (elem2d_n x ndepths) to (nod2d_n x ndepths)
             if (verbose > 1) {
-                print(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=", 
+                message(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=", 
                              dim(dvardy_elem)[4], ") on (nod2d_n=", nod2d_n, " x ndepths=", 
                              dim(dvardy_elem)[4], ") ..."))
-                print(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
+                message(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
             }
             if (!is.null(dxinds)) {
                 sub_e2xde_to_n2xde(dvardx_elem) # produces tmp
@@ -1813,9 +1813,9 @@ sub_calc <- function(data_node) {
 
                 if (!is.null(dxinds)) {
                     if (verbose > 1) {
-                        print(paste0(indent, "Bring dvardx_vert back from (nod2d_n=", nod2d_n,
+                        message(paste0(indent, "Bring dvardx_vert back from (nod2d_n=", nod2d_n,
                                      " x ndepths=", dim(dvardx_vert)[3], ") on (nod3d_n=", nod3d_n, ") ..."))
-                        print(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
                     }
                     sub_n2xde_to_n3(dvardx_vert) # produces tmp
                     dvardx_node <<- tmp # dim(dvardx_node) = c(nvars,nod3d_n,ndepths=1,nrecspf)
@@ -1823,17 +1823,17 @@ sub_calc <- function(data_node) {
                     if (F) {
                         for (i in 1:dim(dvardx_vert)[3]) {
                             indz <<- ((i-1)*nod2d_n + 1):(i*nod2d_n)
-                            print(paste0(i, ": ", min(indz), "/", max(indz)))
+                            message(paste0(i, ": ", min(indz), "/", max(indz)))
                             d <<- dvardx_node[,indz,,1] - dvardx_vert[,,i,1]
-                            print(range(d, na.rm=T))
+                            message(range(d, na.rm=T))
                         }
                     }
                 }
                 if (!is.null(dyinds)) {
                     if (verbose > 1) {
-                        print(paste0(indent, "Bring dvardy_vert back from (nod2d_n=", nod2d_n,
+                        message(paste0(indent, "Bring dvardy_vert back from (nod2d_n=", nod2d_n,
                                      " x ndepths=", dim(dvardy_vert)[3], ") on (nod3d_n=", nod3d_n, ") ..."))
-                        print(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
                     }
                     sub_n2xde_to_n3(dvardy_vert) 
                     dvardy_node <<- tmp 
@@ -1855,30 +1855,30 @@ sub_calc <- function(data_node) {
 
         ## Do stuff after horizontal derivative
         if (varname == "gradT") {
-            print(paste0(indent, varname_plot, " = sqrt[ (dT/dx)^2 + (dT/dy)^2 ] ..."))
+            message(paste0(indent, varname_plot, " = sqrt[ (dT/dx)^2 + (dT/dy)^2 ] ..."))
                   data <<- sqrt(dvar1dx^2 + dvar1dy^2)
         }
 
         if (varname == "gradB") {
-            print(paste0(indent, varname_plot, " = sqrt[ (-g/rho0)^2 * ( (drho/dx)^2 + (drho/dy)^2 ) ] ..."))
+            message(paste0(indent, varname_plot, " = sqrt[ (-g/rho0)^2 * ( (drho/dx)^2 + (drho/dy)^2 ) ] ..."))
             data <<- sqrt((-g/rho0)^2 * (dvar1dx^2 + dvar1dy^2))
 
         }
 
         if (varname == "gradmld") {
-            print(paste0(indent, varname_plot, " = sqrt[ (dmld/dx)^2 + (dmld/dy)^2 ] ..."))
+            message(paste0(indent, varname_plot, " = sqrt[ (dmld/dx)^2 + (dmld/dy)^2 ] ..."))
         }
         if (varname == "u_geo") {
-            print(paste0(indent, varname_plot, " = -g/f dSSH/dy ..."))
+            message(paste0(indent, varname_plot, " = -g/f dSSH/dy ..."))
         }
         if (varname == "v_geo") {
-            print(paste0(indent, varname_plot, " = g/f dSSH/dx ..."))
+            message(paste0(indent, varname_plot, " = g/f dSSH/dx ..."))
         }
         if (varname == "hvel_geo") {
-            print(paste0(indent, varname_plot, " = sqrt([-g/f dSSH/dy]² + [g/f dSSH/dx]²) ..."))
+            message(paste0(indent, varname_plot, " = sqrt([-g/f dSSH/dy]² + [g/f dSSH/dx]²) ..."))
         }
         if (varname == "hdiffb") {
-            print(paste0(indent, varname, " = d(K_h*dbdx)/dx + d(K_h*dbdy)/dy ..."))
+            message(paste0(indent, varname, " = d(K_h*dbdx)/dx + d(K_h*dbdy)/dy ..."))
         }
 
         if (any(varname == c("divuvt", "divuvteddy", 
@@ -1890,7 +1890,7 @@ sub_calc <- function(data_node) {
            
             if (horiz_deriv_elem2d) {
                 if (verbose > 1) {
-                    print(paste0(indent, varname, " = ", dimnames(dvardx_node)[[1]][varinds[1]], 
+                    message(paste0(indent, varname, " = ", dimnames(dvardx_node)[[1]][varinds[1]], 
                                  " + ", dimnames(dvardy_node)[[1]][varinds[2]], " ..."))
                 }
                 tmp <<- dvardx_node[varinds[1],,,] + dvardy_node[varinds[2],,,]
@@ -1904,7 +1904,7 @@ sub_calc <- function(data_node) {
 
             if (horiz_deriv_node3d) {
                 if (verbose > 1) {
-                    print(paste0(indent, varname, " = ", dimnames(dvardx_node3d)[[1]][varinds[1]],
+                    message(paste0(indent, varname, " = ", dimnames(dvardx_node3d)[[1]][varinds[1]],
                                  " + ", dimnames(dvardy_node3d)[[1]][varinds[2]], " ..."))
                 }
                 tmp <<- dvardx_node3d[varinds[1],,,] + dvardy_node3d[varinds[2],,,]
@@ -1931,23 +1931,23 @@ sub_calc <- function(data_node) {
         if (any(varname == c("relvorti", "relvortif", "relvortisq", 
                              "curlwind", "curltau", 
                              "ekmanP", "okubo"))) {
-            print(paste0(indent, varname, " = d", varname_fesom[2],
+            message(paste0(indent, varname, " = d", varname_fesom[2],
                          "dx - d", varname_fesom[1], "dy ..."))
             data <<- dvar2dx - dvar1dy
 
         }
         if (varname == "RossbyNo") {
-            print(paste0(indent, varname_plot, " = |d", varname_fesom[2],
+            message(paste0(indent, varname_plot, " = |d", varname_fesom[2],
                          "dx - d", varname_fesom[1], "dy|/f ..."))
         }
         if (varname == "potvorti_bc") {
-            print(paste0(indent, varname_plot, " = db/dx(dw/dy - dv/dz) + db/dy(du/dz - dw/dx) ..."))
+            message(paste0(indent, varname_plot, " = db/dx(dw/dy - dv/dz) + db/dy(du/dz - dw/dx) ..."))
         }
         if (varname == "potvorti_vert") {
-            print(paste0(indent, varname_plot, " = db/dz(f + dv/dx - du/dy) ..."))
+            message(paste0(indent, varname_plot, " = db/dz(f + dv/dx - du/dy) ..."))
         }
         if (varname == "potvorti") {
-            print(paste0(indent, varname_plot, " = (vec{k}f + vec{nabla} x vec{u}) cdot vec{nabla} b ..."))
+            message(paste0(indent, varname_plot, " = (vec{k}f + vec{nabla} x vec{u}) cdot vec{nabla} b ..."))
         }
 
             # Put everything together
@@ -1978,7 +1978,7 @@ sub_calc <- function(data_node) {
         if (any(varname == c("strain_normal", "strain_shear", "strain",
                              "okubo"))) {
             if (any(varname == c("strain_normal", "strain", "okubo"))) {
-            print(paste0(indent, varname_plot, " = (d", varname_fesom[1],
+            message(paste0(indent, varname_plot, " = (d", varname_fesom[1],
                          "dx + d", varname_fesom[2], "dy)² ..."))
 
                 strain_normal <<- (dvar1dx + dvar2dy)^2
@@ -1987,7 +1987,7 @@ sub_calc <- function(data_node) {
                 }
             }
             if (any(varname == c("strain_shear", "strain", "okubo"))) {
-            print(paste0(indent, varname_plot, " = (d", varname_fesom[2],
+            message(paste0(indent, varname_plot, " = (d", varname_fesom[2],
                          "dx + d", varname_fesom[1],  "dy)² ..."))
 
                 strain_shear <<- (dvar2dx + dvar1dy)^2
@@ -1997,7 +1997,7 @@ sub_calc <- function(data_node) {
                 }
             }
             if (any(varname == c("strain", "okubo"))) {
-            print(paste0(indent, varname_plot, " = (d",
+            message(paste0(indent, varname_plot, " = (d",
                          varname_fesom[1], "dx + d", varname_fesom[2], "dy)² + (d",
                          varname_fesom[2], "dx + d", varname_fesom[1], "dy)² ..."))
 
@@ -2007,7 +2007,7 @@ sub_calc <- function(data_node) {
                 }
             }
             if (varname == "okubo") {
-            print(paste0(indent, varname_plot, " = (d",
+            message(paste0(indent, varname_plot, " = (d",
                          varname_fesom[1], "dx + d", varname_fesom[2], "dy)² + (d",
                          varname_fesom[2], "dx + d", varname_fesom[1], "dy)² - (d",
                          varname_fesom[2], "dx - d", varname_fesom[1], "dy)² ..."))
@@ -2023,7 +2023,7 @@ sub_calc <- function(data_node) {
         } # if okubo etc..
 
         if (varname == "PmPe") {
-            print(paste0(indent, varname_plot, " = - g/rho0/N^2  * [ u'rho' * (d rho)/(d x) +  v'rho' * (d rho)/(d y) ] ..."))
+            message(paste0(indent, varname_plot, " = - g/rho0/N^2  * [ u'rho' * (d rho)/(d x) +  v'rho' * (d rho)/(d y) ] ..."))
             stop("not yet")
                 ## baroclinic energy conversion (mean potential -> eddy potential)
                 # PmPe = -\vec{i}(u'b' * dbdx * N^-2) -\vec{j}(v'b' * dbdy * N-2)
@@ -2039,7 +2039,7 @@ sub_calc <- function(data_node) {
         }
 
         if (varname == "HRS" || varname == "KmKe") {
-            print(paste0(indent, varname, " = - u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy"))
+            message(paste0(indent, varname, " = - u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy"))
 
             ## hrs = -u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy
             ##     = 
@@ -2058,42 +2058,42 @@ sub_calc <- function(data_node) {
         } # hrs || KmKe
 
         if (varname == "KmKe") {
-            print(paste0(indent, varname, " = HRS + VRS"))
-            print(paste0(indent, paste0(rep(" ", t=nchar(varname)), collapse=""),
+            message(paste0(indent, varname, " = HRS + VRS"))
+            message(paste0(indent, paste0(rep(" ", t=nchar(varname)), collapse=""),
                          " = - u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy - u'w'*dudz - v'w'*dvdz"))
         }
         
         if (varname == "slopeSx") {
-            print(paste0(indent, varname, " = -[(drho/dx)/(drho/dz)] ..."))
+            message(paste0(indent, varname, " = -[(drho/dx)/(drho/dz)] ..."))
         }
         
         if (varname == "slopeSy") {
-            print(paste0(indent, varname, " = -[(drho/dy)/(drho/dz)] ..."))
+            message(paste0(indent, varname, " = -[(drho/dy)/(drho/dz)] ..."))
         }
         
         if (varname == "slopeS") {
-            print(paste0(indent, varname, " = sqrt{[-(drho/dx)/(drho/dz)]^2 + [-(drho/dy)/(drho/dz)]^2} ..."))
+            message(paste0(indent, varname, " = sqrt{[-(drho/dx)/(drho/dz)]^2 + [-(drho/dy)/(drho/dz)]^2} ..."))
         }
         
         if (varname == "slopeSsq") {
-            print(paste0(indent, varname, " = (sqrt{[-(drho/dx)/(drho/dz)]^2 + [-(drho/dy)/(drho/dz)]^2})^2 ..."))
+            message(paste0(indent, varname, " = (sqrt{[-(drho/dx)/(drho/dz)]^2 + [-(drho/dy)/(drho/dz)]^2})^2 ..."))
         }
 
         if (varname == "divuvt2") { ## special!        
               
             stop("update")
-            print(paste0(indent, varname, " = \vec{nabla_h} { laplace^-2 [ \vec{nabla_h} cdot ( \vec{u}*t ) ] } ..."))
+            message(paste0(indent, varname, " = \vec{nabla_h} { laplace^-2 [ \vec{nabla_h} cdot ( \vec{u}*t ) ] } ..."))
 
             ## Retain vector information of tracer flux divergence by taking 
             ## first the inverse laplacian and then the gradient. 
             ## see Jayne and Marotzke 2002
             ## https://doi.org/10.1175/1520-0485(2002)032<3328:TOEHT>2.0.CO;2
             if (verbose > 1) {
-                print(paste0(indent, "Calc inverted laplacian for interpolated depths only ..."))
+                message(paste0(indent, "Calc inverted laplacian for interpolated depths only ..."))
             }
             if (T) {
-                print("data")
-                print(str(data))
+                message("data")
+                message(str(data))
             }
 
             ## Laplacian (dim = 3 x e2)
@@ -2119,7 +2119,7 @@ sub_calc <- function(data_node) {
 
             ## Bring div_h(tracer flux) from elems to nodes
             if (verbose > 1) {
-                print(paste0(indent, "Bring div_h(tracer flux) back from elem2d to nod2d ..."))
+                message(paste0(indent, "Bring div_h(tracer flux) back from elem2d to nod2d ..."))
             }
             data_node <<- array(0,
                                dim=c(dim(data)[1],
@@ -2132,7 +2132,7 @@ sub_calc <- function(data_node) {
             # create progress bar
             pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("     ", indent)) # 5 " " for default print()
+                                    indent=paste0("     ", indent)) # 5 " " for default message()
 
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
@@ -2173,13 +2173,13 @@ sub_calc <- function(data_node) {
 
             data_node <<- data_node/inds
             if (T) {
-                print("data_node")
-                print(str(data_node))
+                message("data_node")
+                message(str(data_node))
             }
 
             ## Bring div_h(tracer flux) from nodes to elements
             if (verbose > 1) {
-                print(paste0(indent, "Bring div_h(tracer flux) from nodes on elements for inverted laplacian ..."))
+                message(paste0(indent, "Bring div_h(tracer flux) from nodes on elements for inverted laplacian ..."))
             }
             var_elem <<- array(0, c(1, dim(elem2d), dim(data)[3:4]))
             dimnames(var_elem)[1] <<- list(var=dimnames(data)[[1]][1])
@@ -2188,16 +2188,16 @@ sub_calc <- function(data_node) {
             }
 
             if (F) {
-                print("var_elem")
-                print(str(var_elem))
-                print("bafux_2d")
-                print(str(bafux_2d))
-                print("bafux_2d_time")
-                print(str(bafux_2d_time))
-                print("laplace_2d_inv")
-                print(str(laplace_2d_inv))
-                print("laplace_2d_inv_time")
-                print(str(laplace_2d_inv_time))
+                message("var_elem")
+                message(str(var_elem))
+                message("bafux_2d")
+                message(str(bafux_2d))
+                message("bafux_2d_time")
+                message(str(bafux_2d_time))
+                message("laplace_2d_inv")
+                message(str(laplace_2d_inv))
+                message("laplace_2d_inv_time")
+                message(str(laplace_2d_inv_time))
             }
 
             ## Apply inverted laplacian
@@ -2212,7 +2212,7 @@ sub_calc <- function(data_node) {
 
             ## Bring laplace^-2 [ div_h(tracer flux) ] from elems to nodes
             if (verbose > 1) {
-                print(paste0(indent, "Bring laplacian^-2 [ div_h(tracer flux) ] back from elem2d to nod2d ..."))
+                message(paste0(indent, "Bring laplacian^-2 [ div_h(tracer flux) ] back from elem2d to nod2d ..."))
             }
             laplace_inv_var_node <<- array(0,
                                            dim=c(dim(laplace_inv_var_elem)[1], 
@@ -2225,7 +2225,7 @@ sub_calc <- function(data_node) {
             # create progress bar
             pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("     ", indent)) # 5 " " for default print()
+                                    indent=paste0("     ", indent)) # 5 " " for default message()
 
             ## put element values on 3 nodes
             for (i in 1:elem2d_n) {
@@ -2267,13 +2267,13 @@ sub_calc <- function(data_node) {
             laplace_inv_var_node <<- laplace_inv_var_node/inds
             
             if (F) {
-                print("laplace_inv_var_elem")
-                print(str(laplace_inv_var_elem))
+                message("laplace_inv_var_elem")
+                message(str(laplace_inv_var_elem))
             }
 
             ## Bring laplace^-2 [ div_h(tracer flux) ] from nodes to elements
             if (verbose > 1) {
-                print(paste0(indent, "Bring laplacian^-2 [ div_h(tracer flux) ] from nodes on elements for horizontal derivative ..."))
+                message(paste0(indent, "Bring laplacian^-2 [ div_h(tracer flux) ] from nodes on elements for horizontal derivative ..."))
             }
             var_elem <<- array(0, c(1, dim(elem2d), dim(data)[3:4]))
             dimnames(var_elem)[1] <<- list(var=dimnames(laplace_inv_var_node)[[1]][1])
@@ -2283,7 +2283,7 @@ sub_calc <- function(data_node) {
 
             ## Apply gradient to retain vector information
             if (verbose > 1) {
-                print(paste0(indent, "Calc horizontal gradients for interpolated depths only ..."))
+                message(paste0(indent, "Calc horizontal gradients for interpolated depths only ..."))
             }
             dvardx <<- array(0, c(1, dim(var_elem)[3:5]),
                             dimnames=list(paste0("d_", dimnames(var_elem)[[1]][1], "_dx"),
@@ -2307,8 +2307,8 @@ sub_calc <- function(data_node) {
             }
 
             if (F) {
-                print("udata")
-                print(str(udata))
+                message("udata")
+                message(str(udata))
             }
 
         } # divuvt2
@@ -2321,14 +2321,14 @@ sub_calc <- function(data_node) {
 
         if (varname == "Ftemp") {
             if (verbose > 0) {
-                print(paste0(indent, "Ftemp = Qnet/(rho*cp)"))
+                message(paste0(indent, "Ftemp = Qnet/(rho*cp)"))
             }
             data <<- data[which(varname_fesom == "qnet"),,,]/(cp*data[which(varname_fesom == "rho"),,,])
         } # Ftemp
 
         if (varname == "Fsalt") {
             if (verbose > 0) {
-                print(paste0(indent, "Fsalt = S/(1-S/1000)*(Evap - Snow - Rain - Runoff + ThdGr) + relax_salt_term ..."))
+                message(paste0(indent, "Fsalt = S/(1-S/1000)*(Evap - Snow - Rain - Runoff + ThdGr) + relax_salt_term ..."))
             }
             EminusP <<- data[which(varname_fesom == "snow"),,,]*-1 +
                        data[which(varname_fesom == "rain"),,,]*-1 +
@@ -2344,7 +2344,7 @@ sub_calc <- function(data_node) {
 
         if (varname == "Fsalt2") {
             if (verbose > 0) {
-                print(paste0(indent, "Fsalt2 = virtual_salt + relax_salt"))
+                message(paste0(indent, "Fsalt2 = virtual_salt + relax_salt"))
             }
             data <<- data[which(varname_fesom == "virtual_salt"),,,] + 
                     data[which(varname_fesom == "relax_salt"),,,]
@@ -2389,7 +2389,7 @@ sub_calc <- function(data_node) {
         # thermal expansion coefficient [K^(-1)]
         if (verbose == 2 || verbose == 3) {
             if (sea_water == "EOS80") {
-                print(paste0(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K^-1..."))
+                message(paste0(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K^-1..."))
             } else if (sea_water == "TEOS10") {
 
             }
@@ -2406,7 +2406,7 @@ sub_calc <- function(data_node) {
         # saline contraction coefficient [kg g^(-1)]
         if (verbose == 2 || verbose == 3) {
             if (sea_water == "EOS80") {
-                print(paste0(indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu^-1..."))
+                message(paste0(indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu^-1..."))
             } else if (sea_water == "TEOS10") {
 
             }
@@ -2428,7 +2428,7 @@ sub_calc <- function(data_node) {
                              "FrhoB2"))) {
             if (verbose == 2 || verbose == 3) {
                 if (sea_water == "EOS80") {
-                    print(paste0(indent, "rho = sw_dens(S,T,P) ..."))
+                    message(paste0(indent, "rho = sw_dens(S,T,P) ..."))
                 } else if (sea_water == "TEOS10") {
 
                 }
@@ -2450,10 +2450,10 @@ sub_calc <- function(data_node) {
                              "FrhoB2"))) {
 
             if (verbose > 1) {
-                print(paste0(indent, "Fthermal = -rho*alpha*Ftemp = -alpha/cp*Qnet ..."))
-                print(paste0(indent, "   with Qnet = swrd + lwrd + olwout + osen + olat"))
-                print(paste0(indent, "        cp = ", cp, " m^2 s^(-2) K^(-1)"))
-                print(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
+                message(paste0(indent, "Fthermal = -rho*alpha*Ftemp = -alpha/cp*Qnet ..."))
+                message(paste0(indent, "   with Qnet = swrd + lwrd + olwout + osen + olat"))
+                message(paste0(indent, "        cp = ", cp, " m^2 s^(-2) K^(-1)"))
+                message(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
             }
 
             if (any(varname == c("Fthermal", "Frho",
@@ -2514,12 +2514,12 @@ sub_calc <- function(data_node) {
                                  "FrhoB", "FrhoBbudget"))) {
 
                 if (verbose > 0) {
-                    print(paste0(indent, "Fhaline = Ffac * (E - P) + relax_salt_term ..."))
-                    print(paste0(indent, "   with Ffac = rho * beta * S / (1 - S/1000)"))
-                    print(paste0(indent, "        E - P = snow + rain + evap + runoff + thdgr"))
-                    print(paste0(indent, "        relax_salt_term = rho * beta * relax_salt"))
-                    print(paste0(indent, "        thdgr = thermodynamic growth rate of eff. sea ice thickness"))
-                    print(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
+                    message(paste0(indent, "Fhaline = Ffac * (E - P) + relax_salt_term ..."))
+                    message(paste0(indent, "   with Ffac = rho * beta * S / (1 - S/1000)"))
+                    message(paste0(indent, "        E - P = snow + rain + evap + runoff + thdgr"))
+                    message(paste0(indent, "        relax_salt_term = rho * beta * relax_salt"))
+                    message(paste0(indent, "        thdgr = thermodynamic growth rate of eff. sea ice thickness"))
+                    message(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
                 }
 
                 salt <<- data[which(varname_fesom == "salt"),,,]
@@ -2553,7 +2553,7 @@ sub_calc <- function(data_node) {
             if (varname == "FrhoB2") {
 
                 if (verbose > 0) {
-                    print(paste0(indent, "Fhaline = rho * beta * (virtual_salt + relax_salt) ..."))
+                    message(paste0(indent, "Fhaline = rho * beta * (virtual_salt + relax_salt) ..."))
                 }
                 
                 Fhaline <<- rho * beta * (data[which(varname_fesom == "virtual_salt"),,,] + 
@@ -2610,7 +2610,7 @@ sub_calc <- function(data_node) {
                              "FrhoB", "FrhoBbudget",
                              "FrhoB2"))) {
             if (verbose == 2 || verbose == 3) {
-                print(paste0(indent, varname, " = Fthermal + Fhaline"))
+                message(paste0(indent, varname, " = Fthermal + Fhaline"))
             }
             
             if (any(varname == c("rho", "FrhoB", "FrhoB2"))) {
@@ -2644,7 +2644,7 @@ sub_calc <- function(data_node) {
     if (varname == "MOCw") {
        
         if (verbose > 0) {
-            print(paste0(indent, varname, "(lat,z) = cumsum_lat(sum(w[lat]*vol)) ... (like in fpost1.4)"))
+            message(paste0(indent, varname, "(lat,z) = cumsum_lat(sum(w[lat]*vol)) ... (like in fpost1.4)"))
         }
 
         # initialize array for every year
@@ -2656,7 +2656,7 @@ sub_calc <- function(data_node) {
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default print()
+                                indent=paste0("     ", indent)) # 5 " " for default message()
 
         for (i in 1:elem2d_n) {
             #progress_function(elem2d_n, i, indent=paste0(indent, "   "))
@@ -2736,7 +2736,7 @@ sub_calc <- function(data_node) {
 
         } else if (varname == "fwflux") {
             if (verbose > 1) {
-                print(paste0(indent, varname, " = runoff*cluster_area_2d"))
+                message(paste0(indent, varname, " = runoff*cluster_area_2d"))
             }
             varinds <<- which(vars == "runoff")
             if (any(is.na(varinds))) stop("Could not find data.")
@@ -2752,9 +2752,9 @@ sub_calc <- function(data_node) {
 
             ## bring derivative back from (elem2d_n x ndepths) to (nod2d_n x ndepths)
             if (verbose > 1) {
-                print(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=",
+                message(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=",
                              ndepths, ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                print(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
+                message(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
             }
             sub_e2xde_to_n2xde(resolution) # produces tmp
             data_node <<- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
@@ -2787,12 +2787,12 @@ sub_calc <- function(data_node) {
 
             if (verbose > 1) {
                 if (varname == "iceextent") {
-                    print(paste0(indent, varname, " = ", vars[varinds[1]], " ..."))
+                    message(paste0(indent, varname, " = ", vars[varinds[1]], " ..."))
                 } else if (varname == "icevol") {
-                    print(paste0(indent, varname, " = ", vars[varinds[1]], " * ", vars[varinds[2]], " ..."))
+                    message(paste0(indent, varname, " = ", vars[varinds[1]], " * ", vars[varinds[2]], " ..."))
                 }
                 if (!is.null(sic_cond)) {
-                    print(paste0(indent, "   with sea ice concentraion ", sic_cond, " ('sic_cond') ", sic_thr, 
+                    message(paste0(indent, "   with sea ice concentraion ", sic_cond, " ('sic_cond') ", sic_thr, 
                                  " ('sic_thr'). Change these to 'NULL' in namelist.var.r if you dont want a threshold ..."))
                 }
             } # verbose
@@ -2844,12 +2844,12 @@ sub_calc <- function(data_node) {
         
         if (patrick) {
             if (verbose > 1) {
-                print(paste0(indent, "Read Bathymetry information from z coordinate from nod3d.out ..."))
+                message(paste0(indent, "Read Bathymetry information from z coordinate from nod3d.out ..."))
             }
             z_2d <<- rep(0, nod2d_n)
             pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("        ", indent)) # 5 " " for default print()
+                                    indent=paste0("        ", indent)) # 5 " " for default message()
             for (l in 1:(aux3d_n-1)) {
                 for (ii in 1:nod2d_n) {
                     if (aux3d[l,ii] != -999) {
@@ -2869,7 +2869,7 @@ sub_calc <- function(data_node) {
         
         } else if (claudi) {
             if (verbose > 1) {
-                print(paste0(indent, "Read Bathymetry information from z coordinate from ", 
+                message(paste0(indent, "Read Bathymetry information from z coordinate from ", 
                              meshpath, "depth.out ..."))
             }
             fid <<- paste0(meshpath, "depth.out")
@@ -2887,22 +2887,22 @@ sub_calc <- function(data_node) {
 
         if (varname == "c_barotrop") {
             if (verbose > 0) {
-                print(paste0(indent, varname, " = sqrt(gH) ..."))
+                message(paste0(indent, varname, " = sqrt(gH) ..."))
             }
             data_node <<- sqrt(g*bathy)
         }
 
         if (varname == "foverh") {
             if (verbose > 1) {
-                print(paste0(indent, varname_plot, " = f/H ..."))
+                message(paste0(indent, varname_plot, " = f/H ..."))
             }
-            print("ycsur")
-            print(str(ycsur))
-            print(range(ycsur))
+            message("ycsur")
+            message(str(ycsur))
+            message(range(ycsur))
             f <<- abs(2*omega*sin(ycsur*pi/180)) # nod_y
-            print("f")
-            print(str(f))
-            print(range(f))
+            message("f")
+            message(str(f))
+            message(range(f))
             data_node <<- f / bathy
         }
 

@@ -21,7 +21,7 @@ sub_vertical_average <- function(data_vert) {
         if (zave_method == 1) {
 
             if (verbose > 2) {
-                print(paste0(indent, "   using zave_method=1: dz ..."))
+                message(paste0(indent, "   using zave_method=1: dz ..."))
             }
 
             tmp <<- array(0, dim=c(dim(data_vert)[1:2], 1, dim(data_vert)[4]))
@@ -70,7 +70,7 @@ sub_vertical_average <- function(data_vert) {
         } else if (zave_method == 2) {
 
             if (verbose > 2) {
-                print(paste0(indent, "   using zave_method=2: cluster_vol_3d ..."))
+                message(paste0(indent, "   using zave_method=2: cluster_vol_3d ..."))
             }
 
             tmp <<- array(NA,

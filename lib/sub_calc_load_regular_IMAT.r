@@ -21,7 +21,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     
     # for every element
     for (ii in 1:(dim(xp)[2])) {
-        if (ii %% 1e5 == 0) print(paste0(ii, "/", dim(xp)[2]))
+        if (ii %% 1e5 == 0) message(paste0(ii, "/", dim(xp)[2]))
             xmin   = min(xp[,ii]) 
             xmax   = max(xp[,ii]) 
             ymin   = min(yp[,ii])

@@ -63,8 +63,8 @@ sub_n3_to_n2xde <- function(data_nod3d) {
             } else {
 
                 if (verbose > 1) {
-                    # print(paste0(indent, "   x[", z, "m] = x[up] + c*(x[low] - x[up]) ..."))
-                    print(paste0(indent, "   x[", z, "m] = x[", fesom_depths[i-1], "m] + c*(x[", 
+                    # message(paste0(indent, "   x[", z, "m] = x[up] + c*(x[low] - x[up]) ..."))
+                    message(paste0(indent, "   x[", z, "m] = x[", fesom_depths[i-1], "m] + c*(x[", 
                                  fesom_depths[i], "m] - x[", fesom_depths[i-1], "m]) ..."))
                 }
                 

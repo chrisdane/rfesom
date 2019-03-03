@@ -22,10 +22,10 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
 
             inds <<- which(aux3d[i,] > 0) # not the -999 nodes
             if (T) {
-                print("lhs") 
-                print(range(aux3d[i,inds]))
-                print("rhs")
-                print(range(inds))
+                message("lhs") 
+                message(range(aux3d[i,inds]))
+                message("rhs")
+                message(range(inds))
             }
             if (length(inds) > 0) {
                 tmp[,aux3d[i,inds],,] <<- data_n2xnd[,inds,i,]
@@ -63,12 +63,12 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
                     stop("asd")
                 } else {
                     if (any(inds)) {
-                        #print(i)
-                        #print(paste0("data_n2xnd: ", min(data_n2xnd[,indsurf[i,inds],i,], na.rm=T), "/", max(data_n2xnd[,indsurf[i,inds],i,], na.rm=T)))
+                        #message(i)
+                        #message(paste0("data_n2xnd: ", min(data_n2xnd[,indsurf[i,inds],i,], na.rm=T), "/", max(data_n2xnd[,indsurf[i,inds],i,], na.rm=T)))
                     }
                     tmp[,indlevel[i,inds],,] <<- data_n2xnd[,pos[indsurf[i,inds]],i,]
                     if (any(inds)) {
-                        #print(paste0("tmp: ", min(tmp[,indlevel[i,inds],,], na.rm=T), "/", max(tmp[,indlevel[i,inds],,], na.rm=T)))
+                        #message(paste0("tmp: ", min(tmp[,indlevel[i,inds],,], na.rm=T), "/", max(tmp[,indlevel[i,inds],,], na.rm=T)))
                     }
                 }
 
@@ -76,8 +76,8 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
             } else {
 
                 if (verbose > 1) {
-                    # print(paste0(indent, "   x[low] = (x[z] - c[up] - c*x[up]) / c ..."))
-                    print(paste0(indent, "   x[", fesom_depths[i], "m] = (x[", z, "m] - x[", 
+                    # message(paste0(indent, "   x[low] = (x[z] - c[up] - c*x[up]) / c ..."))
+                    message(paste0(indent, "   x[", fesom_depths[i], "m] = (x[", z, "m] - x[", 
                                  fesom_depths[i-1], "m] + c*x[", fesom_depths[i-1], "m]) / c..."))
                 }
                 

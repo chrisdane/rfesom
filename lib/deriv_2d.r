@@ -19,7 +19,7 @@ derivative_stdbafu_x_2D[1,2]= 1
 derivative_stdbafu_x_2D[2,3]= 1
 
 for (i in 1:elem2d_n) {
-    if (i %% 1e5 == 0) print(paste0(i, "/", elem2d_n))
+    if (i %% 1e5 == 0) message(paste0(i, "/", elem2d_n))
 
     # cartesion coordinates on elements
     node <- elem2d[,i]

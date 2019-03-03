@@ -22,7 +22,7 @@ sub_prepare2 <- function(data) {
 
             if (potdens_tag) {
                 if (verbose > 0) {
-                    print("Warning: dont know how to transfer fesoms insitu density to potential density. use in situ instead ...")
+                    message("Warning: dont know how to transfer fesoms insitu density to potential density. use in situ instead ...")
                 }
             } # if potdens_tag
 
@@ -38,9 +38,9 @@ sub_prepare2 <- function(data) {
             ## "salt","so","soga" are practical salinities; "sos" is surface
             if (!any(c("temp", "thetao", "thetaoga", "tso") %in% varname_fesom) &&
                 !any(c("salt", "so", "soga", "sos") %in% varname_fesom)) {
-                print(paste0("Cannot calculate density."))
-                print(paste0("Provide temperature (i.e. 'temp','thetao','thetaoga' or 'tso') and"))
-                print(paste0("salinity (i.e. 'salt','so','soga' or 'sos') in 'varname_fesom'."))
+                message(paste0("Cannot calculate density."))
+                message(paste0("Provide temperature (i.e. 'temp','thetao','thetaoga' or 'tso') and"))
+                message(paste0("salinity (i.e. 'salt','so','soga' or 'sos') in 'varname_fesom'."))
                 stop()
             }
 
@@ -48,32 +48,32 @@ sub_prepare2 <- function(data) {
             tempind <<- which(c("temp", "thetao", "thetaoga", "tso") %in% varname_fesom)
             if (length(tempind) > 1) {
                 if (verbose > 0) {
-                    print(paste0(indent, "Note: you provided more than 1 temperature data in 'varname_fesom':",
+                    message(paste0(indent, "Note: you provided more than 1 temperature data in 'varname_fesom':",
                                  paste0(varname_fesom[tempind], collapse=","), "."))
                 }
             }
             tempind <<- tempind[1]
             if (verbose > 0) {
-                print(paste0(indent, "Use '", varname_fesom[tempind], "' for density calculation ..."))
+                message(paste0(indent, "Use '", varname_fesom[tempind], "' for density calculation ..."))
             }
             saltind <<- which(c("salt", "so", "soga", "sos") %in% varname_fesom)
             if (length(tempind) > 1) {
                 if (verbose > 0) {
-                    print(paste0(indent, "Note: you provided more than 1 salinity data in 'varname_fesom':",
+                    message(paste0(indent, "Note: you provided more than 1 salinity data in 'varname_fesom':",
                                  paste0(varname_fesom[tempind], collapse=","), "."))
                 }
             }   
             tempind <<- tempind[1]
             if (verbose > 0) {
-                print(paste0(indent, "Use '", varname_fesom[saltind], "' for density calculation ..."))
+                message(paste0(indent, "Use '", varname_fesom[saltind], "' for density calculation ..."))
             }
 
             ## check if both temp and salt have same dimensions
             if ((varname_fesom[tempind] == "tso" && varname_fesom[saltind] != "sos") ||
                 (varname_fesom[saltind] == "sos" && varname_fesom[tempind] != "tso")) {
-                print(paste0("Error: provide temperature and salinity with same dimensions, i.e."))
-                print(paste0("either both 1D ('thetaoga' and 'soga') or both 2D ('tso' and 'sos')"))
-                print(paste0("or both 3D ('temp' and 'salt' if cpl_tag=F or 'thetao' and 'so' if cpl_tag=T)."))
+                message(paste0("Error: provide temperature and salinity with same dimensions, i.e."))
+                message(paste0("either both 1D ('thetaoga' and 'soga') or both 2D ('tso' and 'sos')"))
+                message(paste0("or both 3D ('temp' and 'salt' if cpl_tag=F or 'thetao' and 'so' if cpl_tag=T)."))
                 stop()
             }
               
@@ -96,11 +96,11 @@ sub_prepare2 <- function(data) {
             ## only once
             if (!exists("z_node")) {
                 if (verbose > 0) {
-                    print(paste0(indent, "Calc pressure ..."))
+                    message(paste0(indent, "Calc pressure ..."))
                     if (verbose > 1) {
-                        print(paste0(indent, "   p = gsw_p_from_z(z, latitude)"))
-                        print(paste0(indent, "   with z        height, zero at surface and positive upwards [ m ]"))
-                        print(paste0(indent, "        latitude latitude in decimal degrees, positive to the north of the equator."))
+                        message(paste0(indent, "   p = gsw_p_from_z(z, latitude)"))
+                        message(paste0(indent, "   with z        height, zero at surface and positive upwards [ m ]"))
+                        message(paste0(indent, "        latitude latitude in decimal degrees, positive to the north of the equator."))
                     }
                 }
                 z_node <<-  
@@ -115,13 +115,13 @@ sub_prepare2 <- function(data) {
             ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
             ##  latitude    latitude in decimal degrees, positive to the north of the equator.
             if (verbose > 0) {
-                print(paste0(indent, "Calc absolute salinity ..."))
+                message(paste0(indent, "Calc absolute salinity ..."))
                 if (verbose > 1) {
-                    print(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
-                    print(paste0(indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]"))
-                    print(paste0(indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                    print(paste0(indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich."))
-                    print(paste0(indent, "        latitude  latitude in decimal degrees, positive to the north of the equator."))
+                    message(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
+                    message(paste0(indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]"))
+                    message(paste0(indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                    message(paste0(indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich."))
+                    message(paste0(indent, "        latitude  latitude in decimal degrees, positive to the north of the equator."))
                 }
             }
             longitude_node <<- ...
@@ -132,11 +132,11 @@ sub_prepare2 <- function(data) {
             ##  SA  Absolute Salinity [ g/kg ]
             ##  pt  potential temperature (ITS-90) [ degC ]
             if (verbose > 0) {
-                print(paste0(indent, "Calc Conservative Temperature ..."))
+                message(paste0(indent, "Calc Conservative Temperature ..."))
                 if (verbose > 1) {
-                    print(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
-                    print(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
-                    print(paste0(indent, "        pt potential temperature (ITS-90) [ degC ]"))
+                    message(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
+                    message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
+                    message(paste0(indent, "        pt potential temperature (ITS-90) [ degC ]"))
                 }
             }
             CT_node <<- gsw::gsw_CT_from_pt(SA_node, data_node[tempind,,,])
@@ -149,12 +149,12 @@ sub_prepare2 <- function(data) {
                 ##  CT  Conservative Temperature [ degC ]
                 ##  p   sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
                 if (verbose > 0) {
-                    print(paste0(indent, "Calc insitudens ..."))
+                    message(paste0(indent, "Calc insitudens ..."))
                     if (verbose > 1) {
-                        print(paste0(indent, "   insitudens = gsw::gsw_rho(SA, CT, p)"))
-                        print(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
-                        print(paste0(indent, "        CT Conservative Temperature [ degC ]"))
-                        print(paste0(indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                        message(paste0(indent, "   insitudens = gsw::gsw_rho(SA, CT, p)"))
+                        message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
+                        message(paste0(indent, "        CT Conservative Temperature [ degC ]"))
+                        message(paste0(indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
                     }
                 }
                 
@@ -181,11 +181,11 @@ sub_prepare2 <- function(data) {
                 ## This uses the 75-term density equation, and returns potential 
                 ## density referenced to a pressure of 'pres_ref' dbar, minus 1000 kg/m^3.
                 if (verbose > 0) {
-                    print(paste0(indent, "Calc potdens ..."))
+                    message(paste0(indent, "Calc potdens ..."))
                     if (verbose > 1) {
-                        print(paste0(indent, "   potdens = gsw::sigma", substr(pres_ref, 1, 1), "(SA, CT)"))
-                        print(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
-                        print(paste0(indent, "        CT Conservative Temperature [ degC ]"))
+                        message(paste0(indent, "   potdens = gsw::sigma", substr(pres_ref, 1, 1), "(SA, CT)"))
+                        message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
+                        message(paste0(indent, "        CT Conservative Temperature [ degC ]"))
                     }
                 }
                 potdens_node <<- eval(parse(text=paste0("gsw::sigma", substr(pres_ref, 1, 1), 

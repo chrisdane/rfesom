@@ -15,13 +15,13 @@ sub_vertical_integral <- function(data_nod3) {
     # create progress bar
     pb <<- mytxtProgressBar(min=0, max=ndepths, style=pb_style,
                             char=pb_char, width=pb_width, 
-                            indent=paste0("     ", indent)) # 5 " " for default print()
+                            indent=paste0("     ", indent)) # 5 " " for default message()
     #timei <<- rep(NA, t=ndepths)
 
     if (F) {
         for (i in 1:ndepths) {
             inds <-  which(aux3d[i,] != -999)
-            print(length(which(is.na(N_node[1,drop(aux3d[i,inds]),,]))))
+            message(length(which(is.na(N_node[1,drop(aux3d[i,inds]),,]))))
         }
     }
 
@@ -36,13 +36,13 @@ sub_vertical_integral <- function(data_nod3) {
             if (F) {
                 for (i in 1:ndepths) {
                     inds <<- which(aux3d[i,] != -999)
-                    print(i)
-                    print(paste0(range(inds), collapse=","))
-                    print(paste0(range(drop(indsurf[i,inds])), collapse=","))
+                    message(i)
+                    message(paste0(range(inds), collapse=","))
+                    message(paste0(range(drop(indsurf[i,inds])), collapse=","))
                 }
             }
 
-            #print(paste0(i, ",", j))
+            #message(paste0(i, ",", j))
             #stop("asd")
             aux <<- data_nod3[,drop(aux3d[i,inds]),,] # c(nvars,nnod=1,ndepths=1,nrecspf) 
 
@@ -69,15 +69,15 @@ sub_vertical_integral <- function(data_nod3) {
                         #z_inds <<- z_i <= z_max # all TRUE
                         z_inds <<- array(T, dim=dim(aux))
                     }
-                    #print(str(z_inds)) 
+                    #message(str(z_inds)) 
 
                     # if some depths between levels
                     if (any(z_inds)) {
 
-                        #print(paste0(length(which(is.na(aux*z_inds))), " NA inds ..."))
+                        #message(paste0(length(which(is.na(aux*z_inds))), " NA inds ..."))
 
-                        #print(sum(aux*deltaz[i]))
-                        #print(sum(z_inds*aux*deltaz[i]))
+                        #message(sum(aux*deltaz[i]))
+                        #message(sum(z_inds*aux*deltaz[i]))
                         tmp[,drop(indsurf[i,inds]),,] <<- tmp[,drop(indsurf[i,inds]),,] + z_inds*aux*deltaz[i]
                         #dep_total[,drop(indsurf[i,inds]),,] <<- dep_total[,drop(indsurf[i,inds]),,] + z_inds*deltaz[i]
 
@@ -106,7 +106,7 @@ sub_vertical_integral <- function(data_nod3) {
     close(pb)
 
     if (F) {
-        print("special /dep_total")
+        message("special /dep_total")
         tmp <<- tmp/dep_total
         stop("asd")
     }
@@ -121,9 +121,9 @@ sub_vertical_integral <- function(data_nod3) {
         }
         for (i in 1:length(types)) {
             inds <- which(typeij == types[i])
-            print(paste0(typenames[i], ": (n=", sprintf(paste0("%", nchar(max(ns)), "i"), ns[i]), ") ", mean(as.vector(timeij)[inds]), " s --> ", sum(as.vector(timeij)[inds]), " total s"))
+            message(paste0(typenames[i], ": (n=", sprintf(paste0("%", nchar(max(ns)), "i"), ns[i]), ") ", mean(as.vector(timeij)[inds]), " s --> ", sum(as.vector(timeij)[inds]), " total s"))
         }
-        print(paste0("total: ", sum(timeij, na.rm=T)))
+        message(paste0("total: ", sum(timeij, na.rm=T)))
     } # F
             
 

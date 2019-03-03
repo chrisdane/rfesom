@@ -60,12 +60,6 @@ tzr <- drop(rotate_matrix[3,1])*txg + drop(rotate_matrix[3,2])*tyg + drop(rotate
 u <- -sin(glon)*txr + cos(glon)*tyr
 v <- -sin(glat)*cos(glon)*txr - sin(glat)*sin(glon)*tyr + cos(glat)*tzr
 
-if (F) {
-    ws <- sort(sapply(ls(), function(x) object.size(get(x))), decreasing=T)/1024^2 # Mb
-    print(paste0(indent, "   10 biggest objects in vec_rotate_r2g() [Mb]:"))
-    print(round(ws[1:10], 3))
-}
-
 return(list(u=u, v=v, rot_mat=rotate_matrix))
 
 rm(list=ls())

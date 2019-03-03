@@ -15,7 +15,7 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
     # create progress bar
     pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                             char=pb_char, width=pb_width,
-                            indent=paste0("     ", indent)) # 5 " " for default print()
+                            indent=paste0("     ", indent)) # 5 " " for default message()
 
     ## put 2D-element value on 3 nodes
     for (i in 1:elem2d_n) {
@@ -27,7 +27,7 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
         aux <<- replicate(aux, n=3) # repeat 2D-element value for all 3 nodes; dim=c(nvars,elem=1,node=1,ndepths,nrecspf,3)
         aux <<- adrop(aux, drop=2) # drop element placeholder dimension; dim=c(nvars,elem=i,ndepths=1,nrecspf=12,nodes=3)
         aux <<- aperm(aux, c(1, 5, 2, 3, 4))  # reorder dimensions; dim=c(nvars,nodes=3,elem=i,ndepths,nrecs)
-        #print(str(aux))
+        #message(str(aux))
 
         tmp[,elnodes,,,] <- aux
         inds[,elnodes,,,] <<- inds[,elnodes,,,] + 1
