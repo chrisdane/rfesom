@@ -106,7 +106,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "colors/pals.r", "gcd.r",
-            "ls2.r")) {
+            "myls.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
 
