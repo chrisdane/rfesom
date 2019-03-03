@@ -48,7 +48,8 @@
 ## show line number in case of errors
 options(show.error.locations=T)
 #options(error=recover)
-options(warn=2)
+#options(warn=0) # default
+#options(warn=2)
 
 ## vector/array element-selection as in matlab
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -201,7 +202,8 @@ if (csec_ltm_out && varname != "transport") {
     csec_ltm_out <- F # calc csec_ltm only if varname is transport
 }
 ## If there are data loaded from diag file, then snapshot is not possible
-if (cpl_tag && nfiles > 0 && any(diagsuffix == "diag.")) {
+if (!cpl_tag ||
+    (cpl_tag && nfiles > 0 && any(diagsuffix == "diag."))) {
     snapshot <- F
 }
 if (dim_tag == "2D" || varname == "rossbyrad") {
@@ -216,7 +218,7 @@ if (dim_tag == "2D" && transient_out &&
 }
 if (any(transient_mode == c("csec_mean", "csec_depth")) &&
     varname != "transport") {
-    stop(paste0("For 'transient_mode'=", transient_mode, " 'varnameÄ must be 'transport'"))
+    stop(paste0("For 'transient_mode'=", transient_mode, " 'varname' must be 'transport'"))
 }
 if (transient_out && any(transient_mode == c("csec_mean", "csec_depth"))) {
     regular_transient_out <- F
@@ -410,7 +412,6 @@ if (exists("fnames_user")) {
         ## check for leap years if wanted
         if (consider_leap) {
         
-            source(paste0(subroutinepath, "leap_function.r"))
             if (any(is.leap(years))) {
 
                 leap_tag <- T
@@ -980,7 +981,6 @@ if (!restart || # ... not a restart run
             }
 
             mid <- (max(nod_x) + min(nod_x))/2
-
             for (i in 1:length(inds)) {
                 inds2 <- which(auxxc1[i,] > mid)
                 auxxc1[i,inds2] <- auxxc1[i,inds2] - 360
@@ -6163,7 +6163,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         } # which projection
 
-        rm(data_elem_ltm)
+        #rm(data_elem_ltm)
 
         ## Remove NA locations due to coordinate transformation
         if (length(na_inds) > 0) {

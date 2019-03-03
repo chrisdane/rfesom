@@ -232,6 +232,9 @@
             } else if (area == "icebox3") { # box for ice extend sum west of southtern greenland from davis
                 map_geogr_lim_lon <- c(-67.5, -45)
                 map_geogr_lim_lat <- c(45, 66.59)
+            } else if (area == "NA_sst1") {
+                map_geogr_lim_lon <- c(-48, -30)
+                map_geogr_lim_lat <- c(40, 52)
             } else if (area == "wgc") {
                 area <- "wgc"
             } else if (area == "CLS") {

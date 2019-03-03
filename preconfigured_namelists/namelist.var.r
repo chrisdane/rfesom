@@ -4578,7 +4578,10 @@ if (!exists("var_label_plot")) {
 if (!exists("fname_suffix")) {
     fname_suffix <- ""
 }
-
+if (cpl_tag) {
+    diagsuffix <- ""
+    typesuffix <- ""
+}
 if (!cpl_tag &&
     !exists("fnames_user") &&
     !is.null(varname_fesom) &&
