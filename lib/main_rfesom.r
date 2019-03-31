@@ -46,7 +46,7 @@
 #############################################################################
 
 ## show line number in case of errors
-options(show.error.locations=T)
+#options(show.error.locations=T)
 #options(error=recover)
 #options(warn=0) # default
 #options(warn=2)
@@ -4251,6 +4251,24 @@ if (nfiles == 0) { # read data which are constant in time
                                         }
                                     }
                                 } # if leap years are present
+
+                                # calculate min/max/mean/median/nominal resolution of area as scalars
+                                # resolution is defined per 2d-element (check lib/deriv_2d.r)
+                                res_data <- replicate(resolution, n=1)
+                                res_data <- replicate(res_data, n=1)
+                                res_data <- replicate(res_data, n=1)
+                                res_data <- replicate(res_data, n=1)
+                                res_data <- aperm(res_data, c(2, 1, 3, 4, 5))
+                                sub_e2xde_to_n2xde(res_data) # produces tmp
+                                if (resolution_unit != "km") { # for output convert to km
+                                    if (resolution_unit == "m") { # m --> km
+
+                                    } else {
+                                        stop("not defined")
+                                    }
+                                } # if resolution_unit != "km"    
+                                stop("asd")
+
 
                                 # multiplay data by cluster area (in [unit of 'Rearth' in namelist.rfesom.r]^2)
                                 if (verbose > 2) {

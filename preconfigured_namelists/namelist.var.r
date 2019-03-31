@@ -4479,7 +4479,7 @@ if (varname == "tos") {
 } else if (varname == "resolutionkm") {
     longname <- "Resolution"
     subtitle <- ""
-    power_ltm <- -3 # m --> km
+    power_ltm <- -3 ## resolution unit is 'mesh_dist_unit' # m --> km
     multfac_ltm <- base^power_ltm
     units_transient <- "km"
     var_label_plot <- "Mesh Resolution [km]"

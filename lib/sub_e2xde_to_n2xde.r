@@ -3,8 +3,11 @@
 sub_e2xde_to_n2xde <- function(data_elem2d) {
 
     ## input: dim(data_elem2d) = c(nvars,1,elem2d_n,ndepths,nrecspf)
-    ## output: dim(tmp) = c(nvars,nod2d_n,ndepths,nrecspf) 
+    ## output: dim(tmp) = c(nvars,nod2d_n,ndepths,nrecspf)
     
+    success <<- load_package("abind")
+    if (!success) stop()
+
     tmp <<- array(0, 
                   dim=c(dim(data_elem2d)[1], nod2d_n, 1, dim(data_elem2d)[4:5]),
                   dimnames=c(dimnames(data_elem2d)[1], 

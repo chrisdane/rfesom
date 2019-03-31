@@ -2,16 +2,20 @@
 deriv_2d_function <- function(elem2d, xcsur, ycsur,
                               meshid, mv, deriv_2d_fname) {
 
-if (!exists("Rearth")) Rearth <- 6367.5 * 10^3 # [m]
+# all mesh resolutions/areas get their unit from this variable:
+if (!is.finite("Rearth")) { # overwrite possibly wrong user input
+    mesh_dist_unit <- "m"
+    Rearth <- 6367.5 * 10^3
+}
 
 rad <- pi/180
 domain_len <- 360*rad
 elem2d_n <- dim(elem2d)[2]
 bafux_2d <- array(0, c(3, elem2d_n))
 bafuy_2d <- bafux_2d
-voltriangle <- rep(0, t=elem2d_n)
-resolution <- voltriangle
-cluster_area_2d <- rep(0, t=length(xcsur))
+voltriangle <- rep(0, t=elem2d_n) # m2
+resolution <- voltriangle # m
+cluster_area_2d <- rep(0, t=length(xcsur)) # m2
 
 derivative_stdbafu_x_2D <- array(0, c(2,3))
 derivative_stdbafu_x_2D[,1]= -1
@@ -61,10 +65,10 @@ for (i in 1:elem2d_n) {
     bafux_2d[,i] <- derivative_locbafu_x_2D[1,]
     bafuy_2d[,i] <- derivative_locbafu_x_2D[2,]
 
-    voltriangle[i] <- 1/2*abs(det(jacobian2D)) # m^2
+    voltriangle[i] <- 1/2*abs(det(jacobian2D)) # m2
 
     # mesh area in (unit of 'Rearth')^2
-    cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i]
+    cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # m2
 
     # mesh resolution in unit of 'Rearth'
     # from sein et al. 2017:
@@ -101,14 +105,14 @@ if (ncdf4) {
     elem_dim <- ncdim_def(paste0("mesh_", meshid, "_n2Delem"), "",
                              1:dim(bafux_2d)[2], create_dimvar=F)
 
-    bafux_2d_var <- ncvar_def("bafux_2d", "m^-1",
+    bafux_2d_var <- ncvar_def("bafux_2d", paste0(mesh_dist_unit, "-1"), 
                                  list(node_per_elem_dim, elem_dim), mv)
-    bafuy_2d_var <- ncvar_def("bafuy_2d", "m^-1",
+    bafuy_2d_var <- ncvar_def("bafuy_2d", paste0(mesh_dist_unit, "-1"),
                                  list(node_per_elem_dim, elem_dim), mv)
-    voltriangle_var <- ncvar_def("voltriangle", "#",
+    voltriangle_var <- ncvar_def("voltriangle", paste0(mesh_dist_unit, 2),
                                  list(elem_dim), mv)
-    cluster_area_2d_var <- ncvar_def("cluster_area_2d", "m^2", node_dim, mv)
-    resolution_var <- ncvar_def("resolution", "m", elem_dim, mv)
+    cluster_area_2d_var <- ncvar_def("cluster_area_2d", paste0(mesh_dist_unit, 2), node_dim, mv)
+    resolution_var <- ncvar_def("resolution", mesh_dist_unit, elem_dim, mv)
 
     nc <- nc_create(deriv_2d_fname,
                     list(bafux_2d_var, bafuy_2d_var, voltriangle_var,
