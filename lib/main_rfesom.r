@@ -116,6 +116,8 @@ indent <- "   " # needed for load_package()
 success <- load_package("ncdf4")
 if (!success) stop()
 
+# TODO: check all needed packages at the beginning!!! e.g. gsw
+
 ## load akima package and functions needed if
 if (plot_map && plot_type == "interp") {
     success <- load_package("akima")

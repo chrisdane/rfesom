@@ -1687,6 +1687,9 @@ if (varname == "tos") {
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_fesom <- c("temp", "salt")
+    if (cpl_tag) {
+        varname_fesom <- c("thetao", "so")
+    }
 
 } else if (varname == "c_barotrop") {
     longname <- "Barotropic wavespeed"

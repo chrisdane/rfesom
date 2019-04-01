@@ -29,7 +29,6 @@
 
 sub_calc <- function(data_node) {
 
-    print("hiasdasd")
     #data_global <<- data # for old stuff; need to update
 
     ## Select one component of loaded data
