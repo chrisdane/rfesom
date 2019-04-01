@@ -42,16 +42,14 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
             if (verbose > 1) {
                 if (ndepths > 1) {
                     if (i == 1) {
-                        cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                   indent, "      ", z, "m "))
-                    } else if (i == ndepths) {
-                        cat(paste0(z, "m\n"))
-                    } else {
-                        cat(paste0(z, "m "))
+                        message(indent, appendLF=F)
+                    } 
+                    message(z, "m ", appendLF=F)
+                    if (i == ndepths) {
+                        message("") 
                     }
                 } else if (ndepths == 1) {
-                    cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                               indent, "      ", z, "m\n"))
+                    message(indent, z, "m")
                 }
             }
 
@@ -59,7 +57,7 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
 
             if (any(fesom_depths == z)) {
 
-                if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     stop("asd")
                 } else {
                     if (any(inds)) {
@@ -87,7 +85,7 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
                 indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_n2xnd)[4]) # nrecspf
                 indcoef_tmp <<- aperm(indcoef_tmp, c(3, 2, 1, 4))
 
-                if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     stop("asd")
                     tmp[,inds,i,] <<- data_nod3d[,indupper[i,inds],,] +
                                                  indcoef[i,inds]*

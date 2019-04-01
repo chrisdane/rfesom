@@ -29,6 +29,7 @@
 
 sub_calc <- function(data_node) {
 
+    print("hiasdasd")
     #data_global <<- data # for old stuff; need to update
 
     ## Select one component of loaded data
@@ -410,26 +411,24 @@ sub_calc <- function(data_node) {
             message(paste0(indent, "Calc absolute salinity ..."))
             if (verbose > 1) {
                 message(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
-                message(paste0(indent, "      with SP        Practical Salinity (PSS-78) [ unitless ]"))
+                message(paste0(indent, "      with SP        Practical Salinity (PSS-78) [unitless]"))
                 message(paste0(indent, "           p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                message(paste0(indent, "                     = gsw_p_from_z(z, latitude)"))
                 message(paste0(indent, "           longitude longitude in decimal degrees, positive to the east of Greenwich."))
                 message(paste0(indent, "           latitude  latitude in decimal degrees, positive to the north of the equator."))
             }
         }
         saltind <<- which(vars == "salt" | vars == "so")
-        if (verbose > 0) {
-            message(paste0(indent, "   p = gsw_p_from_z(z, latitude, ",
-                         "geo_strf_dyn_height=0 [m2 s-2], sea_surface_geopotential=0 [m2 s-2])"))
-            message(paste0(indent, "      with z = zero at surface and positive upwards [ m ]"))
-        }
-        p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
+
         # note: gsw::* functions do not keep the matrix dimensions!!!
+        p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
         SA_node <<- array(NA, dim=dim(data_node[1,,,]),
                           dimnames=dimnames(data_node[saltind,,,]))
         dimnames(SA_node)[[1]] <<- "SA"
         for (i in 1:dim(data_node)[4]) { # for nrecspf
-            SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), p=p_node,
-                                                 longitude=nod_x, latitude=nod_y)
+            SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), 
+                                                  p=p_node,
+                                                  longitude=nod_x, latitude=nod_y)
         }
 
         ## Calculate Conservative Temperature from Potential Temperature
@@ -440,8 +439,8 @@ sub_calc <- function(data_node) {
             message(paste0(indent, "Calc Conservative Temperature ..."))
             if (verbose > 1) {
                 message(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
-                message(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
-                message(paste0(indent, "           pt potential temperature (ITS-90) [ degC ]"))
+                message(paste0(indent, "      with SA Absolute Salinity [g/kg]"))
+                message(paste0(indent, "           pt potential temperature (ITS-90) [degC]"))
             }
         }
         tempind <<- which(vars == "temp" | vars == "thetao")
@@ -451,14 +450,38 @@ sub_calc <- function(data_node) {
         dimnames(CT_node)[[1]] <<- "CT"
         for (i in 1:dim(data_node)[4]) { # for nrecspf
             CT_node[,,,i] <<- gsw::gsw_CT_from_pt(SA=drop(SA_node[,,,i]), 
-                                                 pt=drop(data_node[tempind,,,i]))
+                                                  pt=drop(data_node[tempind,,,i]))
         }   
 
         ## Calc N2
-        if (F) { 
+        if (verbose > 1) {
+            message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
+        }
+
+        ## reference pressure on nodes
+        if (p_ref == "in-situ") {
             if (verbose > 0) {
-                message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 ..."))
+                message(paste0(indent, "   'p_ref' = ", p_ref, ":"))
+                message(paste0(indent, "      p = gsw_p_from_z(z, latitude, ",
+                             "geo_strf_dyn_height=0 [m2 s-2], sea_surface_geopotential=0 [m2 s-2])"))
+                message(paste0(indent, "          with z = zero at surface and positive upwards [m]"))
+                message(paste0(indent, "      --> in-situ density"))
             }
+            p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
+        } else {
+            if (!is.finite(p_ref) || p_ref < 0) {
+                stop("p_ref (reference pressure) must be a positive number (in dbar).")
+            }
+            if (verbose > 0) {
+                message(paste0(indent, "   'p_ref' = ", p_ref, ":"))
+                message(paste0(indent, "      p = ", p_ref, " [dbar] --> potential density"))
+            }
+            p_node <<- rep(p_ref, t=nod3d_n) # this should always nod3d_n and not nod2d_n
+        }
+        p_ref_suffix <<- paste0("_p_ref_", p_ref, ifelse(p_ref != "in-situ", "dbar", "")) # put this to output file name
+
+        ## use gsw::gsw_Nsquared()
+        if (F) { 
             # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
             ## The result is computed based on first-differencing a computed density with respect pressure, and
             ## this can yield noisy results with CTD data that have not been smoothed and decimated. It also yields
@@ -466,8 +489,8 @@ sub_calc <- function(data_node) {
             ## in the oce package)
             if (verbose > 1) {
                 message(paste0(indent, "   N2 =  gsw_Nsquared(SA, CT, p, latitude)"))
-                message(paste0(indent, "      with SA       Absolute Salinity [ g/kg ]"))
-                message(paste0(indent, "           CT       Conservative Temperature [ degC ]"))
+                message(paste0(indent, "      with SA       Absolute Salinity [g/kg]"))
+                message(paste0(indent, "           CT       Conservative Temperature [degC]"))
                 message(paste0(indent, "           p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
                 message(paste0(indent, "           latitude latitude in decimal degrees, positive to the north of the equator"))
             }
@@ -487,20 +510,50 @@ sub_calc <- function(data_node) {
                 N2_node[,,,i] <<- tmp$N2 # $p_mid
             }
 
-        } else if (T) { # use own vertical derivative of potential density
+        # use own vertical derivative of potential density
+        # --> gsw::gsw_Nsquared fails maybe due to irregular grid?
+        } else if (T) { 
          
             if (verbose > 0) {
-                message(paste0(indent, "Calc potential density rho = gsw::gsw_rho(SA, CT, p) ..."))
-                message(paste0(indent, "      with SA Absolute Salinity [ g/kg ]"))
-                message(paste0(indent, "           CT Conservative Temperature [ degC ]"))
-                message(paste0(indent, "           p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-
+                message(paste0(indent, "Calc ", 
+                               ifelse(p_ref == "in-situ", "in-situ", "potential"), 
+                               " density rho = gsw::gsw_rho(SA, CT, p) ..."))
+                message(paste0(indent, "   with SA Absolute Salinity [g/kg]"))
+                message(paste0(indent, "        CT Conservative Temperature [degC]"))
+                message(paste0(indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
+                message(paste0(indent, "           --> p = ", p_ref, 
+                               ifelse(p_ref != "in-situ", " dbar", ""), 
+                               " (='p_ref')"))
             }
  
             # note: gsw::* functions do not keep the matrix dimensions!!!
             potdens_node <<- array(NA, dim=dim(data_node[1,,,]),
                                    dimnames=dimnames(data_node[tempind,,,]))
             dimnames(potdens_node)[[1]] <<- "potdens"
+
+            # gsw_rho:
+            # potential density with respect to reference pressure, p_ref
+
+            # gsw_sigma1:   
+            # potential density anomaly with reference pressure
+            # of 1000 dbar, this being this particular potential
+            # density minus 1000 kg/m^3 (75-term equation)
+
+            # comparison:
+            if (F) {
+                sa=37; ct=4
+                gsw_rho(sa, ct, p=0)        # 1029.237
+                gsw_sigma0(sa, ct) + 1000   # 1029.237
+                gsw_rho(sa, ct, p=1000)     # 1033.819
+                gsw_sigma1(sa, ct) + 1000   # 1033.819
+                gsw_rho(sa, ct, p=2000)     # 1038.299
+                gsw_sigma2(sa, ct) + 1000   # 1038.299
+                gsw_rho(sa, ct, p=3000)     # 1042.679
+                gsw_sigma3(sa, ct) + 1000   # 1042.679
+                gsw_rho(sa, ct, p=4000)     # 1046.96
+                gsw_sigma4(sa, ct) + 1000   # 1046.96
+            }
+
             for (i in 1:dim(data_node)[4]) { # for nrecspf
                 potdens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i],
                                                     CT=CT_node[,,,i],
@@ -511,14 +564,13 @@ sub_calc <- function(data_node) {
                 rm(SA_node, CT_node, p_node, envir=.GlobalEnv)
             }
 
-            if (verbose > 1) {
-                message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
-            }
-
             # vertical derivative
+            if (verbose > 0) {
+                message(paste0(indent, "Calc vertical derivative ..."))
+            }
             pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
                                     char=pb_char, width=pb_width,
-                                    indent=paste0("        ", indent)) # 5 " " for default message()
+                                    indent=paste0(indent, "  ")) # 5 " " for default message()
             tmp <<- potdens_node
             tmp[] <<- 0
             for (i in 1:(aux3d_n-1)) {

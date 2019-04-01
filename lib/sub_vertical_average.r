@@ -33,19 +33,13 @@ sub_vertical_average <- function(data_vert) {
             for (i in 1:ndepths) {
 
                 if (verbose > 1) {
-                    z <<- interpolate_depths[i]
-                    if (ndepths > 1) {
-                        if (i == 1) {
-                            cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                       indent, "      ", z, "m "))
-                        } else if (i == ndepths) {
-                            cat(paste0(z, "m\n"))
-                        } else {
-                            cat(paste0(z, "m "))
-                        }
-                    } else if (ndepths == 1) {
-                        cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                   indent, "      ", z, "m\n"))
+                    z <- interpolate_depths[i]
+                    if (i == 1) {
+                        message(indent, "   ", appendLF=F)
+                    } 
+                    message(z, "m ", appendLF=F)
+                    if (i == ndepths) {
+                        message("") 
                     }
                 }
 

@@ -25,11 +25,14 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
 
         #progress_function(elem2d_n, i, indent=paste0(indent, "      "))
         elnodes <<- elem2d[,i]
-
-        aux <<- data_elem2d[,,i,,] # 2D-element value of ith elem; dim=c(nvars,node=1,elem=i,ndepths,nrecspf)
-        aux <<- replicate(aux, n=3) # repeat 2D-element value for all 3 nodes; dim=c(nvars,elem=1,node=1,ndepths,nrecspf,3)
-        aux <<- adrop(aux, drop=2) # drop element placeholder dimension; dim=c(nvars,elem=i,ndepths=1,nrecspf=12,nodes=3)
-        aux <<- aperm(aux, c(1, 5, 2, 3, 4))  # reorder dimensions; dim=c(nvars,nodes=3,elem=i,ndepths,nrecs)
+        aux <<- data_elem2d[,,i,,] # 2D-element value of ith elem; dim=c(nvars,node=1,elem=1,ndepths,nrecspf)
+        if (is.null(dim(drop(aux)))) { # only 1 var, 1 depth, 1 rec
+            aux <- array(drop(aux), c(1, 1, 3, 1, 1))
+        } else {
+            aux <<- replicate(aux, n=3) # repeat 2D-element value for all 3 nodes; dim=c(nvars,elem=1,node=1,ndepths,nrecspf,3)
+            aux <<- adrop(aux, drop=2) # drop element placeholder dimension; dim=c(nvars,elem=i,ndepths=1,nrecspf=12,nodes=3)
+            aux <<- aperm(aux, c(1, 5, 2, 3, 4))  # reorder dimensions; dim=c(nvars,nodes=3,elem=i,ndepths,nrecs)
+        }
         #message(str(aux))
 
         tmp[,elnodes,,,] <- aux

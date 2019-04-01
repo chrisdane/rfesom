@@ -16,7 +16,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
 
     # if cross section, name all crossed nodes (needs more memory)
     if (F) {
-        if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+        if (any(out_mode == c("csec_mean", "csec_depth"))) {
             dimnames(tmp)[2] <<- list(node=which(csec_crossed_nodes == 1))
         }
     }
@@ -35,16 +35,14 @@ sub_n3_to_n2xde <- function(data_nod3d) {
             if (verbose > 1) {
                 if (ndepths > 1) {
                     if (i == 1) {
-                        cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                   indent, "      ", z, "m "))
-                    } else if (i == ndepths) {
-                        cat(paste0(z, "m\n"))
-                    } else {
-                        cat(paste0(z, "m "))
+                        message(indent, "   ", appendLF=F)
+                    } 
+                    message(z, "m ", appendLF=F)
+                    if (i == ndepths) {
+                        message("") 
                     }
                 } else if (ndepths == 1) {
-                    cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                               indent, "      ", z, "m\n"))
+                    message(indent, z, "m")
                 }
             }
 
@@ -53,7 +51,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
             # just rearrange from nod3d_n to ndepths x nod2d_n
             if (any(fesom_depths == z)) {
                 
-                if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     tmp[,inds,i,] <<- data_nod3d[,indlevel[i,inds],,]
                 } else {
                     tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indlevel[i,inds],,]
@@ -74,7 +72,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                 indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_node)[4]) # nrecspf
                 indcoef_tmp <<- aperm(indcoef_tmp, c(3, 2, 1, 4))
 
-                if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     tmp[,inds,i,] <<- data_nod3d[,indupper[i,inds],,] +
                                                  indcoef[i,inds]*
                                                     (data_nod3d[,indlower[i,inds],,] -

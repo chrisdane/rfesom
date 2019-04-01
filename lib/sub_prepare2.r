@@ -174,21 +174,21 @@ sub_prepare2 <- function(data) {
             } else if (potdens_tag) {
 
                 ## check reference density
-                if (!any(pres_ref %in% c(0, 1000, 2000, 3000, 4000))) {
-                    stop(paste0("error: 'pres_ref' must be 0, 1000, 2000, 3000 or 4000 kg m-3"))
+                if (!any(p_ref %in% c(0, 1000, 2000, 3000, 4000))) {
+                    stop(paste0("error: 'p_ref' must be 0, 1000, 2000, 3000 or 4000 kg m-3"))
                 }
 
                 ## This uses the 75-term density equation, and returns potential 
-                ## density referenced to a pressure of 'pres_ref' dbar, minus 1000 kg/m^3.
+                ## density referenced to a pressure of 'p_ref' dbar, minus 1000 kg/m^3.
                 if (verbose > 0) {
                     message(paste0(indent, "Calc potdens ..."))
                     if (verbose > 1) {
-                        message(paste0(indent, "   potdens = gsw::sigma", substr(pres_ref, 1, 1), "(SA, CT)"))
+                        message(paste0(indent, "   potdens = gsw::sigma", substr(p_ref, 1, 1), "(SA, CT)"))
                         message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
                         message(paste0(indent, "        CT Conservative Temperature [ degC ]"))
                     }
                 }
-                potdens_node <<- eval(parse(text=paste0("gsw::sigma", substr(pres_ref, 1, 1), 
+                potdens_node <<- eval(parse(text=paste0("gsw::sigma", substr(p_ref, 1, 1), 
                                                         "(SA_node, CT_node)")))
                 dimnames(potdens_node)[[1]] <<- "potdens"
 

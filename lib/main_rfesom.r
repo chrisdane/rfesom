@@ -18,7 +18,7 @@
 ##                              a box but an irregular polygon              #
 ##  mapproj     mapproject()    if projection != "rectangular"              #
 ##  phonR       fillTriangle()  if plot_type == "interp2" # special         #
-##  pracma      mldivide()      if transient_mode == "csec_mean" or         #
+##  pracma      mldivide()      if out_mode == "csec_mean" or         #
 ##                              "csec_depth"                                #
 ##  abind       abind()         concatinating multi-dim arrays              #
 ##  gsw         gsw_*()         Gibbs Sea Water functions                   #
@@ -124,6 +124,7 @@ if (plot_map && plot_type == "interp") {
     source(paste0(subroutinepath, "m2lat.r"))
 }
 
+## check stuff
 if (is.null(varname_fesom)) {
     nfiles <- 0
 } else {
@@ -134,26 +135,26 @@ if (nfiles == 0) {
     regular_transient_out <- F
     sd_out <- F
 }
-if (transient_mode == "area" && regular_transient_out && transient_out) {
-    stop("error: for transient_mode='area', set either 'transient_out' OR 'regular_transient_out' to TRUE")
+if (out_mode == "area" && regular_transient_out && transient_out) {
+    stop("error: for out_mode='area', set either 'transient_out' OR 'regular_transient_out' to TRUE")
 }
-if (transient_mode == "areadepth" && transient_out) {
+if (out_mode == "areadepth" && transient_out) {
     regular_transient_out <- T
     transient_out <- F
 }
 if (regular_transient_out &&
-    !any(transient_mode == c("area", "areadepth"))) {
-    stop("If 'regular_transient_out'=T, 'transient_mode' must equal 'area' or 'areadepth'.")
+    !any(out_mode == c("area", "areadepth"))) {
+    stop("If 'regular_transient_out'=T, 'out_mode' must equal 'area' or 'areadepth'.")
 }
-# check if spatial interpolation to regualr is even necessary 
+# check if spatial interpolation to regular is even necessary 
 # depending on the user choice area
 if (length(map_geogr_lim_lon) == 1) { # a single point
     if (regular_transient_out) {
         transient_out <- T
-        if (transient_mode == "area") {
-            transient_mode <- "mean"
-        } else if (transient_mode == "areadepth") {
-            transient_mode <- "depth"
+        if (out_mode == "area") {
+            out_mode <- "mean"
+        } else if (out_mode == "areadepth") {
+            out_mode <- "depth"
         }
     }
     regular_transient_out <- F
@@ -170,14 +171,14 @@ if (uv_out || sd_out || horiz_deriv_tag) {
     success <- load_package("abind")
     if (!success) stop()
 }
-if ((transient_mode == "csec_mean" || transient_mode == "csec_depth") &&
+if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
     varname != "transport") {
-    transient_mode <- "mean"
+    out_mode <- "mean"
 }
 if (transient_out && integrate_depth && dim_tag == "3D" &&
-    (transient_mode != "mean" && transient_mode != "meanint")) {
-    message(paste0("Warning: Output should be integrated over depth but transient_mode = ", transient_mode, " ..."))
-    message(paste0("         Switch variable 'transient_mode' to 'mean' or 'mean_int' or do something else ..."))
+    (out_mode != "mean" && out_mode != "meanint")) {
+    message(paste0("Warning: Output should be integrated over depth but out_mode = ", out_mode, " ..."))
+    message(paste0("         Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else ..."))
     stop()
 }
 if (!exists("average_depth")) { # potentially set by user in namelist.var
@@ -185,10 +186,10 @@ if (!exists("average_depth")) { # potentially set by user in namelist.var
         integrate_depth || 
         #horiz_deriv_tag || 
         (transient_out && 
-         any(transient_mode == c("depth", "depthint", "depthmax", "max3D",
+         any(out_mode == c("depth", "depthint", "depthmax", "max3D",
                                  "csec_mean", "csec_depth"))) ||
         (regular_transient_out &&
-         any(transient_mode == c("areadepth"))) ||
+         any(out_mode == c("areadepth"))) ||
         any(varname == c("MOCw", "c_long_rossby"))) {
         average_depth <- F
     } else {
@@ -213,28 +214,42 @@ if (integrate_depth && length(depths) != 2) {
     stop(paste0("Cannot integrate over 'depths'=", paste0(depths, collapse=","), " ..."))
 }
 if (dim_tag == "2D" && transient_out &&
-    (!any(transient_mode == c("mean", "meanint", "min", "max")))) {
-    stop(message(paste0("Choose a proper 'transient_mode' for the 2D variable '", varname, " ...")))
+    (!any(out_mode == c("mean", "meanint", "min", "max")))) {
+    stop(message(paste0("Choose a proper 'out_mode' for the 2D variable '", varname, " ...")))
 }
-if (any(transient_mode == c("csec_mean", "csec_depth")) &&
+if (any(out_mode == c("csec_mean", "csec_depth")) &&
     varname != "transport") {
-    stop(paste0("For 'transient_mode'=", transient_mode, " 'varname' must be 'transport'"))
+    stop(paste0("For 'out_mode'=", out_mode, " 'varname' must be 'transport'"))
 }
-if (transient_out && any(transient_mode == c("csec_mean", "csec_depth"))) {
+if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
     regular_transient_out <- F
     regular_ltm_out <- F
-    if (transient_mode == "csec_mean") {
+    if (out_mode == "csec_mean") {
         csec_conds_n <- length(csec_conds) # apply conditions before averaging over section
-    } else if (transient_mode == "csec_depth") {
+    } else if (out_mode == "csec_depth") {
         csec_conds_n <- 0 # do not apply averaging when saving data of the complete section
     }
 } else {
     csec_conds_n <- 0
 }
-if (transient_out && (any(transient_mode == c("moc_mean", "moc_depth")))) {
+if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
     regular_transient_out <- F
     regular_ltm_out <- F
 }
+if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
+                                             "areadepth"))) {
+    if (length(depths) == 1) {
+        stop("You specificed 'out_mode'=", out_mode, 
+                " but 'depths'=", depths, ". change depths to e.g. c(0, 100) or c(0, \"max\")")
+    }
+}
+if (regular_ltm_out && !any(out_mode == c("area", "areadepth"))) {
+    stop("You want regular ltm outout ('regular_ltm_out'=T) but then 'out_mode' must be one of 'area', 'areadepth'")
+}
+if (regular_ltm_out && out_mode == "areadepth") {
+    average_depth <- F
+}
+
 
 ## check paths
 if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out, 
@@ -258,7 +273,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
 
     if (transient_out) {
         transientpath <- paste0(postpath, runid, "/", setting, "/",
-                           transient_mode, "/", area, "/", varname, "/")
+                           out_mode, "/", area, "/", varname, "/")
         dir.create(transientpath, recursive=T, showWarnings=F)
     }
 
@@ -270,12 +285,12 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     if (regular_transient_out) {
         reg_transient_outpath <- paste0(postpath, runid, "/", setting,
                                    "/regular_grid/",
-                                   transient_mode, "/", area, "/", varname, "/")
+                                   out_mode, "/", area, "/", varname, "/")
         dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
     }
     if (regular_ltm_out) {
         reg_ltm_outpath <- paste0(postpath, runid, "/", setting,
-                                  "/regular_grid/ltm/", area, "/", varname, "/")
+                                  "/regular_grid/ltm/", out_mode, "/", area, "/", varname, "/")
         dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
     }
 } # check paths if transient_out
@@ -759,7 +774,7 @@ if (verbose > 0) {
     }
     
     if (transient_out) {
-        message(paste0("save transient ", transient_mode, " data in ", area, " area to:"))
+        message(paste0("save transient ", out_mode, " data in ", area, " area to:"))
         message(paste0("   ", transientpath))
     }
     
@@ -769,7 +784,7 @@ if (verbose > 0) {
     }
     
     if (regular_transient_out) {
-        message(paste0("Save transient ", transient_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
+        message(paste0("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
         message(paste0("   ", reg_transient_outpath))
     }
     
@@ -954,7 +969,7 @@ if (!restart || # ... not a restart run
         rotated_coords <- grid_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y)
         nod_x <- rotated_coords$glon
         nod_y <- rotated_coords$glat
-        #rot_mat <- rotated_coords$rot_mat
+        rot_mat <- rotated_coords$rot_mat
         rm(rotated_coords)
 
         if (cycl) {
@@ -1199,7 +1214,7 @@ if (verbose == 2 || verbose == 3) {
 ## Calc bafuxy_2d/custer_area_2d/resolution as in fesom1.4 *.F90 if needed
 if (horiz_deriv_tag != F || 
     (any(c(transient_out, regular_transient_out)) && 
-     any(transient_mode == c("mean", "depth", "areadepth", "meanint", "depthint"))) || 
+     any(out_mode == c("mean", "depth", "areadepth", "meanint", "depthint"))) || 
     (plot_map && plot_type == "interp" && 
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
@@ -1259,7 +1274,7 @@ if (horiz_deriv_tag != F ||
  
 if (zave_method == 2 &&
     (transient_out || regular_transient_out) &&
-    transient_mode == "mean") {
+    out_mode == "mean") {
  
     if (F) { # old
         deriv_3d_fname <- paste0(derivpath, "mesh_", meshid, "_deriv_3d_",
@@ -1330,7 +1345,7 @@ if (zave_method == 2 &&
     voltetra <- ncvar_get(deriv_3d_nc, "voltetra")
     cluster_vol_3d <- ncvar_get(deriv_3d_nc, "cluster_vol_3d")
 
-} # if zave_method == 2 && transient_mode == "mean"
+} # if zave_method == 2 && out_mode == "mean"
 
 
 ## Interpolate irregular mesh to regular
@@ -1413,8 +1428,8 @@ if (verbose > 0) {
     message("==============================================")
 }
 
-if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
-    transient_mode != "moc_mean" && transient_mode != "moc_depth") {
+if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
+    out_mode != "moc_mean" && out_mode != "moc_depth") {
     if (verbose > 0) {
         message(paste0("3) Choose coordinates from plot area '", area, "' ..."))
     }
@@ -1742,12 +1757,12 @@ if (transient_mode != "csec_mean" && transient_mode != "csec_depth" &&
         message("==============================================")
     }
 
-} # transient_mode != csec_mean csec_depth moc_mean moc_depth 
+} # out_mode != csec_mean csec_depth moc_mean moc_depth 
 
 
 ## 3) for Crossection
 if (transient_out && 
-    (transient_mode == "csec_mean" || transient_mode == "csec_depth")) {
+    (out_mode == "csec_mean" || out_mode == "csec_depth")) {
     if (verbose > 0) {
         message(paste0("3) Find coordinates of cross section ", area, " ..."))
     }
@@ -2586,11 +2601,11 @@ close(pb)
         message("==============================================")
     }
 
-} # transient_out && transient_mode == "csec"
+} # transient_out && out_mode == "csec"
 
 
 ## 3) for moc
-if (transient_mode == "moc_mean" || transient_mode == "moc_depth") {
+if (out_mode == "moc_mean" || out_mode == "moc_depth") {
     if (verbose > 0) {
         message(paste0("3) Find coordinates of area '", area, "' for MOC calculation: ..."))
     }
@@ -2840,16 +2855,14 @@ if (nfiles > 0) {
                     if (verbose > 1) {
                         if (ndepths > 1) {
                             if (l == 1) {
-                                cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                           indent, "   ", z, "m "))
-                            } else if (l == ndepths) {
-                                cat(paste0(z, "m\n"))
-                            } else {
-                                cat(paste0(z, "m "))
+                                message(indent, "   ", appendLF=F)
+                            } 
+                            message(z, "m ", appendLF=F)
+                            if (l == ndepths) {
+                                message("") 
                             }
                         } else if (ndepths == 1) {
-                            cat(paste0(paste(rep(" ", e=nchar(options("prompt")$prompt)), collapse=""),
-                                       indent, "   ", z, "m\n"))
+                            message(indent, z, "m")
                         }
                     }
 
@@ -2947,7 +2960,7 @@ if (nfiles == 0) { # read data which are constant in time
                      paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
         message(paste0("      for output variable '", varname, "' (=varname) aka '", longname, "' (=longname)"))
         if (transient_out || regular_transient_out) {
-            message(paste0("      and save '", transient_mode, "' (=transient_mode) data"))
+            message(paste0("      and save '", out_mode, "' (=out_mode) data"))
         }
         message(paste0("      in region '", area, "' (=area) ..."))
     }
@@ -3691,7 +3704,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 indent <- "            "
                 if (verbose > 1) {
-                    message(paste0(indent, "Calc and save transient ", transient_mode, " of area ", area, " ..."))
+                    message(paste0(indent, "Calc and save transient ", out_mode, " of area ", area, " ..."))
                 }
                 indent <- "         "
 
@@ -3771,7 +3784,7 @@ if (nfiles == 0) { # read data which are constant in time
                 sub_prepare2(data_node) # overwrites data_node with the result of sub_prepare2()
                 indent <- indent_save; rm(indent_save)
 
-                if (transient_out && any(transient_mode == c("csec_mean", "csec_depth"))) {
+                if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
                     if (verbose > 1) { 
                         message(paste0(indent, "For Cross section bring data_node from (nod3d_n=", nod3d_n,
                                      ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
@@ -3816,24 +3829,29 @@ if (nfiles == 0) { # read data which are constant in time
                     stop("asd")
                 }
 
-                ## Change to proper units if wanted
-                if (multfac_transient != 1) {
-                    for (i in 1:dim(data_node)[1]) {
-                        if (verbose > 0) {
-                            message(paste0(indent, "Multiply data_node[", i, ":",
-                                         dimnames(data_node)[[1]][i], ",,,] by 'multfac_transient'=",
-                                         multfac_transient, " ..."))
-                        }
-                        data_node[i,,,] <- data_node[i,,,]*multfac_transient
-                    }
-                }
-
                 ## Check data so far
                 if (verbose > 2) {
                     for (i in 1:dim(data_node)[1]) {
                         message(paste0(indent, "   min/max data_node[", i, ":", 
-                                     dimnames(data_node)[[1]][i], ",,,] = ",
-                                     paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                       dimnames(data_node)[[1]][i], ",,,] = ",
+                                       paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                    }
+                }
+                
+                ## Change to proper units if wanted
+                if (multfac_out != 1) {
+                    for (i in 1:dim(data_node)[1]) {
+                        if (verbose > 0) {
+                            message(paste0(indent, "Multiply data_node[", i, ":",
+                                         dimnames(data_node)[[1]][i], ",,,] by 'multfac_out'=",
+                                         multfac_out, " ..."))
+                        }
+                        data_node[i,,,] <- data_node[i,,,]*multfac_out
+                        if (verbose > 0) {
+                            message(paste0(indent, "   min/max data_node[", i, ":", 
+                                           dimnames(data_node)[[1]][i], ",,,] = ",
+                                           paste0(range(data_node[i,,,], na.rm=T), collapse="/"), " ", units_out))
+                        }
                     }
                 }
 
@@ -3849,7 +3867,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 #stop("asd")
 
-                if (!any(transient_mode == c("csec_mean", "csec_depth", "moc_mean", "moc_depth"))) {
+                if (!any(out_mode == c("csec_mean", "csec_depth", "moc_mean", "moc_depth"))) {
 
                     ## integrate vertically
                     if (integrate_depth) {
@@ -3871,18 +3889,18 @@ if (nfiles == 0) { # read data which are constant in time
                     ## Declare matrix to save to netcdf
                     if (total_rec == 0) {
 
-                        if (transient_out && transient_mode != "area") {
-                            if (any(transient_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
+                        if (transient_out && out_mode != "area") {
+                            if (any(out_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
                                 data_funi <- array(NA, dim=c(dim(data_node)[1], ntime, 1)) # dim(data_funi) = c(nvars,ntime,ndepths=1)
                                 dimnames(data_funi) <- c(dimnames(data_node)[1],
                                                          list(time=timevec,
-                                                              depth=paste0(depths_plot, "m_", transient_mode)))
+                                                              depth=paste0(depths_plot, "m_", out_mode)))
         
-                                if (transient_mode == "max3D") {
+                                if (out_mode == "max3D") {
                                     data_funi_depths <- data_funi
                                 }
                             
-                            } else if (any(transient_mode == c("depth", "depthint", "depthmax"))) {
+                            } else if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                                 data_funi <- array(NA, 
                                                    dim=c(dim(data_node)[1], ntime, ndepths),
                                                    dimnames=c(dimnames(data_node)[1],
@@ -3892,31 +3910,29 @@ if (nfiles == 0) { # read data which are constant in time
                             
                             }
                             
-                        } # if transient_out && transient_mode != "area"
+                        } # if transient_out && out_mode != "area"
 
-                        if (regular_transient_out && transient_mode != "area") {
+                        if (regular_transient_out && out_mode != "area") {
                             data_reg_funi <- array(NA, 
                                                    dim=c(dim(data_node)[1], ntime, 1),
                                                    dimnames=c(dimnames(data_node)[1],
                                                               list(time=timevec,
-                                                                   depth=paste0(depths_plot, "_", transient_mode))))
-                        } # regular_transient_out && transient_mode != "area"
+                                                                   depth=paste0(depths_plot, "_", out_mode))))
+                        } # regular_transient_out && out_mode != "area"
                     
                     } # total_rec == 0
                    
-                    ## Arrange datavector as datamatrix
-                    if ((transient_out && transient_mode == "area") ||
-                        (transient_out && transient_mode == "areadepth") ||
-                        (regular_transient_out && transient_mode == "area") ||
-                        (regular_transient_out && transient_mode == "areadepth")) {
+                    ## Arrange datavector level-wise
+                    if ((transient_out && out_mode == "area") ||
+                        (transient_out && out_mode == "areadepth") ||
+                        (regular_transient_out && out_mode == "area") ||
+                        (regular_transient_out && out_mode == "areadepth")) {
 
                         if (length(poly_inds_geogr) == 0) {
                             stop("this should not happen")
                         }
 
                         if (!average_depth && !integrate_depth) {
-                            # wtf i did here:?
-                            #if (dim_tag == "3D" && dim(data_node) == 1 && ndepths > 1) {
                             if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
                                 if (verbose > 1) { # rearrange first
                                     message(paste0(indent, "For regular interpolation bring data_node from (nod3d_n=", nod3d_n,
@@ -3950,7 +3966,7 @@ if (nfiles == 0) { # read data which are constant in time
                         datamat <- array(NA, 
                                          dim=c(dim(data_vert)[1],           # nvars
                                                3,                           # 3 nodes per element
-                                               length(poly_inds_geogr),     # elems in area
+                                               length(poly_inds_geogr),     # 2d-elems in area
                                                dim(data_vert)[3:4]),        # ndepths,nrecspf
                                          dimnames=c(dimnames(data_vert)[1],
                                                     list(node=1:3,
@@ -3983,7 +3999,7 @@ if (nfiles == 0) { # read data which are constant in time
                             #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
                             #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
 
-                            # new: save memory; do for every dept
+                            # new: save memory; do for every depth
                             data_elem <- array(data_vert[,pos[elem2d],di,], 
                                                dim=c(dim(data_vert)[1],    # nvars
                                                      3,                    # 3 nodes per element
@@ -4101,13 +4117,13 @@ if (nfiles == 0) { # read data which are constant in time
 
                         rm(data_elem)
 
-                    } # if plot || transient_mode == "area" 
+                    } # if plot || out_mode == "area" 
                    
                     #stop("asd")
 
                     ## Calc transient mean
                     if (transient_out) { # the non-regular part
-                        if (transient_mode != "area") {
+                        if (out_mode != "area") {
                             if (rec_tag) {
                                 if (leap_tag && is.leap(year)) {
                                     time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
@@ -4123,7 +4139,7 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                             
                             ## choose data from area in node space
-                            if (transient_mode == "mean" && zave_method == 2) {
+                            if (out_mode == "mean" && zave_method == 2) {
                                 
                                 if (verbose > 2) {
                                     message(paste0(indent, "   using zave_method=2: cluster_vol_3d ..."))
@@ -4176,7 +4192,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 } # F T
                                 datavec <- datavec[,poly_node_inds_geogr,,] # inds in nod2d-space
                             
-                            } # if transient_mode == "mean" && zave_method == 2
+                            } # if out_mode == "mean" && zave_method == 2
 
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
@@ -4198,15 +4214,15 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                             }
 
-                            if (any(transient_mode == c("mean", "depth", "meanint", "depthint"))) {
+                            if (any(out_mode == c("mean", "depth", "meanint", "depthint"))) {
                               
                                 if (verbose > 1) {
                                     if (dim_tag == "2D") {
-                                        message(paste0(indent, "Calculate transient ", transient_mode, 
-                                                     " (=transient_mode) ..."))
+                                        message(paste0(indent, "Calculate transient ", out_mode, 
+                                                     " (=out_mode) ..."))
                                     } else if (dim_tag == "3D") {
                                          message(paste0(indent, "Calculate transient ", depths_plot, "m (=depths_plot) ", 
-                                                      transient_mode, " (=transient_mode) ..."))
+                                                      out_mode, " (=out_mode) ..."))
                                     }
                                     if (verbose > 2) {
                                         message(paste0(indent, "and save at 'time_inds'=",
@@ -4215,7 +4231,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
 
                                 if (rec_tag && leap_tag && is.leap(year)) {
-                                    if (transient_mode == "mean" && zave_method == 2) { # special
+                                    if (out_mode == "mean" && zave_method == 2) { # special
                                         if (!exists("patch_vol_leap")) {
                                             patch_vol_leap <- cluster_vol_3d[nod3d_z_inds]
                                             patch_vol_leap <- replicate(patch_vol_leap, n=dim(datavec)[3]) # nrecspf
@@ -4233,7 +4249,7 @@ if (nfiles == 0) { # read data which are constant in time
                                         }
                                     }
                                 } else { # only 1 rec and/or no leap
-                                    if (transient_mode == "mean" && zave_method == 2) { # special
+                                    if (out_mode == "mean" && zave_method == 2) { # special
                                         if (!exists("patch_vol")) {
                                             patch_vol <- cluster_vol_3d[nod3d_z_inds]
                                             patch_vol <- replicate(patch_vol, n=dim(datavec)[3]) # nrecspf
@@ -4253,22 +4269,26 @@ if (nfiles == 0) { # read data which are constant in time
                                 } # if leap years are present
 
                                 # calculate min/max/mean/median/nominal resolution of area as scalars
-                                # resolution is defined per 2d-element (check lib/deriv_2d.r)
-                                res_data <- replicate(resolution, n=1)
-                                res_data <- replicate(res_data, n=1)
-                                res_data <- replicate(res_data, n=1)
-                                res_data <- replicate(res_data, n=1)
-                                res_data <- aperm(res_data, c(2, 1, 3, 4, 5))
-                                sub_e2xde_to_n2xde(res_data) # produces tmp
-                                if (resolution_unit != "km") { # for output convert to km
-                                    if (resolution_unit == "m") { # m --> km
-
-                                    } else {
-                                        stop("not defined")
-                                    }
-                                } # if resolution_unit != "km"    
-                                stop("asd")
-
+                                # resolution is defined per 2d-element (check deriv_2d.r)
+                                if (F) {
+                                    res_data <- replicate(resolution, n=1) # dim = elem2d_n
+                                    res_data <- replicate(res_data, n=1)
+                                    res_data <- replicate(res_data, n=1)
+                                    res_data <- replicate(res_data, n=1)
+                                    res_data <- aperm(res_data, c(2, 3, 1, 4, 5)) # dim = c(nvars, 1, nelem2d_n, ndepths, nrecspf)
+                                    sub_e2xde_to_n2xde(res_data) # produces tmp
+                                    res_data <- tmp
+                                    rm(tmp)
+                                    if (resolution_unit != "km") { # for output, convert to km
+                                        if (resolution_unit == "m") { # m --> km
+                                            fac <- 1e-3
+                                        } else {
+                                            stop("not defined")
+                                        }
+                                        res_data <- res_data*fac
+                                    } # if resolution_unit != "km"    
+                                    stop("asd")
+                                }
 
                                 # multiplay data by cluster area (in [unit of 'Rearth' in namelist.rfesom.r]^2)
                                 if (verbose > 2) {
@@ -4276,7 +4296,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                  paste0(dimnames(datavec)[[1]], collapse=","),
                                                  " x patch_area ..."))
                                 }
-                                if (transient_mode == "mean" && zave_method == 2) {
+                                if (out_mode == "mean" && zave_method == 2) {
                                     if (rec_tag && leap_tag && is.leap(year)) {
                                         area_int <- datavec*patch_vol_leap
                                     } else {
@@ -4302,12 +4322,12 @@ if (nfiles == 0) { # read data which are constant in time
                                 area_int <- apply(area_int, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
                                 area_int[area_int == 0] <- NA # where there are no values at depth
 
-                                if (transient_mode == "mean" && zave_method == 2) {
+                                if (out_mode == "mean" && zave_method == 2) {
                                     area_mean <- area_int/sum(cluster_vol_3d[nod3d_z_inds])
                                     data_funi[,time_inds,] <- area_mean[,1:length(time_inds),] 
 
-                                } else if ((transient_mode == "mean" && zave_method == 1) || 
-                                           transient_mode == "depth") {
+                                } else if ((out_mode == "mean" && zave_method == 1) || 
+                                           out_mode == "depth") {
                                   
                                     # divide by total cluster area in area and depth i
                                     area_mean <- area_int
@@ -4328,12 +4348,12 @@ if (nfiles == 0) { # read data which are constant in time
                                     # the global mesh 'meshid'. 
                                     data_funi[,time_inds,] <- area_mean
                                 
-                                } else if (any(transient_mode == c("meanint", "depthint"))) {
+                                } else if (any(out_mode == c("meanint", "depthint"))) {
 
                                     data_funi[,time_inds,] <- area_int
                                 }
 
-                            } else if (transient_mode == "sum") {
+                            } else if (out_mode == "sum") {
                                 # sum over nodes
                                 data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), sum, na.rm=T)[,1:length(time_inds),]
                                 # For Hu Yang: sum only where wind curl is negative
@@ -4344,19 +4364,19 @@ if (nfiles == 0) { # read data which are constant in time
                                 #datavec2[datavec2 <= 0] = 0
                                 #data_funi[time_inds,] <- apply(datavec2, c(3, 4), sum, na.rm=T)
                             
-                            } else if (transient_mode == "max" || transient_mode == "max3D" || transient_mode == "depthmax") {
+                            } else if (out_mode == "max" || out_mode == "max3D" || out_mode == "depthmax") {
                                 tmp <- apply(datavec, c(1, 3, 4), max, na.rm=T) # var, time, depths
                                 tmp[tmp == -Inf] <- NA
                                 
-                                if (transient_mode == "max" || transient_mode == "depthmax") {
+                                if (out_mode == "max" || out_mode == "depthmax") {
                                     data_funi[,time_inds,] <- tmp[,1:length(time_inds),] # time vs 1 depth for "max" or time vs depths for "depthmax"
                                 
-                                } else if (transient_mode == "max3D") {
+                                } else if (out_mode == "max3D") {
                                     data_funi[,time_inds,1] <- apply(tmp, c(1, 2), max)[,1:length(time_inds)] # time vs 1 maximum depth
                                     data_funi_depths[,time_inds,1] <- interpolate_depths[apply(tmp, c(1, 2), which.max)]
                                 }
                             
-                            } else if (transient_mode == "min") {
+                            } else if (out_mode == "min") {
                                 data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), min, na.rm=T)[,1:length(time_inds),]
                             }
                            
@@ -4364,14 +4384,14 @@ if (nfiles == 0) { # read data which are constant in time
                             if (verbose > 2) {
                                 for (i in 1:dim(data_funi)[1]) {
                                     message(paste0(indent, "   min/max data_funi[", i, ":", 
-                                                 dimnames(data_funi)[[1]][i], ",,] = ",
-                                                 paste0(range(data_funi[i,,], na.rm=T), collapse="/"), 
-                                                 " ", units_transient[i]))
+                                                   dimnames(data_funi)[[1]][i], ",,] = ",
+                                                   paste0(range(data_funi[i,,], na.rm=T), collapse="/"), 
+                                                   " ", units_out))
                                 }
                             }
 
                         ## Save transient area output
-                        } else if (transient_mode == "area") { # this is on irregular mesh!
+                        } else if (out_mode == "area") { # on irregular mesh
                             
                             if (total_rec == 0) { # prepare output
                                 if (rec_tag) {
@@ -4385,7 +4405,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                   depths_fname, "_", area, "_", 
                                                   projection, 
                                                   ssh_aviso_correct_fname, 
-                                                  fname_suffix, ".nc")
+                                                  p_ref_suffix, fname_suffix, ".nc")
 
                                 ## remove already existing data to avoid ncdf error:
                                 ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -4425,7 +4445,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 for (i in 1:length(data_var)) {
                                     name <- dimnames(datamat)[[1]][i]
                                     data_var[[i]] <- ncvar_def(name=varname, 
-                                                               units=units_transient, 
+                                                               units=units_out, 
                                                                dim=list(node_dim, 
                                                                         elem_dim, 
                                                                         time_dim), 
@@ -4453,6 +4473,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 if (dim_tag == "3D") {
                                     ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
                                 }
+                                if (p_ref_suffix != "") {
+                                    ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+                                }
                             } # end if total_rec == 0			    
 
                             if (verbose > 1) {
@@ -4472,23 +4495,23 @@ if (nfiles == 0) { # read data which are constant in time
                                           start=transient_start, 
                                           count=transient_count)
                             }
-                        } # end if transient_mode == "area" or not
+                        } # end if out_mode == "area" or not
                     } # end if transient_out
                     
                     if (regular_transient_out) {
-                        if (transient_mode != "area" && transient_mode != "areadepth") {
+                        if (out_mode != "area" && out_mode != "areadepth") {
                             # nothing to do
                         
-                        } else if (transient_mode == "area" || transient_mode == "areadepth") {
+                        } else if (out_mode == "area" || out_mode == "areadepth") {
 
                             # if mode == "areadepth", check first whether calculated data actually has a depth dim
-                            if (transient_mode == "areadepth") {
+                            if (out_mode == "areadepth") {
                                 if (dim(datamat_reg)[4] == 1) { # only 1 depth, e.g. varname "c_baroclinic"
-                                    transient_mode <- "area"
+                                    out_mode <- "area"
                                     # check again if new path exist
                                     reg_transient_outpath <- paste0(postpath, runid, "/", setting,
                                                                "/regular_grid/",
-                                                               transient_mode, "/", area, "/", varname, "/")
+                                                               out_mode, "/", area, "/", varname, "/")
                                     dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
                                 }
                             }
@@ -4497,19 +4520,19 @@ if (nfiles == 0) { # read data which are constant in time
                             if (total_rec == 0) {
                                
                                 if (rec_tag) {
-                                    if (transient_mode == "area") {
+                                    if (out_mode == "area") {
                                         transient_count_reg <- c(nxi, nyi,
                                                                  dim(datamat_reg)[5]) # nrecs
-                                    } else if (transient_mode == "areadepth") {
+                                    } else if (out_mode == "areadepth") {
                                         transient_count_reg <- c(nxi, nyi,
                                                                  dim(datamat_reg)[4], # ndepths
                                                                  dim(datamat_reg)[5]) # nrecs
                                     } 
                                 } else {
-                                    if (transient_mode == "area") {
+                                    if (out_mode == "area") {
                                         transient_count_reg <- c(nxi, nyi,
                                                                  1) # nrecs
-                                    } else if (transient_mode == "areadepth") {
+                                    } else if (out_mode == "areadepth") {
                                         transient_count_reg <- c(nxi, nyi, 
                                                                  dim(datamat_reg)[4], # ndepths
                                                                  1) # nrecs
@@ -4524,7 +4547,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                       sprintf("%.3f", regular_dx), "_dy",
                                                       sprintf("%.3f", regular_dy), 
                                                       ssh_aviso_correct_fname, 
-                                                      fname_suffix, ".nc")
+                                                      p_ref_suffix, fname_suffix, ".nc")
                                 ## remove already existing data to avoid ncdf error:
                                 ## Error in R_nc4_create: Permission denied (creation mode was 4096)
                                 if (T) {
@@ -4548,7 +4571,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 lat_var <- ncvar_def(name="lats", units="degrees_north", 
                                                      dim=lat_dim,
                                                      missval=mv, prec=prec)
-                                if (transient_mode == "areadepth") {
+                                if (out_mode == "areadepth") {
                                     depth_dim <- ncdim_def(name="depth", units="",
                                                            vals=-interpolate_depths, 
                                                            create_dimvar=T)
@@ -4559,11 +4582,11 @@ if (nfiles == 0) { # read data which are constant in time
 
 
                                 data_reg_var <- vector("list", l=dim(datamat_reg)[1]) # nvars
-                                if (transient_mode == "area") {
+                                if (out_mode == "area") {
 
                                     for (i in 1:length(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
-                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_transient,
+                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
                                                                        dim=list(lon_dim, lat_dim,
                                                                                 time_dim),
                                                                        missval=mv,
@@ -4577,11 +4600,11 @@ if (nfiles == 0) { # read data which are constant in time
                                                                   data_reg_var),
                                                            force_v4=force_v4)
                                 
-                                } else if (transient_mode == "areadepth") {
+                                } else if (out_mode == "areadepth") {
 
                                     for (i in 1:length(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
-                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_transient,
+                                        data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
                                                                        dim=list(lon_dim, lat_dim, 
                                                                                 depth_dim, time_dim),
                                                                        missval=mv,
@@ -4598,7 +4621,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                                 ncvar_put(outnc_reg, lon_var, xi)
                                 ncvar_put(outnc_reg, lat_var, yi)
-                                if (transient_mode == "areadepth") {
+                                if (out_mode == "areadepth") {
                                     ncvar_put(outnc_reg, depth_var, -interpolate_depths)
                                 }
                                 ncvar_put(outnc_reg, time_var, timevec)
@@ -4615,11 +4638,14 @@ if (nfiles == 0) { # read data which are constant in time
                                 if (dim_tag == "3D") {
                                     ncatt_put(outnc_reg, 0, "depths_m", depths_plot, prec="double")
                                 }
+                                if (p_ref_suffix != "") {
+                                    ncatt_put(outnc_reg, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+                                }
                             } # if total_rec == 0
                             
-                            if (transient_mode == "area") {
+                            if (out_mode == "area") {
                                 transient_start_reg <- c(1, 1, total_rec+1) # x, y, depth, time
-                            } else if (transient_mode == "areadepth") {
+                            } else if (out_mode == "areadepth") {
                                 transient_start_reg <- c(1, 1, 1, total_rec+1) # x, y, depth, time
                             }
 
@@ -4653,12 +4679,12 @@ if (nfiles == 0) { # read data which are constant in time
                             } # verbose
                             
                             for (i in 1:length(data_reg_var)) {
-                                if (transient_mode == "area") {
+                                if (out_mode == "area") {
                                     ncvar_put(nc=outnc_reg, varid=data_reg_var[[i]],
                                               vals=drop(datamat_reg[i,,,1,]),
                                               start=transient_start_reg,
                                               count=transient_count_reg)
-                                } else if (transient_mode == "areadepth") {
+                                } else if (out_mode == "areadepth") {
                                     ncvar_put(nc=outnc_reg, varid=data_reg_var[[i]], 
                                               vals=drop(datamat_reg[i,,,,]),
                                               start=transient_start_reg, 
@@ -4666,13 +4692,13 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                             }
                             
-                        } # end if transient_mode == "area" or not
+                        } # end if out_mode == "area" or not
                     } # end if regular_transient_out
 
 
-                } else if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+                } else if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     if (verbose > 1) {
-                        message(paste0(indent, "Interpolate '", area, "' area '", transient_mode,
+                        message(paste0(indent, "Interpolate '", area, "' area '", out_mode,
                                      "' data from nodes to elements ..."))
                     }
 
@@ -4802,7 +4828,7 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         ## Apply csec conditions
-                        if (transient_mode == "csec_mean" && csec_conds_n > 0) {
+                        if (out_mode == "csec_mean" && csec_conds_n > 0) {
 
                             cond_inds <- vector("list", l=csec_conds_n)
                             for (j in 1:csec_conds_n) {
@@ -4823,18 +4849,18 @@ if (nfiles == 0) { # read data which are constant in time
                                                                          ",,,] ", cond, " ", 
                                                                          csec_cond_vals[j])))
                                 #if (is.na(any(cond_inds[[i]]))) {
-                                #    stop("Error: no elements ", transient_mode, varname 
+                                #    stop("Error: no elements ", out_mode, varname 
                                 #}
                             } # for j csec_conds_n
 
                         } # if csec_mean && csec_conds_n > 0
 
                         if (total_rec == 0) {
-                            if (transient_mode == "csec_mean") {
+                            if (out_mode == "csec_mean") {
                                 data_funi <- array(NA, c(dim(data_vert_csec)[1], ntime),
                                                    dimnames=c(dimnames(data_vert_csec)[1], 
                                                               list(rec=timevec)))
-                            } else if (transient_mode == "csec_depth") {
+                            } else if (out_mode == "csec_depth") {
                                 data_funi <- array(NA, c(dim(data_vert_csec)[1:3], ntime),
                                                    dimnames=c(dimnames(data_vert_csec)[1:3], 
                                                               list(rec=timevec)))
@@ -4851,13 +4877,13 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         if (verbose > 1) {
-                            message(paste0(indent, "Calc ", area, " area ", transient_mode,
+                            message(paste0(indent, "Calc ", area, " area ", out_mode,
                                          " and save at time inds=",
                                          paste(time_inds, collapse=",")))
                         }
 
                         ## Save csection mean after applying csection conditions
-                        if (transient_mode == "csec_mean") {
+                        if (out_mode == "csec_mean") {
 
                             for (j in 1:dim(data_funi)[1]) { # for all vars
 
@@ -4907,7 +4933,7 @@ if (nfiles == 0) { # read data which are constant in time
                             #stop("asd")
 
                         ## save csec as it is
-                        } else if (transient_mode == "csec_depth") {
+                        } else if (out_mode == "csec_depth") {
                             data_funi[,,,time_inds] <- data_vert_csec
                         
                         }
@@ -4915,7 +4941,7 @@ if (nfiles == 0) { # read data which are constant in time
                     } # for i vertices of csection
 
 
-                } else if (any(transient_mode == c("moc_mean", "moc_depth"))) {
+                } else if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
                     ## dim(data_node) = # c(nvars,nreg_lat,ndepths,ntime)
 
@@ -4946,12 +4972,12 @@ if (nfiles == 0) { # read data which are constant in time
                     stop("update for dims and data_node_ltm")
 
                     if (total_rec == 0) {
-                        if (transient_mode == "moc_mean") {
+                        if (out_mode == "moc_mean") {
                             stop("not yet")
                             data_funi <- array(NA, c(dim(data_node), ntime),
                                                dimnames=c(dimnames(data)[1],
                                                           list(rec=timevec)))
-                        } else if (transient_mode == "moc_depth") {
+                        } else if (out_mode == "moc_depth") {
                             data_funi <- array(NA, c(dim(data)[1:3], ntime),
                                                dimnames=c(var=dimnames(data)[1],
                                                           list(lat=moc_reg_lat, 
@@ -4970,15 +4996,15 @@ if (nfiles == 0) { # read data which are constant in time
                     }
 
                     if (verbose > 1) {
-                        message(paste0(indent, "Calc ", area, " area ", transient_mode,
+                        message(paste0(indent, "Calc ", area, " area ", out_mode,
                                      " and save at time inds=",
                                      paste(time_inds, collapse=",")))
                     }
 
-                    if (transient_mode == "moc_mean") {
+                    if (out_mode == "moc_mean") {
 
 
-                    } else if (transient_mode == "moc_depth") {
+                    } else if (out_mode == "moc_depth") {
                         data_funi[,,,time_inds] <- data
                     
                     }
@@ -4989,15 +5015,15 @@ if (nfiles == 0) { # read data which are constant in time
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map)) {
 
                     ## vertical average for ltm if not done before
-                    if (!integrate_depth && !average_depth) {
+                    if (F && !integrate_depth && !average_depth) {
                    
                         ## rearrange first if necessary
-                        if (dim(data_node)[2] != nod2d_n) {
+                        if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
 
                             if (zave_method == 1) { # level-wise dz                        
                                 if (verbose > 1) { # rearrange first
                                     message(paste0(indent, "For ltm/plot bring data_node from (nod3d_n=", nod3d_n,
-                                                 ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                                                   ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
                                         message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                                     }
@@ -5028,37 +5054,41 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                         }
 
-                        # if data_vert has more than 1 depth
-                        if (dim(data_vert)[3] > 1) { 
-                            if (verbose > 1) {
-                                message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
-                                if (verbose > 2) {
-                                    message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                        # not here or?
+                        if (F) {
+                            # if data_vert has more than 1 depth
+                            if (dim(data_vert)[3] > 1) { 
+                                if (verbose > 1) {
+                                    message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
+                                    if (verbose > 2) {
+                                        message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                                    }
                                 }
-                            }
-                            sub_vertical_average(data_vert) # produces tmp
-                            data_node <- tmp # overwrite old data_node
-                            # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                            rm(tmp, data_vert)
+                                sub_vertical_average(data_vert) # produces tmp
+                                data_node <- tmp # overwrite data_node
+                                # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+                                # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
+                                rm(tmp, data_vert)
 
-                            ## Check data so far
-                            if (verbose > 2) {
-                                for (i in 1:dim(data_node)[1]) {
-                                    message(paste0(indent, "   min/max data_node[", i, ":",
-                                                 dimnames(data_node)[[1]][i], ",,,] = ",
-                                                 paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                ## Check data so far
+                                if (verbose > 2) {
+                                    for (i in 1:dim(data_node)[1]) {
+                                        message(paste0(indent, "   min/max data_node[", i, ":",
+                                                     dimnames(data_node)[[1]][i], ",,,] = ",
+                                                     paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                    }
                                 }
-                            }
-                        } else {
+                            } else {
+                                
+                                data_node <- data_vert
                             
-                            data_node <- data_vert
-                        
-                        } # if data_vert has more than 1 depth
+                            } # if data_vert has more than 1 depth
+                        } # F
 
                     } # if !integrate_depth && !average_depth
 
                     ## at this point
+                    # TODO
                     ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
 
                     ## matrix for ltm output 
@@ -5248,18 +5278,18 @@ if (nfiles == 0) { # read data which are constant in time
         }
 
         ## Save transient area output
-        if (transient_mode == "area") { # this is irregular
-        #if (transient_mode == "area" || transient_mode == "areadepth") {
+        if (out_mode == "area") { # this is irregular
+        #if (out_mode == "area" || out_mode == "areadepth") {
             if (verbose > 1) {
-                message(paste0(indent, "Save transient ", transient_mode, " (=transient_mode) file (=outname):"))
+                message(paste0(indent, "Save transient ", out_mode, " (=out_mode) file (=outname):"))
                 message(paste0(indent, indent, outname))
             }
             nc_close(outnc)
 
         ## Save transient
-        } else if (all(transient_mode != c("area", "areadepth"))) {
+        } else if (all(out_mode != c("area", "areadepth"))) {
             
-            if (transient_mode == "csec_depth") {
+            if (out_mode == "csec_depth") {
                 csec_cond_depth <- csec_cond_vars
                 if (any(csec_cond_depth == "u")) {
                     csec_cond_depth <- csec_cond_depth[csec_cond_depth != "u"]
@@ -5267,33 +5297,33 @@ if (nfiles == 0) { # read data which are constant in time
                 if (any(csec_cond_depth == "v")) {
                     csec_cond_depth <- csec_cond_depth[csec_cond_depth != "v"]
                 }
-            } # if transient_mode == "csec_depth"
+            } # if out_mode == "csec_depth"
 
             # nc name
             if (any(varname == c("iceextent", "icevol"))) {
                 if (is.null(sic_cond_fname)) {
                     outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
-                                      varname, "_sic_transient_", transient_mode, "_", 
-                                      timespan, "_", area, "_", projection, fname_suffix,
+                                      varname, "_sic_transient_", out_mode, "_", 
+                                      timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 } else {
                     outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
                                       varname, "_sic.", sic_cond_fname, ".", sic_thr*100, 
-                                      "_transient_", transient_mode, "_",
-                                      timespan, "_", area, "_", projection, fname_suffix,
+                                      "_transient_", out_mode, "_",
+                                      timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 }
             } else {
                 outname <- paste0(transientpath, runid, "_", setting, "_", output, "_", 
-                                  varname, "_transient_", transient_mode, "_", timespan,
+                                  varname, "_transient_", out_mode, "_", timespan,
                                   depths_fname, "_", area, "_", 
-                                  ifelse(transient_mode == "csec_mean" && csec_conds_n > 0, 
+                                  ifelse(out_mode == "csec_mean" && csec_conds_n > 0, 
                                          paste0("conds_", paste0(csec_cond_vars, ".", csec_conds, ".", 
                                                                  csec_cond_vals, csec_cond_units, collapse="_"), 
                                                 "_"), ""),
-                                  ifelse(transient_mode == "csec_depth" && !is.null(csec_cond_depth),
+                                  ifelse(out_mode == "csec_depth" && !is.null(csec_cond_depth),
                                          paste0("conds_", paste0(unique(csec_cond_depth), collapse="_"), "_"), ""),
-                                  projection, ssh_aviso_correct_fname, fname_suffix,
+                                  projection, ssh_aviso_correct_fname, p_ref_suffix, fname_suffix,
                                   ".nc")
             }
             
@@ -5304,7 +5334,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
 
             if (verbose > 1) {
-                message(paste0(indent, "Save transient ", transient_mode, " (=transient_mode) file (=outname):"))
+                message(paste0(indent, "Save transient ", out_mode, " (=out_mode) file (=outname):"))
                 message(paste0(indent, indent, outname))
             }
 
@@ -5314,14 +5344,14 @@ if (nfiles == 0) { # read data which are constant in time
                                   vals=time, 
                                   create_dimvar=T)
      
-            if (any(transient_mode == c("depth", "depthint", "depthmax"))) {
+            if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 depth_dim <- ncdim_def(name="depth", 
                                        units="", 
                                        vals=-interpolate_depths, 
                                        create_dimvar=T)
             }
 
-            if (transient_mode == "csec_depth") {
+            if (out_mode == "csec_depth") {
                 depth_dim <- ncdim_def(name="depth", 
                                        units="", 
                                        vals=-csec_middle_depths, 
@@ -5340,7 +5370,7 @@ if (nfiles == 0) { # read data which are constant in time
                                            create_dimvar=T)
             }
 
-            if (transient_mode == "moc_depth") {
+            if (out_mode == "moc_depth") {
                 depth_dim <- ncdim_def(name="depth",
                                        units="",
                                        vals=-depths,
@@ -5358,7 +5388,7 @@ if (nfiles == 0) { # read data which are constant in time
                                   missval=-9999, 
                                   prec="integer")
 
-            if (any(transient_mode == c("depth", "depthint", "depthmax", 
+            if (any(out_mode == c("depth", "depthint", "depthmax", 
                                         "csec_depth", "moc_depth"))) {
                 depth_var <- ncvar_def(name="depthvec", 
                                        units="m", 
@@ -5367,7 +5397,7 @@ if (nfiles == 0) { # read data which are constant in time
                                        prec="integer")
             }
 
-            if (transient_mode == "csec_depth") {
+            if (out_mode == "csec_depth") {
                 csec_lon_var <- ncvar_def(name="csec_lon_vec", 
                                           units="degrees east", 
                                           dim=csec_lon_dim,
@@ -5385,7 +5415,7 @@ if (nfiles == 0) { # read data which are constant in time
                                            prec=prec)
             }
 
-            if (transient_mode == "moc_depth") {
+            if (out_mode == "moc_depth") {
                 moc_reg_lat_var <- ncvar_def(name="moc_reg_lat",
                                              units="degrees north",
                                              dim=moc_reg_lat_dim,
@@ -5400,25 +5430,25 @@ if (nfiles == 0) { # read data which are constant in time
 
             ## Set data variables for nc file
             data_fun_var <- vector("list", l=dim(data_funi)[1]) # nvars
-            if (transient_mode == "max3D") {
+            if (out_mode == "max3D") {
                 depth_var <- data_fun_var
             }
 
-            if (any(transient_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
+            if (any(out_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
 
                 for (i in 1:length(data_fun_var)) {
-                    name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
+                    name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_transient,
+                                                   units=units_out,
                                                    dim=time_dim,
                                                    missval=mv,
                                                    longname=longname,
                                                    prec=prec)
                 }
 
-                if (transient_mode == "max3D") {
+                if (out_mode == "max3D") {
                     for (i in 1:length(depth_var)) {
-                        name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode, "_depth")
+                        name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode, "_depth")
                         depth_var[[i]] <- ncvar_def(name=name,
                                                     units="m",
                                                     dim=time_dim,
@@ -5429,11 +5459,11 @@ if (nfiles == 0) { # read data which are constant in time
 
             } # if mean sum max min etc
 
-            if (any(transient_mode == c("depth", "depthint", "depthmax"))) {
+            if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 for (i in 1:length(data_fun_var)) {
-                    name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
+                    name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_transient,
+                                                   units=units_out,
                                                    dim=list(time_dim, depth_dim),
                                                    missval=mv,
                                                    longname=longname,
@@ -5441,7 +5471,7 @@ if (nfiles == 0) { # read data which are constant in time
                 }
             } # depth depthmax
 
-            if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+            if (any(out_mode == c("csec_mean", "csec_depth"))) {
 
                 #data_fun_var <- vector("list", l=dim(data_funi)[1])
                 for (i in 1:length(data_fun_var)) {
@@ -5455,9 +5485,9 @@ if (nfiles == 0) { # read data which are constant in time
                     } else if (dimnames(data_funi)[[1]][i] == "potdens") {
                         unit <- "kg m-3"
                     } else if (dimnames(data_funi)[[1]][i] == "transport") {
-                        if (transient_mode== "csec_mean") { 
+                        if (out_mode== "csec_mean") { 
                             unit <- "Sv"
-                        } else if (transient_mode == "csec_depth") {
+                        } else if (out_mode == "csec_depth") {
                             unit <- "m s-1"
                         }
                     } else {
@@ -5465,14 +5495,14 @@ if (nfiles == 0) { # read data which are constant in time
                                     " not implemented yet ..."))
                     }
                 
-                    name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
-                    if (transient_mode == "csec_mean") {
+                    name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
+                    if (out_mode == "csec_mean") {
                         data_fun_var[[i]] <- ncvar_def(name=name,
                                                        units=unit,
                                                        dim=time_dim, 
                                                        missval=mv, 
                                                        prec=prec)
-                    } else if (transient_mode == "csec_depth") {
+                    } else if (out_mode == "csec_depth") {
                         data_fun_var[[i]] <- ncvar_def(name=name,
                                                        units=unit,
                                                        dim=list(csec_dist_dim, depth_dim, time_dim), 
@@ -5484,11 +5514,11 @@ if (nfiles == 0) { # read data which are constant in time
 
             } # csec_mean || csec_depth 
           
-            if (transient_mode == "moc_depth") {
+            if (out_mode == "moc_depth") {
                 for (i in 1:length(data_fun_var)) {
-                    name <- paste0(dimnames(data_funi)[[1]][i], "_", transient_mode)
+                    name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
                     data_fun_var[[i]] <- ncvar_def(name=name,
-                                                   units=units_transient,
+                                                   units=units_out,
                                                    dim=list(moc_reg_lat_dim, depth_dim, time_dim),
                                                    missval=mv,
                                                    prec=prec)
@@ -5496,32 +5526,32 @@ if (nfiles == 0) { # read data which are constant in time
             } # moc_depth
 
             ## Create nc file
-            if (any(transient_mode == c("mean", "meanint", "sum", "max", "min"))) {
+            if (any(out_mode == c("mean", "meanint", "sum", "max", "min"))) {
                 outnc <- nc_create(filename=outname,
                                    vars=c(data_fun_var, list(time_var)),
                                    force_v4=force_v4)
             }
 
-            if (transient_mode == "max3D") {
+            if (out_mode == "max3D") {
                 outnc <- nc_create(filename=outname,
                                    vars=c(data_fun_var, depth_var, list(time_var)),
                                    force_v4=force_v4)
             }
 
-            if (any(transient_mode == c("depth", "depthint", "depthmax"))) {
+            if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 outnc <- nc_create(filename=outname, 
                                    vars=c(data_fun_var, 
                                           list(time_var, depth_var)),
                                    force_v4=force_v4)
             }
 
-            if (transient_mode == "csec_mean") {
+            if (out_mode == "csec_mean") {
                 outnc <- nc_create(filename=outname, 
                                    vars=c(data_fun_var, list(time_var)),
                                    force_v4=force_v4)
             } # csec_mean
 
-            if (transient_mode == "csec_depth") {
+            if (out_mode == "csec_depth") {
                 outnc <- nc_create(filename=outname, 
                                    vars=c(data_fun_var,
                                           list(time_var, depth_var, csec_lon_var,
@@ -5529,7 +5559,7 @@ if (nfiles == 0) { # read data which are constant in time
                                    force_v4=force_v4)
             } # csec_depth
 
-            if (transient_mode == "moc_depth") {
+            if (out_mode == "moc_depth") {
                 outnc <- nc_create(filename=outname, 
                                    vars=c(data_fun_var, 
                                           list(time_var, depth_var, 
@@ -5540,24 +5570,24 @@ if (nfiles == 0) { # read data which are constant in time
             ## Put dimensions to nc file
             ncvar_put(outnc, time_var, timevec)
 
-            if (any(transient_mode == c("depth", "depthint", "depthmax"))) {
+            if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 ncvar_put(outnc, depth_var, -interpolate_depths)
             }
 
-            if (transient_mode == "max3D") {
+            if (out_mode == "max3D") {
                 for (i in 1:length(depth_var)) {
                      ncvar_put(outnc, depth_var[[i]], -data_funi_depths[i,,1])
                 }
             }
 
-            if (transient_mode == "csec_depth") {
+            if (out_mode == "csec_depth") {
                 ncvar_put(outnc, depth_var, -csec_middle_depths)
                 ncvar_put(outnc, csec_lon_var, csec_interp_points_vec[1,])
                 ncvar_put(outnc, csec_lat_var, csec_interp_points_vec[2,])
                 ncvar_put(outnc, csec_dist_var, csec_dist_vec)
             }
 
-            if (transient_mode == "moc_depth") {
+            if (out_mode == "moc_depth") {
                 ncvar_put(outnc, depth_var, -depths)
                 ncvar_put(outnc, moc_reg_lat_var, moc_reg_lat)
                 ncvar_put(outnc, moc_topo_var, moc_topo)
@@ -5566,10 +5596,10 @@ if (nfiles == 0) { # read data which are constant in time
             ## Put data to nc file
             for (i in 1:length(data_fun_var)) {
                 
-                if (transient_mode == "csec_mean") {
+                if (out_mode == "csec_mean") {
                     ncvar_put(outnc, data_fun_var[[i]], data_funi[i,])
                 
-                } else if (any(transient_mode == c("csec_depth", "moc_depth"))) {
+                } else if (any(out_mode == c("csec_depth", "moc_depth"))) {
                     ncvar_put(outnc, data_fun_var[[i]], data_funi[i,,,])
                 
                 } else { # mean sum max min etc
@@ -5593,16 +5623,19 @@ if (nfiles == 0) { # read data which are constant in time
             if (dim_tag == "3D") {
                 ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
             }
+            if (p_ref_suffix != "") {
+                ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+            }
             if (any(varname == c("iceextent", "icevol"))) {
                 if (!is.null(sic_cond_fname)) {
                     ncatt_put(outnc, 0, paste0("sic_thr_", sic_cond_fname, "_%"), sic_thr*100, prec="double")
                 }
             }
-            if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+            if (any(out_mode == c("csec_mean", "csec_depth"))) {
                 ncatt_put(outnc, 0, "csec_n_vec_u", csec_n_vec_edge[1,], prec="double")
                 ncatt_put(outnc, 0, "csec_n_vec_v", csec_n_vec_edge[2,], prec="double")
                 
-                if (transient_mode == "csec_mean" && csec_conds_n > 0) {
+                if (out_mode == "csec_mean" && csec_conds_n > 0) {
                     for (i in 1:csec_conds_n) {
                         ncatt_put(outnc, 0, 
                                   paste0("csec_cond_", i, "_of_", csec_conds_n, "_", csec_cond_vars[i], "_", 
@@ -5615,23 +5648,23 @@ if (nfiles == 0) { # read data which are constant in time
             ## Close nc
             nc_close(outnc)
 
-        } # end if transient_mode == "mean" or != "mean"
+        } # end if out_mode == "mean" or != "mean"
     } # end if transient_out
 
     if (regular_transient_out) { # regular
         
-        if (any(transient_mode == c("area", "areadepth"))) {
+        if (any(out_mode == c("area", "areadepth"))) {
             if (verbose > 1) {
-                message(paste0(indent, "Save transient regular ", transient_mode, " file: (=outname_reg)"))
+                message(paste0(indent, "Save transient regular ", out_mode, " file: (=outname_reg)"))
                 message(paste0(indent, indent, outname_reg))
             }
             nc_close(outnc_reg)
         
-        } else if (!any(transient_mode == c("area", "areadepth"))) {
+        } else if (!any(out_mode == c("area", "areadepth"))) {
             
             # nothing to do, this was checked in the beginning
         
-        } # end if transient_mode == area or not
+        } # end if out_mode == area or not
     
     } # end if regular_transient_out
 
@@ -5929,18 +5962,27 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         } # if integrate_depth
 
-        ## Change to proper units
-        if (multfac_ltm != 1) {
-            if (verbose > 1) {
-                message(paste0(indent, "Multiply data_node_ltm by 'multfac_ltm'=",
-                             multfac_ltm, " ..."))
+        ## Change to proper units if wanted
+        if (multfac_out != 1) {
+            for (i in 1:dim(data_node_ltm)[1]) {
+                if (verbose > 0) {
+                    message(paste0(indent, "Multiply data_node_ltm[", i, ":",
+                                   dimnames(data_node_ltm)[[1]][i], ",,,] by 'multfac_out'=",
+                                   multfac_out, " ..."))
+                }
+                data_node_ltm[i,,,] <- data_node_ltm[i,,,]*multfac_out
+                if (verbose > 0) {
+                    message(paste0(indent, "   min/max data_node_ltm[", i, ":", 
+                                   dimnames(data_node_ltm)[[1]][i], ",,,] = ",
+                                   paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/"), " ", units_out))
+                }
             }
-            data_node_ltm <- data_node_ltm*multfac_ltm
         }
 
-    } # calc varname with ltm data if !all(transient_out, regular_transient_out, sd_out))
+    } # calc variable with ltm data if !all(transient_out, regular_transient_out, sd_out))
 
     ## At this point
+    # TODO
     ## dim(data_node_ltm) = c(nvars,nod2d_n,depths=1,nrecspf=1)
     ## is time-averaged and depth-averaged/-integrated 
 
@@ -6021,165 +6063,206 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         || (ltm_out && output_type == "elems") 
         || regular_ltm_out) {
 
-        if (verbose > 1) {
-            message(paste0(indent, "Rearrange data_node_ltm from (nod2d_n=", 
-                         nod2d_n, ") to (3 x elem2d_n=", elem2d_n, ") ..."))
-        }
-        # old:
-        #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
-        #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
-        #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
+        # rearrange
+        if (!average_depth && !integrate_depth) {
+            if (dim_tag == "3D" && dim(data_node_ltm)[2] != nod2d_n && ndepths > 1) {
+                if (verbose > 1) { # rearrange first
+                    message(paste0(indent, "For regular interpolation bring data_node_ltm from (nod3d_n=", nod3d_n,
+                                 ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                    if (verbose > 2) {
+                        message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    }
+                }
+                sub_n3_to_n2xde(data_node_ltm) # produces tmp
+                data_vert_ltm <- tmp # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf)
+                rm(tmp)
+            } else { # already in level space
+                data_vert_ltm <- data_node_ltm
+            
+            } # dim_tag == "3D"
+        
+        } else {
+            data_vert_ltm <- data_node_ltm
 
-        data_elem_ltm <- array(data_node_ltm[,pos[elem2d],,], 
-                               dim=c(dim(data_node_ltm)[1],    # nvars
-                                     3, elem2d_n,              # 3 nodes per element, elem2d_n
-                                     dim(data_node_ltm)[3:4]), # ndepths, nrecspf
-                               dimnames=c(dimnames(data_node_ltm)[1],
-                                          list(node=1:3, 
-                                               elem=NULL), 
-                                          dimnames(data_node_ltm)[3:4]))
-
-        ## Check data so far
-        if (verbose > 2) {
-            for (i in 1:dim(data_elem_ltm)[1]) {
-                message(paste0(indent, "   min/max data_elem_ltm[", i, ":", 
-                             dimnames(data_elem_ltm)[[1]][i], ",,,,] = ",
-                             paste0(range(data_elem_ltm[i,,,,], na.rm=T), collapse="/")))
-            }
-        }
-    
-    } # if (plot_map || (ltm_out && output_type == "elems") || regular_ltm_out)
-
-    ## Interpolation of ltm data on regular grid
-    if (regular_ltm_out) {
+        } # if !average_depth && !integrate_depth
 
         if (verbose > 1) {
-            message(paste0(indent, "Interpolate data_elem_ltm on regular grid ('regular_dx'=",
+            message(paste0(indent, "For regular interpolation rearrange data_vert_ltm from (nod2d_n=", nod2d_n, 
+                         " x ndepths=", dim(data_vert_ltm)[3], ") to (3 x elem2d_n=", 
+                         elem2d_n, " x ndepths=", dim(data_vert_ltm)[3], ") ...")) 
+        }
+
+
+        if (verbose > 1) {
+            message(paste0(indent, "Interpolate on regular grid ('regular_dx'=",
                          sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                          sprintf("%.3f", regular_dy),
-                         " deg) ..."))
-        }
-
-        datamat_reg_ltm <- array(NA, 
-                                 dim=c(dim(data_elem_ltm)[1],        # nvars
-                                       length(xinds), length(yinds),       # x, y
-                                       dim(data_elem_ltm)[4:5]),     # ndepths, nrecspf
-                                 dimnames=c(dimnames(data_elem_ltm)[1],
-                                            list(xi=round(XI[1,xinds], 2), 
-                                                 yi=round(YI[yinds,1], 2)),
-                                            dimnames(data_elem_ltm)[4:5]))
-       
-        ## interpolate on regular grid
-        if (verbose > 1) {
-            cat(paste0("     ", indent))
-        }
-        for (i in 1:dim(data_elem_ltm)[1]) { # nvars
-            for (j in 1:dim(data_elem_ltm)[4]) { # ndepths is always 1
-                for (k in 1:dim(data_elem_ltm)[5]) { # nrecspf
-                    if (verbose > 1) {
-                        cat(paste0(dimnames(data_elem_ltm)[[1]][i], " ", 
-                                   dimnames(data_elem_ltm)[[4]][j], " ", 
-                                   dimnames(data_elem_ltm)[[5]][k], ", "))
-                        if (i == dim(data_elem_ltm)[1] && j == dim(data_elem_ltm)[4] && k == dim(data_elem_ltm)[5]) {
-                            cat("\n")
-                        }
-                    }
-                    datamat_reg_ltm[i,,,j,k] <- t(sub_calc_regular_2d_interp(I_MAT=IMAT[yinds,xinds],
-                                                  XI=XI[yinds,xinds],
-                                                  YI=YI[yinds,xinds],
-                                                  #xp=xc_global[,poly_inds_geogr],
-                                                  #yp=yc_global[,poly_inds_geogr],
-                                                  #datamat=drop(data_elem_ltm[i,,poly_inds_geogr,j,k]))
-                                                  xp=xc_global,
-                                                  yp=yc_global,
-                                                  datamat=drop(data_elem_ltm[i,,,j,k]))
-                                                 )
-                } # for k nrecspf
-            } # for j ndepths
-        } # for i nvars
-
-        ## Check data so far
-        if (verbose > 2) {
-            for (i in 1:dim(datamat_reg_ltm)[1]) {
-                message(paste0(indent, "   min/max datamat_reg_ltm[", i, ":", 
-                             dimnames(datamat_reg_ltm)[[1]][i], ",,,,] = ",
-                             paste0(range(datamat_reg_ltm[i,,,,], na.rm=T), collapse="/")))
-            }
-        }
-
-    } # if regular_ltm_out
-
-    ## Pick data from plot area
-    if (any(plot_map, ltm_out)) { 
-
-        if (verbose > 1) {
-            if ((plot_map && plot_type == "interp") || 
-                (ltm_out && output_type == "nodes")) {
-                message(paste0(indent, "Select data in '", area, "' area from 'data_node_ltm': "))
-            } else if ((plot_map && plot_type == "const") ||
-                       (ltm_out && output_type == "elems")) {
-                message(paste0(indent, "Select data in '", area, "' area from 'data_elem_ltm': "))
-            }
-            message(paste0(indent, "   ", round(range(map_geogr_lim_lon)[1], 2), " to ",
-                         round(range(map_geogr_lim_lon)[2], 2), " deg longitude and ",
+                         " deg) and "))
+            message(paste0(indent, "   select data in '", area, "' area: ",
+                         round(range(map_geogr_lim_lon)[1], 2), " to ",
+                         round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
                          round(range(map_geogr_lim_lat)[1], 2), " to ",
                          round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
-        }
+    
 
-        if (projection != "orthographic") {
-
-            if (proj_lims) {
-
+            if (any(plot_map, ltm_out)) {
+                message(indent, "For plot/ltm_out select data in '", area, "' area from ", appendLF=F)
                 if ((plot_map && plot_type == "interp") || 
                     (ltm_out && output_type == "nodes")) {
-                    datamat_ltm <- data_node_ltm[,poly_node_inds_geogr,,]
-
-                } else if ((plot_map && plot_type == "const") || 
+                    message("'data_vert_ltm':")
+                } else if ((plot_map && plot_type == "const") ||
                            (ltm_out && output_type == "elems")) {
-                    datamat_ltm <- data_elem_ltm[,,poly_inds_geogr,,]
+                    message("'data_elem_ltm':")
                 }
-
-            } else if (geogr_lims) {
-
-                if (projection != "rectangular") {
-
-                    if ((plot_map && plot_type == "interp") || 
-                        (ltm_out && output_type == "nodes")) {
-                        datamat_ltm <- data_node_ltm[,poly_node_inds_geogr,,]
-
-                    } else if ((plot_map && plot_type == "const") || 
-                               (ltm_out && output_type == "elems")) {
-                        datamat_ltm <- data_elem_ltm[,,poly_inds_proj,,]
-                    }
-
-                } else if (projection == "rectangular") {
-
-                    if ((plot_map && plot_type == "interp") || 
-                        (ltm_out && output_type == "nodes")) {
-                        datamat_ltm <- data_node_ltm[,poly_node_inds_geogr,,]
-                        xpsur <- xpsur[poly_node_inds_geogr]
-                        ypsur <- ypsur[poly_node_inds_geogr]
-
-                    } else if ((plot_map && plot_type == "const") || 
-                               (ltm_out && output_type == "elems")) {
-                        datamat_ltm <- data_elem_ltm[,,poly_inds_geogr,,]
-                    }
-
-                }
-            } # if proj_lims or geogr_lims
-
-        } else if (projection == "orthographic") {
-
+                message(paste0(indent, "   ", round(range(map_geogr_lim_lon)[1], 2), " to ",
+                             round(range(map_geogr_lim_lon)[2], 2), " deg longitude and ",
+                             round(range(map_geogr_lim_lat)[1], 2), " to ",
+                             round(range(map_geogr_lim_lat)[2], 2), " deg latitude ..."))
+            }
+        } # verbose
+           
+        # no depth loop needed here
+        if (any(plot_map, ltm_out)) { 
             if ((plot_map && plot_type == "interp") || 
                 (ltm_out && output_type == "nodes")) {
-                datamat_ltm <- data_node_ltm[,,poly_node_inds_geogr,,]
-
-            } else if ((plot_map && plot_type == "const") || 
-                       (ltm_out && output_type == "elems")) {
-                datamat_ltm <- data_elem_ltm[,,poly_inds_proj,,]
+                datamat_ltm <- data_vert_ltm[,poly_node_inds_geogr,,]
+                if (projection != "orthographic") {
+                    if (geogr_lims) {
+                        if (projection == "rectangular") {
+                            xpsur <- xpsur[poly_node_inds_geogr]
+                            ypsur <- ypsur[poly_node_inds_geogr]
+                        }
+                    }
+                }
             }
+        }
 
-        } # which projection
+        # create progress bar
+        pb <- mytxtProgressBar(min=0, max=dim(data_vert_ltm)[3], style=pb_style,
+                               char=pb_char, width=pb_width,
+                               indent=paste0(indent, "   ")) # 5 " " for default message()
+
+        for (di in 1:dim(data_vert_ltm)[3]) { # ndepths
+
+            # old:
+            #datamat_ltm[1,,,] <- data[,pos[elem2d[1,]],,]
+            #datamat_ltm[2,,,] <- data[,pos[elem2d[2,]],,]
+            #datamat_ltm[3,,,] <- data[,pos[elem2d[3,]],,]
+
+            # for every depth to save memory
+            data_elem_ltm <- array(data_vert_ltm[,pos[elem2d],di,], 
+                                   dim=c(dim(data_vert_ltm)[1],    # nvars
+                                         3,                    # 3 nodes per element
+                                         elem2d_n,             # elem2d_n
+                                         1,                    # 1 depth
+                                         dim(data_vert_ltm)[4]),   # nrecspf
+                                   dimnames=c(dimnames(data_vert_ltm)[1],
+                                              list(node=1:3, 
+                                                   elem=NULL,
+                                                   depth=dimnames(data_vert_ltm)[[3]][di]),
+                                              dimnames(data_vert_ltm)[4]))
+
+            ## Check data so far
+            if (verbose > 2) {
+                for (i in 1:dim(data_elem_ltm)[1]) {
+                    message(paste0(indent, "   min/max data_elem_ltm[", i, ":", 
+                                 dimnames(data_elem_ltm)[[1]][i], ",,,,] = ",
+                                 paste0(range(data_elem_ltm[i,,,,], na.rm=T), collapse="/")))
+                }
+            } 
+
+            ## Interpolation of ltm data on regular grid
+            if (regular_ltm_out) {
+                if (di == 1) { # initialize matrices
+                    datamat_reg_ltm <- array(NA, 
+                                         dim=c(dim(data_vert_ltm)[1],              # nvars
+                                               length(xinds), length(yinds),   # x, y of _area_
+                                               dim(data_vert_ltm)[3:4]),           # ndepths, nrecspf
+                                         dimnames=c(dimnames(data_vert_ltm)[1],
+                                                    list(xi=round(xi, 2), 
+                                                         yi=round(yi, 2)),
+                                                    dimnames(data_vert_ltm)[3:4]))
+                }
+               
+                ## interpolate on regular grid
+                for (i in 1:dim(data_elem_ltm)[1]) { # nvars
+                    if (dim(data_elem_ltm)[1] > 1 && verbose > 2) {
+                        message(paste0(indent, "   var = ", 
+                                     dimnames(data_elem_ltm)[[1]][i], " ..."))
+                    }
+
+                    for (j in 1:dim(data_elem_ltm)[5]) { # nrecspf == 1 here (ltm)
+                        if (dim(data_elem_ltm)[5] > 1 && verbose > 2) {
+                            message(paste0(indent, "      time = ",
+                                         dimnames(data_elem_ltm)[[5]][j], " ..."))
+                        }
+                   
+                        datamat_reg_ltm[i,,,di,j] <- t(sub_calc_regular_2d_interp(
+                                                  I_MAT=IMAT[yinds,xinds], 
+                                                  XI=XI[yinds,xinds], 
+                                                  YI=YI[yinds,xinds],
+                                                  xp=xc_global, yp=yc_global,
+                                                  datamat=drop(data_elem_ltm[i,,,,j])))
+                    } # for j nrecspf == 1 here (ltm)
+                } # for i nvars
+                
+                ## Check data so far
+                if (verbose > 2) {
+                    for (i in 1:dim(datamat_reg_ltm)[1]) {
+                        if (!all(is.na(datamat_reg_ltm[i,,,di,]))) {
+                            message(paste0(indent, "   min/max datamat_reg_ltm[", i, ":", 
+                                         dimnames(datamat_reg_ltm)[[1]][i], ",,,", di, ",] = ",
+                                         paste0(range(datamat_reg_ltm[i,,,di,], na.rm=T), collapse="/")))
+                        }
+                    }
+                }
+            } # if regular_ltm_out
+
+            ## Select data of irregular data for ltm_out/plot_map
+            if (any(plot_map, ltm_out)) { 
+                
+                if ((plot_map && plot_type == "const") || 
+                    (ltm_out && output_type == "elems")) {
+
+                    if (di == 1) { # first depth
+
+                        # save regular interpolated data in area
+                        datamat_ltm <- array(NA, 
+                                         dim=c(dim(data_vert_ltm)[1],           # nvars
+                                               3,                           # 3 nodes per element
+                                               length(poly_inds_geogr),     # 2d-elems in area
+                                               dim(data_vert_ltm)[3:4]),        # ndepths,nrecspf
+                                         dimnames=c(dimnames(data_vert_ltm)[1],
+                                                    list(node=1:3,
+                                                         elem=NULL),
+                                                    dimnames(data_vert_ltm)[3:4]))
+                    } # if di == 1
+
+                    if (projection != "orthographic") {
+                        if (proj_lims) {
+                            datamat_ltm[,,,di,] <- data_elem_ltm[,,poly_inds_geogr,,]
+                        } else if (geogr_lims) {
+                            if (projection != "rectangular") {
+                                datamat_ltm[,,,di,] <- data_elem_ltm[,,poly_inds_proj,,]
+                            } else if (projection == "rectangular") {
+                                datamat_ltm[,,,di,] <- data_elem_ltm[,,poly_inds_geogr,,]
+                            }
+                        } # if proj_lims or geogr_lims
+                    } else if (projection == "orthographic") {
+                        datamat_ltm[,,,di,] <- data_elem_ltm[,,poly_inds_proj,,]
+                    } # which projection
+
+                } # if plot_map && plot_type == "interp"
+                
+            } # if (any(plot_map, ltm_out))
+            
+            # update progress bar
+            setTxtProgressBar(pb, di)
+        
+        } # for di
+        
+        # close progress bar
+        close(pb)
 
         #rm(data_elem_ltm)
 
@@ -6198,25 +6281,22 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(datamat_ltm)[1]) {
+                message(indent, "   min/max datamat_ltm[", i, ":", dimnames(datamat_ltm)[[1]][i], appendLF=F)
                 if ((plot_map && plot_type == "interp") ||
                     (ltm_out && output_type == "nodes")) {
-                    message(paste0(indent, "   min/max datamat_ltm[", i, ":", 
-                                 dimnames(datamat_ltm)[[1]][i], ",,,] = ",
-                                 paste0(range(datamat_ltm[i,,,], na.rm=T), collapse="/"),
-                                 " ", units_ltm))
+                    message(",,,] = ", paste0(range(datamat_ltm[i,,,], na.rm=T), collapse="/"), appendLF=F)
                 } else if ((plot_map && plot_type == "const") ||
                            (ltm_out && output_type == "elems")) {
-                    message(paste0(indent, "   min/max datamat_ltm[", i, ":", 
-                                 dimnames(datamat_ltm)[[1]][i], ",,,,] = ",
-                                 paste0(range(datamat_ltm[i,,,,], na.rm=T), collapse="/"),
-                                 " ", units_ltm))
+                    message(",,,,] = ", paste0(range(datamat_ltm[i,,,,], na.rm=T), collapse="/"), appendLF=F)
                 }
+                message(" ", units_out)
             }
         }
-
-    } # if any(plot_map, ltm_out)
+        
+    } # if plot_map || (ltm_out && output_type == "elems") || regular_ltm_out
 
     ## At this point
+    # TODO
     ## dim(data_node_ltm) = c(nvars,nod2d_n,depths=1,nrecspf=1)
     ## dim(datamat_reg_ltm) = c(nvars,nx_in_area,ny_in_area,ndepths=1,nrecspf=1)
     ## dim(datamat_ltm) = c(nvars,nnodes_in_area,ndepths=1,nrecspf=1)
@@ -6232,13 +6312,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                               varname, "_ltm_", timespan, depths_fname, "_", area, "_", 
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
-                              fname_suffix, ".nc")
+                              p_ref_suffix, fname_suffix, ".nc")
         } else if (nfiles == 0) {
             outname <- paste0(ltmpath, runid, "_", setting, "_",
                               varname, "_ltm", depths_fname, "_", area, "_",
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
-                              fname_suffix, ".nc")
+                              p_ref_suffix, fname_suffix, ".nc")
         } # if nfiles > 0
 
         ## remove already existing data to avoid ncdf error:
@@ -6252,6 +6332,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             message(paste0("   Save irregular ltm file ('outname'):"))
             message(paste0("      ", outname))
         }
+
+        stop("add depth dim")
 
         if (output_type == "elems") {
             node_dim <- ncdim_def(name="nodespe", 
@@ -6285,7 +6367,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         for (i in 1:length(data_var)) {
             name <- dimnames(datamat_ltm)[[1]][i]
             data_var[[i]] <- ncvar_def(name=name, 
-                                       units=units_transient, 
+                                       units=units_out, 
                                        dim=dim_list,
                                        missval=mv, longname=longname,
                                        prec=prec)
@@ -6330,6 +6412,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (dim_tag == "3D") {
             ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
         }
+        if (p_ref_suffix != "") {
+            ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+        }
 
         nc_close(outnc)
 
@@ -6343,7 +6428,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
                                   ssh_aviso_correct_fname, 
-                                  fname_suffix, 
+                                  p_ref_suffix, fname_suffix, 
                                   ".nc")
         } else if (nfiles == 0) {
             reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_",
@@ -6352,7 +6437,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
                                   ssh_aviso_correct_fname, 
-                                  fname_suffix,
+                                  p_ref_suffix, fname_suffix,
                                   ".nc")
         } # if nfiles > 0
 
@@ -6364,8 +6449,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## nc out
         if (verbose > 1) {
-            message(paste0("   Save regular ltm file (=reg_outname):"))
-            message(paste0("      ", reg_outname))
+            message(paste0("   Save regular ", out_mode, " (=out_mode) ltm file:"))
+            message(paste0("      ", reg_outname, " (=reg_outname)"))
         }
         
         if (F) { # old
@@ -6381,37 +6466,51 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                 dim=yi_dim, 
                                 missval=mv, prec=prec)
         } else {
-            lon_dim <- ncdim_def(name="lon", units="degree_east",
-                                 vals=xi, create_dimvar=T)
-            lat_dim <- ncdim_def(name="lat", units="degree_north",
-                                 vals=yi, create_dimvar=T)
+            lon_dim <- ncdim_def(name="lon", units="degree_east", vals=xi)
+            lat_dim <- ncdim_def(name="lat", units="degree_north", vals=yi)
+            if (dim(datamat_reg_ltm)[4] > 1) { # ndepths
+                depth_dim <- ncdim_def(name="depth", units="m",
+                                       vals=-interpolate_depths)
+            }
             
         } # old 
         
         datamat_reg_var <- vector("list", l=dim(datamat_reg_ltm)[1]) # nvars
         for (i in 1:length(datamat_reg_var)) {
             name <- dimnames(datamat_reg_ltm)[[1]][i]
-            datamat_reg_var[[i]] <- ncvar_def(name=name, 
-                                              units=units_transient, 
-                                              #dim=list(xi_dim, yi_dim), 
-                                              dim=list(lon_dim, lat_dim),
-                                              missval=mv, prec=prec)
+            if (dim(datamat_reg_ltm)[4] > 1) { # ndepths {
+                datamat_reg_var[[i]] <- ncvar_def(name=name, 
+                                                  units=units_out, 
+                                                  dim=list(lon_dim, lat_dim, depth_dim),
+                                                  missval=mv, prec=prec)
+            } else {
+                datamat_reg_var[[i]] <- ncvar_def(name=name, 
+                                                  units=units_out, 
+                                                  dim=list(lon_dim, lat_dim),
+                                                  missval=mv, prec=prec)
+            }
         }
         
         regular_nc <- nc_create(filename=reg_outname,
-                                vars=c(#list(xi_var, yi_var), 
-                                       datamat_reg_var),
+                                vars=datamat_reg_var,
                                 force_v4=force_v4)
         for (i in 1:length(datamat_reg_var)) {
-            ncvar_put(regular_nc, datamat_reg_var[[i]], datamat_reg_ltm[i,,,1,1])
+            ncvar_put(regular_nc, datamat_reg_var[[i]], drop(datamat_reg_ltm[i,,,,1]))
         }
-
-        if (F) { # old
-            ncvar_put(regular_nc, xi_var, xi)
-            ncvar_put(regular_nc, yi_var, yi)
+        
+        ncatt_put(regular_nc, 0, "setting", setting)
+        ncatt_put(regular_nc, 0, "meshid", meshid)
+        ncatt_put(regular_nc, 0, "time", timespan)
+        ncatt_put(regular_nc, 0, "area", area)
+        if (dim_tag == "3D") {
+            ncatt_put(regular_nc, 0, "depths_m", depths_plot, prec="double")
         }
         ncatt_put(regular_nc, 0, "regular_dx", sprintf("%.3f", regular_dx))
         ncatt_put(regular_nc, 0, "regular_dy", sprintf("%.3f", regular_dy))
+        if (p_ref_suffix != "") {
+            ncatt_put(regular_nc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+        }
+
         nc_close(regular_nc)
 
     } # if regular_ltm_out
@@ -6421,7 +6520,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         moc_outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
                               varname, "_ltm_", timespan, depths_fname, "_", area,
-                              fname_suffix, ".nc")
+                              p_ref_suffix, fname_suffix, ".nc")
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -6476,9 +6575,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   prec=prec)
         data_fun_var <- vector("list", l=dim(data)[1])
         for (i in 1:length(data_fun_var)) {
-            name <- paste0(dimnames(data)[[1]][i], "_", transient_mode)
+            name <- paste0(dimnames(data)[[1]][i], "_", out_mode)
             data_fun_var[[i]] <- ncvar_def(name=name,
-                                           units=units_transient,
+                                           units=units_out,
                                            dim=list(moc_reg_lat_dim, depth_dim),
                                            missval=mv,
                                            prec=prec)
@@ -6509,6 +6608,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (dim_tag == "3D") {
             ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
         }
+        if (p_ref_suffix != "") {
+            ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+        }
 
         ## Close nc
         nc_close(outnc) 
@@ -6534,6 +6636,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     if (plot_map) { 
        
         ## At this point
+        # TODO
         ## dim(datamat_ltm) = c(nvars,nnodes_in_area,ndepths=1,nrecspf=1)
         ##  if ((plot_map && plot_type == "interp") || output_type == "nodes")
         ## dim(datamat_ltm) = c(nvars,3,nelems_in_area,ndepths=1,nrecspf=1
@@ -6562,10 +6665,22 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
             if (plot_type == "interp") {
-                z <- drop(datamat_ltm[ploti,,,]) # c(nvars,nnodes_in_area_ndepths=1,nrecspf=1)
-            
+                z <- drop(datamat_ltm[ploti,,,]) # dim = c(nvars,nnodes_in_area,ndepths=1,nrecspf=1)
+                if (length(dim(z)) != 1) { # dim = c(nnodes_in_area,ndepths)
+                    message(indent, "   Note: 'datamat_ltm' is 3-d. For plot, use 1st depth = ", 
+                            interpolate_depths[1], "m")
+                    depths_fname <- paste0("_", interpolate_depths[1], "m")
+                    z <- drop(z[,1]) # dim = nnodes_in_area
+                }
+
             } else if (plot_type == "const") {
-                z <- drop(datamat_ltm[ploti,,,,]) # c(nvars,3,nelems_in_area,ndepths=1,nrecspf=1)
+                z <- drop(datamat_ltm[ploti,,,,]) # dim = c(nvars,3,nelems_in_area,ndepths=1,nrecspf=1)
+                if (length(dim(z)) != 2) { # dim = c(3,nelems_in_area,ndepths)
+                    message(indent, "   Note: 'datamat_ltm' is 3-d. For plot, use 1st depth = ", 
+                            interpolate_depths[1], "m")
+                    depths_fname <- paste0("_", interpolate_depths[1], "m")
+                    z <- drop(z[,,1]) # dim = c(3,nelems_in_area)
+                }
                 
                 if (is.null(dim(z))) { # in case of only one element make a matrix again
                     z <- array(z, c(1, 3))
@@ -6575,7 +6690,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             plotname <- paste0(plotpath,  
                                runid, "_", setting, "_", varnamei,
                                timespan_fname, depths_fname, "_", area, "_", 
-                               projection, fname_suffix, "_", plot_type, ".", plot_file)
+                               projection, p_ref_suffix, fname_suffix, "_", plot_type, ".", plot_file)
             
             if (plot_file == "png") {
                 png(plotname, 
@@ -6641,8 +6756,25 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 plot_coords <- par("usr")
                 x_at <- pretty(plot_coords[1:2], n=10) #30)#10)
                 y_at <- pretty(plot_coords[3:4], n=10) #30)#10)
-                axis(1, at=x_at, labels=x_at)
-                axis(2, at=y_at, labels=y_at, las=2)
+                x_lab <- x_at
+                if (any(regexpr("\\.", x_lab) != -1)) { # there are decimal 
+                    pos <- regexpr("\\.", x_lab)
+                    inds <- which(pos != -1)
+                    pos <- pos[inds]
+                    tmp <- max(nchar(substr(x_lab[inds], pos + 1, nchar(x_lab[inds]))))
+                    x_lab <- sprintf(paste0("%.", tmp, "f"), x_lab)
+                }
+                y_lab <- y_at
+                if (any(regexpr("\\.", y_lab) != -1)) { # there are decimal 
+                    pos <- regexpr("\\.", y_lab)
+                    inds <- which(pos != -1)
+                    pos <- pos[inds]
+                    tmp <- max(nchar(substr(y_lab[inds], pos + 1, nchar(y_lab[inds]))))
+                    y_lab <- sprintf(paste0("%.", tmp, "f"), y_lab)
+                }
+
+                axis(1, at=x_at, labels=x_lab)
+                axis(2, at=y_at, labels=y_lab, las=2)
                 mtext(side=1, xlab, line=2.5)
                 mtext(side=2, ylab, line=3)
 
@@ -6773,11 +6905,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             ## Make Colorbar
             zlim_orig <- range(z, na.rm=T)
+            zlim <- zlim_orig 
 
             if (verbose > 1) {
-                message(paste0(indent, "   min/max of data = ",
-                             paste0(zlim_orig, collapse="/"), " ", units_ltm,
-                             ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")))
+                message(paste0(indent, "   min/max of 'z' within ", area, " view = ",
+                               paste0(zlim_orig, collapse="/"), " ", units_out))
             }
 
             ## interpolate data for plot
@@ -6878,17 +7010,30 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 zlim_interp <- range(interp$z, na.rm=T)
                 if (verbose > 1) {
                     message(paste0(indent, "   min/max of ", interp_method, " interpolated data = ",
-                                 paste0(zlim_interp, collapse="/"), " ", units_ltm,
-                                 ifelse(multfac_ltm != 1, paste0(" x 1e", -power_ltm), "")))
+                                   paste0(zlim_interp, collapse="/"), " ", units_out))
                 }
-                zlim <- zlim_interp
-
-            } else {
+                zlim <- zlim_interp # this is the new zlim!
                 
-                zlim <- zlim_orig
-                
-            } # if plot_type == "interp" or other
+            } # if plot_type == "interp"
 
+            ## Change to proper units
+            if (multfac_plot != 1) {
+                if (verbose > 1) {
+                    message(paste0(indent, "   Multiply 'z' by 'multfac_plot'=",
+                                   multfac_plot, " ..."))
+                }
+                if (plot_type == "interp") {
+                    interp$z <- interp$z*multfac_plot
+                    zlim <- range(interp$z, na.rm=T)
+                } else {
+                    z <- z*multfac_plot
+                    zlim <- range(z, na.rm=T)
+                }
+                if (verbose > 1) {
+                    message(paste0(indent, "   min/max of 'z' = ",
+                                   paste0(zlim, collapse="/"), " x ", base^-power_plot))
+                }
+            } # if multfac_plot != 1
 
             # check if user provided color levels
             user_levels_exist <- eval(parse(text=paste0("exists('", varnamei, "_levels')")))
@@ -6914,19 +7059,19 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 user_levels <- eval(parse(text=paste0(varnamei, "_levels")))
                 user_zlim <- range(user_levels, na.rm=T)
                
-                # if user levels dont make sense
-                if (all(user_zlim > zlim_orig) ||
-                    all(user_zlim < zlim_orig)) {
+                # if user levels don't make sense
+                if (all(user_zlim > zlim) ||
+                    all(user_zlim < zlim)) {
                     if (verbose > 0) {
                         message(paste0(indent, "   Your povided '", varnamei, "_levels' <- c(", 
-                                     paste0(user_levels, collapse=","), 
-                                     ") are out of range of the actual data min/max=", 
-                                     zlim_orig[1], "/", zlim_orig[2], "."))
-                        message(paste0("   Use default levels instead ..."))
+                                       paste0(user_levels, collapse=","), 
+                                       ") are out of range of the actual data min/max=", 
+                                       zlim[1], "/", zlim[2], "."))
+                        message(paste0("   Continue with default levels ..."))
                     }
                     ip <- image.plot.pre(zlim=zlim_orig)
                 
-                # else if user levels make sense
+                # else if user levels do make sense
                 } else { 
                     ip <- vector("list")
                     ip$zlim <- user_zlim
@@ -6944,9 +7089,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             if (verbose > 1) {
                 message(paste0(indent, "   min/max of color levels = ",
-                             paste0(range(ip$axis.at), collapse="/"), " ", units_ltm
-                             #, ifelse(power_ltm != 0, paste0(" x 1e", -power_ltm), "")
-                             ))
+                               paste0(range(ip$axis.at), collapse="/"),
+                               ifelse(multfac_plot != 1, paste0(" x ", base^-power_plot), "")))
             }
             
             ## Add fesom data to plot
@@ -7189,18 +7333,19 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
                # Plot quivers
                if (verbose > 1) {
+                   message(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ", appendLF=F)
+                   if (quiver_thr != 0) {
+                       message(">= ", quiver_thr, " ", units_out, appendLF=F)
+                       if (multfac_plot != 1) {
+                           message(" x ", base^-power_plot, appendLF=F)
+                       }
+                   }
                    if (quiver_mode == 1) {
-                       message(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
-                                    " at every node to plot ..."))
+                        message(" at every node to plot ...")
                    } else if (quiver_mode == 2) {
-                       message(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
-                                    " at every element to plot ..."))
+                        message(" at every element to plot ...")
                    } else if (quiver_mode == 3) {
-                       message(paste0(indent, "   Add ", length(which(!is.na(hvelquiv))), " quivers ",
-                                    ifelse(quiver_thr != 0, paste0(">= ", quiver_thr, " ", units_ltm), ""),
-                                    " every ", quiver_degree_intervall, " deg to plot ..."))
+                        message(" every ", quiver_degree_intervall, " deg to plot ...")
                    }
                }
                
