@@ -13,7 +13,7 @@
                      # in case of rectangular or orthograhic projection)
 
     # default area selection
-    if (all(transient_mode != c("csec_mean", "csec_depth", 
+    if (all(out_mode != c("csec_mean", "csec_depth", 
                            "moc_mean", "moc_depth"))) {
 
         # default ("flat earth") projection
@@ -26,6 +26,15 @@
             } else if (area == "atlantic") {
                 map_geogr_lim_lon <- c(-90, 10)
                 map_geogr_lim_lat <- c(-40, 80)
+            } else if (area == "atlantic1") {
+                map_geogr_lim_lon <- c(-85, -5)
+                map_geogr_lim_lat <- c(30, 80) 
+            } else if (area == "atlantic2") {
+                map_geogr_lim_lon <- c(-85, -5)
+                map_geogr_lim_lat <- c(10, 80) 
+            } else if (area == "atlantic3") {
+                map_geogr_lim_lon <- c(-85, 30)
+                map_geogr_lim_lat <- c(-90, 90) 
             } else if (area == "northatlantic") {
                 map_geogr_lim_lon <- c(-80, 0)
                 map_geogr_lim_lat <- c(30, 75)
@@ -304,12 +313,6 @@
                 grid_coord_lats <- c(35)
                 grid_coord_labs <- c(35)
                 grid_coord_hemi <- c("N")
-            } else if (area == "atlantic1") {
-                map_geogr_lim_lon <- c(-85, -5)
-                map_geogr_lim_lat <- c(30, 80) #c(-90, 90)
-            } else if (area == "atlantic2") {
-                map_geogr_lim_lon <- c(-85, -5)
-                map_geogr_lim_lat <- c(10, 80) #c(-90, 90)
             } else if (area == "stg") {
                 map_geogr_lim_lon <- c(-80, -20)
                 map_geogr_lim_lat <- c(20, 40) #c(-90, 90)
@@ -512,7 +515,7 @@
     } else {
 
         # cross section area selection
-        if (any(transient_mode == c("csec_mean", "csec_depth"))) {
+        if (any(out_mode == c("csec_mean", "csec_depth"))) {
             geogr_lims <- T
             proj_lims <- F
             projection <- "rectangular"
@@ -590,7 +593,7 @@
             poly_geogr_lim_lat <- map_geogr_lim_lat
         
         # moc area selection
-        } else if (any(transient_mode == c("moc_mean", "moc_depth"))) {
+        } else if (any(out_mode == c("moc_mean", "moc_depth"))) {
             geogr_lims <- T
             proj_lims <- F
             projection <- "rectangular"
