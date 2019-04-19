@@ -31,9 +31,9 @@ yr <- cos(glat)*sin(glon)
 zr <- sin(glat)
 
 # Rotated Cartesian coordinates:
-xg <- rotate_matrix[1,1]*xr + rotate_matrix[1,2]*yr + rotate_matrix[1,3]*zr
-yg <- rotate_matrix[2,1]*xr + rotate_matrix[2,2]*yr + rotate_matrix[2,3]*zr
-zg <- rotate_matrix[3,1]*xr + rotate_matrix[3,2]*yr + rotate_matrix[3,3]*zr
+xg <- drop(rotate_matrix[1,1])*xr + drop(rotate_matrix[1,2])*yr + drop(rotate_matrix[1,3])*zr
+yg <- drop(rotate_matrix[2,1])*xr + drop(rotate_matrix[2,2])*yr + drop(rotate_matrix[2,3])*zr
+zg <- drop(rotate_matrix[3,1])*xr + drop(rotate_matrix[3,2])*yr + drop(rotate_matrix[3,3])*zr
 
 # Rotated coordinates:
 rlat <- asin(zg)

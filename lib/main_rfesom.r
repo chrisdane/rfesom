@@ -105,8 +105,7 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "colors/pals.r", "gcd.r",
-            "myls.r")) {
+            "image.plot.pre.r", "gcd.r", "myls.r")) {
     source(paste0(subroutinepath, "functions/", i))
 }
 
@@ -169,7 +168,7 @@ if (!uv_out && sd_method == "ackermann83") {
                  " is not a vector variable. continue with 'sd_method'=default ..."))
     sd_method <- "default"
 }
-if (uv_out || sd_out || horiz_deriv_tag) {
+if (uv_out || sd_out || horiz_deriv_tag != F) {
     success <- load_package("abind")
     if (!success) stop()
 }
@@ -205,8 +204,8 @@ if (csec_ltm_out && varname != "transport") {
     csec_ltm_out <- F # calc csec_ltm only if varname is transport
 }
 ## If there are data loaded from diag file, then snapshot is not possible
-if (!cpl_tag ||
-    (cpl_tag && nfiles > 0 && any(diagsuffix == "diag."))) {
+if (cpl_tag ||
+    (!cpl_tag && nfiles > 0 && any(diagsuffix == "diag."))) {
     snapshot <- F
 }
 if (dim_tag == "2D" || varname == "rossbyrad") {
@@ -727,15 +726,15 @@ if (verbose > 0) {
     message(paste0("datainpath: ", datainpath))
     message(paste0("varname: ", varname))
     message(paste0("longname: ", longname))
-    if (dim_tag == "3D" && !integrate_depth && varname != "MOCw") {
-        message(paste0("depths: ", 
-                     ifelse(length(depths) == 2, 
-                            paste0(depths[1], "-", depths[2]), depths[1]), 
-                     " m"))
-    } else if (dim_tag == "3D" && integrate_depth) {
-            message(paste0("Integrate over depths ", depths[1], "-", depths[2]))
-    }
     if (nfiles > 0) {
+        if (dim_tag == "3D" && !integrate_depth && varname != "MOCw") {
+            message(paste0("depths: ", 
+                         ifelse(length(depths) == 2, 
+                                paste0(depths[1], "-", depths[2]), depths[1]), 
+                         " m"))
+        } else if (dim_tag == "3D" && integrate_depth) {
+                message(paste0("Integrate over depths ", depths[1], "-", depths[2]))
+        }
         message(paste0("snapshot: ", snapshot))
         if (exists("nyears")) {
             message(paste0("Years: ", ifelse(nyears == 1, years, 
@@ -874,6 +873,7 @@ if (!restart || # ... not a restart run
         nod_x <- nod3d_x
         nod_y <- nod3d_y
         nod_z <- nod3d_z
+        fesom_depths <- abs(unique(nod_z)) # these are the model depths in m (positive downwards) 
         nod3d_check <- T
         rm(tmp, nod3d)
 
@@ -894,8 +894,7 @@ if (!restart || # ... not a restart run
         rm(tmp)
 
         ## fesom depths levels and dz
-        # never found a "correct" way for obtaining dz
-        fesom_depths <- abs(unique(nod3d_z))
+        # correct way for dz?!
         ndepths_all <- length(fesom_depths)
         deltaz_all <- rep(0, t=ndepths_all - 1)
         deltaz_all[1] <- (fesom_depths[1] - fesom_depths[2])/2
@@ -1213,10 +1212,10 @@ if (verbose == 2 || verbose == 3) {
 }
 
 
-## Calc bafuxy_2d/custer_area_2d/resolution as in fesom1.4 *.F90 if needed
+## Calc bafux_2d/bafuy_2d/custer_area_2d/resolution as in fesom1.4 *.F90 if needed
 if (horiz_deriv_tag != F || 
     (any(c(transient_out, regular_transient_out)) && 
-     any(out_mode == c("mean", "depth", "areadepth", "meanint", "depthint"))) || 
+     any(out_mode == c("mean", "depth", "areadepth", "meanint", "depthint"))) ||  # <- cluster_area_2d is needed
     (plot_map && plot_type == "interp" && 
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
@@ -2864,7 +2863,7 @@ if (nfiles > 0) {
                                 message("") 
                             }
                         } else if (ndepths == 1) {
-                            message(indent, z, "m")
+                            message(indent, "   ", z, "m")
                         }
                     }
 
@@ -2931,7 +2930,7 @@ if (nfiles > 0) {
 
 } else if (nfiles == 0) {
      if (verbose > 0) {
-        message(paste0("4) Vertical Interpolation not necessary for '", varname, "' ..."))
+        message(paste0("4) Vertical Interpolation not necessary for '", varname, "' (nfiles=0) ..."))
     }
     depths_plot <- ""
     depths_fname <- ""
@@ -2948,7 +2947,7 @@ if (verbose > 0) {
 if (nfiles == 0) { # read data which are constant in time
     if (verbose > 0) {
         message(paste0("5) Reading FESOM files not necessary for '", 
-                     varname, "' ..."))
+                     varname, "' (nfiles=0) ..."))
         message(paste0(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
                      " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
         message("==============================================")
@@ -2959,7 +2958,7 @@ if (nfiles == 0) { # read data which are constant in time
 } else if (nfiles > 0) { # read data which are not constant in time
     if (verbose > 0) {
         message(paste0("5) Read variable", ifelse(nfiles > 1, "s", ""), " '", 
-                     paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
+                       paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
         message(paste0("      for output variable '", varname, "' (=varname) aka '", longname, "' (=longname)"))
         if (transient_out || regular_transient_out) {
             message(paste0("      and save '", out_mode, "' (=out_mode) data"))
@@ -3734,7 +3733,12 @@ if (nfiles == 0) { # read data which are constant in time
                     message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
-                sub_prepare1(data_node) # overwrites data_node with the result of sub_prepare1()
+                if (exists("tmp")) rm(tmp)
+                sub_prepare1(data_node) # produces tmp
+                if (exists("tmp")) {
+                    data_node <- tmp
+                    rm(tmp)
+                }
                 indent <- indent_save; rm(indent_save)
 
                 ## At this point,
@@ -3815,7 +3819,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 ## variable specific calculations
                 if (verbose > 1) {
-                    message(paste0(indent, "Calc ", varname, " ..."))
+                    #message(paste0(indent, "Calc ", varname, " ..."))
                     if (verbose > 2) {
                         message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
                     }
@@ -3824,6 +3828,11 @@ if (nfiles == 0) { # read data which are constant in time
                 sub_calc(data_node) # overwrites data_node with the result of sub_calc()
                 indent <- indent_save; rm(indent_save)
                 if (exists("tmp")) rm(tmp)
+
+                ## set first dimension name to varname if length = 1
+                if (dim(data_node)[1] == 1) {
+                    dimnames(data_node)[[1]] <- varname
+                }
 
                 if (F) {
                     ws <- ls2()
@@ -3845,14 +3854,15 @@ if (nfiles == 0) { # read data which are constant in time
                     for (i in 1:dim(data_node)[1]) {
                         if (verbose > 0) {
                             message(paste0(indent, "Multiply data_node[", i, ":",
-                                         dimnames(data_node)[[1]][i], ",,,] by 'multfac_out'=",
+                                         dimnames(data_node)[[1]][i], ",,,] by multfac_out=",
                                          multfac_out, " ..."))
                         }
                         data_node[i,,,] <- data_node[i,,,]*multfac_out
                         if (verbose > 0) {
                             message(paste0(indent, "   min/max data_node[", i, ":", 
                                            dimnames(data_node)[[1]][i], ",,,] = ",
-                                           paste0(range(data_node[i,,,], na.rm=T), collapse="/"), " ", units_out))
+                                           paste0(range(data_node[i,,,], na.rm=T), collapse="/"), 
+                                           " ", units_out))
                         }
                     }
                 }
@@ -3981,7 +3991,7 @@ if (nfiles == 0) { # read data which are constant in time
                                              sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                                              sprintf("%.3f", regular_dy),
                                              " deg) and "))
-                                message(paste0(indent, "   select data in '", area, "' area: ",
+                                message(paste0(indent, "   select regular data in '", area, "' area: ",
                                              round(range(map_geogr_lim_lon)[1], 2), " to ",
                                              round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
                                              round(range(map_geogr_lim_lat)[1], 2), " to ",
@@ -4137,7 +4147,7 @@ if (nfiles == 0) { # read data which are constant in time
                             }
 
                             if (verbose > 1) {
-                                message(paste0(indent, "Select data from region ", area, " (=area) ..."))
+                                message(paste0(indent, "Select irregular data from region ", area, " (=area) ..."))
                             }
                             
                             ## choose data from area in node space
@@ -4403,7 +4413,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
 
                                 outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
-                                                  varname, "_transient_area_", timespan, 
+                                                  varname, "_transient_", out_mode, "_", timespan, 
                                                   depths_fname, "_", area, "_", 
                                                   projection, 
                                                   ssh_aviso_correct_fname, 
@@ -4543,7 +4553,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                                 outname_reg <- paste0(reg_transient_outpath, runid, "_", 
                                                       setting, "_", output, "_",
-                                                      varname, "_transient_area_", timespan,
+                                                      varname, "_transient_", out_mode, "_", timespan,
                                                       depths_fname, "_", area, "_",
                                                       projection, "_regular_dx",
                                                       sprintf("%.3f", regular_dx), "_dy",
@@ -5117,7 +5127,7 @@ if (nfiles == 0) { # read data which are constant in time
                     } # if total_rec == 0
 
                     if (verbose > 1) {
-                            message(paste0(indent, "Sum ", 
+                            message(paste0(indent, "Sum transient ", 
                                           paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
                     }   
                     
@@ -5148,7 +5158,7 @@ if (nfiles == 0) { # read data which are constant in time
                     if (sd_out) {
 
                         if (verbose > 1) {
-                            message(paste0(indent, "Sum ",
+                            message(paste0(indent, "Sum transient ",
                                          paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for sd ..."))
                         }
 
@@ -5192,7 +5202,7 @@ if (nfiles == 0) { # read data which are constant in time
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, plot_map)) {
              
                     if (verbose > 1) {
-                        message(paste0(indent, "Sum ", 
+                        message(paste0(indent, "Sum non-transient ", 
                                      paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
                     }
 
@@ -5234,7 +5244,9 @@ if (nfiles == 0) { # read data which are constant in time
                         }
                     } # if mld needed
 
-                } else { # if ltm or not
+                    rm(data_node) # remove here otherwise sub_calc(data_node_ltm) will not work correctly 
+
+                } else { # !any(ltm_out, regular_ltm_out, moc_ltm_out, plot_map)
 
                     if (verbose > 0) {
                         message(paste0("Nothing to do o_O"))
@@ -5814,9 +5826,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(data_node_ltm)[1]) {
-                message(paste0(indent, "   min/max data_node_ltm[", i, ":",
-                             dimnames(data_node_ltm)[[1]][i], ",,,] = ",
-                             paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/")))
+                message(indent, "   min/max data_node_ltm[", i, ":",
+                        dimnames(data_node_ltm)[[1]][i], ",,,] = ",
+                        paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/"),
+                        " ", units_out)
             }
         }
 
@@ -5824,6 +5837,17 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
     ## calc varname with ltm data if not calculated before (=not transient)
     if (!any(transient_out, regular_transient_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
+
+        # allocate
+        if (nfiles == 0) {
+            data_node_ltm <- array(NA, 
+                                   dim=c(1, 
+                                         ifelse(dim_tag == "2D", nod2d_n, nod3d_n), 
+                                         #1,
+                                         1, 1),
+                                   dimnames=list(var=varname, node=NULL,
+                                                 depth=depths_plot, time=timespan))
+        }
 
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
@@ -5852,7 +5876,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (verbose > 2) {
             message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
         }
-        sub_prepare1(data_node_ltm) # overwrites data_node_ltm with the result of sub_prepare1()
+        if (exists("tmp")) rm(tmp)
+        sub_prepare1(data_node_ltm) # produces tmp
+        if (exists("tmp")) {
+            data_node_ltm <- tmp
+            rm(tmp)
+        }
 
         ## At this point,
         ## dim(data_node_ltm) = c(nvars,nod2d_n,ndepths=1,nrecspf) if dim_tag == "2D"
@@ -5877,7 +5906,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 data_vert_ltm <- data_node_ltm # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf)
             }
 
-            if (verbose > 1) {
+            if (verbose > 1 && ndepths > 1) {
                 message(paste0(indent, "Average over ", depths_plot, " m depths ..."))
                 if (verbose > 2) {
                     message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
@@ -5892,10 +5921,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         } # if average_depth
 
         ## Preparations2 before calculations e.g. calc rho, f, ... if needed
+        #print(str(data_node_ltm))
         if (verbose > 2) {
             message(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
         }
         sub_prepare2(data_node_ltm) # overwrites data_node_ltm with the result of sub_prepare2()
+        #print(str(data_node_ltm))
 
         if (csec_ltm_out) {
             if (verbose > 1) {
@@ -5908,12 +5939,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             sub_n3_to_n2xde(data_node_ltm) # produces tmp
             data_global_vert_ltm <- tmp # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf=1)
             rm(tmp, data_vert_ltm)
-        }
-
-        # dummy data for resolution, bathy, etc.
-        if (nfiles == 0) {
-            data_node_ltm <- array(NA, dim=c(1, 1, 1, 1),
-                                   dimnames=list(var=varname, NULL, NULL, NULL))
         }
 
         # get varnames of data
@@ -5930,23 +5955,31 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## variable specific calculations
         if (verbose > 1) {
-            message(paste0(indent, "Calc ", varname, " ..."))
+            #message(paste0(indent, "Calc ", varname, " ..."))
             if (verbose > 2) {
                 message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
             }
         }
+        if (exists("data_node")) stop("this should not happen")
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_calc(data_node_ltm) # data_node is result of sub_calc()
-        data_node_ltm <- data_node
-        rm(data_node)
+        if (exists("data_node")) {
+            data_node_ltm <- data_node
+            rm(data_node)
+        }
         if (exists("tmp")) rm(tmp)
+
+        ## set first dimension name to varname if length = 1
+        if (dim(data_node_ltm)[1] == 1) {
+            dimnames(data_node_ltm)[[1]] <- varname
+        }
 
         ## Check data so far
         if (verbose > 2) {
             for (i in 1:dim(data_node_ltm)[1]) {
                 message(paste0(indent, "   min/max data_node_ltm[", i, ":", 
-                             dimnames(data_node_ltm)[[1]][i], ",,,] = ",
-                             paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/")))
+                               dimnames(data_node_ltm)[[1]][i], ",,,] = ",
+                               paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/")))
             }
         }
 
@@ -5969,7 +6002,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             for (i in 1:dim(data_node_ltm)[1]) {
                 if (verbose > 0) {
                     message(paste0(indent, "Multiply data_node_ltm[", i, ":",
-                                   dimnames(data_node_ltm)[[1]][i], ",,,] by 'multfac_out'=",
+                                   dimnames(data_node_ltm)[[1]][i], ",,,] by multfac_out=",
                                    multfac_out, " ..."))
                 }
                 data_node_ltm[i,,,] <- data_node_ltm[i,,,]*multfac_out
@@ -6094,13 +6127,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                          elem2d_n, " x ndepths=", dim(data_vert_ltm)[3], ") ...")) 
         }
 
-
         if (verbose > 1) {
             message(paste0(indent, "Interpolate on regular grid ('regular_dx'=",
                          sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                          sprintf("%.3f", regular_dy),
                          " deg) and "))
-            message(paste0(indent, "   select data in '", area, "' area: ",
+            message(paste0(indent, "   select regular data in '", area, "' area: ",
                          round(range(map_geogr_lim_lon)[1], 2), " to ",
                          round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
                          round(range(map_geogr_lim_lat)[1], 2), " to ",
@@ -6108,7 +6140,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     
 
             if (any(plot_map, ltm_out)) {
-                message(indent, "For plot/ltm_out select data in '", area, "' area from ", appendLF=F)
+                message(indent, "   and for plot/ltm_out select irregular data in '", area, "' area from ", appendLF=F)
                 if ((plot_map && plot_type == "interp") || 
                     (ltm_out && output_type == "nodes")) {
                     message("'data_vert_ltm':")
@@ -6140,9 +6172,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         # create progress bar
-        pb <- mytxtProgressBar(min=0, max=dim(data_vert_ltm)[3], style=pb_style,
-                               char=pb_char, width=pb_width,
-                               indent=paste0(indent, "   ")) # 5 " " for default message()
+        if (dim(data_vert_ltm)[3] > 1) {
+            pb <- mytxtProgressBar(min=0, max=dim(data_vert_ltm)[3], style=pb_style,
+                                   char=pb_char, width=pb_width,
+                                   indent=paste0(indent, "   ")) # 5 " " for default message()
+        }
 
         for (di in 1:dim(data_vert_ltm)[3]) { # ndepths
 
@@ -6200,11 +6234,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                         }
                    
                         datamat_reg_ltm[i,,,di,j] <- t(sub_calc_regular_2d_interp(
-                                                  I_MAT=IMAT[yinds,xinds], 
-                                                  XI=XI[yinds,xinds], 
-                                                  YI=YI[yinds,xinds],
-                                                  xp=xc_global, yp=yc_global,
-                                                  datamat=drop(data_elem_ltm[i,,,,j])))
+                                                       I_MAT=IMAT[yinds,xinds], 
+                                                       XI=XI[yinds,xinds], 
+                                                       YI=YI[yinds,xinds],
+                                                       xp=xc_global, yp=yc_global,
+                                                       datamat=drop(data_elem_ltm[i,,,,j])))
                     } # for j nrecspf == 1 here (ltm)
                 } # for i nvars
                 
@@ -6259,12 +6293,16 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             } # if (any(plot_map, ltm_out))
             
             # update progress bar
-            setTxtProgressBar(pb, di)
-        
+            if (dim(data_vert_ltm)[3] > 1) {
+                setTxtProgressBar(pb, di)
+            }
+
         } # for di
         
         # close progress bar
-        close(pb)
+        if (dim(data_vert_ltm)[3] > 1) {
+            close(pb)
+        }
 
         #rm(data_elem_ltm)
 
@@ -6281,8 +6319,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Check data so far
-        if (verbose > 2) {
-            for (i in 1:dim(datamat_ltm)[1]) {
+        if (verbose > 1) {
+            for (i in 1:dim(datamat_ltm)[1]) { # nvars
                 message(indent, "   min/max datamat_ltm[", i, ":", dimnames(datamat_ltm)[[1]][i], appendLF=F)
                 if ((plot_map && plot_type == "interp") ||
                     (ltm_out && output_type == "nodes")) {
@@ -6311,13 +6349,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (nfiles > 0) {
             outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
-                              varname, "_ltm_", timespan, depths_fname, "_", area, "_", 
+                              varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, "_", 
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
                               p_ref_suffix, fname_suffix, ".nc")
         } else if (nfiles == 0) {
             outname <- paste0(ltmpath, runid, "_", setting, "_",
-                              varname, "_ltm", depths_fname, "_", area, "_",
+                              varname, "_ltm_", out_mode, depths_fname, "_", area, "_",
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
                               p_ref_suffix, fname_suffix, ".nc")
@@ -6425,7 +6463,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     if (regular_ltm_out) {
         if (nfiles > 0) {
             reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_", output, "_",
-                                  varname, "_ltm_", timespan, depths_fname, "_", area, 
+                                  varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, 
                                   "_", projection, "_regular_dx", 
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
@@ -6434,7 +6472,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   ".nc")
         } else if (nfiles == 0) {
             reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_",
-                                  varname, "_ltm", depths_fname, "_", area,
+                                  varname, "_ltm_", out_mode, depths_fname, "_", area,
                                   "_", projection, "_regular_dx",
                                   sprintf("%.3f", regular_dx), "_dy",
                                   sprintf("%.3f", regular_dy), 
@@ -6667,27 +6705,28 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
             if (plot_type == "interp") {
-                z <- drop(datamat_ltm[ploti,,,]) # dim = c(nvars,nnodes_in_area,ndepths=1,nrecspf=1)
+                # dim(datamat_ltm) =  c(nvars,nnodes_in_area,ndepths,nrecspf=1)
+                z <- drop(datamat_ltm[ploti,,,]) # dim = c(nnodes_in_area)
                 if (length(dim(z)) != 1) { # dim = c(nnodes_in_area,ndepths)
-                    message(indent, "   Note: 'datamat_ltm' is 3-d. For plot, use 1st depth = ", 
+                    message(indent, "   Note: 'datamat_ltm' has depth dim. For plot, use 1st depth = ", 
                             interpolate_depths[1], "m")
                     depths_fname <- paste0("_", interpolate_depths[1], "m")
                     z <- drop(z[,1]) # dim = nnodes_in_area
                 }
 
             } else if (plot_type == "const") {
-                z <- drop(datamat_ltm[ploti,,,,]) # dim = c(nvars,3,nelems_in_area,ndepths=1,nrecspf=1)
+                # dim(datamat_ltm) = c(nvars,3,nelems_in_area,ndepths,nrecspf=1)
+                z <- drop(datamat_ltm[ploti,,,,]) # dim = c(3,nelems_in_area)
                 if (length(dim(z)) != 2) { # dim = c(3,nelems_in_area,ndepths)
-                    message(indent, "   Note: 'datamat_ltm' is 3-d. For plot, use 1st depth = ", 
+                    message(indent, "   Note: 'datamat_ltm' has depth dim. For plot, use 1st depth = ", 
                             interpolate_depths[1], "m")
                     depths_fname <- paste0("_", interpolate_depths[1], "m")
                     z <- drop(z[,,1]) # dim = c(3,nelems_in_area)
-                }
-                
-                if (is.null(dim(z))) { # in case of only one element make a matrix again
+                } else if (is.null(dim(z))) { # in case of only one element make a matrix again
                     z <- array(z, c(1, 3))
                 }
-            }
+
+            } # which plot_type
 
             plotname <- paste0(plotpath,  
                                runid, "_", setting, "_", varnamei,
@@ -6910,7 +6949,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             zlim <- zlim_orig 
 
             if (verbose > 1) {
-                message(paste0(indent, "   min/max of 'z' within ", area, " view = ",
+                message(paste0(indent, "   min/max of z within ", area, " view = ",
                                paste0(zlim_orig, collapse="/"), " ", units_out))
             }
 
@@ -7021,7 +7060,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ## Change to proper units
             if (multfac_plot != 1) {
                 if (verbose > 1) {
-                    message(paste0(indent, "   Multiply 'z' by 'multfac_plot'=",
+                    message(paste0(indent, "   Multiply z by multfac_plot=",
                                    multfac_plot, " ..."))
                 }
                 if (plot_type == "interp") {
@@ -7032,67 +7071,92 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     zlim <- range(z, na.rm=T)
                 }
                 if (verbose > 1) {
-                    message(paste0(indent, "   min/max of 'z' = ",
-                                   paste0(zlim, collapse="/"), " x ", base^-power_plot))
+                    message(paste0(indent, "   min/max of z = ",
+                                   paste0(zlim, collapse="/"), " ", units_plot))
                 }
             } # if multfac_plot != 1
 
-            # check if user provided color levels
+
+            ## create colorbar
+            if (verbose > 1) message(indent, "   Make colorbar ...")
+
+            # overwrite defaults of image.plot.pre() defined in namelist.plot.r
             user_levels_exist <- eval(parse(text=paste0("exists('", varnamei, "_levels')")))
+            if (user_levels_exist) { 
+                zlevels <- eval(parse(text=paste0(varnamei, "_levels")))
+                if (any(!is.numeric(zlevels)) || any(!is.finite(zlevels)) ||
+                    (all(min(zlevels) > zlim[2]) || all(max(zlevels) < zlim[1]))) {
+                    warning("Do not use your povided '", 
+                            varnamei, "_levels'=", "\n", 
+                            paste0(zlevels, collapse=","), "\n", 
+                            "since ", 
+                            ifelse(any(!is.numeric(zlevels)) || any(!is.finite(zlevels)), 
+                                   "there are non-numeric or non-finite values included.",
+                                   paste0("they are out of range of the actual data min/max=", 
+                                          zlim[1], "/", zlim[2])),
+                            ".")
+                    zlevels <- NULL
+                } else {
+                    message(indent, "   Use your provided ", varnamei, "_levels=\n",
+                            indent, "      ", paste0(round(zlevels, 4), collapse=","), ".")
+                    nlevels <- length(zlevels)
+                }
+            }
             
-            # use default 
-            if (!user_levels_exist) { 
-
-                if (verbose > 1) {
-                    message(paste0(indent, "   Generate automatic color levels with image.plot.pre() ..."))
+            user_cols_exist <- eval(parse(text=paste0("exists('", varnamei, "_cols')")))
+            if (user_cols_exist) {
+                cols <- eval(parse(text=paste0(varnamei, "_cols")))
+                message(indent, "   Use your provided ", varnamei, "_cols=\"\n",
+                        indent, "      ", paste0(cols, collapse="\",\""), "\"")
+                if (!is.null(zlevels) && length(cols) != length(zlevels) - 1) {
+                    warning("Reorganize your provided ", varnamei, "_cols=\"", "\n",
+                            paste0(user_cols, collapse="\",\""), "\"\n",
+                            " since length(", varnamei, "_cols)=", length(cols),
+                            " but length(", varnamei, "_levels)=", length(zlevels), ".\n", 
+                            "There must be one color less than levels. ...")
                 }
-                ip <- image.plot.pre(zlim=zlim, verbose=F, center_include=T)
+            }
 
-                if (verbose > 1) {
-                    message(paste0(indent, "      Note: you can define own color levels with the line"))
-                    message(paste0(indent, "            ", varnamei, "_levels <- c(", 
-                                 paste0(ip$axis.at, collapse=","), ")"))
-                    message(paste0(indent, "            in namelist.plot.r ..."))
+            user_palname_exist <- eval(parse(text=paste0("exists('", varnamei, "_palname')")))
+            if (user_palname_exist) {
+                if (!is.null(cols)) {
+                    warning("Do not use your provided palname=", palname, 
+                            " since you provided ", varnamei, "_cols.")
+                } else {
+                    palname <- eval(parse(text=paste0(varnamei, "_palname")))
+                    message(indent, "   Use your provided ", varnamei, "_palname=", palname)
                 }
+            }
 
-            # else use user color levels
-            } else if (user_levels_exist) {
+            # create color bar
+            # source("lib/functions/image.plot.pre.")
+            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, max_labels=max_labels, 
+                                 zlevels=zlevels, cols=cols, 
+                                 palname=palname,  colors_script=colors_script,
+                                 method=method, power_min=power_min,
+                                 axis.labels=axis.labels, axis.round=axis.round,
+                                 axis.zoom=axis.zoom, axis.addzlims=axis.addzlims,
+                                 anom_colorbar=anom_colorbar, center_include=center_include,
+                                 verbose=F)
 
-                user_levels <- eval(parse(text=paste0(varnamei, "_levels")))
-                user_zlim <- range(user_levels, na.rm=T)
-               
-                # if user levels don't make sense
-                if (all(user_zlim > zlim) ||
-                    all(user_zlim < zlim)) {
-                    if (verbose > 0) {
-                        message(paste0(indent, "   Your povided '", varnamei, "_levels' <- c(", 
-                                       paste0(user_levels, collapse=","), 
-                                       ") are out of range of the actual data min/max=", 
-                                       zlim[1], "/", zlim[2], "."))
-                        message(paste0("   Continue with default levels ..."))
-                    }
-                    ip <- image.plot.pre(zlim=zlim_orig)
-                
-                # else if user levels do make sense
-                } else { 
-                    ip <- vector("list")
-                    ip$zlim <- user_zlim
-                    ip$levels <- user_levels
-                    ip$nlevels <- length(user_levels)
-                    ip$cols <- pals(name=palname, n=ip$nlevels - 1)
-                    ip$axis.labels <- user_levels
-                    ip$axis.at.ind <- 1:length(user_levels)
-                }
-
-            } # if user_levels_exist or not
+            if (!user_levels_exist) {
+                message(indent, "   Note: you can define your own color levels with, e.g.,\n",
+                        indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",
+                        indent, "      in namelist.var.r.")
+            }
+            if (!user_palname_exist && !user_cols_exist) {
+                message(indent, "   Note: you can define your own colors with the line\n",
+                        indent, "      ", varnamei, "_palname = \"plasma\" # run color_function() for a demo of available color palettes or, e.g.,\n", 
+                        indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
+                        indent, "      in namelist.var.r.")
+            }
 
             # for testing
             #source("~/scripts/r/mylevels.r")
 
             if (verbose > 1) {
                 message(paste0(indent, "   min/max of color levels = ",
-                               paste0(range(ip$axis.at), collapse="/"),
-                               ifelse(multfac_plot != 1, paste0(" x ", base^-power_plot), "")))
+                               paste0(range(ip$levels), collapse="/"), " ", units_plot))
             }
             
             ## Add fesom data to plot

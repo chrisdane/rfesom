@@ -42,7 +42,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                         message("") 
                     }
                 } else if (ndepths == 1) {
-                    message(indent, z, "m")
+                    message(indent, "   ", z, "m")
                 }
             }
 

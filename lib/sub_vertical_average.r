@@ -9,7 +9,7 @@ sub_vertical_average <- function(data_vert) {
     
     if (ndepths == 1) {
 
-        # possible interpolation between depth layers already done before
+        # possible interpolation between depth layers was already done before
         # nothing to do
         tmp <<- data_vert
 

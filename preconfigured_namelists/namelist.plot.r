@@ -64,38 +64,28 @@ if (any(search() == "package:extrafont")) {
 }
 
 ## Colorbar Options
+# defaults for image.plot.pre()
+nlevels <- 11 
+max_labels <- 11
+zlevels <- NULL
+cols <- NULL
+palname <- NULL
+method <- "pretty"
+power_min <- NULL
+axis.labels <- NULL
+axis.round <- NULL
+axis.zoom <- F
+axis.addzlims <- F
+anom_colorbar <- NULL
+center_col <- "white"
+center_include <- T
 horizontal <- F
-ncolors <- 11 #15 #18 #300 #16 #300 #300 #15 #500 # number of colors that make up the color bar
-yaxis_label_roundfac <- 2 # how many decimal digits in colorbar labels 
-max_legend_labs <- 13
-#pal <- colorRampPalette(c("white", "blue", "darkgreen", "yellow", "orange"))
-#pal <- colorRampPalette(c("white", "yellow", "orange", "red", "darkred"))
-#pal <- colorRampPalette(c("lightblue1", "blue", "red", "darkred"))
-#pal <- colorRampPalette(c("blue", "cyan", "darkgreen", "green", "yellow", "orange", "red", "darkred"))
-pal <- colorRampPalette(c("white", "#ccede1", "#99dbc4", "#3ebb75", "#4cbc38",
-                           "#c1df13", "#feef00", "#fabc09", "#f14b1c", "#f47486"))
+colors_script <- paste0(subroutinepath, "functions/colors/color_function.r")
+
+# old: 
+#pal <- colorRampPalette(c("white", "#ccede1", "#99dbc4", "#3ebb75", "#4cbc38",
+#                           "#c1df13", "#feef00", "#fabc09", "#f14b1c", "#f47486"))
 #pal <- colorRampPalette(c("plum1", "mediumorchid4", "slateblue4", "darkgreen", "lightskyblue1", 
 #                          "darkseagreen2", "chartreuse2", "yellow", "orange", "darkred", "black"))
 #pal <- colorRampPalette(c(ocean_col, "plum1", "mediumorchid4", "slateblue4", "darkgreen", "lightskyblue1",
 #                          "darkseagreen2", "chartreuse2", "yellow", "orange", "darkred", "black"))
-anom_color_bar <- T # if data has both positive and negative values, use a bicolor colorbar
-omit_white <- F # omit (T) or include (F) white in the anomaly color bar
-zero_col <- "white" # colors for positive and negative color ranges
-pos_cols <- c(zero_col, "red")
-neg_cols <- c("blue", zero_col)
-
-## Colorbar levels
-# default: automatic color levels
-levels_abs <- "zlim" # colorbar is defined later by min/max of the data (= variable 'zlim')
-levels_sd <- "zlim"
-
-# user defined levels overwrite default color levels
-if (T) {
-    if (varname == "resolutionkm") {
-        levels_abs <- c(5:10, seq(10, 25, b=5), seq(30, 100, b=10), 150, 200, 250)
-    }
-    if (varname == "ssh") {
-        levels_sd <- c(seq(0, 0.20, b=0.05), 0.5)
-    }
-}
-

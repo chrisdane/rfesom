@@ -2,7 +2,7 @@
 
 ## 
 
-sub_prepare2 <- function(data) {
+sub_prepare2 <- function(data_node) {
 
     ## check user input
     if (insitudens_tag && ("rho" %in% varname_fesom)) {
@@ -213,11 +213,13 @@ sub_prepare2 <- function(data) {
     if (coriolis_tag) {
 
         # only once necessary
-        if (!exists("coriolis_nod2d")) {
+        if (!exists("coriolis_node")) {
+        
             # corliolis in node space (default)
-            coriolis_node <<- ...
-            dimnames(coriolis_node)[[1]] <<- "f"
-            data_node <<- abind(data_node, coriolis_node, along=1, use.dnns=T)
+            coriolis_node <<- array(2*omega*sin(ycsur*pi/180),
+                                    dim=c(1, nod2d_n, dim(data_node)[3:4]))
+            dimnames(coriolis_node)[[1]] <<- list("f")
+        
         } # if !exists("coriolis_node")
 
     } # if coriolis_tag
