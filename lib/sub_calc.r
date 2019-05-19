@@ -30,6 +30,14 @@
 sub_calc <- function(data_node) {
 
     #data_global <<- data_node # for old stuff; need to update
+    if (F) {
+        message("str(data_node)")
+        print(str(data_node))
+        if (exists("data_node_ltm")) {
+            message("str(data_node_ltm)")
+            print(str(data_node_ltm))
+        }
+    }
 
     ## Select one component of loaded data
     if (any(varname == c("u", "v", "initudens", "potdens", "insitub", "potb"))) {
@@ -1497,6 +1505,35 @@ sub_calc <- function(data_node) {
 
     } # "slopeSx", "slopeSy", "slopeS", "slopeSsq"
 
+    if (any(varname == c("bathy", "gradbathy", "hvel_dot_gradbathy", "c_barotrop", "foverh"))) {
+
+        if (varname == "hvel_dot_gradbathy") {
+            data_node_uv <<- data_node # save uv for later
+        }
+
+        # bathy_node was calculated in sub_prepare2.r
+        data_node <- bathy_node
+        if (varname == "c_barotrop") {
+            if (verbose > 0) {
+                message(paste0(indent, varname, " = sqrt(gH) ..."))
+            }
+            data_node <- sqrt(g*data_node)
+        } else if (varname == "foverh") {
+            if (verbose > 1) {
+                message(paste0(indent, varname, " = f/H ..."))
+            }
+            data_node <- coriolis_node/data_node
+        }
+
+        dimnames(data_node)[1] <- list(var=varname)
+        if (any(varname == c("gradbathy", "hvel_dot_gradbathy"))) {
+            dimnames(data_node)[1] <- list(var="bathy") # grad not applied yet
+        }
+
+    } # "bathy", "gradbathy", "hvel_dot_gradbathy", "c_barotrop", "foverh"
+
+    # at this point, data_node needs to be well defined
+    # with the variables in the first dim: c(var,node,depth,rec)
     if (horiz_deriv_tag != F) {
 
         ## x,y-derivatives of which variables?
@@ -1504,21 +1541,15 @@ sub_calc <- function(data_node) {
         dyinds <<- NULL
 
         if (any(varname == c("u_geo", "slopeSy"))) {
-            dyinds <<- 1 # = dy of variable 1
-        }
-
-        if (any(varname == c("v_geo", "slopeSx"))) {
+            dyinds <<- 1 # = dy of variable 1 in data_node array
+        } else if (any(varname == c("v_geo", "slopeSx"))) {
             dxinds <<- 1
-        }
-
-        if (any(varname == c("gradT", "gradB", "gradmld", 
+        } else if (any(varname == c("gradT", "gradB", "gradmld", 
                              "hvel_geo", "hdiffb", 
                              "slopeS", "slopeSsq"))) {
             dxinds <<- 1
             dyinds <<- 1
-        }
-        
-        if (any(varname == c("divuvt", "divuvttot", "divuvteddy",
+        } else if (any(varname == c("divuvt", "divuvttot", "divuvteddy",
                              "divuvsgst", "divuvsgsttot", "divuvsgsteddy",
                              "divuvs", "divuvstot", "divuvseddy",
                              "divuvsgss", "divuvsgsstot", "divuvsgsseddy",
@@ -1531,23 +1562,24 @@ sub_calc <- function(data_node) {
                              "divuvt2"))) {
             dxinds <<- 1
             dyinds <<- 2
-        } 
-
-        if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
+        } else if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
                              "curlwind", "curltau",
                              "ekmanP",
                              "strain_shear", "strain", "okubo",
                              "HRS", "KmKe"))) {
             dxinds <<- 2
             dyinds <<- 1
-        }
-
-        if (varname == "PmPe") {
+        } else if (varname == "PmPe") {
             stop("asd")
             dxinds <<- which("rho") 
             dyinds <<- which("rho")
+        } else if (varname == "intz_uvteddy_div") {
+            dxinds <<- 1
+            dyinds <<- 1
+        } else if (any(varname == c("gradbathy", "hvel_dot_gradbathy"))) {
+            dxinds <<- 1
+            dyinds <<- 1
         }
-        
         ndxy <<- length(dxinds) + length(dyinds)
 
     } # if (horiz_deriv_tag != F) {
@@ -1568,6 +1600,7 @@ sub_calc <- function(data_node) {
                              "dx - d(", varname_fesom[1], "/f)dy ..."))
             }
             # divide through f
+            stop("nnottttt yettt")
         }
 
         ## horizontal derivative in node-space (the correct way...)
@@ -1637,7 +1670,7 @@ sub_calc <- function(data_node) {
                         nds_surf <<- elem2d[,j]
                         nds_layer <<- aux3d[i,nds_surf]
                     } else if (dim_tag == "2D") {
-                        nds_layer <<-  elem2d[,j]
+                        nds_layer <<- elem2d[,j]
                     }
                     if (all(nds_layer != -999)) {
 
@@ -1795,7 +1828,7 @@ sub_calc <- function(data_node) {
             bafux_2d_vert <<- replicate(bafux_2d_vert, n=dim(data_vert)[4]) # nrecspf
             bafuy_2d_vert <<- replicate(bafuy_2d_vert, n=dim(data_vert)[4])
             # dim(bafux_2d_vert) = c(1,3,elem2d_n,ndepths,nrecspf)
-            ## note: avoid using huge bafux_3d: dim=c(4,elem3d_n)
+            ## note: avoid using huge bafux_3d: dim=c(4,elem3d_n) (4 nodes of tetrahedral 3D element)
 
             ## put data_node from nodes on elems
             if (verbose > 1) {
@@ -1921,19 +1954,26 @@ sub_calc <- function(data_node) {
 
 
         ## Do stuff after horizontal derivative
-        if (varname == "gradT") {
-            message(paste0(indent, varname, " = sqrt[ (dT/dx)^2 + (dT/dy)^2 ] ..."))
-            data_node <<- sqrt(dvar1dx^2 + dvar1dy^2)
+        if (any(varname == c("gradT", "gradmld", "gradbathy"))) {
+            message(paste0(indent, varname, " = sqrt[ (", 
+                           dimnames(dvardx_node3d)[[1]][1], ")^2 + (",
+                           dimnames(dvardy_node3d)[[1]][1], ")^2 ) ] ..."))
+            data_node <<- sqrt(dvardx_node3d[1,,,]^2 + dvardy_node3d[1,,,]^2)
+        }
+
+        if (varname == "hvel_dot_gradbathy") {
+            message(paste0(indent, varname, " = -1*(u*", 
+                           dimnames(dvardx_node3d)[[1]][1], " + v*",
+                           dimnames(dvardy_node3d)[[1]][1], ") ..."))
+            data_node <<- -1*(data_node_uv[1,,,]*dvardx_node3d[1,,,] + 
+                              data_node_uv[2,,,]*dvardy_node3d[1,,,])
+            dimnames(data_node)[1] <<- list(var=varname)
         }
 
         if (varname == "gradB") {
             message(paste0(indent, varname, " = sqrt[ (-g/rho0)^2 * ( (drho/dx)^2 + (drho/dy)^2 ) ] ..."))
+            stop("asd")
             data_node <<- sqrt((-g/rho0)^2 * (dvar1dx^2 + dvar1dy^2))
-
-        }
-
-        if (varname == "gradmld") {
-            message(paste0(indent, varname, " = sqrt[ (dmld/dx)^2 + (dmld/dy)^2 ] ..."))
         }
 
         if (any(varname == c("u_geo", "v_geo", "hvel_geo"))) {
@@ -2176,6 +2216,82 @@ sub_calc <- function(data_node) {
         if (varname == "slopeSsq") {
             message(paste0(indent, varname, " = (sqrt{[-(drho/dx)/(drho/dz)]^2 + [-(drho/dy)/(drho/dz)]^2})^2 ..."))
         }
+
+        if (varname == "intz_uvteddy_div") {
+            data_node <- abind(dvardx_node3d, dvardy_node3d, along=1)
+                
+            print("str(data_node)")
+            print(str(data_node))
+
+            stop("asd")
+            if (F) {
+                if (F) {
+                    if (F) {
+                        falnc = nc_open("/mnt/lustre01/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.phi_rotated_grid_false.nc")
+                        trunc = nc_open("/mnt/lustre01/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.phi_rotated_grid_true.nc")
+                    } else if (T) {
+                        falnc = nc_open("/mnt/lustre01/pf/a/a270073/scripts/fortran/strfcn/bin/Low01.1948.phi_sum_u_times_dx.nc")
+                        trunc = nc_open("/mnt/lustre01/pf/a/a270073/scripts/fortran/strfcn/bin/Low01.1948.phi_sum_udx.nc")
+                    }
+                    falx=drop(apply(ncvar_get(falnc, "dxphi"), 1, mean))
+                    faly=drop(apply(ncvar_get(falnc, "dyphi"), 1, mean))
+                    trux=drop(apply(ncvar_get(trunc, "dxphi"), 1, mean))
+                    truy=drop(apply(ncvar_get(trunc, "dyphi"), 1, mean))
+                    #tes <- sqrt(falx^2 + faly^2)
+                    #tes <- sqrt(trux^2 + truy^2)
+                    tes = sqrt(falx^2 + faly^2) - sqrt(trux^2 + truy^2)
+                } else if (F) {
+                    tes <- drop(data_node_ltm[3,,1,1])
+                } else if (F) {
+                    dxdyphinc <- nc_open("/pf/a/a270073/scripts/fortran/strfcn/bin/Low01.1948.phi.nc")
+                    dxphi <- ncvar_get(dxdyphinc, "dxphi")
+                    dyphi <- ncvar_get(dxdyphinc, "dyphi")
+                }
+                if (T) {
+                    ip <- image.plot.pre(range(tes, na.rm=T))
+                } else if (F) {
+                    zlim <- c(0, 3*summary(tes)[3])
+                    ip <- image.plot.pre(zlim)
+                }
+                col_inds_vec <- findInterval(tes, ip$levels, all.inside=T)
+                dev.new()
+                plot(xcsur,ycsur,t="n")
+                points(xcsur,ycsur,col=ip$cols[col_inds_vec], cex=0.5, pch=16)
+            }
+
+            # Rotate vector components
+            if (T && rotate_mesh) {
+                inds <- c(1, 2)
+                if (verbose > 1) {
+                    message(paste0(indent, "Rotate global ", 
+                                 dimnames(data_node)[[1]][inds[1]], " and ", 
+                                 dimnames(data_node)[[1]][inds[2]], 
+                                 " back to geographic coordinates ... "))
+                }
+                rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y, 
+                                                 data_node[inds[1],,,], 
+                                                 data_node[inds[2],,,], 1)
+                #data_node[inds[1],,,] <<- rotated_coords$u
+                #data_node[inds[2],,,] <<- rotated_coords$v
+                #rm(rotated_coords, envir=.GlobalEnv) 
+                data_node <- abind(rotated_coords$u, rotated_coords$v, along=1)
+                print(str(data_node))
+                dimnames(data_node)[[1]] <- c(dimnames(dvardx_node3d)[[1]][1],
+                                              dimnames(dvardy_node3d)[[1]][1])
+                rm(rotated_coords)
+            } # if rotate_mesh
+
+            # add vector norm
+            data_node <- abind(data_node,
+                               sqrt(data_node[1,,,]^2 + data_node[2,,,]^2),
+                               along=1)
+            dimnames(data_node)[[1]][3] <- varname
+            
+            data_node <<- data_node
+            print("str(data_node)")
+            print(str(data_node))
+
+        } # intz_uvteddy_div
 
         if (varname == "divuvt2") { ## special!        
               
@@ -2429,10 +2545,10 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Fsalt = S/(1-S/1000)*(Evap - Snow - Rain - Runoff + ThdGr) + relax_salt_term ..."))
             }
             EminusP <<- data[which(varname_fesom == "snow"),,,]*-1 +
-                       data[which(varname_fesom == "rain"),,,]*-1 +
-                       data[which(varname_fesom == "evap"),,,] +
-                       data[which(varname_fesom == "runoff"),,,]*-1 +
-                       data[which(varname_fesom == "thdgr"),,,]
+                        data[which(varname_fesom == "rain"),,,]*-1 +
+                        data[which(varname_fesom == "evap"),,,] +
+                        data[which(varname_fesom == "runoff"),,,]*-1 +
+                        data[which(varname_fesom == "thdgr"),,,]
 
             #denom <<- 1 - data[which(varname_fesom == "salt"),,,]/1e6 # /1e3 or /1e6 almost no diff
             denom <<- 1
@@ -2459,147 +2575,192 @@ sub_calc <- function(data_node) {
                          "FhalineB", "FhalineBbudget",
                          "FrhoB", "FrhoBbudget",
                          "FrhoB2"))) {
-        # use data_node since temp: 3d and qnet: 2d are already "depth averaged"
-
-        stop("update")
         
-        if (total_rec == 0 || (!anim_out && !regular_anim_output)) {
+        if (sea_water == "TEOS10") {
+            success <<- load_package("gsw")
+            if (!success) stop()
+        }
+        success <- load_package("abind")
+        if (!success) stop()
+        
+        # here, the 3d fields temp and salt were already rearranged to ndepths x nod2d_n
+        # and selected from the wanted depth "depths"
+        
+        if (total_rec == 0 || (!transient_out && !regular_transient_out)) {
             if (sea_water == "EOS80") {
-                ycsur_mat <<- replicate(ycsur, n=ndepths)
-                depth_mat <<- replicate(interpolate_depths, n=nod2d_n)
+                stop("asd")  
+                ycsur_mat <- replicate(ycsur, n=ndepths)
                 if (ndepths == 1) {
-                    depth_mat <<- replicate(depth_mat, n=1)
+                    depth_mat <- replicate(depth_mat, n=1)
                 } else {
-                    depth_mat <<- aperm(depth_mat, c(2,1))
+                    depth_mat <- aperm(depth_mat, c(2,1))
                 }
-                pres_mat <<- sw_pres(DEPTH=depth_mat, LAT=ycsur_mat)
-                pres_mat <<- replicate(pres_mat, n=dim(data_global_vert)[3])
-                pres_mat <<- replicate(pres_mat, n=1)
-                pres_mat <<- aperm(pres_mat, c(4,1,3,2))
+                pres_mat <- sw_pres(DEPTH=depth_mat, LAT=ycsur_mat)
+                pres_mat <- replicate(pres_mat, n=dim(data_global_vert)[3])
+                pres_mat <- replicate(pres_mat, n=1)
+                pres_mat <- aperm(pres_mat, c(4,1,3,2))
             } else if (sea_water == "TEOS10") {
-                stop("not implmented yet")
+                depths_node <- replicate(interpolate_depths, n=nod2d_n)
+                p_node <- gsw::gsw_p_from_z(z=depths_node, latitude=ycsur)
+                assign('p_node', p_node, envir=.GlobalEnv)
             }
-
-            sea_water_fname <<- paste0("_", sea_water)
+            sea_water_fname <- paste0("_", sea_water)
 
         } # if total_rec == 0
         
-        # thermal expansion coefficient [K^(-1)]
-        if (verbose == 2 || verbose == 3) {
-            if (sea_water == "EOS80") {
-                message(paste0(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K^-1..."))
-            } else if (sea_water == "TEOS10") {
-
-            }
-        }
-        if (sea_water == "EOS80") {
-            alpha <<- sw_alpha(S=data[which(varname_fesom == "salt"),,,],
-                              T=data[which(varname_fesom == "temp"),,,],
-                              P=pres_mat, keyword="ptmp")
-        } else if (sea_water == "TEOS10") {
-
-        }
-        dimnames(alpha)[1] <<- list("alpha")
+        saltind <- which(vars == "salt" | vars == "so" | vars == "sos")
+        if (is.na(saltind)) stop("could not found variable salt, so or sos.")
+        tempind <- which(vars == "temp" | vars == "thetao" | vars == "tos")
+        if (is.na(tempind)) stop("could not found variable temp, thetao or tos.")
         
-        # saline contraction coefficient [kg g^(-1)]
-        if (verbose == 2 || verbose == 3) {
-            if (sea_water == "EOS80") {
-                message(paste0(indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu^-1..."))
-            } else if (sea_water == "TEOS10") {
-
-            }
-        }
+        # alpha beta
         if (sea_water == "EOS80") {
-            beta <<- sw_beta(S=data[which(varname_fesom == "salt"),,,],
-                            T=data[which(varname_fesom == "temp"),,,],
-                            P=pres_mat, keyword="ptmp")
+            if (verbose > 1) {
+                message(paste0(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K^-1..."))
+                message(paste0(indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu^-1..."))
+            }
+            alpha_node <- sw_alpha(S=data[saltind,,,],
+                                    T=data[tempind,,,],
+                                    P=pres_mat, keyword="ptmp")
+            beta_node <- sw_beta(S=data[saltind,,,],
+                                  T=data[tempind,,,],
+                                  P=pres_mat, keyword="ptmp")
+        
         } else if (sea_water == "TEOS10") {
-            
-        }
-        dimnames(beta)[1] <<- list("beta")
+            if (verbose > 1) {
+                message(indent, "alpha = gsw_alpha(SA,CT,p) in K^-1 ...")
+                message(indent, "beta = gsw_beta(SA,CT,p) in psu^-1 ...")
+            }
+            SA_node <- array(NA, dim=dim(data_node[1,,,]),
+                              dimnames=dimnames(data_node[saltind,,,]))
+            dimnames(SA_node)[[1]] <- "SA"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                SA_node[,,,i] <- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), 
+                                                      p=p_node,
+                                                      longitude=xcsur, latitude=ycsur)
+            }
+            CT_node <- array(NA, dim=dim(data_node[1,,,]),
+                              dimnames=dimnames(data_node[tempind,,,]))
+            dimnames(CT_node)[[1]] <- "CT"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                CT_node[,,,i] <- gsw::gsw_CT_from_pt(SA=drop(SA_node[,,,i]), 
+                                                      pt=drop(data_node[tempind,,,i]))
+            }   
+            alpha_node <- array(NA, dim=dim(data_node[1,,,]),
+                                 dimnames=dimnames(data_node[tempind,,,]))
+            dimnames(alpha_node)[[1]] <- "alpha"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                alpha_node[,,,i] <- gsw::gsw_alpha(SA=drop(SA_node[,,,i]), 
+                                                    CT=drop(CT_node[,,,i]),
+                                                    p=p_node)
+            }   
+            beta_node <- array(NA, dim=dim(data_node[1,,,]),
+                                dimnames=dimnames(data_node[tempind,,,]))
+            dimnames(beta_node)[[1]] <- "beta"
+            for (i in 1:dim(data_node)[4]) { # for nrecspf
+                beta_node[,,,i] <- gsw::gsw_beta(SA=drop(SA_node[,,,i]), 
+                                                   CT=drop(CT_node[,,,i]),
+                                                   p=p_node)
+            }   
+        } # which sea_water 
 
-        # surface density
+        # in-situ density
         if (any(varname == c("Fhaline", "Fhalinebudget",
                              "Frho", "Frhobudget", 
                              "FhalineB", "FhalineBbudget",
                              "FrhoB", "FrhoBbudget",
                              "FrhoB2"))) {
-            if (verbose == 2 || verbose == 3) {
-                if (sea_water == "EOS80") {
-                    message(paste0(indent, "rho = sw_dens(S,T,P) ..."))
-                } else if (sea_water == "TEOS10") {
-
-                }
-            }
             if (sea_water == "EOS80") {
-                rho <<- sw_dens(S=data[which(varname_fesom == "salt"),,,],
-                               T=data[which(varname_fesom == "temp"),,,],
-                               P=pres_mat)
+                if (verbose > 1) {
+                    message(indent, "rho = sw_dens(S,T,p)")
+                }
+                rho_node <- sw_dens(S=data[which(varname_fesom == "salt"),,,],
+                                     T=data[which(varname_fesom == "temp"),,,],
+                                     P=pres_mat)
             } else if (sea_water == "TEOS10") {
-                
-            }
-            dimnames(rho)[1] <<- list("rho")
-        }
+                if (verbose > 1) {
+                    message(indent, "rho = gsw_dens(SA,CT,p) ...")
+                }
+                rho_node <- array(NA, dim=dim(data_node[1,,,]),
+                                       dimnames=dimnames(data_node[tempind,,,]))
+                dimnames(rho_node)[[1]] <- "rho"
+                for (i in 1:dim(data_node)[4]) { # for nrecspf
+                    rho_node[,,,i] <- gsw::gsw_rho(SA=SA_node[,,,i],
+                                                    CT=CT_node[,,,i],
+                                                    p=p_node)
+                }
+            } # which sea_water
+        } # if density is needed
        
+        # Fthermal is needed
         if (any(varname == c("Fthermal", "Fthermalbudget",
                              "Frho", "Frhobudget",   
                              "FthermalB", "FthermalBbudget",
                              "FrhoB", "FrhoBbudget",
                              "FrhoB2"))) {
-
             if (verbose > 1) {
                 message(paste0(indent, "Fthermal = -rho*alpha*Ftemp = -alpha/cp*Qnet ..."))
                 message(paste0(indent, "   with Qnet = swrd + lwrd + olwout + osen + olat"))
-                message(paste0(indent, "        cp = ", cp, " m^2 s^(-2) K^(-1)"))
+                message(paste0(indent, "        cp = ", cp, " m2 s-2 K-1"))
                 message(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
             }
 
             if (any(varname == c("Fthermal", "Frho",
                                  "FthermalB", "FrhoB",
                                  "FrhoB2"))) {
-                
-                Fthermal <<- -alpha/cp*data[which(varname_fesom == "qnet"),,,]
+               
+                qnetind <- which(varname_fesom == "qnet")
+                if (is.na(qnetind)) stop("could not find variable qnet.")
+
+                Fthermal_node <- -alpha_node/cp*data_node[qnetind,,,]
                 if (varname == "Fthermal") {
-                    data_node <<- Fthermal
-                    dimnames(data_node)[1] <<- list(varname)
+                    data_node <- Fthermal_node
+                    dimnames(data_node)[1] <- list(varname)
                 } else if (varname == "FthermalB") {
-                    data_node <<- -g/rho0*Fthermal
-                    dimnames(data_node)[1] <<- list(varname)
+                    data_node <- -g/rho0*Fthermal_node
+                    dimnames(data_node)[1] <- list(varname)
                 }
             }
            
+            # Fthermalbudget Frhobudget
             if (any(varname == c("Fthermalbudget", "Frhobudget",
                                  "FthermalBbudget", "FrhoBbudget"))) {
-                inds <<- match(c("swrd", "lwrd", "olwout", "osen", "olat"), 
-                              varname_fesom)
-
-                # replicate alpha for all inds
-                if (!any(search() == "package:abind")) library(abind)
-                tmp <<- alpha
-                for (i in 1:(length(inds) - 1)) {
-                    tmp <<- abind(tmp, alpha, along=1, use.dnns=T)
-                }
-                alpha <<- tmp
-                Fthermalbudget <<- -alpha/cp * data[inds,,,]
-                dimnames(Fthermalbudget)[1] <<- list(varname_fesom[inds])
                 
+                inds <- match(c("swrd", "lwrd", "olwout", "osen", "olat"), 
+                               varname_fesom)
+                if (any(is.na(inds))) stop("could not find some variables of swrd lwrd olwout oswn olat.")
+
+                # replicate alpha for all vars
+                tmp <- alpha_node
+                for (i in 1:(length(inds) - 1)) {
+                    tmp <- abind(tmp, alpha_node, along=1, use.dnns=T)
+                }
+                alpha_node <- tmp
+                Fthermalbudget_node <- -alpha_node/cp * data_node[inds,,,]
+                if (any(varname == c("Fthermalbudget", "Frhobudget"))) {
+                    dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_rho_", varname_fesom[inds]))
+                } else if (any(varname == c("FthermalBbudget", "FrhoBbudget"))) {
+                    dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_b_", varname_fesom[inds]))
+                }
+
                 # add Fthermal as sum of all components
                 if (any(varname == c("Fthermalbudget", "FthermalBbudget"))) {
-                    Fthermalbudget <<- abind(Fthermalbudget,
-                                            array(apply(Fthermalbudget, c(2, 3, 4), sum), # sum of all components
-                                                  c(1, dim(Fthermalbudget)[2:4])), # restore dimension
-                                            along=1, use.dnns=T)
-                    dimnames(Fthermalbudget)[[1]][dim(Fthermalbudget)[1]] <<- varname
+                    Fthermalbudget_node <- abind(Fthermalbudget_node,
+                                                  array(apply(Fthermalbudget_node, c(2, 3, 4), sum), # sum of all components
+                                                      c(1, dim(Fthermalbudget_node)[2:4])), # restore dimension
+                                                  along=1, use.dnns=T)
+                    dimnames(Fthermalbudget_node)[[1]][dim(Fthermalbudget_node)[1]] <- varname
                 
                     if (varname == "Fthermalbudget") {
-                        data_node <<- Fthermalbudget
+                        data_node <- Fthermalbudget_node
                     } else if (varname == "FthermalBbudget") {
-                        data_node <<- -g/rho0*Fthermalbudget
+                        data_node <- -g/rho0*Fthermalbudget_node
                     }
-                } 
-            } # if budget
-        } # if Fthermal or Frho
+                } # Fthermalbudget 
+            } # Fthermalbudget Frhobudget
+        } # if Fthermal is needed
 
+        # Fhaline is needed
         if (any(varname == c("Fhaline", "Fhalinebudget",
                              "Frho", "Frhobudget",
                              "FhalineB", "FhalineBbudget",
@@ -2620,123 +2781,151 @@ sub_calc <- function(data_node) {
                     message(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
                 }
 
-                salt <<- data[which(varname_fesom == "salt"),,,]
-                
-                FhalineFac <<- rho * beta * salt / (1 - salt/1000)
-                dimnames(FhalineFac)[1] <<- list(var="FhalineFac")
+                SSS_node <- data_node[saltind,,,]
+                FhalineFac_node <- rho_node * beta_node * SSS_node / (1 - SSS_node/1000)
+                dimnames(FhalineFac_node)[1] <- list(var="FhalineFac")
 
-                salt_relax_term <<- rho * beta * data[which(varname_fesom == "relax_salt"),,,]
-                dimnames(salt_relax_term)[1] <<- list(var="salt_relax_term")
+                relax_salt_ind <- which(varname_fesom == "relax_salt")
+                if (is.na(relax_salt_ind)) stop("could not find variable relax_salt.")
+
+                salt_relax_term <- rho_node * beta_node * data_node[relax_salt_ind,,,]
+                dimnames(salt_relax_term)[1] <- list(var="salt_relax_term")
                
                 if (any(varname == c("Fhaline", "Frho",
                                      "FhalineB", "FrhoB"))) {
-                    EminusP <<- data[which(varname_fesom == "snow"),,,]*-1 +
-                               data[which(varname_fesom == "rain"),,,]*-1 +
-                               data[which(varname_fesom == "evap"),,,] +
-                               data[which(varname_fesom == "runoff"),,,]*-1 +
-                               data[which(varname_fesom == "thdgr"),,,]
-                    Fhaline <<- FhalineFac * EminusP + salt_relax_term
+                    
+                    inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"), 
+                                   varname_fesom)
+                    if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
+                    
+                    Fhaline_node <- data_node[which(varname_fesom == "snow"),,,]*-1 +
+                                     data_node[which(varname_fesom == "rain"),,,]*-1 +
+                                     data_node[which(varname_fesom == "evap"),,,] +
+                                     data_node[which(varname_fesom == "runoff"),,,]*-1 +
+                                     data_node[which(varname_fesom == "thdgr"),,,]
+                    Fhaline_node <- FhalineFac_node * Fhaline_node + salt_relax_term
 
                     if (varname == "Fhaline") {
-                        data_node <<- Fhaline
-                        dimnames(data_node)[1] <<- list(varname)
-                    
+                        data_node <- Fhaline_node
+                        dimnames(data_node)[1] <- list(varname)
                     } else if (varname == "FhalineB") {
-                        data_node <<- -g/rho0*Fhaline
-                        dimnames(data_node)[1] <<- list(varname)
+                        data_node <- -g/rho0*Fhaline_node
+                        dimnames(data_node)[1] <- list(varname)
                     }
                 }
-            } # if Fhaline Frho
+            } # if Fhaline is needed
 
             if (varname == "FrhoB2") {
-
                 if (verbose > 0) {
                     message(paste0(indent, "Fhaline = rho * beta * (virtual_salt + relax_salt) ..."))
                 }
-                
-                Fhaline <<- rho * beta * (data[which(varname_fesom == "virtual_salt"),,,] + 
-                                         data[which(varname_fesom == "relax_salt"),,,])
-            
-            }
+                Fhaline_node <- rho_node * beta_node * 
+                                    (data_node[which(varname_fesom == "virtual_salt"),,,] + 
+                                     data_node[which(varname_fesom == "relax_salt"),,,])
+            } # FrhoB2
 
             if (any(varname == c("Fhalinebudget", "Frhobudget",
                                  "FhalineBbudget", "FrhoBbudget"))) {
 
-                inds <<- match(c("snow", "rain", "evap", "runoff", "thdgr"),
-                              varname_fesom)
+                inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"),
+                               varname_fesom)
+                if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
+                
+                # apply sign convention
+                neg_inds <- match(c("snow", "rain", "runoff"),
+                                   dimnames(data_node)[[1]])
+                #neg_inds <- c(which(dimnames(data_node)[[1]] == "snow"),
+                #               which(dimnames(data_node)[[1]] == "rain"),
+                #               which(dimnames(data_node)[[1]] == "runoff"))
+                if (length(neg_inds) == 0 || any(is.na(neg_inds))) stop("what?!")
+                if (verbose > 1) {
+                    message(indent, "Multiply ", 
+                            paste0(dimnames(data_node)[[1]][neg_inds], collapse=","), 
+                            " *-1")
+                }
+                #print(data_node[9,1,1,1])
+                data_node[neg_inds,,,] <- -1*data_node[neg_inds,,,]
+                #print(data_node[9,1,1,1])
                 
                 # replicate FhalineFac for all inds
                 if (!any(search() == "package:abind")) library(abind)
-                tmp <<- FhalineFac
+                tmp <- FhalineFac_node
                 for (i in 1:(length(inds) - 1)) {
-                    tmp <<- abind(tmp, FhalineFac, along=1, use.dnns=T)
+                    tmp <- abind(tmp, FhalineFac_node, along=1, use.dnns=T)
                 }
-                FhalineFac <<- tmp
+                FhalineFac_node <- tmp
                 
-                Fhalinebudget <<- FhalineFac * data[inds,,,]
-                dimnames(Fhalinebudget)[1] <<- list(varname_fesom[inds])
-                
-                # apply sign convention
-                neg_inds <<- c(which(dimnames(Fhalinebudget)[[1]] == "snow"),
-                              which(dimnames(Fhalinebudget)[[1]] == "rain"),
-                              which(dimnames(Fhalinebudget)[[1]] == "runoff"))
-                Fhalinebudget[neg_inds,,,] <<- -1*Fhalinebudget[neg_inds,,,]
+                Fhalinebudget_node <- FhalineFac_node * data_node[inds,,,]
+                if (any(varname == c("Fhalinebudget", "Frhobudget"))) {
+                    dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_rho_", varname_fesom[inds]))
+                } else if (any(varname == c("FhalineBbudget", "FrhoBbudget"))) {
+                    dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_b_", varname_fesom[inds]))
+                }
 
                 # add salt_relax term without FahlineFac
-                Fhalinebudget <<- abind(Fhalinebudget, salt_relax_term, 
-                                       along=1, use.dnns=1)
+                Fhalinebudget_node <- abind(Fhalinebudget_node, salt_relax_term, 
+                                             along=1, use.dnns=1)
 
                 if (any(varname == c("Fhalinebudget", "FhalineBbudget"))) {
                     # add Fhaline as sum of all components
-                    Fhalinebudget <<- abind(Fhalinebudget,
-                                           array(apply(Fhalinebudget, c(2, 3, 4), sum), # sum of all components
-                                                 c(1, dim(Fhalinebudget)[2:4])), # restore dimension
-                                  along=1, use.dnns=T)
-                    dimnames(Fhalinebudget)[[1]][dim(Fhalinebudget)[1]] <<- varname
+                    Fhalinebudget_node <- abind(Fhalinebudget_node,
+                                                 array(apply(Fhalinebudget_node, c(2, 3, 4), sum), # sum of all components
+                                                       c(1, dim(Fhalinebudget_node)[2:4])), # restore dimension
+                                                 along=1, use.dnns=T)
+                    dimnames(Fhalinebudget_node)[[1]][dim(Fhalinebudget_node)[1]] <- varname
 
                     if (varname == "Fhalinebudget") {
-                        data_node <<- Fhalinebudget
+                        data_node <- Fhalinebudget_node
                     } else if (varname == "FhalineBbudget") {
-                        data_node <<- -g/rho0*Fhalinebudget
+                        data_node <- -g/rho0*Fhalinebudget_node
                     }
-                }
-            }
+                } # Fhalinebudget
+            } # Fhalinebudget or Frhobudget
+        } # Fhaline is needed
 
-        } # Fhaline Fhalinebudget Frho
-        
+        # Frho is needed
         if (any(varname == c("Frho", "Frhobudget",
                              "FrhoB", "FrhoBbudget",
                              "FrhoB2"))) {
-            if (verbose == 2 || verbose == 3) {
+            if (verbose > 1) {
                 message(paste0(indent, varname, " = Fthermal + Fhaline"))
             }
             
-            if (any(varname == c("rho", "FrhoB", "FrhoB2"))) {
-                data_node <<- Fthermal + Fhaline
+            if (any(varname == c("Frho", "FrhoB", "FrhoB2"))) {
+                data_node <- Fthermal_node + Fhaline_node
                 
                 if (varname == "FrhoB" || varname == "FrhoB2") {
-                    data_node <<- -g/rho0*data_node
+                    data_node <- -g/rho0*data_node
                 }
                 
-                dimnames(data_node)[1] <<- list(varname)
-            }
+                dimnames(data_node)[1] <- list(varname)
+            } # "Frho", "FrhoB", "FrhoB2"
             
+            # Frhobudget
             if (varname == "Frhobudget" || varname == "FrhoBbudget") {
-                data_node <<- abind(Fthermalbudget, Fhalinebudget,
-                              along=1, use.dnns=T)
+                print(str(Fthermalbudget_node))
+                print(str(Fhalinebudget_node))
+
+                data_node <- abind(Fthermalbudget_node, Fhalinebudget_node,
+                                    along=1, use.dnns=T)
+                print(str(data_node))
 
                 # add Frho as sum of all components
-                data_node <<- abind(data,
-                              array(apply(data, c(2, 3, 4), sum), # sum of all components
-                                    c(1, dim(data_node)[2:4])), # restore dimension
-                              along=1, use.dnns=T)
+                data_node <- abind(data_node, 
+                                    array(apply(data_node, c(2, 3, 4), sum), # sum of all components
+                                          dim=c(1, dim(data_node)[2:4])), # restore dimension
+                                    along=1, use.dnns=T)
                 
-                if (varname == "FrhoBbudget") data_node <<- -g/rho0*data_node
+                if (varname == "FrhoBbudget") data_node <- -g/rho0*data_node
                 
-                dimnames(data_node)[[1]][dim(data_node)[1]] <<- varname
-            }
-        }
-
+                # name of last entry = sum of all components
+                dimnames(data_node)[[1]][dim(data_node)[1]] <- varname
+                print(str(data_node))
+                print(dimnames(data_node)[[1]])
+                assign('data_node', data_node, envir=.GlobalEnv)
+                #data_node <<- data_node
+            } # Frhobudget
+        } # Frho Frhobudget
     } # Fthermal Fhaline Frho
 
     if (varname == "MOCw") {
@@ -2935,84 +3124,6 @@ sub_calc <- function(data_node) {
 
     } # "resolutionkm", "resolutiondeg", "mesharea", "fwflux", "iceextent", "icevol"
 
-    if (any(varname == c("bathy", "c_barotrop", "foverh"))) {
-
-        ## how to determine depths correctly?
-        use_depth <<- "model" # "model" or "real"
-        # real (depth.out):  -129 -112  -83  -66  -28  -17
-        # model (nod3d.out): -125 -125  -80  -80  -30  -20 
-
-        if (use_depth == "model") {
-            if (verbose > 1) {
-                message(paste0(indent, "Get model bathymetry (last depth before -999 in aux3d.out) ..."))
-            }
-
-            if (F) { # old
-                z_2d <<- rep(0, nod2d_n)
-                pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                                        char=pb_char, width=pb_width,
-                                        indent=paste0("      ", indent)) # 5 " " for default message()
-                for (l in 1:(aux3d_n-1)) {
-                    for (ii in 1:nod2d_n) {
-                        if (aux3d[l,ii] != -999) {
-                            a <<- nod3d_z[aux3d[l,ii]]
-                            if (z_2d[ii] > a) z_2d[ii] <<- nod3d_z[aux3d[l,ii]]
-                        }
-                    }
-                    # update progress bar
-                    setTxtProgressBar(pb, l)
-                } # for i aux3d_n-1
-                # close progress bar
-                close(pb)
-                bathy_node <<- abs(z_2d)
-                rm(z_2d, envir=.GlobalEnv)
-            
-            # new
-            } else if (T) {
-                inds <<- apply(aux3d, 2, function(x) x[which(x == -999)[1] - 1])
-                bathy_node <<- abs(nod_z[inds])
-                rm(inds, envir=.GlobalEnv)
-            } # old
-            
-            # unique model depths
-            fesom_depths <<- c(0, sort(unique(abs(bathy_node))))
-        
-        } else if (use_depth == "real") {
-            if (verbose > 1) {
-                message(paste0(indent, "Read original bathymetry information from depth.out ..."))
-            }
-            fid <<- paste0(meshpath, "depth.out")
-            topo <<- scan(fid, quiet=T)
-            bathy_node <<- abs(topo)
-        
-        } # which depth to use?
-        
-        bathy_node <<- replicate(bathy_node, n=1) # nvar
-        bathy_node <<- replicate(bathy_node, n=1) # ndepth == 1
-        bathy_node <<- replicate(bathy_node, n=1) # nrecspf == 1 (ltm)
-        bathy_node <<- aperm(bathy_node, c(2, 1, 3, 4))
-
-        if (varname == "bathy") {
-            data_node <<- bathy_node
-        }
-
-        if (varname == "c_barotrop") {
-            if (verbose > 0) {
-                message(paste0(indent, varname, " = sqrt(gH) ..."))
-            }
-            data_node <<- sqrt(g*bathy_node)
-        }
-
-        if (varname == "foverh") {
-            if (verbose > 1) {
-                message(paste0(indent, varname, " = f/H ..."))
-            }
-            data_node <<- coriolis_node / bathy_node
-        }
-
-        dimnames(data_node)[1] <<- list(var=varname)
-
-    } # "bathy", "c_barotrop", "foverh"
 
 } # sub_calc function
 

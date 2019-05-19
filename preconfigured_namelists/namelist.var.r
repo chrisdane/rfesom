@@ -279,7 +279,9 @@ if (varname == "tos") {
     }
     rotate_inds <- c(1, 2)
     vec <- T
-    hvel_levels <- c(0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 100) # cm s-1
+    if (F) {
+        hvel_levels <- c(0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 100) # cm s-1
+    }
     hvel_cols <- c("#dde7f6", "#b2b3da", "#9b98cb", "#cdc774",
                    "#fcee23", "#fdb514", "#f47720", "#ef4023",
                    "darkred")
@@ -1520,22 +1522,26 @@ if (varname == "tos") {
 } else if (varname == "vertvel") {
     longname <- "Vertical Velocity"
     subtitle <- ">0 upwards"
-    multfac_out <- 100*3600 # m s-1 --> cm h-1
-    units_plot <- "cm h-1"
-    var_label_plot <- expression(paste("w [cm h"^"-1","]"))
-    multfac_out <- multfac_out
-    units_out <- units_plot
+    units_out <- "m s-1"
+    if (F) {
+        multfac_plot <- 100*3600 # m s-1 --> cm h-1
+        units_plot <- "cm h-1"
+        var_label_plot <- expression(paste("w [cm h"^"-1","]"))
+    } else if (T) {
+        multfac_plot <- 100*86400 # m s-1 --> cm day-1
+        units_plot <- "cm day-1"
+        var_label_plot <- expression(paste("w [cm day"^"-1","]"))
+    }
+    vertvel_levels <- pretty(c(-10, 10), n=11)
     if (any(out_mode == c("meanint", "depthint"))) {
-        multfac_out <- 1
         units_out <- "m2 s-1"
     }
     if (integrate_depth) {
-        multfac_out <- 1
-        units_plot <- "m2 s-1"
-        var_label_plot <- substitute(paste(integral(), " w dz [", var1^2, " ", var2^-1, "]"),
+        units_out <- "m2 s-1"
+        units_plot <- units_out
+        var_label_plot <- substitute(paste(integral(), " w dz [", 
+                                           var1^2, " ", var2^-1, "]"),
                                      list(var1="m", var2="s"))
-        multfac_out <- multfac_out
-        units_out <- units_plot
         if (any(out_mode == c("meanint", "depthint"))) {
             units_out <- "m3 s-1"
         }
@@ -1701,7 +1707,7 @@ if (varname == "tos") {
         multfac_out <- 1
         units_out <- "m3 s-1"
     }
-    dim_tag <- "3D" # so that aux3d is read
+    dim_tag <- "2D"
 
 } else if (varname == "c_barocline") {
     longname <- "Mode-m baroclinic gravity-wave speed"
@@ -2582,6 +2588,29 @@ if (varname == "tos") {
     diagsuffix <- rep("", t=3)
     varname_fesom <- c("u", "v", "temp")
     rotate_inds <- c(1, 2)
+    vec <- T
+
+} else if (varname == "intz_uvteddy_div") {
+    longname <- "Divergent part of depth-integrated eddy temperature flux (eq 4 JM02)"
+    units_out <- "degC m2 s-1"
+    units_plot <- units_out
+    if (F) {
+        power_plot <- -8
+        multfac_plot <- base^power_plot
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(bold(u)[h], "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "] " %*% base^power_plot),
+                                   list(var1="C", var2="m", var3="s",
+                                        base=base, power_plot=-power_plot))
+    } else if (T) {
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(bold(u)[h], "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "]"),
+                                   list(var1="C", var2="m", var3="s"))
+    }
+    dim_tag <- "2D"
+    horiz_deriv_tag <- T
+    varname_fesom <- "dxphi"
     vec <- T
 
 } else if (varname == "divuvs") {
@@ -3543,15 +3572,13 @@ if (varname == "tos") {
 
 } else if (varname == "qnet") {
     longname <- "Net heat flux to ocean"
-    subtitle <- "<0 out of the ocean"
+    subtitle <- "<0 ocean heat loss"
     units_out <- "W m-2"
-    var_label_plot <- expression(paste("Qnet [W m"^"-2","]"))
+    var_label_plot <- expression(paste("Q"[net], " [W m"^"-2","]"))
     dim_tag <- "2D"
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_fesom <- c("qnet")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "wnet") {
     longname <- "Net freshwater flux to ocean"
@@ -3576,12 +3603,10 @@ if (varname == "tos") {
 
 } else if (varname == "wind") {
     longname <- "Wind Speed"
-    subtitle <- ""
     units_out <- "m s-1"
+    units_plot <- units_out
     var_label_plot <- expression(paste("Wind [m s"^"-1","]"))
     dim_tag <- "2D"
-    horiz_deriv_tag <- F
-    multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
     varname_fesom <- c("uwind", "vwind")
@@ -3760,7 +3785,7 @@ if (varname == "tos") {
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
+    varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv") # in my case, tauxu,tauyv are only surface!
     rotate_inds <- c(1, 2, 3, 4, 5, 6)
     vec <- F
 
@@ -4020,28 +4045,28 @@ if (varname == "tos") {
 } else if (varname == "Frhobudget") {
     longname <- "Density flux to ocean"
     subtitle <- ">0 surface density gain"
-    power_out <- 6
-    multfac_out <- base^power_out
-    multfac_out_plot <- base^-power_out
-    units_out <- paste0("kg m-2 s-1 x ", multfac_out_plot)
+    units_out <- "kg m-s s-1"
+    power_plot <- 6
+    multfac_plot <- base^power_out
+    units_plot <- paste0("kg m-2 s-1 x ", multfac_plot)
     var_label_plot <- substitute(paste("Density flux to ocean [kg ",
                                      var1^-2, " ", var2^-1, "] " %*% "  ",
-                                     base^power_out),
+                                     base^-power_plot),
                               list(var1="m", var2="s", base=base,
-                                   power_out=-power_out))
-    dim_tag <- "3D"
-    horiz_deriv_tag <- F
-    typesuffix <- c("oce.", "oce.", 
-                     rep("forcing.", t=5),
-                     "ice.",
-                     rep("forcing.", t=5))
+                                   power_plot=power_plot))
+    if (any(out_mode == c("meanint", "depthint"))) {
+        units_out <- "kg s-1"
+    }
+    dim_tag <- "3D" # since temp and salt are needed
+    typesuffix <- c("oce.", "oce.", # temp salt 
+                     rep("forcing.", t=5), # swrd lwrd olwout osen olat
+                     "ice.", # thdgr
+                     rep("forcing.", t=5)) # snow rain evap runoff relax_salt
     diagsuffix <- c("", "", 
                      rep("diag.", t=11))
     varname_fesom <- c("temp", "salt", 
                         "swrd", "lwrd", "olwout", "osen", "olat",
                         "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "FrhermalB") {
     longname <- "Thermal buoyancy flux to ocean"
@@ -4448,13 +4473,48 @@ if (varname == "tos") {
     units_out <- "m"
     units_plot <- "m"
     var_label_plot <- "Bathymetry [m]"
-    dim_tag <- "3D"
+    dim_tag <- "2D"
     # GEBCO (General Bathymetric Chart of the Oceans) colors:
     bathy_cols <- c("#c5ebdc", "#a0dfda", "#7fd5e8", "#5ecbe6", "#49add9",
                     "#3d82c9", "#3259af", "#26468b", "#212f5c", "#141c34")
     #bathy_cols <- c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F", 
     #                "yellow", "#FF7F00", "red", "#7F0000")
     axis.addzlims <- T
+
+} else if (varname == "gradbathy") {
+    longname <- "Norm of horizontal bathymetry gradient"
+    units_out <- "#"
+    units_plot <- units_out
+    var_label_plot <- substitute(paste("|", bold(nabla)[h], " H| [#]"))
+    dim_tag <- "2D"
+    horiz_deriv_tag <- "geo"
+
+} else if (varname == "hvel_dot_gradbathy") {
+    longname <- "Scalar product of horizontal velocity and horizontal bathymetry gradient times -1"
+    subtitle <- "> 0 upwards"
+    units_out <- "m s-1"
+    if (F) {
+        multfac_plot <- 100*3600 # m s-1 --> cm h-1
+        units_plot <- "cm h-1"
+        var_label_plot <- substitute(paste(-bold(u)[h] %.% bold(nabla)[h], "H",
+                                           " [", var1, " ", var2^-1, "]"),
+                                     list(var1="cm", var2="h"))
+    } else if (T) {
+        multfac_plot <- 100*86400 # m s-1 --> cm day-1
+        units_plot <- "cm day-1"
+        var_label_plot <- substitute(paste(-bold(u)[h] %.% bold(nabla)[h], "H",
+                                           " [", var1, " ", var2^-1, "]"),
+                                     list(var1="cm", var2="day"))
+    }
+    dim_tag <- "3D"
+    horiz_deriv_tag <- "geo"
+    typesuffix <- c("oce.", "oce.")
+    diagsuffix <- c("", "")
+    varname_fesom <- c("u", "v")
+    if (cpl_tag) {
+        varname_fesom <- c("uo", "vo")
+    }
+    rotate_inds <- c(1, 2)
 
 } else if (varname == "foverh") {
     longname <- "coriolis parameter over depth"
@@ -4466,7 +4526,7 @@ if (varname == "tos") {
                                        var2^-1, "] " %*% " ", base^-power_plot),
                                  list(H="H", var1="m", var2="s", 
                                       base=base, power_plot=power_plot))
-    dim_tag <- "3D" # to read model depth information
+    dim_tag <- "2D"
     coriolis_tag <- T
 
 } else if (varname == "resolutionkm") {

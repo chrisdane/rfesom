@@ -9,15 +9,15 @@ sub_calc_regular_2d_interp <- function(I_MAT,XI,YI,
 
     if (F) {
         message("XI")
-        message(str(XI))
+        print(str(XI))
         message("xp")
-        message(str(xp))
+        print(str(xp))
         message("AUX_I_MAT")
-        message(str(AUX_I_MAT))
-        message("range(AUX_IMAT")
-        message(range(AUX_I_MAT))
+        print(str(AUX_I_MAT))
+        message("range(AUX_IMAT)")
+        print(range(AUX_I_MAT))
         message("drop(xp[1,AUX_I_MAT])")
-        message(str(drop(xp[1,AUX_I_MAT])))
+        print(str(drop(xp[1,AUX_I_MAT])))
     }
     X <- XI - drop(xp[1,AUX_I_MAT])
     # same: X <- XI - array(xp[1,as.vector(AUX_I_MAT)], dim(AUX_I_MAT))

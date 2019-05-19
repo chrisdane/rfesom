@@ -23,6 +23,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
 
     ## Rearrange to chosen depth levels (variable 'depths')
     if (ndepths == 1 && depths == "bottom") {
+        if (verbose > 1) message(indent, "   bottom")
         inds <<- !is.na(indsurf[1,])
         tmp[,pos[indsurf[1,inds]],1,] <<- data_nod3d[,indbottom[1,inds],,]
 

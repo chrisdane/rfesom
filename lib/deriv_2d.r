@@ -4,8 +4,8 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
 
 # all mesh resolutions/areas get their unit from this variable:
 if (!is.finite("Rearth")) { # overwrite possibly wrong user input
-    mesh_dist_unit <- "m"
     Rearth <- 6367.5 * 10^3
+    mesh_dist_unit <- "m"
 }
 
 rad <- pi/180
@@ -65,19 +65,20 @@ for (i in 1:elem2d_n) {
     bafux_2d[,i] <- derivative_locbafu_x_2D[1,]
     bafuy_2d[,i] <- derivative_locbafu_x_2D[2,]
 
-    voltriangle[i] <- 1/2*abs(det(jacobian2D)) # m2
+    voltriangle[i] <- 1/2*abs(det(jacobian2D)) # in unit_of_Rearth^2
 
-    # mesh area in (unit of 'Rearth')^2
-    cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # m2
+    # mesh area
+    cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # in unit_of_Rearth^2
 
     # mesh resolution in unit of 'Rearth'
     # from sein et al. 2017:
     #   "The mesh resolution, defined as the square root of twice the area of the triangles ..."
+    #   res=sqrt(2*vol)
     # from oce_rhs_tra.F90:
     #   res2=voltriangle(elem2)*1.73e-6
-    #   res=sqrt(res2)  !in km
-    # from c. wekerle: 
-    #   h(i)=sqrt(voltriangle(i)*sqrt(3))/1000;
+    #   res=sqrt(res2)  !in km 
+    #   res=sqrt(sqrt(3)*vol)
+    #   h(i)=sqrt(voltriangle(i)*sqrt(3))/1000; # from c. wekerle: 
     # from p. scholz:
     #   x_kart=Rearth*1000.*cosd(aux_yc).*cosd(aux_xc);
     #   y_kart=Rearth*1000.*cosd(aux_yc).*sind(aux_xc);
@@ -90,7 +91,7 @@ for (i in 1:elem2d_n) {
     #   resol=[sqrt(vek1(1,:).^2 + vek1(2,:).^2 + vek1(3,:).^2);...
     #          sqrt(vek2(1,:).^2 + vek2(2,:).^2 + vek2(3,:).^2);...  
     #          sqrt(vek3(1,:).^2 + vek3(2,:).^2 + vek3(3,:).^2)];
-    resolution[i] <- sqrt(voltriangle[i]*sqrt(3)) #sqrt(3)=1.73
+    resolution[i] <- sqrt(voltriangle[i]*sqrt(3)) #sqrt(3)=1.73 # in unit_of_Rearth
 
 } # end i in 1:elem2d_n
 

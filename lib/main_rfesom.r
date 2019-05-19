@@ -131,6 +131,12 @@ if (is.null(varname_fesom)) {
 } else {
     nfiles <- length(varname_fesom)
 }
+if (exists("fnames_user")) {
+    fuser_tag <- T
+    nfiles <- length(fnames_user)
+} else {
+    fuser_tag <- F
+}
 if (nfiles == 0) {
     transient_out <- F
     regular_transient_out <- F
@@ -388,7 +394,7 @@ if (length(recs) > 1) {
 }
 if (all_recs) { # user choice
     rec_tag <- T
-    if (length(recs) == 1 || exists("fnames_user")) {
+    if (length(recs) == 1 || fuser_tag) {
         rec_tag <- F
     }
 } else if (!all_recs) {
@@ -396,7 +402,7 @@ if (all_recs) { # user choice
 }
 
 ## so far only 1 user file is allowed
-if (exists("fnames_user")) {
+if (fuser_tag) {
     if (length(fnames_user) > 1) {
         stop("not defined yet since ntime needs to be determined first!")
     }
@@ -412,12 +418,12 @@ months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
 
 ## Create Time vectors step 2: check if leap years exist and are wanted
 leap_tag <- F # default
-if (exists("fnames_user")) {
+if (fuser_tag) {
     #nyears <- length(fnames_user)
     #timeunit <- ""
     #npy
 
-} else if (!exists("fnames_user")) {
+} else if (!fuser_tag) {
     
     nyears <- length(years)
 
@@ -496,14 +502,14 @@ if (exists("fnames_user")) {
     } else {
         stop(paste0("output '", output, "' not defined"))
     }
-} # if (exists("fnames_user"))
+} # if (fuser_tag)
 
 ## Create Time vectors step 3: yearvec
 nrecspf <- length(recs)
-if (exists("fnames_user")) {
+if (fuser_tag) {
     # yearvec
 
-} else if (!exists("fnames_user")) {
+} else if (!fuser_tag) {
     if (leap_tag) {
         nrecspf_leap <- length(recs_leap)
         # loop through all years (how to improve that?!)
@@ -522,7 +528,7 @@ if (exists("fnames_user")) {
 
 ## Create Time vectors step 4: monthly output and DJF is wanted:
 djf <- F # default
-if (!exists("fnames_user")) {
+if (!fuser_tag) {
     if (output == "monthly" && 
         length(recs) == 3 && 
         all(recs[1:3] == c(1, 2, 12))) {
@@ -538,13 +544,13 @@ if (!exists("fnames_user")) {
             yearvec <- yearvec[1:(length(yearvec)-1)]
         }
     } # if DJF
-} # if (!exists("fnames_user"))
+} # if (!fuser_tag)
 
 ## Create Time vectors step 5: finish time
-if (exists("fnames_user")) {
+if (fuser_tag) {
     # ntime, dt, time, recvec, recvec_plot, timevec
 
-} else if (!exists("fnames_user")) {
+} else if (!fuser_tag) {
 
     ntime <- length(yearvec)
     dt <- 1/npy
@@ -592,14 +598,14 @@ if (exists("fnames_user")) {
     }
     recvec_plot <- sprintf(paste0("%.", max(nchar(recvec)), "i"), recvec)
     timevec <- as.numeric(paste0(yearvec, recvec_plot))
-} # if fnames_user
+} # if fuser_tag
 
 ## Create Time vectors step 6: Make timespan vector
-if (exists("fnames_user")) {
+if (fuser_tag) {
     # timespan, snapshotsuffix
     timespan <- ""
 
-} else if (!exists("fnames_user")) {
+} else if (!fuser_tag) {
 
     if (nfiles > 0) {
 
@@ -708,7 +714,7 @@ if (exists("fnames_user")) {
     } else { # nfiles = 0
         timespan <- ""
     }
-} # if fnames_user
+} # if fuser_tag
 
 if (timespan == "") {
     timespan_fname <- ""
@@ -720,8 +726,8 @@ if (verbose > 0) {
     message(paste0("runid: ", runid))
     message(paste0("setting: ", setting))
     message(paste0("mesh: ", meshid))
-    message(paste0("   rotate Mesh: ", rotate_mesh))
-    message(paste0("   remove Cyclic Elements: ", cycl))
+    message(paste0("   rotate mesh: ", rotate_mesh))
+    message(paste0("   treat cyclic elements: ", cycl))
     message(paste0("meshpath: ", meshpath))
     message(paste0("datainpath: ", datainpath))
     message(paste0("varname: ", varname))
@@ -881,7 +887,7 @@ if (!restart || # ... not a restart run
         aux3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
             message(paste0(indent, "read ", aux3d_n*nod2d_n, 
-                         " 3D elements from aux3d.out ..."))
+                         " 3D node indices from aux3d.out ..."))
         }
         if (!fread_tag) {
             tmp <- scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
@@ -905,7 +911,8 @@ if (!restart || # ... not a restart run
 
         # note: it is possible that ndepths_all != aux3d_n.
         #       this might be the case because no nodes exist in the 
-        #       bottom layer of aux3d (--> all(aux3d[aux3d_n,] == -999) is true)
+        #       bottom layer of aux3d: all(aux3d[aux3d_n,] == -999) is true.
+        #       this may happen if only a subset of a mesh is used.
 
     } # end if 3d
 
@@ -933,8 +940,14 @@ if (!restart || # ... not a restart run
 
     ## 2) Calculate Geographic Coordinates
     if (verbose > 0) {
-        message("2) Remove cyclic nodes if present and rotate mesh to geographic coordinates if necessary or specified by user ...")
-    }
+        if (rotate_mesh && cycl) {
+            message("2) Rotate mesh back to geographic coords and treat cyclic nodes ...")
+        } else if (rotate_mesh && !cycl) {
+            message("2) Rotate mesh back to geographic coords ...")
+        } else if (!rotate_mesh && cycl) {
+            message("2) Treat cyclic nodes ...")
+        }
+    } # verbose
 
     if (!rotate_mesh) {
         # ugly workaround: rotate around 0 -__-
@@ -944,14 +957,14 @@ if (!restart || # ... not a restart run
         rotate_mesh <- T
     }
 
-    ## Save elem2d before removing cyclic elements
+    ## Save elem2d before treating cyclic elements
     elem2d_orig <- elem2d
     elem2d_n_orig <- dim(elem2d_orig)[1]
 
     if (rotate_mesh) {
         if (cycl) {
             if (verbose > 1) {
-                    message(paste0(indent, "Remove cyclic elements part 1 ..."))
+                    message(paste0(indent, "Treat cyclic elements part 1 ..."))
             }
             inds <- which(nod_x > 180)
             nod_x[inds] <- nod_x[inds] - 360
@@ -962,10 +975,8 @@ if (!restart || # ... not a restart run
         ## Rotate coordinates back from rotated to geographical
         ## coordinates using Euler angles from FESOM code:
         if (verbose > 1) {
-            if (all(c(Ealpha, Ebeta, Egamma) != 0)) { 
-                message(paste0(indent, "Rotate mesh around Ealpha=", Ealpha,
-                             ", Ebeta=", Ebeta, ", Egamma=", Egamma, " ..."))
-            }
+            message(paste0(indent, "Rotate mesh around Ealpha=", Ealpha,
+                         ", Ebeta=", Ebeta, ", Egamma=", Egamma, " ..."))
         }
         rotated_coords <- grid_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y)
         nod_x <- rotated_coords$glon
@@ -975,7 +986,7 @@ if (!restart || # ... not a restart run
 
         if (cycl) {
             if (verbose > 1) {
-                message(paste0(indent, "Remove cyclic elements part 2 ..."))
+                message(paste0(indent, "Treat cyclic elements part 2 ..."))
             }
             inds <- which(abs(nod_x[elem2d[,3]] - nod_x[elem2d[,2]]) > 170 |
                           abs(nod_x[elem2d[,2]] - nod_x[elem2d[,1]]) > 170 |
@@ -1006,7 +1017,7 @@ if (!restart || # ... not a restart run
             auxxc1[auxxc1 < -180] <- -180
             auxxc2[auxxc2 > 180] <- 180
 
-        } # end if (cylc)
+        } # end if (cycl)
 
     } else if (!rotate_mesh) {
         
@@ -1141,6 +1152,9 @@ if (!restart || # ... not a restart run
         yc_global_save <- yc_global
         elem2d_orig_save <- elem2d_orig
     }
+
+# else: restart run: mesh reading not necessary
+# this is work in progress
 } else {
     if (verbose > 0) {
         message(paste0("This is a restart run."))
@@ -2836,9 +2850,9 @@ if (nfiles > 0) {
                 indbottom <- array(NA, c(ndepths, nod2d_n))
                 indsurf <- indbottom
                 for (k in 1:nod2d_n) {
-                    ## node above -999:
+                    ## index of last 3d node above -999:
                     indbottom[1,k] <- aux3d[which(aux3d[,k] == -999)[1] - 1,k]
-                    indsurf[1,k] <- aux3d[1,k]
+                    indsurf[1,k] <- aux3d[1,k] # = 1:nod2d_n if no subset mesh is used
                 }
 
             } else {
@@ -3006,9 +3020,9 @@ if (nfiles == 0) { # read data which are constant in time
     # average "by hand" (-> mean(x) = 1/n sum(x)).
     total_rec <- 0 # counter over all time steps
     year_cnt <- 0
-    if (!exists("fnames_user")) {
+    if (!fuser_tag) {
         years_loop <- unique(yearvec) # default annual files
-    } else if (exists("fnames_user")) {
+    } else if (fuser_tag) {
         years_loop <- length(fnames_user)
     }
     fnames <- rep("NA", nfiles) # used for every year
@@ -3076,11 +3090,12 @@ if (nfiles == 0) { # read data which are constant in time
         ## construct fesom filenames
         for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
             
-            if (exists("fnames_user")) {
+            if (fuser_tag) {
                 ## check nc fast: library(raster); b <- brick("akhil.nc", var="hur")
-                fnames[file] <- paste0(datainpath, fnames_user[year_cnt])
+                #fnames[file] <- paste0(datainpath, fnames_user[year_cnt])
+                fnames[file] <- fnames_user[year_cnt]
 
-            } else if (!exists("fnames_user")) {
+            } else if (!fuser_tag) {
 
                 # coupled fesom-echam
                 if (cpl_tag) {
@@ -3130,7 +3145,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 } # if cpl_tag
 
-            } # if (exists("fnames_user"))
+            } # if fuser_tag
 
             if (!file.exists(fnames[file])) {
                 stop(paste0("file ", fnames[file], " does not exist."))
@@ -3150,7 +3165,7 @@ if (nfiles == 0) { # read data which are constant in time
         }
 
         # time_user
-        if (exists("fnames_user")) {
+        if (fuser_tag) {
             time <- ncids[[1]]$dim$time$vals[recs]
             timeunit <- ncids[[1]]$dim$time$units
             ntime <- length(time)
@@ -3301,9 +3316,9 @@ if (nfiles == 0) { # read data which are constant in time
         if (rec_tag) {
             recsi <- 1 # load all recs of a year in one array
         } else {
-            if (exists("fnames_user")) {
+            if (fuser_tag) {
                 recsi <- recs   
-            } else if (!exists("fnames_user")) {
+            } else if (!fuser_tag) {
                 recsi <- recvec[which(yearvec == year)]
             }
         }
@@ -3348,10 +3363,10 @@ if (nfiles == 0) { # read data which are constant in time
             } else if (!rec_tag) {
                 istart <- c(1, recsi[rec]) # c(node, time)
                 if (verbose > 1) {
-                    if (exists("fnames_user")) {
+                    if (fuser_tag) {
                         message(paste0(indent, "Rec ", istart[2], " of ", length(recs), 
                                      " in file (total ", total_rec+1, ")"))
-                    } else if (!exists("fnames_user")) {
+                    } else if (!fuser_tag) {
                         message(paste0(indent, "Rec ", istart[2], 
                                      " (total ", total_rec+1, "/", ntime, ")"))
                     }
@@ -3395,14 +3410,14 @@ if (nfiles == 0) { # read data which are constant in time
                     timei <- timevec[(total_rec+1):(total_rec+nrecspf)]
                 }
             } else if (!rec_tag) {
-                if (exists("fnames_user")) {
+                if (fuser_tag) {
                     timei <- time[recsi[rec]]
-                } else if (!exists("fnames_user")) {
+                } else if (!fuser_tag) {
                     timei <- recsi + (year_cnt - 1)*length(recsi)
                     timei <- timevec[timei[rec]]
                 }
             }
-            if (!exists("fnames_user")) {
+            if (!fuser_tag) {
                 if (snapshot) {
                     timei <- paste0(timei, "_snapshot")
                 } else {
@@ -3538,7 +3553,13 @@ if (nfiles == 0) { # read data which are constant in time
                                       dimsin$length[which(dimsin$id == as.numeric(varsin["dim.id.2"]))]) # node dim
                     }
                 }
-               
+              
+                # dimcheck = NULL --> varname_fesom not included in nc file!
+                if (is.null(dimcheck)) {
+                    stop("varname_fesom[", file, "] = '", varname_fesom[file], "' not included in file\n",
+                         ncids[[var_nc_inds[file]]]$filename)
+                }
+
                 # check number of nodes of variable
                 if (dimcheck[1] != icount[1]) { # icount[1] always equals icount_leap[1]
                     if (verbose > 2) {
@@ -3703,14 +3724,14 @@ if (nfiles == 0) { # read data which are constant in time
             ## Calculate and save transient data for each timestep if wanted
             if (any(transient_out, regular_transient_out, sd_out)) {
 
-                indent <- "            "
+                indent <- "         "
                 if (verbose > 1) {
                     message(paste0(indent, "Calc and save transient ", out_mode, " of area ", area, " ..."))
                 }
-                indent <- "         "
 
                 ## Rotate vector components
-                if (rotate_mesh && all(!!rotate_inds)) { # some entries of 'varname_fesom' need to be rotated
+                if (rotate_mesh && all(!!rotate_inds)) { 
+                    # rotate some entries of 'varname_fesom' back to geographic coords
                     for (i in 1:(length(rotate_inds)/2)) {
                         inds <- rotate_inds[c((i-1)*2+1,(i-1)*2+2)]
                         if (verbose > 1) {
@@ -3729,7 +3750,7 @@ if (nfiles == 0) { # read data which are constant in time
                 }
 
                 ## Preparations1 before calculations
-                if (verbose > 2) {
+                if (verbose > 1) {
                     message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -3756,9 +3777,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                             }
                         }
-                        indent_save <- indent; indent <- paste0(indent_save, "   ")
+                        #indent_save <- indent; indent <- paste0(indent_save, "   ")
                         sub_n3_to_n2xde(data_node) # produces tmp
-                        indent <- indent_save; rm(indent_save)
+                        #indent <- indent_save; rm(indent_save)
                         data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                         rm(tmp)
 
@@ -3783,7 +3804,7 @@ if (nfiles == 0) { # read data which are constant in time
                 } # if average_depth
 
                 ## Preparations2 before calculations e.g. calc rho, f, ... if needed
-                if (verbose > 2) {
+                if (verbose > 1) {
                     message(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -3820,7 +3841,7 @@ if (nfiles == 0) { # read data which are constant in time
                 ## variable specific calculations
                 if (verbose > 1) {
                     #message(paste0(indent, "Calc ", varname, " ..."))
-                    if (verbose > 2) {
+                    if (verbose > 1) {
                         message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
                     }
                 }
@@ -4000,9 +4021,11 @@ if (nfiles == 0) { # read data which are constant in time
                         }
 
                         # create progress bar
-                        pb <- mytxtProgressBar(min=0, max=dim(data_vert)[3], style=pb_style,
-                                               char=pb_char, width=pb_width,
-                                               indent=paste0("     ", indent)) # 5 " " for default message()
+                        if (dim(data_vert)[3] > 1) { # more than 1 depth
+                            pb <- mytxtProgressBar(min=0, max=dim(data_vert)[3], style=pb_style,
+                                                   char=pb_char, width=pb_width,
+                                                   indent=paste0("     ", indent)) # 5 " " for default message()
+                        }
 
                         for (di in 1:dim(data_vert)[3]) { # ndepths
 
@@ -4010,8 +4033,6 @@ if (nfiles == 0) { # read data which are constant in time
                             #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
                             #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
                             #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
-
-                            # new: save memory; do for every depth
                             data_elem <- array(data_vert[,pos[elem2d],di,], 
                                                dim=c(dim(data_vert)[1],    # nvars
                                                      3,                    # 3 nodes per element
@@ -4058,15 +4079,27 @@ if (nfiles == 0) { # read data which are constant in time
                                             message(paste0(indent, "      time = ",
                                                          dimnames(data_elem)[[5]][j], " ..."))
                                         }
-                                   
+                                  
+                                        # set values outside "area" to NA before interp
+                                        # this is possible due to patricks nice interp method
+                                        tmp <- drop(data_elem[i,,,,j])
+                                        nainds <- rep(T, t=elem2d_n)
+                                        if (!exists("poly_inds_geogr")) {
+                                            stop("need to update the elem index within area. still depends on used projection")
+                                        }
+                                        nainds[poly_inds_geogr] <- F
+                                        tmp[,nainds] <- NA
                                         datamat_reg[i,,,di,j] <- t(sub_calc_regular_2d_interp(
                                                                   I_MAT=IMAT[yinds,xinds], 
                                                                   XI=XI[yinds,xinds], 
                                                                   YI=YI[yinds,xinds],
                                                                   xp=xc_global, yp=yc_global,
-                                                                  datamat=drop(data_elem[i,,,,j])))
+                                                                  #datamat=drop(data_elem[i,,,,j])
+                                                                  datamat=drop(tmp)
+                                                                  ))
                                     } # for j nrecspf
                                 } # for i nvars
+                                rm(tmp)
                                 
                                 ## Check data so far
                                 if (verbose > 2) {
@@ -4081,7 +4114,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                             } # if regular_transient_out
 
-                            ## Pick data from plot area
+                            ## Pick data from plot area irregular part
                             if (projection != "orthographic") {
                                 if (proj_lims) {
                                     if (length(poly_inds_geogr) > 0) {
@@ -4118,14 +4151,18 @@ if (nfiles == 0) { # read data which are constant in time
                             }
 
                             # update progress bar
-                            setTxtProgressBar(pb, di)
+                            if (dim(data_vert)[3] > 1) {
+                                setTxtProgressBar(pb, di)
+                            }
 
                             #stop("asd")
 
                         } # di dim(data_node)[3] # ndepths
 
                         # close progress bar
-                        close(pb)
+                        if (dim(data_vert)[3] > 1) {
+                            close(pb)
+                        }
 
                         rm(data_elem)
 
@@ -4201,7 +4238,7 @@ if (nfiles == 0) { # read data which are constant in time
                                         datavec <- data_node
                                     }
 
-                                } # F T
+                                } # old new
                                 datavec <- datavec[,poly_node_inds_geogr,,] # inds in nod2d-space
                             
                             } # if out_mode == "mean" && zave_method == 2
@@ -4229,13 +4266,15 @@ if (nfiles == 0) { # read data which are constant in time
                             if (any(out_mode == c("mean", "depth", "meanint", "depthint"))) {
                               
                                 if (verbose > 1) {
-                                    if (dim_tag == "2D") {
-                                        message(paste0(indent, "Calculate transient ", out_mode, 
-                                                     " (=out_mode) ..."))
-                                    } else if (dim_tag == "3D") {
-                                         message(paste0(indent, "Calculate transient ", depths_plot, "m (=depths_plot) ", 
-                                                      out_mode, " (=out_mode) ..."))
+                                    message(indent, "Calculate transient ", out_mode, " (=out_mode)", appendLF=F)
+                                    if (dim_tag == "3D") {
+                                        message(" at ", depths_plot, appendLF=F)
+                                        if (!(depths == 1 && depths == "bottom")) {
+                                            message(" m", appendLF=F)
+                                        }
+                                        message(" (=depths_plot)", appendLF=F)
                                     }
+                                    message("")
                                     if (verbose > 2) {
                                         message(paste0(indent, "and save at 'time_inds'=",
                                                      paste(time_inds, collapse=",")))
@@ -4674,20 +4713,9 @@ if (nfiles == 0) { # read data which are constant in time
                                              paste0(transient_start_reg, collapse=","), 
                                              "), icount=c(", 
                                              paste0(transient_count_reg, collapse=","), ")"))
-                                message(paste0(indent, "   ", timei[1], " .."))
-                                if (verbose > 2) {
-                                    if (length(timei) > 1) {
-                                        if (length(timei) > 3) {
-                                            message(paste0(indent, "   ", timei[2], " .."))
-                                            message(paste0(indent, "    .."))
-                                            message(paste0(indent, "   ", timei[length(timei)]))
-                                        } else {
-                                            for (i in 2:length(timei)) {
-                                                message(paste0(indent, "   ", timei[i], " .."))
-                                            }
-                                        }
-                                    }
-                                }
+                                message(indent, "   ", timei[1], appendLF=F)
+                                if (ntime != 1) message(" to ", timei[ntime], appendLF=F)
+                                message("")
                             } # verbose
                             
                             for (i in 1:length(data_reg_var)) {
@@ -5838,17 +5866,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## calc varname with ltm data if not calculated before (=not transient)
     if (!any(transient_out, regular_transient_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
 
-        # allocate
-        if (nfiles == 0) {
-            data_node_ltm <- array(NA, 
-                                   dim=c(1, 
-                                         ifelse(dim_tag == "2D", nod2d_n, nod3d_n), 
-                                         #1,
-                                         1, 1),
-                                   dimnames=list(var=varname, node=NULL,
-                                                 depth=depths_plot, time=timespan))
-        }
-
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
         }
@@ -5873,7 +5890,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Preparations1 before calculations
-        if (verbose > 2) {
+        if (verbose > 1) {
             message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
         }
         if (exists("tmp")) rm(tmp)
@@ -5883,9 +5900,27 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(tmp)
         }
 
+        if (nfiles == 0) {
+            if (!exists("data_node_ltm")) {
+                data_node_ltm <- array(NA, 
+                                       dim=c(1, 
+                                             ifelse(dim_tag == "2D", nod2d_n, nod3d_n), 
+                                             #1,
+                                             1, 1),
+                                       dimnames=list(var=varname, node=NULL,
+                                                     depth=depths_plot, time=timespan))
+            } else {
+                stop("what?!?!?!")
+                dimnames(data_node_ltm) <- list(var=varname, node=NULL,
+                                                depth=depths_plot, time=timespan)
+            }
+        } # nfiles = 0
+      
+        
         ## At this point,
         ## dim(data_node_ltm) = c(nvars,nod2d_n,ndepths=1,nrecspf) if dim_tag == "2D"
         ## dim(data_node_ltm) = c(nvars,nod3d_n,ndepths=1,nrecspf) if dim_tag == "3D" 
+
 
         ## Save memory by depth averaging data if possible
         if (average_depth && nfiles > 0) {
@@ -5920,19 +5955,21 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         } # if average_depth
 
-        ## Preparations2 before calculations e.g. calc rho, f, ... if needed
+        ## Preparations2 before calculations e.g. calc rho, f, bathy, ... if needed
         #print(str(data_node_ltm))
-        if (verbose > 2) {
+        if (verbose > 1) {
             message(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
         }
+        indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_prepare2(data_node_ltm) # overwrites data_node_ltm with the result of sub_prepare2()
+        indent <- indent_save
         #print(str(data_node_ltm))
 
         if (csec_ltm_out) {
             if (verbose > 1) {
                 message(paste0(indent, "For Cross section bring data_node_ltm from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                if (verbose > 2) {
+                if (verbose > 1) {
                     message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
                 }
             }
@@ -5956,10 +5993,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## variable specific calculations
         if (verbose > 1) {
             #message(paste0(indent, "Calc ", varname, " ..."))
-            if (verbose > 2) {
+            if (verbose > 1) {
                 message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
             }
         }
+        # ltm part
         if (exists("data_node")) stop("this should not happen")
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_calc(data_node_ltm) # data_node is result of sub_calc()
@@ -5968,6 +6006,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(data_node)
         }
         if (exists("tmp")) rm(tmp)
+
+        #stop("asd")
 
         ## set first dimension name to varname if length = 1
         if (dim(data_node_ltm)[1] == 1) {
@@ -6172,7 +6212,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         # create progress bar
-        if (dim(data_vert_ltm)[3] > 1) {
+        if (dim(data_vert_ltm)[3] > 1) { # ndepths > 1
             pb <- mytxtProgressBar(min=0, max=dim(data_vert_ltm)[3], style=pb_style,
                                    char=pb_char, width=pb_width,
                                    indent=paste0(indent, "   ")) # 5 " " for default message()
@@ -6184,8 +6224,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             #datamat_ltm[1,,,] <- data[,pos[elem2d[1,]],,]
             #datamat_ltm[2,,,] <- data[,pos[elem2d[2,]],,]
             #datamat_ltm[3,,,] <- data[,pos[elem2d[3,]],,]
-
-            # for every depth to save memory
             data_elem_ltm <- array(data_vert_ltm[,pos[elem2d],di,], 
                                    dim=c(dim(data_vert_ltm)[1],    # nvars
                                          3,                    # 3 nodes per element
@@ -6233,14 +6271,26 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                          dimnames(data_elem_ltm)[[5]][j], " ..."))
                         }
                    
+                        # set values outside "area" to NA before interp
+                        # this is possible due to patricks nice interp method
+                        tmp <- drop(data_elem_ltm[i,,,,j])
+                        nainds <- rep(T, t=elem2d_n)
+                        if (!exists("poly_inds_geogr")) {
+                            stop("need to update the elem index within area. still depends on used projection")
+                        }
+                        nainds[poly_inds_geogr] <- F
+                        tmp[,nainds] <- NA
                         datamat_reg_ltm[i,,,di,j] <- t(sub_calc_regular_2d_interp(
                                                        I_MAT=IMAT[yinds,xinds], 
                                                        XI=XI[yinds,xinds], 
                                                        YI=YI[yinds,xinds],
                                                        xp=xc_global, yp=yc_global,
-                                                       datamat=drop(data_elem_ltm[i,,,,j])))
+                                                       #datamat=drop(data_elem_ltm[i,,,,j])
+                                                       datamat=tmp
+                                                       ))
                     } # for j nrecspf == 1 here (ltm)
                 } # for i nvars
+                rm(tmp)
                 
                 ## Check data so far
                 if (verbose > 2) {
@@ -6684,11 +6734,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (verbose > 0) {
             if (nfiles > 0) {
-                message(paste0("7) Plot average (", timespan, ") ", longname, 
-                             " in ", area, " area ..."))  
+                message(paste0("7) Plot ltm (timespan=", timespan, ") ", 
+                               varname, " (", longname,
+                             ") in ", area, " area ..."))  
             } else {
-                message(paste0("7) Plot ", longname,
-                             " in ", area, " area ..."))  
+                message(paste0("7) Plot ", varname, " (", longname,
+                             ") in ", area, " area ..."))  
             }
         }
         indent <- "   "
@@ -7098,7 +7149,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     zlevels <- NULL
                 } else {
                     message(indent, "   Use your provided ", varnamei, "_levels=\n",
-                            indent, "      ", paste0(round(zlevels, 4), collapse=","), ".")
+                            indent, "      ", paste0(round(zlevels, 4), collapse=","))
                     nlevels <- length(zlevels)
                 }
             }
@@ -7140,13 +7191,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                  verbose=F)
 
             if (!user_levels_exist) {
-                message(indent, "   Note: you can define your own color levels with, e.g.,\n",
+                message(indent, "   Note: you can define your own color levels with e.g.:\n",
                         indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",
                         indent, "      in namelist.var.r.")
             }
             if (!user_palname_exist && !user_cols_exist) {
-                message(indent, "   Note: you can define your own colors with the line\n",
-                        indent, "      ", varnamei, "_palname = \"plasma\" # run color_function() for a demo of available color palettes or, e.g.,\n", 
+                message(indent, "   Note: you can define your own colors with e.g.:\n",
+                        indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or e.g.:\n", 
                         indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
                         indent, "      in namelist.var.r.")
             }

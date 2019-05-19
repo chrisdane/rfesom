@@ -208,12 +208,14 @@ sub_prepare2 <- function(data_node) {
 
     } #if (insitudens_tag || potdens_tag)
 
-
     ## calculate coriolis if needed
     if (coriolis_tag) {
 
         # only once necessary
         if (!exists("coriolis_node")) {
+            if (verbose > 1) {
+                message(indent, "Calc f = 2*omega*sin(y) with omega = ", omega, " ...")
+            }
         
             # corliolis in node space (default)
             coriolis_node <<- array(2*omega*sin(ycsur*pi/180),
@@ -223,6 +225,87 @@ sub_prepare2 <- function(data_node) {
         } # if !exists("coriolis_node")
 
     } # if coriolis_tag
+
+    ## read bathymetry data for 2D variables (dim_tag = 2D") obtained from mesh files (nfiles = 0)
+    if (any(varname == c("bathy", "gradbathy", "hvel_dot_gradbathy",
+                         "c_barotrop", "foverh"))) {
+        
+        if (varname != "hvel_dot_gradbathy") ndepths <<- 1
+
+        ## how to determine depths correctly?
+        use_depth <<- "model" # "model" or "real"
+        # real depth (depth.out):  -129 -112  -83  -66  -28  -17
+        # model depth (nod3d.out): -125 -125  -80  -80  -30  -20 
+
+        if (use_depth == "model") {
+            if (verbose > 1) {
+                message(paste0(indent, "Get model bathymetry (last depth before -999 in aux3d.out) ..."))
+            }
+            
+            if (varname != "hvel_dot_gradbathy") {
+                fid <<- paste0(meshpath, "nod3d.out")
+                nod3d_n <<- as.numeric(readLines(fid, n=1))
+                if (verbose > 1) {
+                    message(paste0(indent, "   read ", nod3d_n, 
+                                 " 3D nodes from nod3d.out ..."))
+                }
+                if (!fread_tag) {
+                    tmp <<- scan(fid, skip=1, quiet=T)
+                    nod3d <<- matrix(tmp, nrow=nod3d_n, byrow=T)
+                } else if (fread_tag) {
+                    tmp <<- fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
+                    nod3d <<- as.matrix(tmp)
+                }
+                nod_z <<- drop(nod3d[,4])
+                rm(tmp, nod3d, envir=.GlobalEnv)
+                
+                fid <<- paste0(meshpath, "aux3d.out")
+                aux3d_n <<- as.numeric(readLines(fid, n=1))
+                if (verbose > 1) {
+                    message(paste0(indent, "   read ", aux3d_n*nod2d_n, 
+                                 " 3D node indices from aux3d.out ..."))
+                }
+                if (!fread_tag) {
+                    tmp <<- scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
+                    aux3d <<- matrix(tmp, nrow=aux3d_n, ncol=nod2d_n)
+                } else if (fread_tag) {
+                    tmp <<- fread(fid, skip=1, nrows=aux3d_n*nod2d_n, 
+                                 showProgress=ifelse(verbose > 1, T, F))
+                    aux3d <<- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
+                }
+                rm(tmp, envir=.GlobalEnv)
+            } # if varname != "hvel_dot_gradbathy"
+
+            inds <<- apply(aux3d, 2, function(x) x[which(x == -999)[1] - 1])
+            bathy_node <<- abs(nod_z[inds])
+            rm(inds, envir=.GlobalEnv)
+            
+            # model depths
+            fesom_depths <<- c(0, sort(unique(abs(bathy_node)))) # = same as in z column of nod3d.out 
+        
+        } else if (use_depth == "real") {
+            if (verbose > 1) {
+                message(paste0(indent, "Read original bathymetry information from depth.out ..."))
+            }
+            fid <<- paste0(meshpath, "depth.out")
+            topo <<- scan(fid, quiet=T)
+            bathy_node <<- abs(topo)
+        
+        } # which depth to use?
+        
+        #bathy_node <<- replicate(bathy_node, n=1) # nvar
+        #bathy_node <<- replicate(bathy_node, n=1) # ndepth == 1
+        #bathy_node <<- replicate(bathy_node, n=1) # nrecspf == 1 (ltm)
+        #bathy_node <<- aperm(bathy_node, c(2, 1, 3, 4))
+        bathy_node <<- array(bathy_node,
+                             dim=c(1, nod2d_n, dim(data_node)[3:4])) # nvar,n2,ndepth,rec
+        dimnames(bathy_node)[1] <<- list(var="bathy")
+
+        #if (varname != "hvel_dot_gradbathy") {
+        #    data_node_ltm <<- bathy_node
+        #}
+
+    } # "bathy", "gradbathy", "hvel_dot_gradbathy", "c_barotrop", "foverh"
 
 } # sub_prepare2 function
 
