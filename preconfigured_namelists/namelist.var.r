@@ -4025,29 +4025,49 @@ if (varname == "tos") {
 } else if (varname == "Frho") {
     longname <- "Density flux to ocean"
     subtitle <- ">0 surface density gain"
-    power_out <- 6
-    multfac_out <- base^power_out
-    multfac_out_plot <- base^-power_out
-    units_out <- paste0("kg m-2 s-1 x ", multfac_out_plot)
+    units_out <- "kg m-2 s-1"
+    power_plot <- 6
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("kg m-2 s-1 x ", base^-power_plot)
     var_label_plot <- substitute(paste("Density flux to ocean [kg ",
-                                     var1^-2, " ", var2^-1, "] " %*% "  ",
-                                     base^power_out),
+                                     var1^-2, " ", var2^-1, "] " %*% " ",
+                                     base^-power_plot),
                               list(var1="m", var2="s", base=base,
-                                   power_out=-power_out))
+                                   power_plot=power_plot))
+    if (any(out_mode == c("meanint", "depthint"))) {
+        units_out <- "kg s-1"
+    }
     dim_tag <- "3D"
-    horiz_deriv_tag <- F
+    varname_fesom <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
-    varname_fesom <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
-    rotate_inds <- F
-    vec <- F
+
+} else if (varname == "Frho2") {
+    longname <- "Density flux to ocean"
+    subtitle <- ">0 surface density gain"
+    units_out <- "kg m-2 s-1"
+    power_plot <- 6
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("kg m-2 s-1 x ", base^-power_plot)
+    var_label_plot <- substitute(paste("Density flux to ocean [kg ",
+                                     var1^-2, " ", var2^-1, "] " %*% " ",
+                                     base^-power_plot),
+                              list(var1="m", var2="s", base=base,
+                                   power_plot=power_plot))
+    if (any(out_mode == c("meanint", "depthint"))) {
+        units_out <- "kg s-1"
+    }
+    dim_tag <- "3D" # since temp and salt are needed
+    varname_fesom <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt") 
+    typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "forcing.") 
+    diagsuffix <- c("", "", "diag.", "diag.", "diag.")
 
 } else if (varname == "Frhobudget") {
     longname <- "Density flux to ocean"
     subtitle <- ">0 surface density gain"
     units_out <- "kg m-s s-1"
     power_plot <- 6
-    multfac_plot <- base^power_out
+    multfac_plot <- base^power_plot
     units_plot <- paste0("kg m-2 s-1 x ", multfac_plot)
     var_label_plot <- substitute(paste("Density flux to ocean [kg ",
                                      var1^-2, " ", var2^-1, "] " %*% "  ",
