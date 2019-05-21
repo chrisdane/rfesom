@@ -2893,13 +2893,14 @@ sub_calc <- function(data_node) {
                              "FrhoB", "FrhoBbudget",
                              "Frho2", "FrhoB2"))) {
             if (verbose > 1) {
-                message(paste0(indent, varname, " = Fthermal + Fhaline"))
+                message(paste0(indent, "Frho = Fthermal + Fhaline"))
             }
             
             if (any(varname == c("Frho", "FrhoB", "Frho2", "FrhoB2"))) {
                 data_node <- Fthermal_node + Fhaline_node
                 
                 if (varname == "FrhoB" || varname == "FrhoB2") {
+                    if (verbose > 1) message(indent, varname, " = -g/rho0 * Frho")
                     data_node <- -g/rho0*data_node
                 }
                 

@@ -3132,10 +3132,16 @@ if (nfiles == 0) { # read data which are constant in time
                     # claudis
                     } else if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
                                                   "Arc22_sub", "Arc22_sub_small"))) {
-                        fnames[file] <- paste0(datainpath, "Arc22.", year, ".",
-                                               typesuffix[file], diagsuffix[file],
-                                               snapshotsuffix[file], "sub.nc")
-                    
+                        if (runid == "Arc22_sub_daily" && dim_tag == "2D") {
+                            fnames[file] <- paste0(datainpath, "Arc22.", year, ".",
+                                                   typesuffix[file], diagsuffix[file],
+                                                   snapshotsuffix[file], "sub.n2d.nc")
+                        } else {
+                            fnames[file] <- paste0(datainpath, "Arc22.", year, ".",
+                                                   typesuffix[file], diagsuffix[file],
+                                                   snapshotsuffix[file], "sub.nc")
+                        }
+
                     # default 
                     } else {
                         fnames[file] <- paste0(datainpath, runid, ".", year, ".", 
