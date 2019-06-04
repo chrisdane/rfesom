@@ -1256,28 +1256,32 @@ if (varname == "tos") {
 
 } else if (varname == "HRS") {
     longname <- "Horizontal Reynolds Stress"
-    subtitle <- ""
+    subtitle <- ">0 eddy growth due to barotropic instability"
+    units_out <- "m2 s-3"
+    units_plot <- units_out
     if (!integrate_depth) {
-        power_out <- 8
-        multfac_out <- base^power_out
-        units_out <- paste0("m2 s-3 x ", multfac_out)
+        power_plot <- 8
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste("HRS [", 
                                         var1^2, " ", var2^-3, 
-                                        "] " %*% " ", base^power_out),
+                                        "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=power_plot))
     } else if (integrate_depth) {
-        power_out <- 4
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-3 x ", multfac_out)
+        units_out <- "m3 s-3"
+        units_plot <- units_out
+        power_plot <- 4
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m3 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), "HRS dz [",
                                         var1^3, " ", var2^-3, 
-                                        "] " %*% " ", base^power_out),
+                                        "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=power_plot))
     }
     dim_tag <- "3D"
-    horiz_deriv_tag <- "rot"
+    horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
     varname_fesom <- c("u", "v", "uu", "vv", "uv")
@@ -1286,28 +1290,32 @@ if (varname == "tos") {
 
 } else if (varname == "VRS") {
     longname <- "Vertical Reynolds Stress"
-    subtitle <- ""
+    subtitle <- ">0 Kelvin-Helmholtz instability"
+    units_out <- "m2 s-3"
+    units_plot <- units_out
     if (!integrate_depth) {
-        power_out <- 12
-        multfac_out <- base^power_out
-        units_out <- paste0("m2 s-3 x ", multfac_out)
+        power_plot <- 12
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste("VRS [",
                                         var1^2, " ", var2^-3, 
-                                        "] " %*% " ", base^power_out),
+                                        "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=-power_plot))
     } else if (integrate_depth) {
-        power_out <- 4
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-3 x ", multfac_out)
+        units_out <- "m3 s-3"
+        units_plot <- units_out
+        power_plot <- 4
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m3 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), "VRS dz [",
                                         var1^3, " ", var2^-3, 
-                                        "] " %*% " ", base^power_out),
+                                        "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=power_plot))
     }
     dim_tag <- "3D"
-    horiz_deriv_tag <- "rot"
+    horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "diag.", "diag.")
     varname_fesom <- c("u", "v", "w", "uw", "vw")
@@ -1455,37 +1463,36 @@ if (varname == "tos") {
 
 } else if (varname == "wbeddy") {
     longname <- "w'b' (Potential Eddy -> Kinetic Eddy Conversion)"
-    subtitle <- ""
+    subtitle <- ">0 eddy growth due to baroclinic instability"
+    units_out <- "m2 s-3"
+    units_plot <- units_out
     if (integrate_depth) {
-        power_out <- 4
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-3 x ", multfac_out)
+        units_out <- "m3 s-3"
+        power_plot <- 6
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), 
                                          #"P"[e], "K"[e],
                                          bar(paste("w'b'")), 
                                          " dz [", var1^3, " ", var2^-3, 
-                                         "] " %*% " ", base^power_out),
+                                         "] " %*% " ", base^-power_plot),
                                    list(var1="m", var2="s", 
-                                        base=base, power_out=-power_out))
+                                        base=base, power_plot=power_plot))
     } else {
-        power_out <- 10
-        multfac_out <- base^power_out
-        units_out <- paste0("m2 s-3 x ", multfac_out)
+        power_plot <- 10
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(#"P"[e], "K"[e], 
                                          bar(paste("w'b'")),
                                          " [", var1^2, " ", var2^-3, 
-                                         "] " %*% " ", base^power_out),
+                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=power_plot))
     }
-    var_label_plot_roundfac <- 2
     dim_tag <- "3D"
-    horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "diag.", "diag.")
     varname_fesom <- c("w", "rho", "wrho")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "uvbeddy") {
     longname <- "Norm of Horizontal Eddy Buoyancy Flux"
@@ -1578,32 +1585,36 @@ if (varname == "tos") {
 } else if (varname == "gradB") {
     longname <- "grad_h B"
     subtitle <- ""
+    units_out <- "s-2"
     if (integrate_depth) {
-        power_out <- 4
-        multfac_out_plot <- base^power_out
-        units_out <- paste0("s-2 m x ", multfac_out_plot)
-        multfac_out <- multfac_out_plot
-        var_label_plot <- substitute(paste("|", bold(nabla)[h], bar(b), "| [", 
-                                         units_out^-2, " m] " %*% " ", base^power_out),
-                                   list(var="s", base=base, power_out=-power_out))
-        horiz_deriv_tag3d <- T
+        units_out <- "m s-2"
+        power_plot <- 4
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m s-2 x ", multfac_plot)
+        var_label_plot <- substitute(paste(integral(),
+                                           "|", bold(nabla)[h], bar(b), "| dz [", var1, 
+                                           , " ", var2^-2, " m] " %*% " ", base^-power_plot),
+                                   list(var1="m", var2="s", 
+                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m3 s-2"
+        }
     } else {
-        power_out <- 8
-        multfac_out_plot <- base^power_out
-        units_out <- paste0("s-2 x ", multfac_out_plot)
-        multfac_out <- multfac_out_plot
-        var_label_plot <- substitute(paste("|", bold(nabla)[h], bar(b), "|  [", 
-                                         units_out^-2, "] " %*% " ", base^power_out),
-                                   list(var="s", base=base, power_out=-power_out))
-        horiz_deriv_tag3d <- F
+        power_plot <- 8
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("s-2 x ", multfac_plot)
+        var_label_plot <- substitute(paste("|", bold(nabla)[h], bar(b), "| [", 
+                                           var^-2, "] " %*% " ", base^-power_plot),
+                                   list(var="s", base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m2 s-2"
+        }
     }
     dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
     varname_fesom <- c("temp", "salt")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "gradmld") {
     longname <- "grad_h MLD"
@@ -2037,24 +2048,21 @@ if (varname == "tos") {
 
 } else if (varname == "FeKe") {
     longname <- "Eddy Wind Stress Energy"
-    subtitle <- ""
-    power_out <- 4
-    multfac_out_plot <- base^power_out
-    units_out <- paste0("m3 s-3 x ", multfac_out_plot)
-    multfac_out <- multfac_out_plot
+    subtitle <- ">0 eddy growth due to wind anomalies"
+    units_out <- "m3 s-3"
+    power_plot <- 4
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("m3 s-3 x ", multfac_plot)
     var_label_plot <- substitute(paste(rho[0]^-1 , " ", 
                                      bar(paste(bold(u)[h], "'" %.% "", bold(tau)[0], "'")),
                                      " [", var1^3, " ", var2^-3, 
-                                     "] " %*% " ", base^power_out),
+                                     "] " %*% " ", base^power_plot),
                           list(var1="m", var2="s", 
-                               base=base, power_out=-power_out))
+                               base=base, power_plot=-power_plot))
     dim_tag <- "3D"
-    horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
     varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
-    rotate_inds <- F 
-    vec <- F
 
 } else if (varname == "divuvrho") {
     longname <- "div_h(u_h rho)"
@@ -2611,6 +2619,70 @@ if (varname == "tos") {
     dim_tag <- "2D"
     horiz_deriv_tag <- T
     varname_fesom <- "dxphi"
+    vec <- T
+
+} else if (varname == "dxphi") {
+    longname <- "Zonal divergent part of depth-integrated eddy temperature flux (eq 5 JM02)"
+    units_out <- "degC m2 s-1"
+    units_plot <- units_out
+    if (F) {
+        power_plot <- -8
+        multfac_plot <- base^power_plot
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(u, "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "] " %*% base^power_plot),
+                                   list(var1="C", var2="m", var3="s",
+                                        base=base, power_plot=-power_plot))
+    } else if (T) {
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(u, "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "]"),
+                                   list(var1="C", var2="m", var3="s"))
+    }
+    dim_tag <- "2D"
+    varname_fesom <- "dxphi"
+
+} else if (varname == "dyphi") {
+    longname <- "Meridional divergent part of depth-integrated eddy temperature flux (eq 5 JM02)"
+    units_out <- "degC m2 s-1"
+    units_plot <- units_out
+    if (F) {
+        power_plot <- -8
+        multfac_plot <- base^power_plot
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(v, "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "] " %*% base^power_plot),
+                                   list(var1="C", var2="m", var3="s",
+                                        base=base, power_plot=-power_plot))
+    } else if (T) {
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(v, "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "]"),
+                                   list(var1="C", var2="m", var3="s"))
+    }
+    dim_tag <- "2D"
+    varname_fesom <- "dyphi"
+    
+} else if (varname == "gradphi") {
+    longname <- "Divergent part of depth-integrated eddy temperature flux (eq 5 JM02)"
+    units_out <- "degC m2 s-1"
+    units_plot <- units_out
+    if (F) {
+        power_plot <- -8
+        multfac_plot <- base^power_plot
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(bold(u)[h], "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "] " %*% base^power_plot),
+                                   list(var1="C", var2="m", var3="s",
+                                        base=base, power_plot=-power_plot))
+    } else if (T) {
+        var_label_plot <- substitute(paste("(", integral(), " ", bar(paste(bold(u)[h], "'T'")), " dz)"[div],
+                                         " [", degree, var1, " ", var2^2, " ", var3^-1,
+                                         "]"),
+                                   list(var1="C", var2="m", var3="s"))
+    }
+    dim_tag <- "2D"
+    varname_fesom <- c("dxphi", "dyphi")
     vec <- T
 
 } else if (varname == "divuvs") {
@@ -3440,13 +3512,10 @@ if (varname == "tos") {
 } else if (varname == "MOCw") {
     longname <- "MOCw"
     regular_dy_moc <- 1/2
-    subtitle <- ""
-    multfac_out <- 1
-    units_out <- "Sv"
+    units_out <- "Sv" 
     var_label_plot <- "MOC [Sv]"
-    var_label_plot_roundfac <- 1
     dim_tag <- "3D"
-    horiz_deriv_tag <- "geo" # for cluster vol 
+    horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
     if (cpl_tag) {
@@ -3454,8 +3523,20 @@ if (varname == "tos") {
     } else {
         varname_fesom <- "w"
     }
-    rotate_inds <- F
-    vec <- F
+
+} else if (varname == "MOCv") {
+    longname <- "MOCv"
+    regular_dy_moc <- 1/2
+    units_out <- "Sv" 
+    var_label_plot <- "MOC [Sv]"
+    dim_tag <- "3D"
+    horiz_deriv_tag <- T # for cluster vol 
+    typesuffix <- "oce."
+    diagsuffix <- ""
+    varname_fesom <- "v"
+    if (cpl_tag) {
+        varname_fesom <- "vo"
+    }
 
 } else if (varname == "Tair") {
     longname <- "Air Temperature 2m"

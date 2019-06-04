@@ -155,7 +155,7 @@ if (regular_transient_out &&
 }
 # check if spatial interpolation to regular is even necessary 
 # depending on the user choice area
-if (length(map_geogr_lim_lon) == 1) { # a single point
+if (exists("map_geogr_lim_lon") && length(map_geogr_lim_lon) == 1) { # a single point
     if (regular_transient_out) {
         transient_out <- T
         if (out_mode == "area") {
@@ -197,12 +197,14 @@ if (!exists("average_depth")) { # potentially set by user in namelist.var
                                  "csec_mean", "csec_depth"))) ||
         (regular_transient_out &&
          any(out_mode == c("areadepth"))) ||
-        any(varname == c("MOCw", "c_long_rossby"))) {
+        any(varname == c("c_long_rossby")) ||
+        regexpr("MOC", varname) != -1) {
         average_depth <- F
     } else {
         average_depth <- T
     }
 }
+if (regexpr("MOC", varname) != -1) plot_map <- F 
 if (moc_ltm_out && regexpr("MOC", varname) == -1) {
     moc_ltm_out <- F # calc MOC only when varname is MOCx
 }
@@ -733,7 +735,7 @@ if (verbose > 0) {
     message(paste0("varname: ", varname))
     message(paste0("longname: ", longname))
     if (nfiles > 0) {
-        if (dim_tag == "3D" && !integrate_depth && varname != "MOCw") {
+        if (dim_tag == "3D" && !integrate_depth) {
             message(paste0("depths: ", 
                          ifelse(length(depths) == 2, 
                                 paste0(depths[1], "-", depths[2]), depths[1]), 
@@ -1280,9 +1282,9 @@ if (horiz_deriv_tag != F ||
     deriv_2d_nc <- nc_open(deriv_2d_fname)
     bafux_2d <- ncvar_get(deriv_2d_nc, "bafux_2d")
     bafuy_2d <- ncvar_get(deriv_2d_nc, "bafuy_2d")
-    voltriangle <- ncvar_get(deriv_2d_nc, "voltriangle")
-    cluster_area_2d <- ncvar_get(deriv_2d_nc, "cluster_area_2d") # dim=nod2d_n
-    resolution <- ncvar_get(deriv_2d_nc, "resolution")
+    voltriangle <- as.vector(ncvar_get(deriv_2d_nc, "voltriangle"))
+    cluster_area_2d <- as.vector(ncvar_get(deriv_2d_nc, "cluster_area_2d")) # dim=nod2d_n
+    resolution <- as.vector(ncvar_get(deriv_2d_nc, "resolution"))
     resolution_unit <- ncatt_get(deriv_2d_nc, "resolution", "units")$value
 
 } # if horiz_deriv_tag
@@ -2625,25 +2627,102 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
         message(paste0("3) Find coordinates of area '", area, "' for MOC calculation: ..."))
     }
 
-    # to do: case1: maskfile, case2: closed polygon
-
-    ## moc_mask must be 0 or 1 (not T or F)
-    message(paste0(indent, "use maskfile ", moc_mask_file, " ..."))
+    # regular lats for binning
     moc_reg_lat_global <- seq(-90+regular_dy_moc/2, 90-regular_dy_moc/2, b=regular_dy_moc)
-    if (area != "moc_global") {
+    
+    # mask
+    # moc_mask must be 0 (outside) or 1 (inside). NOT T or F
+    if (exists("moc_mask_file") && file.exists(moc_mask_file)) {
+        message(paste0(indent, "use maskfile ", moc_mask_file, " ..."))
         moc_mask_inds <- fread(moc_mask_file)$V1
         moc_mask_inds <- moc_mask_inds[2:moc_mask_inds[1]] # remove first line of dimas mask file
         moc_mask <- rep(0, t=nod2d_n)
         moc_mask[moc_mask_inds] <- 1
-    
-    } else if (area == "moc_global") { # global moc
-        moc_mask <- rep(1, t=nod2d_n)
-    }
+    } else {
+        if (area == "moc_global") { # global moc
+            moc_mask <- rep(1, t=nod2d_n)
+        } else {
+            # make new moc mask 
+            moc_mask_file <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".dat")
+            message(indent, "MOC mask area is not 'moc_global' AND no moc mask file is given for meshid = '", meshid, 
+                    "'. Determine moc mask now in an interactive session.")
+            if (!interactive()) stop("run this script in an interactive session.")
+            
+            # select MOC area in interactive session
+            if (!capabilities("X11")) {
+                stop("capabilities(\"X11\") = ", capabilities("X11"), " --> cannot open plot device")
+            }
+            X11(width=14, height=14) # inch
+            plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]",
+                 pch=".", xaxt="n", yaxt="n")
+            axis(1, at=pretty(xcsur, n=20))
+            axis(2, at=pretty(ycsur, n=20), las=2)
+            abline(v=pretty(xcsur, n=20), lwd=0.5)
+            abline(h=pretty(ycsur, n=20), lwd=0.5)
+            title(paste0("Select MOC mask area '", area, "' for mesh '", meshid, "'"))
+            source(paste0(subroutinepath, "functions/mylocator.r"))
+            message(indent, "The polygon is closed automatically in the end. If you want to change the coordinates for MOC area '", 
+                    area, "', remove ", moc_mask_file, " and rerun the script.")
+            moc_mask_coords <- mylocator()
+            
+            # check user coords
+            if (length(moc_mask_coords) == 0 || 
+                length(moc_mask_coords) > 0 && length(moc_mask_coords$x) < 4) {
+                stop("Rerun script and provide at least 3 surface points for MOC mask for MOC area '", area, "'.")
+            }
+            moc_mask_coords <- cbind(moc_mask_coords$x, moc_mask_coords$y)
+            
+            # close polygon
+            moc_mask_coords <- rbind(moc_mask_coords, moc_mask_coords[1,])
 
-    if (F) {
-        plot(xcsur, ycsur, pch=".")
-        points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="red", pch=".")
-        #stop("asd")
+            # find surface nodes within polygon
+            success <- load_package("sp")
+            if (!success) stop()
+            moc_mask_inds <- sp::point.in.polygon(point.x=xcsur, point.y=ycsur,
+                                                  pol.x=moc_mask_coords[,1], pol.y=moc_mask_coords[,2])
+            moc_mask_inds <- which(moc_mask_inds == 1 | moc_mask_inds == 2 | moc_mask_inds == 3) # outside or on edge or on vertex
+            moc_mask <- rep(0, t=nod2d_n)
+            moc_mask[moc_mask_inds] <- 1
+            
+            # show surface nodes
+            if (length(dev.list()) > 0) {
+                points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
+            }
+
+            # save mask file in Dimas format
+            if (verbose > 0) message("Save surface indices of MOC area '", area, "' for mesh '", 
+                                     meshid, "' to ", moc_mask_file, " ...")
+            write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
+        
+            # close selection plot
+            dev.off()
+
+        } # if mask file not given AND not global moc is wanted
+
+    } # if exists("moc_mask_file")
+
+    # save moc area if wanted
+    if (plot_moc_mask) {
+        message(indent, "Plot ", moc_mask_plotname, " ...")
+        png(moc_mask_plotname, width=2666, height=2666, res=dpi)
+        plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]", 
+             xaxt="n", yaxt="n", pch=".")
+        axis(1, at=pretty(xcsur, n=20))
+        axis(2, at=pretty(ycsur, n=20), las=2)
+        abline(v=pretty(xcsur, n=20), lwd=0.5)
+        abline(h=pretty(ycsur, n=20), lwd=0.5)
+        points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
+        title(paste0("MOC mask area '", area, "' for mesh '", meshid, "'"))
+        dev.off()
+    } # if plot_moc_mask
+
+    map_geogr_lim_lon <- range(xcsur[which(moc_mask == 1)])
+    map_geogr_lim_lat <- range(ycsur[which(moc_mask == 1)])
+    poly_geogr_lim_lon <- map_geogr_lim_lon
+    poly_geogr_lim_lat <- map_geogr_lim_lat
+    if (verbose > 1) {
+        message(indent, "   min/max longitude = ", min(map_geogr_lim_lon), "/", max(map_geogr_lim_lon))
+        message(indent, "   min/max latitude = ", min(map_geogr_lim_lat), "/", max(map_geogr_lim_lat))
     }
 
     if (verbose > 0) {
@@ -3172,11 +3251,32 @@ if (nfiles == 0) { # read data which are constant in time
 
         # time_user
         if (fuser_tag) {
-            time <- ncids[[1]]$dim$time$vals[recs]
-            timeunit <- ncids[[1]]$dim$time$units
+            time_dim_names <- c("time", "T", "month", "months", "year", "years")
+            dim_names <- names(ncids[[1]]$dim)
+            if (any(match(time_dim_names, dim_names))) {
+                time_dim <- which(!is.na(match(time_dim_names, dim_names)))
+                time <- ncids[[1]]$dim[[time_dim]]$vals[recs]
+                timeunit <- ncids[[1]]$dim[[time_dim]]$units
+            } else {
+                message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
+                        " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
+                non_nod_dims <- which(regexpr("node", dim_names) == -1)
+                if (length(non_nod_dims) > 0) {
+                    non_nod_dims <- non_nod_dims[1]
+                    message(indent, "Use dimension no. ", non_nod_dims, ": \"", dim_names[non_nod_dims], "\" for time ...")
+                    time <- ncids[[1]]$dim[[non_nod_dims]]$vals[recs] 
+                    timeunit <- ncids[[1]]$dim[[non_nod_dims]]$units
+                    if (timeunit == "") timeunit <- "timeunit"
+                } else { # only spatial dim
+                    time <- 1
+                    timeunit <- "timeunit"
+                }
+            } # if no standard time dim given in fuser
             ntime <- length(time)
             timevec <- time
-        }
+            timespan <- time[1]
+            if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
+        } # fuser_tag
         
         if (length(ncids) == 1) {
             var_nc_inds <- rep(1, t=length(varname_fesom))
@@ -3559,16 +3659,36 @@ if (nfiles == 0) { # read data which are constant in time
                                       dimsin$length[which(dimsin$id == as.numeric(varsin["dim.id.2"]))]) # node dim
                     }
                 }
-              
+
                 # dimcheck = NULL --> varname_fesom not included in nc file!
                 if (is.null(dimcheck)) {
                     stop("varname_fesom[", file, "] = '", varname_fesom[file], "' not included in file\n",
                          ncids[[var_nc_inds[file]]]$filename)
                 }
+                
+                # order correct dims: 1:node, 2:time
+                # this does not work if 2d and 3d vars are loaded together:
+                if (F) {
+                    if (dim_tag == "2D") {
+                        nodedim <- which(dimcheck == nod2d_n)
+                    } else if (dim_tag == "3D") {
+                        nodedim <- which(dimcheck == nod3d_n)
+                    }
+                } else {
+                    if (exists("nod2d_n") && exists("nod3d_n")) {
+                        nodedim <- which(dimcheck == nod2d_n | dimcheck == nod3d_n)
+                    } else if (exists("nod2d_n") && !exists("nod3d_n")) {
+                        nodedim <- which(dimcheck == nod2d_n)
+                    } else if (!exists("nod2d_n") && exists("nod3d_n")) {
+                        nodedim <- which(dimcheck == nod3d_n)
+                    }
+                } # old new
+                if (nodedim == 0) stop("this should not happen")
+                dimcheck <- c(dimcheck[nodedim], dimcheck[-nodedim]) 
 
                 # check number of nodes of variable
                 if (dimcheck[1] != icount[1]) { # icount[1] always equals icount_leap[1]
-                    if (verbose > 2) {
+                    if (verbose > 1) {
                         message(paste0(indent, "   Note: ", varname_fesom[file], " data saved on ",
                                      dimcheck[1], " nodes instead of ", icount[1]))
                     }
@@ -3721,6 +3841,7 @@ if (nfiles == 0) { # read data which are constant in time
                 } # if MLD needed
 
             } # for file nfiles per time step
+            #stop("asd")
             rm(raw_data)
             if (rec_tag) rm(ncids)
             if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -3857,8 +3978,9 @@ if (nfiles == 0) { # read data which are constant in time
                 if (exists("tmp")) rm(tmp)
 
                 ## set first dimension name to varname if length = 1
-                if (dim(data_node)[1] == 1) {
-                    dimnames(data_node)[[1]] <- varname
+                if (is.null(dimnames(data_node)[[1]]) ||
+                    (dim(data_node)[1] == 1 && dimnames(data_node)[[1]] != varname)) {
+                    dimnames(data_node)[1] <- list(var=varname)
                 }
 
                 if (F) {
@@ -4991,31 +5113,29 @@ if (nfiles == 0) { # read data which are constant in time
 
                     ## dim(data_node) = # c(nvars,nreg_lat,ndepths,ntime)
 
-                    # remove possible redundant latitudes and bottom depths with no values
+                    ## remove possible redundant latitudes and bottom depths with no values
                     if (total_rec == 0) {
+                        moc_reg_lat <- moc_reg_lat_global
                         lat_na_inds <- which(apply(moc_topo, 1, function(x) all(x == 1)))
                         depth_na_inds <- which(apply(moc_topo, 2, function(x) all(x == 1)))
-                    }
-
+                        if (length(lat_na_inds) > 0) {
+                            moc_reg_lat <- moc_reg_lat[-lat_na_inds]
+                            moc_topo <- moc_topo[-lat_na_inds,]
+                        }
+                        if (length(depth_na_inds) > 0) {
+                            moc_topo <- moc_topo[,-depth_na_inds]
+                        }
+                    } # if total_rec == 0
                     if (length(lat_na_inds) > 0) {
-                        if (total_rec == 0) moc_reg_lat <- moc_reg_lat_global[-lat_na_inds]
-                        #message(str(data_node))
                         data_node <- data_node[,-lat_na_inds,,]
-                        #message(str(data_node))
-                        if (total_rec == 0) moc_topo <- moc_topo[-lat_na_inds,]
-                    } else {
-                        moc_reg_lat <- moc_reg_lat_global
                     }
                     if (length(depth_na_inds) > 0) {
-                        # depths are already correct
-                        #message(str(data_node))
                         data_node <- data_node[,,-depth_na_inds,]
-                        #message(str(data_node))
-                        if (total_rec == 0) moc_topo <- moc_topo[,-depth_na_inds]
                     }
-
-                    ## dim(data_node) = # c(nvars,nreg_lat,ndepths,ntime)
-                    stop("update for dims and data_node_ltm")
+                    if (total_rec == 0) {
+                        # improve this: only use depths where MOC has data
+                        interpolate_depths <- interpolate_depths[1:dim(data_node)[3]]
+                    }
 
                     if (total_rec == 0) {
                         if (out_mode == "moc_mean") {
@@ -5024,10 +5144,10 @@ if (nfiles == 0) { # read data which are constant in time
                                                dimnames=c(dimnames(data)[1],
                                                           list(rec=timevec)))
                         } else if (out_mode == "moc_depth") {
-                            data_funi <- array(NA, c(dim(data)[1:3], ntime),
-                                               dimnames=c(var=dimnames(data)[1],
+                            data_funi <- array(NA, c(dim(data_node)[1:3], ntime),
+                                               dimnames=c(var=dimnames(data_node)[1],
                                                           list(lat=moc_reg_lat, 
-                                                               depth=depths,
+                                                               depth=interpolate_depths,
                                                                rec=timevec)))
                         }
                     }
@@ -5048,10 +5168,10 @@ if (nfiles == 0) { # read data which are constant in time
                     }
 
                     if (out_mode == "moc_mean") {
-
+                        stop("not yettt")
 
                     } else if (out_mode == "moc_depth") {
-                        data_funi[,,,time_inds] <- data
+                        data_funi[,,,time_inds] <- data_node
                     
                     }
 
@@ -5421,7 +5541,7 @@ if (nfiles == 0) { # read data which are constant in time
             if (out_mode == "moc_depth") {
                 depth_dim <- ncdim_def(name="depth",
                                        units="",
-                                       vals=-depths,
+                                       vals=-interpolate_depths,
                                        create_dimvar=T)
                 moc_reg_lat_dim <- ncdim_def(name="lat",
                                              units="",
@@ -5615,7 +5735,7 @@ if (nfiles == 0) { # read data which are constant in time
                                    force_v4=force_v4)
             } # moc_depth
 
-            ## Put dimensions to nc file
+            ## Put dimensions to transient nc file
             ncvar_put(outnc, time_var, timevec)
 
             if (any(out_mode == c("depth", "depthint", "depthmax"))) {
@@ -5636,7 +5756,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
 
             if (out_mode == "moc_depth") {
-                ncvar_put(outnc, depth_var, -depths)
+                ncvar_put(outnc, depth_var, -interpolate_depths)
                 ncvar_put(outnc, moc_reg_lat_var, moc_reg_lat)
                 ncvar_put(outnc, moc_topo_var, moc_topo)
             }
@@ -5664,12 +5784,13 @@ if (nfiles == 0) { # read data which are constant in time
             ncatt_put(outnc, 0, "time", timespan)
             ncatt_put(outnc, 0, "area", area)
             ncatt_put(outnc, 0, "projection", projection)
-            if (varname != "MOCw") {
-                ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
-                ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
-            }
+            ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
+            ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
             if (dim_tag == "3D") {
                 ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
+            }
+            if (regexpr("MOC", varname) != -1 && exists("moc_mask_file")) {
+                ncatt_put(outnc, 0, "moc_mask", moc_mask_file)
             }
             if (p_ref_suffix != "") {
                 ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
@@ -6016,8 +6137,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         #stop("asd")
 
         ## set first dimension name to varname if length = 1
-        if (dim(data_node_ltm)[1] == 1) {
-            dimnames(data_node_ltm)[[1]] <- varname
+        if (is.null(dimnames(data_node_ltm)[[1]]) ||
+            (dim(data_node_ltm)[1] == 1 && dimnames(data_node_ltm)[[1]] != varname)) {
+            dimnames(data_node_ltm)[1] <- list(var=varname)
         }
 
         ## Check data so far
@@ -6144,7 +6266,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         || (ltm_out && output_type == "elems") 
         || regular_ltm_out) {
 
-        # rearrange
+        # rearrange from nod3d_n to nod2d_n x ndepths
         if (!average_depth && !integrate_depth) {
             if (dim_tag == "3D" && dim(data_node_ltm)[2] != nod2d_n && ndepths > 1) {
                 if (verbose > 1) { # rearrange first
@@ -6631,24 +6753,27 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
        
         # remove possible redundant latitudes and bottom depths with no values
-        lat_na_inds <- which(apply(moc_topo, 1, function(x) all(x == 1)))
-        depth_na_inds <- which(apply(moc_topo, 2, function(x) all(x == 1)))
-        if (length(lat_na_inds) > 0) {
-            moc_reg_lat <- moc_reg_lat_global[-lat_na_inds]
-            data <- data[,-lat_na_inds,,]
-            moc_topo <- moc_topo[-lat_na_inds,]
-        } else {
-            moc_reg_lat <- moc_reg_lat_gloal
+        moc_reg_lat <- moc_reg_lat_global
+        if (T) {
+            lat_na_inds <- which(apply(moc_topo, 1, function(x) all(x == 1)))
+            depth_na_inds <- which(apply(moc_topo, 2, function(x) all(x == 1)))
+            if (length(lat_na_inds) > 0) {
+                moc_reg_lat <- moc_reg_lat[-lat_na_inds]
+                data_node_ltm <- data_node_ltm[,-lat_na_inds,,]
+                moc_topo <- moc_topo[-lat_na_inds,]
+            }
+            if (length(depth_na_inds) > 0) {
+                data_node_ltm <- data_node_ltm[,,-depth_na_inds,]
+                moc_topo <- moc_topo[,-depth_na_inds]
+            }
         }
-        if (length(depth_na_inds) > 0) {
-            # depths are already correct
-            data <- data[,,-depth_na_inds,]
-            moc_topo <- moc_topo[,-depth_na_inds]
-        }
+
+        # improve this: only use depths where MOC has data
+        interpolate_depths <- interpolate_depths[1:dim(data_node_ltm)[3]]
         
         depth_dim <- ncdim_def(name="depth",
                                units="",
-                               vals=-depths,
+                               vals=-interpolate_depths,
                                create_dimvar=T)
         moc_reg_lat_dim <- ncdim_def(name="lat",
                                      units="",
@@ -6669,9 +6794,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   dim=list(moc_reg_lat_dim, depth_dim),
                                   missval=mv,
                                   prec=prec)
-        data_fun_var <- vector("list", l=dim(data)[1])
+        data_fun_var <- vector("list", l=dim(data_node_ltm)[1])
         for (i in 1:length(data_fun_var)) {
-            name <- paste0(dimnames(data)[[1]][i], "_", out_mode)
+            name <- paste0(dimnames(data_node_ltm)[[1]][i], "_", out_mode)
             data_fun_var[[i]] <- ncvar_def(name=name,
                                            units=units_out,
                                            dim=list(moc_reg_lat_dim, depth_dim),
@@ -6684,11 +6809,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                            vars=c(data_fun_var,
                                   list(depth_var, moc_reg_lat_var, moc_topo_var)),
                            force_v4=force_v4)
-        ncvar_put(outnc, depth_var, -depths)
+        ncvar_put(outnc, depth_var, -interpolate_depths)
         ncvar_put(outnc, moc_reg_lat_var, moc_reg_lat)
         ncvar_put(outnc, moc_topo_var, moc_topo)
-        for (i in 1:length(data_fun_var)) {
-            ncvar_put(outnc, data_fun_var[[i]], data[i,,,1])
+        for (i in 1:length(data_fun_var)) { # only 1 var, ltm: only 1 rec
+            ncvar_put(outnc, data_fun_var[[i]], drop(data_node_ltm[i,,,1]))
         }
 
         ## Put attributes to nc file
@@ -6697,9 +6822,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ncatt_put(outnc, 0, "meshid", meshid)
         ncatt_put(outnc, 0, "time", timespan)
         ncatt_put(outnc, 0, "area", area)
-        if (varname != "MOCw") { # better if moc_mask_file
-            ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
-            ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
+        ncatt_put(outnc, 0, "longitude_lims_deg", range(map_geogr_lim_lon), prec="double")
+        ncatt_put(outnc, 0, "latitude_lims_deg", range(map_geogr_lim_lat), prec="double")
+        if (exists("moc_mask_file")) {
+            ncatt_put(outnc, 0, "moc_mask", moc_mask_file)
         }
         if (dim_tag == "3D") {
             ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")

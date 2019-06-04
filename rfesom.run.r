@@ -51,13 +51,19 @@ if (F) {
     source("~/scripts/r/myrunids.r")
     #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.phi_rotated_grid_false.nc"
     #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.phi_rotated_grid_true.nc"
-    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/Low01.1948.phi_sum_u_times_dx.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948.phi_sum_u_times_dx.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948.phi_sum_udx.nc
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.dxphi_dyphi.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/LSea5.1948-2009.dxphi.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/LSea5.1948-2009.dyphi.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.dxphi.nc"
+    #fnames_user <- "/pf/a/a270073/scripts/fortran/strfcn/bin/out/Low01.1948-2009.dyphi.nc"
     #rotate_mesh <- F
     #cycl <- F
 }
 
 ## General Options
-verbose <- 2 # [0,1,2,3] give some information while the script is running; 0 = silent
+verbose <- 2 #2 # [0,1,2,3] give some information while the script is running; 0 = silent
 ssh_aviso_correct <- F ## special
 
 ## Global constants
@@ -130,11 +136,20 @@ if (runid == "demoid") {
     #varname <- "qnet"
     #varname <- "wind"
     #varname <- "intz_uvteddy_div"
+    #varname <- "dxphi"
+    #varname <- "dyphi"
+    #varname <- "gradphi"
     #varname <- "gradbathy"
     #varname <- "hvel_dot_gradbathy"
     #varname <- "Frhobudget"
-    varname <- "Frho"
+    #varname <- "Frho"
     #varname <- "Frho2"
+    #varname <- "MOCw"
+    #varname <- "MOCv"
+    varname <- "HRS"
+    #varname <- "VRS"
+    #varname <- "wbeddy"
+    #varname <- "FeKe"
 }
 
 ## Depth options [m]
@@ -149,13 +164,13 @@ if (runid == "demoid") {
     depths <- 0
     integrate_depth <- F
 } else {
-    depths <- 0
+    #depths <- 0
     #depths <- c(0, 150)
-    #depths <- c(0, "max")
+    depths <- c(0, "max")
     #depths <- c(0, "MLD")
     #depths <- "bottom"
-    integrate_depth <- F
-    #integrate_depth <- T
+    #integrate_depth <- F
+    integrate_depth <- T
 }
 
 ## Area and Projection Options
@@ -171,8 +186,8 @@ if (runid == "demoid") {
     #area <- "lseawNAtilt"
     #area <- "lseawNA"
     #area <- "lsea3"
-    area <- "LS30l"
-    #area <- "LS30l2"
+    #area <- "LS30l"
+    area <- "LS30l2"
     #area <- "nadja1"
     #area <- "Cstg"
     #area <- "N20"
@@ -184,6 +199,7 @@ if (runid == "demoid") {
     #area <- "N50"
     #area <- "wunsch97"
     #area <- "NA_sst1"
+    #area <- "moc_NA"
 }
 
 ## Time Options (if user provide 'fnames_user', then 'years' and 'output' are ignored)
@@ -220,12 +236,13 @@ if (runid == "demoid") {
 } else {
     regular_ltm_out         <- F
     transient_out           <- T
-    out_mode                <- "meanint" # "mean" "area" "areadepth" "meanint" "depth" "depthint"
     regular_transient_out   <- F
+    out_mode                <- "mean" # "mean" "area" "areadepth" "meanint" "depth" "depthint" "moc_depth"
     #sd_out                  <- T
-    #regular_dy              <- 0.052
+    regular_dx               <- 0.1
     #regular_dx              <- 0.099
-    regular_dx              <- 0.1
+    #regular_dy              <- 0.052
+    #regular_dx              <- 0.355
     #regular_dy              <- 0.185
     #regular_dx              <- 0.25
     #regular_dx              <- 0.355

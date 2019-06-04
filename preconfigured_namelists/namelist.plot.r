@@ -4,6 +4,7 @@
 
 # plot device options
 plot_map <- T # plot a horizontal map of time-averaged 2D or depth-averaged/integrated 3D data?
+plot_moc_mask <- T # plot moc mask area
 plot_csec <- F # make a plot of the location of the cross secion if out_mode == "csec_mean" or "csec_depth"?
 plot_type <- "const" #"const" # "const" or "interp" 
                         ## "interp" for spatial interpolation using akima::interp (can be very slow if mesh is huge)

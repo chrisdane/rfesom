@@ -18,7 +18,7 @@ sub_prepare2 <- function(data_node) {
         ## use rho as calculated by fesom
         if ("rho" %in% varname_fesom) { # rho is in situ rho in fesom ocean only
 
-            dimnames(data_node)[[1]] <<- "insiturho"
+            #dimnames(data_node)[[1]] <<- "insiturho"
 
             if (potdens_tag) {
                 if (verbose > 0) {
@@ -27,8 +27,11 @@ sub_prepare2 <- function(data_node) {
             } # if potdens_tag
 
             if (buoyancy_tag) {
+                if (verbose > 1) {
+                    message(indent, "bouyancy b = -g/rho0*rho")
+                }
                 data_node["rho",,,] <<- -g/rho0*data_node["rho",,,]
-                dimnames(data_node)[[1]] <<- "insitub"
+                dimnames(data_node)[[1]][which(dimnames(data_node)[[1]] == "rho")] <<- "insitub"
             } # if buoyancy_tag
 
         ## density needs to be calculated from temp and salt

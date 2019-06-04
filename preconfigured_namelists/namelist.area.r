@@ -597,16 +597,15 @@
             geogr_lims <- T
             proj_lims <- F
             projection <- "rectangular"
-            if (area == "moc_NA") {
+            
+            # default
+            moc_mask_file <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".dat")
+            moc_mask_plotname <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".png")
 
-                # either provide mesh-specific (!) mask file a la Dima or a 
-                # closed polygon of area of MOC calculation
-                #moc_mask_file <- "/work/ba0941/a270073/mesh/LSea1/mask_NA_LSea1.dat"
-                #moc_mask_file <- paste0(meshpath, "mask_NA_CORE2.dat")
-                if (meshid == "core" || meshid == "CORE2_final") {
+            if (meshid == "core" || meshid == "CORE2_final") {
+                if (area == "moc_NA") {
                     moc_mask_file <- "/work/ba0941/a270073/mesh/core/mask_NA_CORE2.dat"
-                } else {
-                    stop(paste0("no moc mask file given for mesh '", meshid, "'"))
+                    moc_mask_plotname <- "/work/ba0941/a270073/mesh/core/mask_NA_CORE2.png"
                 }
             }
         

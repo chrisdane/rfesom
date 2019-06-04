@@ -27,6 +27,20 @@
 ##     needs 'data_node'
 ##
 
+# Mean Eddy transport mean(u'T')
+# = mean( (u - mean(u))(T - mean(T)) )
+# = mean(uT) - mean( u*mean(T) ) - mean( mean(u)*T ) + mean( mean(u)*mean(T) )
+# =    1     -          2        -         3         +           4
+# 2 = 3 = 4
+# => mean(u'T') = mean(uT) - mean(u)*mean(T)
+#
+# = in FESOM language:
+# = mean(utemp_diag.oce) - mean(u_mean.oce)*mean(temp_mean.oce)
+# with 'mean()' in the line above indicating the average
+# over the time period chosen in this script and 'u_mean.oce'
+# and 'uu_diag.oce' indicating the output of FESOM output files
+# <id>.<year>.oce.mean.nc and <id>.<year>.oce.diag.nc respectively.
+
 sub_calc <- function(data_node) {
 
     #data_global <<- data_node # for old stuff; need to update
@@ -370,31 +384,22 @@ sub_calc <- function(data_node) {
     } # wb uvb
 
     if (varname == "wbeddy") {
-
-        varinds <<- c(which(vars == "w" | vars == "wo"),
-                      which(vars == "insitub"),
-                      which(vars == "wrho"))
+        varinds <- c(which(vars == "w" | vars == "wo"),
+                     which(vars == "rho"),
+                     which(vars == "wrho"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
             message(paste0(indent, varname, " = mean(", vars[varinds[3]], 
                          ") - mean(", vars[varinds[1]], ")*mean(",
                          vars[varinds[2]], ") ..."))
         }
-        # Mean Eddy transport mean(u'T')
-        # = mean( (u - mean(u))(T - mean(T)) )
-        # = mean(uT) - mean( u*mean(T) ) - mean( mean(u)*T ) + mean( mean(u)*mean(T) )
-        # =    1     -          2        -         3         +           4
-        # 2 = 3 = 4
-        # => mean(u'T') = mean(uT) - mean(u)*mean(T)
-        #
-        # = in FESOM language:
-        # = mean(utemp_diag.oce) - mean(u_mean.oce)*mean(temp_mean.oce)
-        # with 'mean()' in the line above indicating the average
-        # over the time period chosen in this script and 'u_mean.oce'
-        # and 'uu_diag.oce' indicating the output of FESOM output files
-        # <id>.<year>.oce.mean.nc and <id>.<year>.oce.diag.nc respectively.
-        data_node <<- data_node[varinds[3],,,] - data_node[varinds[2],,,]*data_node[varinds[3],,,]
-        dimnames(data_node)[[1]] <<- varname
+        data_node <- data_node[varinds[3],,,] - data_node[varinds[1],,,]*data_node[varinds[2],,,]
+        if (verbose > 1) {
+            message(indent, "bouyancy b = -g/rho0*rho")
+        }
+        data_node <- -g/rho0*data_node
+        dimnames(data_node)[[1]] <- varname
+        assign('data_node', data_node, envir=.GlobalEnv)
 
     } # "wbeddy"
 
@@ -1135,12 +1140,12 @@ sub_calc <- function(data_node) {
     } # "mwindenergy", "FmKm"
 
     if (any(varname == c("ewindenergy", "FeKe"))) {
-        varinds <<- c(which(vars == "u" | vars == "uo"),
-                      which(vars == "v" | vars == "vo"),
-                      which(vars == "stress_x" | vars == "tauuo"),
-                      which(vars == "stress_y" | vars == "tauvo"),
-                      which(vars == "tauxu"),
-                      which(vars == "tauyv"))
+        varinds <- c(which(vars == "u" | vars == "uo"),
+                     which(vars == "v" | vars == "vo"),
+                     which(vars == "stress_x" | vars == "tauuo"),
+                     which(vars == "stress_y" | vars == "tauvo"),
+                     which(vars == "tauxu"),
+                     which(vars == "tauyv"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
             if (varname == "ewindenergy") {
@@ -1156,12 +1161,13 @@ sub_calc <- function(data_node) {
             }
         }
 
-        data_node <<- data_node[varinds[5],,,] - data_node[varinds[1],,,]*data_node[varinds[3],,,] + 
-                      data_node[varinds[6],,,] - data_node[varinds[2],,,]*data_node[varinds[4],,,]
+        data_node <- data_node[varinds[5],,,] - data_node[varinds[1],,,]*data_node[varinds[3],,,] + 
+                     data_node[varinds[6],,,] - data_node[varinds[2],,,]*data_node[varinds[4],,,]
         if (varname == "FeKe") {
-            data_node <<- 1/rho0*data_node
+            data_node <- 1/rho0*data_node
         }
-        dimnames(data_node)[[1]] <<- varname
+        dimnames(data_node)[[1]] <- varname
+        assign('data_node', data_node, envir=.GlobalEnv)
 
     } # "ewindenergy", "FeKe"
 
@@ -1255,7 +1261,7 @@ sub_calc <- function(data_node) {
         if (varname == "dzwbeddy") {
             if (insitudens_tag) {
                 varinds <<- c(which(vars == "w" | vars == "wo"),
-                              which(vars == "insitub"),
+                              which(vars == "rho"),
                               which(vars == "wrho"))
             } else if (potdens_tag) {
                 stop(paste0("Error: _potential_ density fluxes are not available. 
@@ -1490,7 +1496,7 @@ sub_calc <- function(data_node) {
             message(paste0(indent, "VRS = - u'w'*dudz - v'w'*dvdz"))
         }
         vrs <<- -utmp*dvardz[1,,,] - vtmp*dvardz[2,,,]
-        dimnames(tmp)[[1]] <<- "VRS"
+        dimnames(vrs)[[1]] <<- "VRS"
         if (varname == "VRS") {
             data_node <<- vrs
         }
@@ -1540,16 +1546,20 @@ sub_calc <- function(data_node) {
         dxinds <<- NULL
         dyinds <<- NULL
 
+        # do not use else if in the following!
         if (any(varname == c("u_geo", "slopeSy"))) {
             dyinds <<- 1 # = dy of variable 1 in data_node array
-        } else if (any(varname == c("v_geo", "slopeSx"))) {
+        }
+        if (any(varname == c("v_geo", "slopeSx"))) {
             dxinds <<- 1
-        } else if (any(varname == c("gradT", "gradB", "gradmld", 
+        }
+        if (any(varname == c("gradT", "gradB", "gradmld", 
                              "hvel_geo", "hdiffb", 
                              "slopeS", "slopeSsq"))) {
             dxinds <<- 1
             dyinds <<- 1
-        } else if (any(varname == c("divuvt", "divuvttot", "divuvteddy",
+        }
+        if (any(varname == c("divuvt", "divuvttot", "divuvteddy",
                              "divuvsgst", "divuvsgsttot", "divuvsgsteddy",
                              "divuvs", "divuvstot", "divuvseddy",
                              "divuvsgss", "divuvsgsstot", "divuvsgsseddy",
@@ -1562,21 +1572,33 @@ sub_calc <- function(data_node) {
                              "divuvt2"))) {
             dxinds <<- 1
             dyinds <<- 2
-        } else if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
+        }
+        if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
                              "curlwind", "curltau",
                              "ekmanP",
                              "strain_shear", "strain", "okubo",
                              "HRS", "KmKe"))) {
-            dxinds <<- 2
-            dyinds <<- 1
-        } else if (varname == "PmPe") {
+            if (!is.null(dxinds)) {
+                dxinds <<- c(dxinds, 2)
+            } else {
+                dxinds <<- 2
+            }
+            if (!is.null(dyinds)) {
+                dyinds <<- c(dyinds, 1)
+            } else {
+                dyinds <<- 1
+            }
+        }
+        if (varname == "PmPe") {
             stop("asd")
             dxinds <<- which("rho") 
             dyinds <<- which("rho")
-        } else if (varname == "intz_uvteddy_div") {
+        }
+        if (varname == "intz_uvteddy_div") {
             dxinds <<- 1
             dyinds <<- 1
-        } else if (any(varname == c("gradbathy", "hvel_dot_gradbathy"))) {
+        }
+        if (any(varname == c("gradbathy", "hvel_dot_gradbathy"))) {
             dxinds <<- 1
             dyinds <<- 1
         }
@@ -1705,8 +1727,8 @@ sub_calc <- function(data_node) {
                                 #ptm <<- proc.time()[3]
                                 aux <<- bafux_2d_time_depth[,,j,,drop=F]*data_node[dxinds,nds_layer,,,drop=F]
                                 for (k in 1:dim(aux)[1]) { # for all vars
-                                    aux <<- apply(aux[k,,,,drop=F], c(1, 4), sum)[1,]
-                                    dvardx_node3d[k,nds_layer,,] <<- dvardx_node3d[k,nds_layer,1,] + t(array(aux, c(length(aux), 3)))
+                                    aux2 <<- apply(aux[k,,,,drop=F], c(1, 4), sum)[1,]
+                                    dvardx_node3d[k,nds_layer,,] <<- dvardx_node3d[k,nds_layer,1,] + t(array(aux2, c(length(aux2), 3)))
                                 }
                                 #time1[i,j] <<- proc.time()[3] - ptm
                             ## for some reason this is not correct:
@@ -1743,8 +1765,8 @@ sub_calc <- function(data_node) {
                                 #ptm <<- proc.time()[3]
                                 aux <<- bafuy_2d_time_depth[,,j,,drop=F]*data_node[dyinds,nds_layer,,,drop=F]
                                 for (k in 1:dim(aux)[1]) {
-                                    aux <<- apply(aux[k,,,,drop=F], c(1, 4), sum)[1,]
-                                    dvardy_node3d[k,nds_layer,,] <<- dvardy_node3d[k,nds_layer,1,] + t(array(aux, c(length(aux), 3)))
+                                    aux2 <<- apply(aux[k,,,,drop=F], c(1, 4), sum)[1,]
+                                    dvardy_node3d[k,nds_layer,,] <<- dvardy_node3d[k,nds_layer,1,] + t(array(aux2, c(length(aux2), 3)))
                                 }
                                 #time2[i,j] <<- proc.time()[3] - ptm
                             } else if (F) {
@@ -1781,12 +1803,16 @@ sub_calc <- function(data_node) {
             fctbackup <<- `[`; `[` <<- function(...) { fctbackup(..., drop=F) }
 
             if (!is.null(dxinds)) {
-                dvardx_node3d <<- dvardx_node3d/dvardx_node3d_cnt
+                for (k in 1:length(dxinds)) {
+                    dvardx_node3d[k,,,] <<- dvardx_node3d[k,,,]/dvardx_node3d_cnt
+                }
                 dvardx_node3d[is.na(dvardx_node3d)] <<- 0
             } # if !is.null(dxinds)
 
             if (!is.null(dyinds)) {
-                dvardy_node3d <<- dvardy_node3d/dvardy_node3d_cnt
+                for (k in 1:length(dyinds)) {
+                    dvardy_node3d[k,,,] <<- dvardy_node3d[k,,,]/dvardy_node3d_cnt
+                }
                 dvardy_node3d[is.na(dvardy_node3d)] <<- 0
             }
 
@@ -1954,7 +1980,7 @@ sub_calc <- function(data_node) {
 
 
         ## Do stuff after horizontal derivative
-        if (any(varname == c("gradT", "gradmld", "gradbathy"))) {
+        if (any(varname == c("gradT", "gradmld", "gradB", "gradbathy"))) {
             message(paste0(indent, varname, " = sqrt[ (", 
                            dimnames(dvardx_node3d)[[1]][1], ")^2 + (",
                            dimnames(dvardy_node3d)[[1]][1], ")^2 ) ] ..."))
@@ -2177,22 +2203,23 @@ sub_calc <- function(data_node) {
         }
 
         if (varname == "HRS" || varname == "KmKe") {
+
             message(paste0(indent, varname, " = - u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy"))
 
             ## hrs = -u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy
-            ##     = 
-            term1 = -(data[which(varname_fesom == "uu"),,,] -
-                      data[which(varname_fesom == "u"),,,]^2)*dvar1dx_node
-            term2 = -(data[which(varname_fesom == "uv"),,,] -
-                      data[which(varname_fesom == "u"),,,]*
-                      data[which(varname_fesom == "v"),,,])*(dvar1dy_node + dvar2dx_node)
-            term3 = -(data[which(varname_fesom == "vv"),,,] -
-                      data[which(varname_fesom == "v"),,,]^2)*dvar2dy_node
-            hrs = term1 + term2 + term3
+            term1 <<- -(data_node[which(varname_fesom == "uu"),,,] -
+                        data_node[which(varname_fesom == "u"),,,]^2)*dvardx_node3d["dx_u",,,]
+            term2 <<- -(data_node[which(varname_fesom == "uv"),,,] -
+                        data_node[which(varname_fesom == "u"),,,]*
+                        data_node[which(varname_fesom == "v"),,,])*(dvardy_node3d["dy_u",,,] + dvardx_node3d["dx_v",,,])
+            term3 <<- -(data_node[which(varname_fesom == "vv"),,,] -
+                        data_node[which(varname_fesom == "v"),,,]^2)*dvardy_node3d["dy_v",,,] 
+            hrs <<- term1 + term2 + term3
 
             if (varname == "HRS") {
                 data_node <<- hrs
             }
+
         } # hrs || KmKe
 
         if (varname == "KmKe") {
@@ -2936,46 +2963,60 @@ sub_calc <- function(data_node) {
     
     } # Fthermal Fhaline Frho
 
-    if (varname == "MOCw") {
+    if (regexpr("MOC", varname) != -1) {
        
         if (verbose > 0) {
-            message(paste0(indent, varname, "(lat,z) = cumsum_lat(sum(w[lat]*vol)) ... (like in fpost1.4)"))
+            message(indent, varname, "(lat,z) = cumsum_{lat}[sum_{nod3d_at_lat}(", varname_fesom[1], "*vol)]", appendLF=F)
+            if (varname == "MOCw") {
+                message("")
+                message(indent, "   like in fpost1.4", appendLF=F)
+            }
+            message("")
         }
 
         # initialize array for every year
-        moc <<- array(0, dim=c(1, length(moc_reg_lat_global), aux3d_n, dim(data_node)[4])) # c(nvars,nreg_lat,ndepths,ntime)
-        if (!exists("moc_topo")) {
-            moc_topo <<- array(1, dim=c(length(moc_reg_lat_global), aux3d_n))
+        moc <<- array(0, 
+                      dim=c(1, length(moc_reg_lat_global), 
+                            #aux3d_n, # todo: ndepths or aux3d_n here?
+                            ndepths,
+                            dim(data_node)[4])) # c(nvars,nreg_lat,ndepths,ntime)
+        if (total_rec == 0) {
+            moc_topo <<- array(1, 
+                               dim=c(length(moc_reg_lat_global), 
+                                     #aux3d_n
+                                     ndepths
+                                     ))
         } # only once
 
         # create progress bar
         pb <<- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                                 char=pb_char, width=pb_width,
-                                indent=paste0("     ", indent)) # 5 " " for default message()
+                                indent=paste0("   ", indent)) 
 
         for (i in 1:elem2d_n) {
-            #progress_function(elem2d_n, i, indent=paste0(indent, "   "))
+        #for (i in c(1, elem2d_n)) {
             elnodes <<- elem2d[,i]
-            m <<- moc_mask[elnodes]
+            m <<- moc_mask[elnodes] # 1=inside, 0=outside
             
             if (!all(m == 0)) { # element is in area for moc calculation
-                #x <<- mean(xcsur[elnodes])
+                #x <<- mean(xcsur[elnodes]) # not needed
                 y <<- mean(ycsur[elnodes])
-                V <<- voltriangle[i]
-                inds <<- which(moc_reg_lat_global > y)[1]
-                if (is.na(inds)) {
+                vol <<- voltriangle[i] # element area in m2
+                yind <<- which(moc_reg_lat_global > y)[1] # first index within latitude bin from south
+                if (is.na(yind)) {
                     # find closest
-                    inds <<- which(abs(moc_reg_lat_global - y)==min(abs(moc_reg_lat_global - y)))
+                    yind <<- which(abs(moc_reg_lat_global - y)==min(abs(moc_reg_lat_global - y)))
                 }
-                for (j in 1:aux3d_n) { # calculate in aux3d space
-                    elnode3 <<- aux3d[j,elnodes]
-                    if (all(elnode3 > 0)) { # no boundary
-                        w <<- data_node[,elnode3,,] # var, 
-                        m <<- array(moc_mask[elnodes], dim(w)) # repeat mask in time dim
-                        moc[1,inds,j,] <<- moc[1,inds,j,] + V*apply(w*m, 3, mean)*1.e-6 # Sv
-                        moc_topo[inds,j] <<- NA
+                #for (di in 1:aux3d_n) { # calculate in aux3d space
+                for (di in 1:ndepths) {
+                    elnode3 <<- aux3d[di,elnodes]
+                    if (all(elnode3 > 0)) { # no boundary nodes
+                        vel <<- data_node[,elnode3,,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
+                        m <<- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
+                        moc[1,yind,di,] <<- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # mean over 3 3d-nodes; keep time dim4
+                        if (total_rec == 0) moc_topo[yind,di] <<- NA # =1 at land and =NA at water
                     } # if no boundary
-                } # for j aux3d_n
+                } # for di aux3d_n/ndepths
             } # if elem2d is in area for moc calculation
         
             # update progress bar
@@ -2985,22 +3026,29 @@ sub_calc <- function(data_node) {
 
         # close progress bar
         close(pb)
-     
-        # cumsum meridionally 
+    
+        # cumsum meridionally: from north-south / south-north
         # dim(moc) = c(1,nregy,ndepths,nrecspf)
-        if (view != "moc_global") {
+        moc_save <<- moc
+        if (area != "moc_global") {
             #moc <<- apply(moc, 2, cumsum)
             for (i in (length(moc_reg_lat_global) - 1):1) {
-                moc[1,i,,] <<- -moc[1,i,,] + moc[1,i+1,,]
+                if (varname == "MOCw") moc[1,i,,] <<- -moc[1,i,,] + moc[1,i+1,,]
+                if (varname == "MOCv") moc[1,i,,] <<- moc[1,i,,] + moc[1,i+1,,]
             }
-        } else if (view == "moc_global") { # global moc
+        } else if (area == "moc_global") { # global moc
             for (i in 2:length(moc_reg_lat_global)) { 
                 moc[1,i,,] <<- moc[1,i,,] + moc[1,i-1,,]
             }
         } # if use_mask
+        
+        if (F) {
+            image.plot(moc_reg_lat_global,1:dim(moc)[3],drop(moc[1,,,1]),ylim=c(dim(moc)[3], 1))
+        }
 
-        data_node <<- moc
-        dimnames(data_node)[[1]] <<- varname
+        data_node <- moc
+        #dimnames(data_node)[1] <- list(var=varname)
+        assign('data_node', data_node, envir=.GlobalEnv)
 
     } # "MOCw"
 
