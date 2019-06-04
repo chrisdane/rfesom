@@ -184,8 +184,8 @@ if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
 }
 if (transient_out && integrate_depth && dim_tag == "3D" &&
     (out_mode != "mean" && out_mode != "meanint")) {
-    message(paste0("Warning: Output should be integrated over depth but out_mode = ", out_mode, " ..."))
-    message(paste0("         Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else ..."))
+    message(paste0("Output should be integrated over depth ('integrate_depth'=T) but out_mode=", out_mode, "."))
+    message(paste0("Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else ..."))
     stop()
 }
 if (!exists("average_depth")) { # potentially set by user in namelist.var
@@ -3953,9 +3953,6 @@ if (nfiles == 0) { # read data which are constant in time
                     rm(tmp)
                 }
 
-                # get varnames of data
-                vars <- dimnames(data_node)[[1]]
-                nvars <- length(vars)
 
                 ## At this point,
                 ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
@@ -6105,9 +6102,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(tmp, data_vert_ltm)
         }
 
-        # get varnames of data
-        vars <- dimnames(data_node_ltm)[[1]]
-        nvars <- length(vars)
         
         ## At this point,
         ## dim(data_node_ltm) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 

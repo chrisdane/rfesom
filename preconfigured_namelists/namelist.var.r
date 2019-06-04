@@ -1585,6 +1585,8 @@ if (varname == "tos") {
 } else if (varname == "gradB") {
     longname <- "grad_h B"
     subtitle <- ""
+    insitudens_tag <- T # calc in-situ density from T,S
+    buoyancy_tag <- T # use buoyancy instead of density
     units_out <- "s-2"
     if (integrate_depth) {
         units_out <- "m s-2"
