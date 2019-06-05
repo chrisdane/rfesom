@@ -1268,6 +1268,9 @@ if (varname == "tos") {
                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m4 s-3"
+        }
     } else if (integrate_depth) {
         units_out <- "m3 s-3"
         units_plot <- units_out
@@ -1279,6 +1282,9 @@ if (varname == "tos") {
                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m5 s-3"
+        }
     }
     dim_tag <- "3D"
     horiz_deriv_tag <- T #"rot"
@@ -1302,6 +1308,9 @@ if (varname == "tos") {
                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
                                        base=base, power_plot=-power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m4 s-3"
+        }
     } else if (integrate_depth) {
         units_out <- "m3 s-3"
         units_plot <- units_out
@@ -1313,6 +1322,9 @@ if (varname == "tos") {
                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m5 s-3"
+        }
     }
     dim_tag <- "3D"
     horiz_deriv_tag <- T #"rot"
@@ -1470,7 +1482,7 @@ if (varname == "tos") {
         units_out <- "m3 s-3"
         power_plot <- 6
         multfac_plot <- base^power_plot
-        units_plot <- paste0("m2 s-3 x ", multfac_plot)
+        units_plot <- paste0("m3 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), 
                                          #"P"[e], "K"[e],
                                          bar(paste("w'b'")), 
@@ -1478,6 +1490,9 @@ if (varname == "tos") {
                                          "] " %*% " ", base^-power_plot),
                                    list(var1="m", var2="s", 
                                         base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m5 s-2"
+        }
     } else {
         power_plot <- 10
         multfac_plot <- base^power_plot
@@ -1488,6 +1503,9 @@ if (varname == "tos") {
                                          "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s", 
                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m4 s-2"
+        }
     }
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=3)
@@ -3106,6 +3124,9 @@ if (varname == "tos") {
                                          "] " %*% " ", base^power_out),
                                    list(var1="m", var2="s", 
                                         base=base, power_out=-power_out))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m3 s-2"
+        }
     }
     if (!(out_mode == "meanint" || out_mode == "depthint") &&
         integrate_depth) {

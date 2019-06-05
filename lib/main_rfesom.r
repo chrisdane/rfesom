@@ -222,6 +222,10 @@ if (dim_tag == "2D" || varname == "rossbyrad") {
 if (integrate_depth && length(depths) != 2) {
     stop(paste0("Cannot integrate over 'depths'=", paste0(depths, collapse=","), " ..."))
 }
+if (integrate_depth && any(depths == "MLD")) {
+    success <- load_package("abind")
+    if (!success) stop()
+}
 if (dim_tag == "2D" && transient_out &&
     (!any(out_mode == c("mean", "meanint", "min", "max")))) {
     stop(message(paste0("Choose a proper 'out_mode' for the 2D variable '", varname, " ...")))

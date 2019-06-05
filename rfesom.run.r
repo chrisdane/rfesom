@@ -148,9 +148,9 @@ if (runid == "demoid") {
     #varname <- "MOCv"
     #varname <- "HRS"
     #varname <- "VRS"
-    #varname <- "wbeddy"
+    varname <- "wbeddy"
     #varname <- "FeKe"
-    varname <- "gradB"
+    #varname <- "gradB"
 }
 
 ## Depth options [m]
@@ -167,11 +167,11 @@ if (runid == "demoid") {
 } else {
     #depths <- 0
     #depths <- c(0, 150)
-    depths <- c(0, "max")
-    #depths <- c(0, "MLD")
+    #depths <- c(0, "max")
+    depths <- c(0, "MLD")
     #depths <- "bottom"
-    integrate_depth <- F
-    #integrate_depth <- T
+    #integrate_depth <- F
+    integrate_depth <- T
 }
 
 ## Area and Projection Options
@@ -187,8 +187,8 @@ if (runid == "demoid") {
     #area <- "lseawNAtilt"
     #area <- "lseawNA"
     #area <- "lsea3"
-    #area <- "LS30l"
-    area <- "LS30l2"
+    area <- "LS30l"
+    #area <- "LS30l2"
     #area <- "nadja1"
     #area <- "Cstg"
     #area <- "N20"
@@ -204,7 +204,7 @@ if (runid == "demoid") {
 }
 
 ## Time Options (if user provide 'fnames_user', then 'years' and 'output' are ignored)
-years         <- 2009 # annual FESOM output files, woa13 overlap 65-04
+years         <- 1948:2009 # annual FESOM output files, woa13 overlap 65-04
 recs          <- 1:12 #c(1,2,3) # records per FESOM file, eg months, days, hours
                       # e.g. c(1,2,12) for DJF if output=="monthly"
 output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
@@ -238,7 +238,7 @@ if (runid == "demoid") {
     regular_ltm_out         <- F
     transient_out           <- T
     regular_transient_out   <- F
-    out_mode                <- "depth" # "mean" "area" "areadepth" "meanint" "depth" "depthint" "moc_depth"
+    out_mode                <- "mean" # "mean" "area" "areadepth" "meanint" "depth" "depthint" "moc_depth"
     #sd_out                  <- T
     regular_dx               <- 0.1
     #regular_dx              <- 0.099
