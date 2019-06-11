@@ -1375,15 +1375,15 @@ if (any(regular_transient_out, regular_ltm_out)) {
     source(paste0(subroutinepath, "sub_calc_load_regular_IMAT.r"))
     source(paste0(subroutinepath, "sub_calc_regular_2d_interp.r"))
 
-    if (!exists("imatpath")) {
-        stop(paste0("You need to provde a 'imatpath' (imat_map=TRUE)."))
+    if (!exists("interppath")) {
+        stop(paste0("You need to provde a 'interppath' (imat_map=TRUE)."))
     }
-    if (file.access(imatpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        message(paste0("Warning: your 'imatpath' = ", imatpath, " does not exist ..."))
+    if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
+        message(paste0("Warning: your 'interppath' = ", interppath, " does not exist ..."))
         message(paste0("         try to create ..."))
-        dir.create(imatpath, recursive=T, showWarnings=T)
-        if (file.access(imatpath, mode=0) == -1) {
-            stop(paste0("Your 'imatpath' = ", imatpath, " does not exist ..."))
+        dir.create(interppath, recursive=T, showWarnings=T)
+        if (file.access(interppath, mode=0) == -1) {
+            stop(paste0("Your 'interppath' = ", interppath, " does not exist ..."))
         }
     }
 
@@ -1392,12 +1392,12 @@ if (any(regular_transient_out, regular_ltm_out)) {
                         "_dy", sprintf("%.3f", regular_dy),
                         "_imat", ifelse(cycl, "_cycl", ""), ".nc")
 
-    if (file.exists(paste0(imatpath, imatfname))) {
+    if (file.exists(paste0(interppath, imatfname))) {
         if (verbose > 1) {
             message(paste0(indent, "Load regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for ", meshid, " mesh from"))
-            message(paste0(indent, indent, "'imatpath''imatfname' = ", imatpath, imatfname, " ..."))
+            message(paste0(indent, indent, "'interppath''imatfname' = ", interppath, imatfname, " ..."))
         }
     
     } else {
@@ -1406,22 +1406,22 @@ if (any(regular_transient_out, regular_ltm_out)) {
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for '", meshid, "' mesh using"))
             message(paste0(indent, indent, "sub_calc_load_regular_IMAT.r and save result in"))
-            message(paste0(indent, indent, "'imatpath''imatfname' = ", imatpath, imatfname, " ..."))
+            message(paste0(indent, indent, "'interppath''imatfname' = ", interppath, imatfname, " ..."))
         }
        
-        if (file.access(imatpath, mode=2) == -1) { # mode=2: writing, -1: no success
-            stop(paste0("You have no writing rights in 'imatpath' = ", imatpath, " ..."))
+        if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
+            stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
         }
-        dir.create(imatpath, recursive=T, showWarnings=F)
+        dir.create(interppath, recursive=T, showWarnings=F)
 
         sub_calc_load_regular_IMAT(regular_dx=regular_dx, regular_dy=regular_dy,
                                    xp=xc_global, yp=yc_global,
-                                   imatpath=imatpath,
+                                   interppath=interppath,
                                    imatfname=imatfname,
                                    mv=mv)
     }
 
-    imatncin <- nc_open(paste0(imatpath, imatfname))
+    imatncin <- nc_open(paste0(interppath, imatfname))
     xi <- ncvar_get(imatncin, "xi")
     yi <- ncvar_get(imatncin, "yi")
     XI <- ncvar_get(imatncin, "XI")

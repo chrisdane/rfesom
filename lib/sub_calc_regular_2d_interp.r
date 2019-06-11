@@ -1,5 +1,6 @@
 sub_calc_regular_2d_interp <- function(I_MAT,XI,YI,
                                        xp,yp,datamat) {
+    
     ## R-function for interpolating FESOM irregular triangle data to
     ## regular long,lat data with interpolation matrix I_MAT derived by
     ## P. Scholz's matlab script OK_SCRIPTS/main_CONVERT_triangular2regular_grid_v2.m
@@ -19,6 +20,7 @@ sub_calc_regular_2d_interp <- function(I_MAT,XI,YI,
         message("drop(xp[1,AUX_I_MAT])")
         print(str(drop(xp[1,AUX_I_MAT])))
     }
+
     X <- XI - drop(xp[1,AUX_I_MAT])
     # same: X <- XI - array(xp[1,as.vector(AUX_I_MAT)], dim(AUX_I_MAT))
     Y <- YI - drop(yp[1,AUX_I_MAT])

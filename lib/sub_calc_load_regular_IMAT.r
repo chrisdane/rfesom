@@ -1,10 +1,12 @@
 sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy, 
                                        xp, yp,
-                                       imatpath, imatfname,
+                                       interppath, imatfname,
                                        mv) {
     
     ## R-function for calculating IMAT
     success <- load_package("splancs")
+    if (!success) stop()
+    success <- load_package("ncdf4")
     if (!success) stop()
     
     xlim <- range(xp)
@@ -20,44 +22,50 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     IMAT   = array(0, c(nyi, nxi))
     
     # for every element
-    for (ii in 1:(dim(xp)[2])) {
-        if (ii %% 1e5 == 0) message(paste0(ii, "/", dim(xp)[2]))
-            xmin   = min(xp[,ii]) 
-            xmax   = max(xp[,ii]) 
-            ymin   = min(yp[,ii])
-            ymax   = max(yp[,ii]) 
-            
-            kk_xs  = which(xi <= xmin)[length(which(xi <= xmin))] #find(xi <= xmin,1,'last') 
-            if (is.na(kk_xs) || length(kk_xs) == 0) kk_xs=1 #if (length(kk_xs) == 0) kk_xs=1
-            kk_ys  = which(yi <= ymin)[length(which(yi <= ymin))] 
-            if (is.na(kk_ys) || length(kk_ys) == 0) kk_ys=1 #if (length(kk_ys) == 0) kk_ys=1
-            
-            kk_xe  = which(xi >= xmax)[1] #find(xi>=xmax,1,'first')
-            if (is.na(kk_xe) || length(kk_xe) == 0) kk_xe= length(xi) #if (length(kk_xe) == 0) kk_xe=length(xi)
-            kk_ye  = which(yi >= ymax)[1] 
-            if (is.na(kk_ye) || length(kk_ye) == 0) kk_ye= length(yi) #if (length(kk_ye) == 0) kk_ye=length(yi)
-
-            AUX_XI = XI[kk_ys:kk_ye,kk_xs:kk_xe]
-            AUX_YI = YI[kk_ys:kk_ye,kk_xs:kk_xe]
-        
-            IN  = splancs::inpip(cbind(as.vector(AUX_XI), as.vector(AUX_YI)), 
-                                 cbind(xp[,ii], yp[,ii]))
-                        
-            kk_x   = array(rep(kk_xs:kk_xe, e=kk_ye-kk_ys+1), 
-                           c(kk_ye-kk_ys+1, length(kk_xs:kk_xe)))
-            kk_y   = array(rep(kk_ys:kk_ye, t=kk_xe-kk_xs+1),
-                           c(length(kk_ys:kk_ye), kk_xe-kk_xs+1))
-            
-            IMAT[kk_y[IN],kk_x[IN]] = ii    
+    pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
+                           char=pb_char, width=pb_width,
+                           indent=paste0("     ", indent)) # 5 " " for default message()
     
-    } # for element
+    for (ii in 1:(dim(xp)[2])) {
+        
+        #if (ii %% 1e5 == 0) message(paste0(ii, "/", dim(xp)[2]))
+
+        xmin   = min(xp[,ii]) 
+        xmax   = max(xp[,ii]) 
+        ymin   = min(yp[,ii])
+        ymax   = max(yp[,ii]) 
+        
+        kk_xs  = which(xi <= xmin)[length(which(xi <= xmin))] #find(xi <= xmin,1,'last') 
+        if (is.na(kk_xs) || length(kk_xs) == 0) kk_xs=1 #if (length(kk_xs) == 0) kk_xs=1
+        kk_ys  = which(yi <= ymin)[length(which(yi <= ymin))] 
+        if (is.na(kk_ys) || length(kk_ys) == 0) kk_ys=1 #if (length(kk_ys) == 0) kk_ys=1
+        
+        kk_xe  = which(xi >= xmax)[1] #find(xi>=xmax,1,'first')
+        if (is.na(kk_xe) || length(kk_xe) == 0) kk_xe= length(xi) #if (length(kk_xe) == 0) kk_xe=length(xi)
+        kk_ye  = which(yi >= ymax)[1] 
+        if (is.na(kk_ye) || length(kk_ye) == 0) kk_ye= length(yi) #if (length(kk_ye) == 0) kk_ye=length(yi)
+
+        AUX_XI = XI[kk_ys:kk_ye,kk_xs:kk_xe]
+        AUX_YI = YI[kk_ys:kk_ye,kk_xs:kk_xe]
+    
+        IN  = splancs::inpip(cbind(as.vector(AUX_XI), as.vector(AUX_YI)), 
+                             cbind(xp[,ii], yp[,ii]))
+                    
+        kk_x   = array(rep(kk_xs:kk_xe, e=kk_ye-kk_ys+1), 
+                       c(kk_ye-kk_ys+1, length(kk_xs:kk_xe)))
+        kk_y   = array(rep(kk_ys:kk_ye, t=kk_xe-kk_xs+1),
+                       c(length(kk_ys:kk_ye), kk_xe-kk_xs+1))
+        
+        IMAT[kk_y[IN],kk_x[IN]] = ii    
+    
+        # update progress bar
+        setTxtProgressBar(pb, ii)
+
+    } # for element ii
     
     #return(list(IMAT=IMAT, XI=XI, YI=YI, xi=xi, yi=yi, regular_dx=regular_dx, regular_dy=regular_dy)) 
     
     ## nc Output
-    success <- load_package("ncdf4")
-    if (!success) stop()
-    
     xi_dim <- ncdim_def("nxi", "", xi, create_dimvar=T)
     yi_dim <- ncdim_def("nyi", "", yi, create_dimvar=T)
     
@@ -67,7 +75,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     YI_var <- ncvar_def("YI", "degrees_north", list(yi_dim, xi_dim), mv, prec="double")
     IMAT_var <- ncvar_def("IMAT", "interp_value", list(yi_dim, xi_dim), mv, prec="double")
     
-    imatnc <- nc_create(paste0(imatpath, imatfname), 
+    imatnc <- nc_create(paste0(interppath, imatfname), 
                         list(xi_var, yi_var, XI_var, YI_var, IMAT_var), 
                         force_v4=force_v4)
     
