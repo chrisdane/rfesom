@@ -80,7 +80,7 @@ Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: pr
 
 Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung, and J. Schröter, 2014b: The Finite Element Sea Ice-Ocean Model (FESOM) v.1.4: formulation of an ocean general circulation model. Geoscientific Model Development, 7 (2), 663–693, doi:10.5194/gmd-7-663-2014.
 
-## Available variables
+## Available variables  
 
 (automated list based on namelist.var.r)
 
@@ -134,7 +134,7 @@ Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung,
 | Norm of Horizontal Eddy in situ Density Flux |
 | Relative Vorticity |
 | Relative Vorticity / f |
-| Relative Vorticity / <code>|</code>f<code>|</code> |
+| Relative Vorticity / <code>\|</code>f<code>\|</code> |
 | Horizontal Strain (normal part) |
 | Horizontal Strain (shear part) |
 | Horizontal Strain |
