@@ -134,7 +134,7 @@ Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung,
 | Norm of Horizontal Eddy in situ Density Flux |
 | Relative Vorticity |
 | Relative Vorticity / f |
-| Relative Vorticity / |f| |
+| Relative Vorticity / <code>|</code>f<code>|</code> |
 | Horizontal Strain (normal part) |
 | Horizontal Strain (shear part) |
 | Horizontal Strain |
