@@ -323,4 +323,3 @@ source(paste0(rfesom_path, "namelists/namelist.var.r")) # change to your own nam
 ## Run rfesom
 source(paste0(rfesom_path, "lib/main_rfesom.r"))
 
-
