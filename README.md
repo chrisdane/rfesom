@@ -82,7 +82,7 @@ Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung,
 
 ## Available variables
 
-(automated list based on ../rfesom/namelists/namelist.var.r)
+(automated list based on namelist.var.r)
 
 | Variable name                                     |
 |---------------------------------------------------|
