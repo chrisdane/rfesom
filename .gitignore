@@ -4,6 +4,6 @@
 ## except 
 example_data/
 lib/
-preconfigured_namelists/
+namelists/
 README.md
 rfesom.run.r

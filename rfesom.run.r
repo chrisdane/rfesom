@@ -312,13 +312,13 @@ csec_ltm_out     <- F # save cross section ltm if out_mode == "csec_mean" or "cs
     ###############################################################################################
 
 ## Load Area and Projection Options
-source(paste0(rfesom_path, "preconfigured_namelists/namelist.area.r")) # change to your own namelist here
+source(paste0(rfesom_path, "namelists/namelist.area.r")) # change to your own namelist here
 
 ## Load Plot Options
-source(paste0(rfesom_path, "preconfigured_namelists/namelist.plot.r")) # change to your own namelist here
+source(paste0(rfesom_path, "namelists/namelist.plot.r")) # change to your own namelist here
 
 ## Load Variable Options
-source(paste0(rfesom_path, "preconfigured_namelists/namelist.var.r")) # change to your own namelist here
+source(paste0(rfesom_path, "namelists/namelist.var.r")) # change to your own namelist here
 
 ## Run rfesom
 source(paste0(rfesom_path, "lib/main_rfesom.r"))
