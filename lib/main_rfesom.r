@@ -60,27 +60,25 @@ if (!exists("meshpath")) {
 } else {
     meshpath <- normalizePath(meshpath)
 }
-if (!exists("datainpath")) {
-    stop("No 'datainpath' provided.")
-} else {
-    datainpath <- normalizePath(datainpath)
-}
-if (!exists("rfesompath")) {
-    rfesompath <- getwd() # = pwd
+if (!exists("meshid")) {
+    meshid <- basename(meshpath)
+    message("'meshid' not given. Use default: basename(meshpath) = ", meshid, "\n",
+            "You can set a meshid in the runscript with e.g.\n",
+            "   meshid <- \"core\"")
 }
 if (!exists("subroutinepath")) {
-    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
-} else {
-    subroutinepath <- normalizePath(subroutinepath)
+    subroutinepath <- paste0(getwd(), "/lib") # path where subroutines are saved
 }
+subroutinepath <- normalizePath(subroutinepath)
 if (file.access(subroutinepath, mode=0) == -1) {
     stop("subroutinepath = ", subroutinepath, " does not exist.")
 }
-if (!exists("runid")) {
-    runid <- "runid"
-}
 if (!exists("setting")) {
     setting <- ""
+}
+if (!exists("regular_dy")) {
+    message("'regular_dy' is not given. Use regular_dx ...")
+    regular_dy <- regular_dx # regular_dx # [deg]
 }
 colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 
@@ -146,6 +144,25 @@ if (exists("fnames_user")) {
     nfiles <- length(fnames_user)
 } else {
     fuser_tag <- F
+}
+if (fuser_tag) {
+    if (!exists("runid")) {
+        runid <- "runid"
+        message("'runid' not given. Use default: runid\n",
+                "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
+                "   runid <- \"myexp\"")
+        runid <- "runid"
+    }
+    if (!exists(datainpath)) {
+        datainpath <- dirname(fnames_user[1])
+    }
+} else if (!fuser_tag) {
+    if (!exists("runid")) stop("Set 'runid'.")
+    if (!exists("datainpath")) {
+        stop("No 'datainpath' provided.")
+    } else {
+        datainpath <- normalizePath(datainpath)
+    }
 }
 if (nfiles == 0) {
     transient_out <- F
@@ -279,9 +296,12 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        stop(paste0("You need to provde a 'postpath' if you want to save post-processed data."))
+        postpath <- datainpath
+        message(indent, "No 'postpath' is given for saving postprocessing results.\n",
+                indent, "Use default: ", postpath, " (='datainpath') ...")
+    } else {
+        postpath <- normalizePath(postpath)
     }
-    postpath <- normalizePath(postpath)
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'postpath' = ", postpath, " does not exist ... "))
         message(paste0(indent, "Try to create 'postpath' = ", postpath, " ..."), appendLF=F)
@@ -297,35 +317,50 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     }
 
     if (transient_out) {
-        transientpath <- paste0(postpath, "/", runid, "/", setting, "/",
-                                out_mode, "/", area, "/", varname)
-        dir.create(transientpath, recursive=T, showWarnings=F)
+        if (!exists("transientpath")) {
+            transientpath <- normalizePath(paste0(postpath, "/", runid, "/", setting, "/",
+                                                  out_mode, "/", area, "/", varname))
+            dir.create(transientpath, recursive=T, showWarnings=F)
+        }
     }
 
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
-        ltmpath <- paste0(postpath, "/", runid, "/", setting, "/",
-                          "ltm/", area, "/", varname)
-        dir.create(ltmpath, recursive=T, showWarnings=F)
+        if (!exists("ltmpath")) {
+            ltmpath <- normalizePath(paste0(postpath, "/", runid, "/", setting, "/",
+                                            "ltm/", area, "/", varname))
+            dir.create(ltmpath, recursive=T, showWarnings=F)
+        }
     }
+
     if (regular_transient_out) {
-        reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting,
-                                       "/regular_grid/",
-                                       out_mode, "/", area, "/", varname)
-        dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+        if (!exists("reg_transient_outpath")) {
+            reg_transient_outpath <- normalizePath(paste0(postpath, "/", runid, "/", setting,
+                                                          "/regular_grid/",
+                                                          out_mode, "/", area, "/", varname))
+            dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+        }
     }
+
     if (regular_ltm_out) {
-        reg_ltm_outpath <- paste0(postpath, "/", runid, "/", setting,
-                                  "/regular_grid/ltm/", out_mode, "/", 
-                                  area, "/", varname)
-        dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+        if (!exists("reg_ltm_outpath")) {
+            reg_ltm_outpath <- normalizePath(paste0(postpath, "/", runid, "/", setting,
+                                                    "/regular_grid/ltm/", out_mode, "/", 
+                                                    area, "/", varname))
+            dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+        }
     }
+
 } # check paths if transient_out
 
 if (plot_map || plot_csec) {
+    
     if (!exists("plotpath")) {
-        stop(paste0("You need to provde a 'plotpath' (plot_map=T)."))
+        plotpath <- paste0(datainpath, "/", varname)
+        message(indent, "No 'postpath' is given for saving plots.\n",
+                indent, "Use default: ", plotpath, " (='datainpath'/'varname') ...")
+    } else {
+        plotpath <- normalizePath(plotpath)
     }
-    plotpath <- normalizePath(plotpath)
     plotpath <- paste0(plotpath, "/", varname)
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
@@ -333,7 +368,7 @@ if (plot_map || plot_csec) {
         dir.create(plotpath, recursive=T, showWarnings=F)
         if (file.access(plotpath, mode=0) == -1) {
             message("")
-            stop(" Could not creat 'plotpath' = ", plotpath)
+            stop(" Could not create 'plotpath' = ", plotpath)
         } else {
             message("done.")
         }   
@@ -404,21 +439,25 @@ if (F) { # not yet
 ################################## check done ################################################
 
 ## Create Time vectors step 1: check for inconsistency
-if (length(recs) > 1) {
-    if (any(diff(recs) < 1)) {
-        stop("Time records of fesom file need to be in increasing order.")
+if (exists("recs")) {
+    if (length(recs) > 1) {
+        if (any(diff(recs) < 1)) {
+            stop("Time records of fesom file need to be in increasing order.")
+        }
+        if (any(diff(recs) != 1)) { # if recs per year are irregular, i.e. DJF
+            all_recs <- F
+        }
     }
-    if (any(diff(recs) != 1)) { # if recs per year are irregular, i.e. DJF
-        all_recs <- F
-    }
-}
-if (all_recs) { # user choice
-    rec_tag <- T
-    if (length(recs) == 1 || fuser_tag) {
+    if (all_recs) { # user choice
+        rec_tag <- T
+        if (length(recs) == 1 || fuser_tag) {
+            rec_tag <- F
+        }
+    } else if (!all_recs) {
         rec_tag <- F
     }
-} else if (!all_recs) {
-    rec_tag <- F
+} else if (!exists("recs")) {
+    stop("Provide 'recs' in time options of namelist.config.")
 }
 
 ## so far only 1 user file is allowed
@@ -522,7 +561,7 @@ if (fuser_tag) {
     } else {
         stop(paste0("output '", output, "' not defined"))
     }
-} # if (fuser_tag)
+} # if fuser_tag or not
 
 ## Create Time vectors step 3: yearvec
 nrecspf <- length(recs)
@@ -743,6 +782,7 @@ if (timespan == "") {
 }
 
 if (verbose > 0) {
+    message("verbose: ", verbose, " (change this in the runscript for more/less info).")
     message(paste0("runid: ", runid))
     message(paste0("setting: ", setting))
     message(paste0("mesh: ", meshid))
@@ -803,21 +843,25 @@ if (verbose > 0) {
     if (transient_out) {
         message(paste0("save transient ", out_mode, " data in ", area, " area to:"))
         message(paste0("   ", transientpath))
+        message("You can change this by defining 'transientpath' in the runscript.")
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         message(paste0("Save ltm data in ", area, " area to:"))
         message(paste0("   ", ltmpath))
+        message("You can change this by defining 'ltmpath' in the runscript.")
     }
     
     if (regular_transient_out) {
         message(paste0("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
         message(paste0("   ", reg_transient_outpath))
+        message("You can change this by defining 'reg_transient_outpath' in the runscript.")
     }
     
     if (regular_ltm_out) {
         message(paste0("Save ltm data in ", area, " area on regular (lon,lat) grid to:")) 
         message(paste0("   ", reg_ltm_outpath))
+        message("You can change this by defining 'reg_ltm_outpath' in the runscript.")
     }
 
     message("==============================================")
@@ -1270,9 +1314,13 @@ if (horiz_deriv_tag != F ||
             message(paste0(indent, indent, "'deriv_2d_fname' = ", deriv_2d_fname, " ..."))
         }
         if (!exists("derivpath")) {
-            stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
+            derivpath <- paste0(meshpath, "/derivatives")
+            message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
+                    indent, "No 'derivpath' is given for saving the result.\n",
+                    indent, "Use default: ", derivpath, " (='meshpath'/derivatives) ...")
+        } else {
+            derivpath <- normalizePath(derivpath)
         }
-        derivpath <- normalizePath(derivpath)
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
             #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
             message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -1330,9 +1378,12 @@ if (zave_method == 2 &&
             message(paste0(indent, indent, "'deriv_3d_fname' = ", deriv_3d_fname, " ..."))
         }
         if (!exists("derivpath")) {
-            stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
+            message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
+                    indent, "No 'derivpath' is given for saving the result. Use default ...")
+            derivpath <- paste0(meshpath, "/derivatives")
+        } else {
+            derivpath <- normalizePath(derivpath)
         }
-        derivpath <- normalizePath(derivpath)
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
             #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
             message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -1394,9 +1445,13 @@ if (any(regular_transient_out, regular_ltm_out)) {
     source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
 
     if (!exists("interppath")) {
-        stop(paste0("You need to provde 'interppath'."))
+        interppath <- paste0(meshpath, "/interp")
+        message(indent, "Need to calculate and save interpolation matrix for interpolation onto regular grid.\n",
+                indent, "No 'interppath' is given for saving the interpolation matrix.\n",
+                indent, "Use default: ", interppath, " (='meshpath'/interp) ...")
+    } else {
+        interppath <- normalizePath(interppath)
     }
-    interppath <- normalizePath(interppath)
     if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
         message(paste0(indent, "Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
         dir.create(interppath, recursive=T, showWarnings=T)
@@ -1406,6 +1461,8 @@ if (any(regular_transient_out, regular_ltm_out)) {
         } else {
             message("done.")
         }
+    } else if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
+        stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
     }
 
     interpfname <- paste0(meshid,
@@ -1415,7 +1472,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
 
     # interpolation matrix already exists
     if (file.exists(paste0(interppath, "/", interpfname))) {
-        if (verbose > 1) {
+        if (verbose > 0) {
             message(paste0(indent, "Load regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for ", meshid, " mesh from"))
@@ -1424,7 +1481,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
     
     # calculate interpolation matrix 
     } else {
-        if (verbose > 1) {
+        if (verbose > 0) {
             message(paste0(indent, "Calc regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for '", meshid, "' mesh using"))

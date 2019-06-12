@@ -1,6 +1,6 @@
-#############################
-## User input for rfesom.r ##
-#############################
+###########################
+## User input for rfesom ##
+###########################
 
 # plot device options
 plot_map <- T # plot a horizontal map of time-averaged 2D or depth-averaged/integrated 3D data?

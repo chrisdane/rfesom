@@ -1,4 +1,6 @@
-## R
+###########################
+## User input for rfesom ##
+###########################
 
 ## Define plot limits for the chosen projection and area ...
 

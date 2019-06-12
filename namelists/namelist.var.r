@@ -1,7 +1,11 @@
-## R
-# note: T = TRUE; F = FALSE
+###########################
+## User input for rfesom ##
+###########################
 
-## defaults which can be overwritten by user
+## Variable-specific things. 
+# Check e.g. lib/sub_calc.r how variable-specific calculations are done.
+
+## Defaults 
 varname_fesom <- NULL
 longname <- "longname"
 units_out <- "units_out"
@@ -25,7 +29,8 @@ p_ref_suffix <- ""
 diagsuffix <- ""
 typesuffix <- ""
 
-## Variable blocks
+
+## Overwrite defaults with variable-specific info
 if (varname == "tos") { 
     longname <- "Sea Surface Temperature"
     units_plot <- "degC"
