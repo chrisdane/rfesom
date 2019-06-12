@@ -2,7 +2,8 @@
 *
 
 ## except 
-example_data/
+example_data/mesh/
+example_data/data/
 lib/
 namelists/
 README.md
