@@ -38,7 +38,7 @@ landborder_col <- land_col # "black"
 fill_ocean <- F # fill ocean with 'ocean_col' color?
 ocean_col <- land_col #"white"
 bg_col <- "white" #"transparent" ## bg color. if "transparent", choose "png" as 'plot_file'
-grid_plot <- T # add a grid to plot?
+plot_grid <- T # add a grid to plot?
 grid_labels <- F # plot grid coordinate labels derived by built-in function map.grid()?
                   # (default is false because this is pretty ugly...)
 plot_title <- T # plot title?

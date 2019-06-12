@@ -7354,7 +7354,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
             if (!user_palname_exist && !user_cols_exist) {
                 message(indent, "   Note: you can define your own colors with e.g.:\n",
-                        indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or e.g.:\n", 
+                        indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or :\n", 
                         indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
                         indent, "      in namelist.var.r.")
             }
@@ -7684,9 +7684,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             ## Add grid lines to plot
             # Note: unfortunately, the labeling of map.grid() is pretty ugly
-            if (grid_plot) {
+            if (plot_grid) {
                 if (verbose > 1) {
-                    message(paste0(indent, "   Add grid to plot (grid_plot=T)..."))
+                    message(paste0(indent, "   Add grid to plot (plot_grid=T)..."))
                 }
                 success <- load_package("maps")
                 if (!success) stop()
@@ -7762,7 +7762,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             ## Add grid labels manually
             # Note: unfortunately not provided by map.grid for projected coordinates
-            #if (grid_plot && projection == "stereographic") {
+            #if (plot_grid && projection == "stereographic") {
             #    for (i in 1:length(grid_coord_lons)) {
             #        lab <- paste0(grid_coord_labs[i], grid_coord_hemi[i]) 
             #	    text(mapproject(grid_coord_lons[i], grid_coord_lats[i], projection=projection, 
