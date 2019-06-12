@@ -13,7 +13,7 @@
                      # in case of rectangular or orthograhic projection)
 
     # default area selection
-    if (all(out_mode != c("csec_mean", "csec_depth", 
+    if (!any(out_mode == c("csec_mean", "csec_depth", 
                            "moc_mean", "moc_depth"))) {
 
         # default ("flat earth") projection

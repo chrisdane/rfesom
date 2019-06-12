@@ -673,7 +673,7 @@ sub_calc <- function(data_node) {
             data_node <- sqrt(N2_node)
 
             if (verbose > 1) {
-                message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integral.r ..."))
+                message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integral.r ..."))
             }
             sub_vertical_integral(data_node) # produces tmp
             data_node <- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
@@ -716,7 +716,7 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 2) {
-                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                 }
             }
             sub_n3_to_n2xde(N_node) # produces tmp
@@ -732,7 +732,7 @@ sub_calc <- function(data_node) {
                 if (verbose > 1) {
                     message(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
                     if (verbose > 2) {
-                        message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                        message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate.r ..."))
                     }
                 }
                 sub_vertical_integral(N_node) # produces tmp
@@ -750,7 +750,7 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
                              "-", interpolate_depths[1], " m and keep z dim ..."))
                 if (verbose > 2) {
-                    message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate_keepz.r ..."))
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate_keepz.r ..."))
                 }
             }
             sub_vertical_integral_keepz(N_node)
@@ -772,7 +772,7 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 2) {
-                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                 }
             }
             sub_n3_to_n2xde(N_intz_z) # produces tmp
@@ -1847,7 +1847,7 @@ sub_calc <- function(data_node) {
                 if (verbose > 1) { # rearrange first
                     message(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                 }
                 sub_n3_to_n2xde(data_node) # produces tmp
                 data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
@@ -1921,7 +1921,7 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=", 
                              dim(dvardy_elem)[4], ") on (nod2d_n=", nod2d_n, " x ndepths=", 
                              dim(dvardy_elem)[4], ") ..."))
-                message(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
+                message(paste0(indent, "   run ", subroutinepath, "/sub_e2xde_to_n2xde.r ..."))
             }
             if (!is.null(dxinds)) {
                 sub_e2xde_to_n2xde(dvardx_elem) # produces tmp
@@ -1952,7 +1952,7 @@ sub_calc <- function(data_node) {
                     if (verbose > 1) {
                         message(paste0(indent, "Bring dvardx_vert back from (nod2d_n=", nod2d_n,
                                      " x ndepths=", dim(dvardx_vert)[3], ") on (nod3d_n=", nod3d_n, ") ..."))
-                        message(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "/sub_n2xde_to_n3.r ..."))
                     }
                     sub_n2xde_to_n3(dvardx_vert) # produces tmp
                     dvardx_node <- tmp # dim(dvardx_node) = c(nvars,nod3d_n,ndepths=1,nrecspf)
@@ -1970,7 +1970,7 @@ sub_calc <- function(data_node) {
                     if (verbose > 1) {
                         message(paste0(indent, "Bring dvardy_vert back from (nod2d_n=", nod2d_n,
                                      " x ndepths=", dim(dvardy_vert)[3], ") on (nod3d_n=", nod3d_n, ") ..."))
-                        message(paste0(indent, "   run ", subroutinepath, "sub_n2xde_to_n3.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "/sub_n2xde_to_n3.r ..."))
                     }
                     sub_n2xde_to_n3(dvardy_vert) 
                     dvardy_node <- tmp 
@@ -3098,7 +3098,7 @@ sub_calc <- function(data_node) {
             if (verbose > 1) {
                 message(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=",
                              ndepths, ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                message(paste0(indent, "   run ", subroutinepath, "sub_e2xde_to_n2xde.r ..."))
+                message(paste0(indent, "   run ", subroutinepath, "/sub_e2xde_to_n2xde.r ..."))
             }
             sub_e2xde_to_n2xde(resolution) # produces tmp
             data_node <- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)

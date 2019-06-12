@@ -56,17 +56,26 @@ fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
 ## check user input
-if (!exists("rfesompath")) {
-    rfesompath <- paste0(getwd(), "/") # = pwd with trailing slash /
-}
-if (!exists("subroutinepath")) {
-    subroutinepath <- paste0(rfesompath, "lib/") # path where subroutines are saved
-}
 if (!exists("meshpath")) {
     stop("No 'meshpath' provided.")
+} else {
+    meshpath <- normalizePath(meshpath)
 }
 if (!exists("datainpath")) {
     stop("No 'datainpath' provided.")
+} else {
+    datainpath <- normalizePath(datainpath)
+}
+if (!exists("rfesompath")) {
+    rfesompath <- getwd() # = pwd
+}
+if (!exists("subroutinepath")) {
+    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
+} else {
+    subroutinepath <- normalizePath(subroutinepath)
+}
+if (file.access(subroutinepath, mode=0) == -1) {
+    stop("subroutinepath = ", subroutinepath, " does not exist.")
 }
 if (!exists("runid")) {
     runid <- "runid"
@@ -74,6 +83,7 @@ if (!exists("runid")) {
 if (!exists("setting")) {
     setting <- ""
 }
+colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 
 ## add more directories to where to look for packages to load
 if (exists("rpackagepaths")) {
@@ -86,10 +96,11 @@ if (exists("rpackagepaths")) {
 }
 if (exists("rpackagepaths")) {
     if (file.access(rpackagepaths, mode=4) == -1) { # mode=4: reading, -1: no success
-        stop(paste0("You have no reading rights in 'rpackagepaths' = ", rpackagepaths, " ..."))
+        stop(paste0("You have no reading rights in your provided 'rpackagepaths' = ", rpackagepaths, " ..."))
     }
     rm(rpackagepaths)
 }
+# if exist and readable, add to R search path for this session
 if (exists("rpackagepaths")) {
     .libPaths(rpackagepaths) 
 }
@@ -100,13 +111,13 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
             "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
             "sub_vertical_average.r", 
             "sub_vertical_integral.r", "sub_vertical_integral_keepz.r")) {
-    source(paste0(subroutinepath, i))
+    source(paste0(subroutinepath, "/", i))
 }
 
 ## load misc subroutines
 for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "gcd.r", "myls.r")) {
-    source(paste0(subroutinepath, "functions/", i))
+    source(paste0(subroutinepath, "/functions/", i))
 }
 
 indent <- "   " # needed for load_package()
@@ -121,8 +132,8 @@ if (!success) stop()
 if (plot_map && plot_type == "interp") {
     success <- load_package("akima")
     if (!success) stop()
-    source(paste0(subroutinepath, "m2lon.r"))
-    source(paste0(subroutinepath, "m2lat.r"))
+    source(paste0(subroutinepath, "/m2lon.r"))
+    source(paste0(subroutinepath, "/m2lat.r"))
 }
 
 ## check stuff
@@ -271,12 +282,14 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     if (!exists("postpath")) {
         stop(paste0("You need to provde a 'postpath' if you want to save post-processed data."))
     }
+    postpath <- normalizePath(postpath)
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        message(paste0("'postpath' = ", postpath, " does not exist ..."))
-        message(paste0("Try to create ", postpath, " ..."))
-        dir.create(postpath)
+        #message(paste0("'postpath' = ", postpath, " does not exist ... "))
+        message(paste0(indent, "Try to create 'postpath' = ", postpath, " ..."), appendLF=F)
+        dir.create(postpath, recursive=T, showWarnings=F)
         if (file.access(postpath, mode=0) == -1) {
-            stop(paste0("'postpath' = ", postpath, " does not exist ..."))
+            message("")
+            stop("Could not create 'postpath' = ", postpath)
         } else {
             message("done")
         }
@@ -285,43 +298,46 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     }
 
     if (transient_out) {
-        transientpath <- paste0(postpath, runid, "/", setting, "/",
-                           out_mode, "/", area, "/", varname, "/")
+        transientpath <- paste0(postpath, "/", runid, "/", setting, "/",
+                                out_mode, "/", area, "/", varname)
         dir.create(transientpath, recursive=T, showWarnings=F)
     }
 
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
-        ltmpath <- paste0(postpath, runid, "/", setting, "/",
-                          "ltm/", area, "/", varname, "/")
+        ltmpath <- paste0(postpath, "/", runid, "/", setting, "/",
+                          "ltm/", area, "/", varname)
         dir.create(ltmpath, recursive=T, showWarnings=F)
     }
     if (regular_transient_out) {
-        reg_transient_outpath <- paste0(postpath, runid, "/", setting,
-                                   "/regular_grid/",
-                                   out_mode, "/", area, "/", varname, "/")
+        reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting,
+                                       "/regular_grid/",
+                                       out_mode, "/", area, "/", varname)
         dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
     }
     if (regular_ltm_out) {
-        reg_ltm_outpath <- paste0(postpath, runid, "/", setting,
-                                  "/regular_grid/ltm/", out_mode, "/", area, "/", varname, "/")
+        reg_ltm_outpath <- paste0(postpath, "/", runid, "/", setting,
+                                  "/regular_grid/ltm/", out_mode, "/", 
+                                  area, "/", varname)
         dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
     }
 } # check paths if transient_out
 
 if (plot_map || plot_csec) {
     if (!exists("plotpath")) {
-        stop(paste0("You need to provde a 'plotpath' (plot_map=TRUE)."))
+        stop(paste0("You need to provde a 'plotpath' (plot_map=T)."))
     } else {
-        plotpath <- paste0(plotpath, varname, "/")
+        plotpath <- normalizePath(plotpath)
+        plotpath <- paste0(plotpath, "/", varname)
     }
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
-        message(paste0("Try to create ", plotpath, " ..."))
-        dir.create(plotpath)
+        #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
+        message(paste0(indent, "Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
+        dir.create(plotpath, recursive=T, showWarnings=F)
         if (file.access(plotpath, mode=0) == -1) {
-            stop(paste0("'plotpath' = ", plotpath, " does not exist ..."))
+            message("")
+            stop(" Could not creat 'plotpath' = ", plotpath)
         } else {
-            message("done")
+            message("done.")
         }   
     } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
         stop(paste0("You have no writing rights in 'plotpath' = ", plotpath, " ..."))
@@ -824,7 +840,7 @@ if (!restart || # ... not a restart run
     (restart && dim_tag == "3D" && nod3d_check == F)) { # ... or if restart and new variable 
                                                     # is 2D and 2D mesh was not leaded yet
 
-    nod2d_n <- as.numeric(readLines(paste0(meshpath, "nod2d.out"), n=1))
+    nod2d_n <- as.numeric(readLines(paste0(meshpath, "/nod2d.out"), n=1))
     pos <- 1:nod2d_n # old here
     surfnodes <- pos # old here
 
@@ -847,7 +863,7 @@ if (!restart || # ... not a restart run
             message(paste0(indent, "read ", nod2d_n, 
                          " 2D nodes from nod2d.out ..."))
         }
-        fid <- paste0(meshpath, "nod2d.out")
+        fid <- paste0(meshpath, "/nod2d.out")
         if (!fread_tag) {
             tmp <- scan(fid, skip=1, quiet=T)
             nod2d <- matrix(tmp, nrow=nod2d_n, byrow=T)
@@ -866,7 +882,7 @@ if (!restart || # ... not a restart run
     }
 
     if (dim_tag == "3D") {
-        fid <- paste0(meshpath, "nod3d.out")
+        fid <- paste0(meshpath, "/nod3d.out")
         nod3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
             message(paste0(indent, "read ", nod3d_n, 
@@ -889,7 +905,7 @@ if (!restart || # ... not a restart run
         nod3d_check <- T
         rm(tmp, nod3d)
 
-        fid <- paste0(meshpath, "aux3d.out")
+        fid <- paste0(meshpath, "/aux3d.out")
         aux3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
             message(paste0(indent, "read ", aux3d_n*nod2d_n, 
@@ -922,7 +938,7 @@ if (!restart || # ... not a restart run
 
     } # end if 3d
 
-    fid <- paste0(meshpath, "elem2d.out")
+    fid <- paste0(meshpath, "/elem2d.out")
     elem2d_n <- as.numeric(readLines(fid, n=1))
     if (verbose > 1) {
         message(paste0(indent, "read ", elem2d_n, 
@@ -1189,7 +1205,7 @@ if (!restart || # ... not a restart run
 
 # special: save elem2d as netcdf
 if (F) {
-    elem2d_fname <- paste0(meshpath, meshid, "_elem2d",
+    elem2d_fname <- paste0(meshpath, "/", meshid, "_elem2d",
                              ifelse(cycl, "_cycl", ""), ".nc")
    
     message("**********************")
@@ -1240,11 +1256,11 @@ if (horiz_deriv_tag != F ||
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
     if (F) { # old
-        deriv_2d_fname <- paste0(derivpath, "mesh_", meshid, "_deriv_2d_",
+        deriv_2d_fname <- paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
                                  ifelse(horiz_deriv_tag != F, horiz_deriv_tag, out_coords), 
                                  ifelse(cycl, "_cycl", ""), ".nc")
     } else {
-        deriv_2d_fname <-  paste0(derivpath, "mesh_", meshid, "_deriv_2d_",
+        deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
                                   out_coords, ifelse(cycl, "_cycl", ""), ".nc")
     }
 
@@ -1259,20 +1275,21 @@ if (horiz_deriv_tag != F ||
             stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
         }
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
-            message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
-            message(paste0("Try to create ", derivpath, " ..."))
-            dir.create(derivpath)
+            #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
+            message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
+            dir.create(derivpath, recursive=T, showWarnings=F)
             if (file.access(derivpath, mode=0) == -1) {
-                stop(paste0("'derivpath' = ", derivpath, " does not exist ..."))
+                message("")
+                stop(" Could not create 'derivpath' = ", derivpath)
             } else {
-                message("done")
+                message("done.")
             }
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
             stop(paste0("You have no writing rights in 'derivpath' = ", derivpath, " ..."))
         }
 
         # Elementwise derivation:
-        source(paste0(subroutinepath, "deriv_2d.r"))
+        source(paste0(subroutinepath, "/deriv_2d.r"))
         deriv_2d <- deriv_2d_function(elem2d=elem2d, xcsur=xcsur, ycsur=ycsur,
                                       meshid=meshid, mv=mv, 
                                       deriv_2d_fname=deriv_2d_fname)
@@ -1298,11 +1315,11 @@ if (zave_method == 2 &&
     out_mode == "mean") {
  
     if (F) { # old
-        deriv_3d_fname <- paste0(derivpath, "mesh_", meshid, "_deriv_3d_",
+        deriv_3d_fname <- paste0(derivpath, "/mesh_", meshid, "_deriv_3d_",
                                  ifelse(horiz_deriv_tag != F, horiz_deriv_tag, out_coords),
                                  ".nc")
     } else {
-        deriv_3d_fname <- paste0(derivpath, "mesh_", meshid, "_deriv_3d_",
+        deriv_3d_fname <- paste0(derivpath, "/mesh_", meshid, "_deriv_3d_",
                                  out_coords, ".nc")
     }
 
@@ -1317,20 +1334,21 @@ if (zave_method == 2 &&
             stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
         }
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
-            message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
-            message(paste0("Try to create ", derivpath, " ..."))
-            dir.create(derivpath)
+            #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
+            message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
+            dir.create(derivpath, recursive=T, showWarnings=F)
             if (file.access(derivpath, mode=0) == -1) {
-                stop(paste0("'derivpath' = ", derivpath, " does not exist ..."))
+                message("")
+                stop("Could not create 'derivpath' = ", derivpath)
             } else {
-                message("done")
+                message("done.")
             }
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
             stop(paste0("You have no writing rights in 'derivpath' = ", derivpath, " ..."))
         }
 
         # load elem3d
-        fid <- paste0(meshpath, "elem3d.out")
+        fid <- paste0(meshpath, "/elem3d.out")
         elem3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose == 2 || verbose == 3) {
             message(paste0(indent, "   read ", elem3d_n,
@@ -1348,7 +1366,7 @@ if (zave_method == 2 &&
         }
 
         # Elementwise derivation:
-        source(paste0(subroutinepath, "deriv_3d.r"))
+        source(paste0(subroutinepath, "/deriv_3d.r"))
         deriv_3d <- deriv_3d_function(elem3d=elem3d, nod_x, nod_y, nod_z,
                                       meshid=meshid, mv=mv, 
                                       deriv_3d_fname=deriv_3d_fname)
@@ -1372,56 +1390,59 @@ if (zave_method == 2 &&
 ## Interpolate irregular mesh to regular
 if (any(regular_transient_out, regular_ltm_out)) {
 
-    source(paste0(subroutinepath, "sub_calc_load_regular_IMAT.r"))
-    source(paste0(subroutinepath, "sub_calc_regular_2d_interp.r"))
+    source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
+    source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
 
     if (!exists("interppath")) {
-        stop(paste0("You need to provde a 'interppath' (imat_map=TRUE)."))
+        stop(paste0("You need to provde 'interppath'."))
     }
     if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
-        message(paste0("Warning: your 'interppath' = ", interppath, " does not exist ..."))
-        message(paste0("         try to create ..."))
+        message(paste0(indent, "Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
         dir.create(interppath, recursive=T, showWarnings=T)
         if (file.access(interppath, mode=0) == -1) {
-            stop(paste0("Your 'interppath' = ", interppath, " does not exist ..."))
+            message("")
+            stop("Could not create 'interppath' = ", interppath)
+        } else {
+            message("done.")
         }
     }
 
-    imatfname <- paste0(meshid,
+    interpfname <- paste0(meshid,
                         "_dx", sprintf("%.3f", regular_dx),
                         "_dy", sprintf("%.3f", regular_dy),
                         "_imat", ifelse(cycl, "_cycl", ""), ".nc")
 
-    if (file.exists(paste0(interppath, imatfname))) {
+    # interpolation matrix already exists
+    if (file.exists(paste0(interppath, "/", interpfname))) {
         if (verbose > 1) {
             message(paste0(indent, "Load regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for ", meshid, " mesh from"))
-            message(paste0(indent, indent, "'interppath''imatfname' = ", interppath, imatfname, " ..."))
+            message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
         }
     
+    # calculate interpolation matrix 
     } else {
         if (verbose > 1) {
             message(paste0(indent, "Calc regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for '", meshid, "' mesh using"))
             message(paste0(indent, indent, "sub_calc_load_regular_IMAT.r and save result in"))
-            message(paste0(indent, indent, "'interppath''imatfname' = ", interppath, imatfname, " ..."))
+            message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
         }
        
         if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
             stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
         }
         dir.create(interppath, recursive=T, showWarnings=F)
-
         sub_calc_load_regular_IMAT(regular_dx=regular_dx, regular_dy=regular_dy,
                                    xp=xc_global, yp=yc_global,
                                    interppath=interppath,
-                                   imatfname=imatfname,
+                                   interpfname=interpfname,
                                    mv=mv)
     }
 
-    imatncin <- nc_open(paste0(interppath, imatfname))
+    imatncin <- nc_open(paste0(interppath, "/", interpfname))
     xi <- ncvar_get(imatncin, "xi")
     yi <- ncvar_get(imatncin, "yi")
     XI <- ncvar_get(imatncin, "XI")
@@ -2485,10 +2506,10 @@ close(pb)
 
     # check csection
     if (plot_csec) {
-        if (!dir.exists(paste0(plotpath, varname))) {
-            dir.create(paste0(plotpath, varname), recursive=T, showWarnings=F)
+        if (!dir.exists(paste0(plotpath, "/", varname))) {
+            dir.create(paste0(plotpath, "/", varname), recursive=T, showWarnings=F)
         }
-        plotname <- paste0(plotpath, varname, "/",
+        plotname <- paste0(plotpath, "/", varname, "/",
                            runid, "_", setting, 
                            "_csec_location_", area,
                            ".", plot_file)
@@ -2647,7 +2668,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
             moc_mask <- rep(1, t=nod2d_n)
         } else {
             # make new moc mask 
-            moc_mask_file <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".dat")
+            moc_mask_file <- paste0(meshpath, "/moc_mask_", area, "_", meshid, ".dat")
             message(indent, "MOC mask area is not 'moc_global' AND no moc mask file is given for meshid = '", meshid, 
                     "'. Determine moc mask now in an interactive session.")
             if (!interactive()) stop("run this script in an interactive session.")
@@ -2664,7 +2685,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
             abline(v=pretty(xcsur, n=20), lwd=0.5)
             abline(h=pretty(ycsur, n=20), lwd=0.5)
             title(paste0("Select MOC mask area '", area, "' for mesh '", meshid, "'"))
-            source(paste0(subroutinepath, "functions/mylocator.r"))
+            source(paste0(subroutinepath, "/functions/mylocator.r"))
             message(indent, "The polygon is closed automatically in the end. If you want to change the coordinates for MOC area '", 
                     area, "', remove ", moc_mask_file, " and rerun the script.")
             moc_mask_coords <- mylocator()
@@ -3077,9 +3098,9 @@ if (nfiles == 0) { # read data which are constant in time
             success <- load_package("ncdf.tools")
             if (!success) {
                 ncdf.tools_tag <- F
-                message(paste0(indent, "   note: ncdf.tools::readNcdf() may be faster than",
-                             " ncdf4::ncvar_get() if the whole netcdf file (i.e. all entries",
-                             " of all dimensions) needs to get loaded ..."))
+                message(paste0(indent, "   note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get() if\n",
+                               indent, "         the whole netcdf file (i.e. all entries of all\n",
+                               indent, "         dimensions) needs to get loaded ..."))
             } else if (success) {
                 ncdf.tools_tag <- T
             }
@@ -3185,30 +3206,36 @@ if (nfiles == 0) { # read data which are constant in time
                     
                     if ((runid == "bold" && setting == "cpl_output_01") || # tido
                         (runid == "awicm-CMIP6_hu" && setting == "pi")) { # hu
-                        fnames[file] <- paste0(datainpath, "fesom.", year, ".",
+                        fnames[file] <- paste0(datainpath, "/fesom.", year, ".",
                                                typesuffix[file], diagsuffix[file],
                                                snapshotsuffix[file], "nc")
                    
                     } else if (setting == "htrans02") {
-                        fnames[file] <- paste0(datainpath, varname_fesom[file], "_fesom_", 
+                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
                                                year, "0101_monmean.nc")
 
-                    } else { # cpl default
-                        fnames[file] <- paste0(datainpath, varname_fesom[file], "_fesom_", 
+                    # coupled default
+                    } else { 
+                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
                                                year, "0101.nc")
                         # newer esm version: exp name in fesom file names
                         if (!file.exists(fnames[file])) {
-                            fnames[file] <- paste0(datainpath, setting, "_", varname_fesom[file], "_fesom_",
-                                                   year, "0101.nc")
+                            fnames[file] <- paste0(datainpath, "/", setting, "_", varname_fesom[file], 
+                                                   "_fesom_", year, "0101.nc")
                         }
                     }
 
-                # fesom only
-                }  else if (!cpl_tag) { # if cpl_tag
-                
+                # ocean-only
+                }  else if (!cpl_tag) {
+               
+                    if (any(runid == c("demo1"))) {
+                        fnames[file] <- paste0(datainpath, "/demo.", year, ".", 
+                                               typesuffix[file], diagsuffix[file], 
+                                               snapshotsuffix[file], "nc")
+
                     # xuezhu wangs 1st CORE2 spinups (w/out GIS)
-                    if (runid == "CORE2" || runid == "CORE2_ctl") {
-                        fnames[file] <- paste0(datainpath, "CORE2.", year, ".", 
+                    } else if (runid == "CORE2" || runid == "CORE2_ctl") {
+                        fnames[file] <- paste0(datainpath, "/CORE2.", year, ".", 
                                                typesuffix[file], diagsuffix[file], 
                                                snapshotsuffix[file], "nc")
                     
@@ -3216,18 +3243,18 @@ if (nfiles == 0) { # read data which are constant in time
                     } else if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
                                                   "Arc22_sub", "Arc22_sub_small"))) {
                         if (runid == "Arc22_sub_daily" && dim_tag == "2D") {
-                            fnames[file] <- paste0(datainpath, "Arc22.", year, ".",
+                            fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
                                                    typesuffix[file], diagsuffix[file],
                                                    snapshotsuffix[file], "sub.n2d.nc")
                         } else {
-                            fnames[file] <- paste0(datainpath, "Arc22.", year, ".",
+                            fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
                                                    typesuffix[file], diagsuffix[file],
                                                    snapshotsuffix[file], "sub.nc")
                         }
 
                     # default 
                     } else {
-                        fnames[file] <- paste0(datainpath, runid, ".", year, ".", 
+                        fnames[file] <- paste0(datainpath, "/", runid, ".", year, ".", 
                                                typesuffix[file], diagsuffix[file], 
                                                snapshotsuffix[file], "nc")
                     }
@@ -3336,11 +3363,11 @@ if (nfiles == 0) { # read data which are constant in time
                     
                     # or oce.diag not loaded yet
                     } else { 
-                        mld_fname <- paste0(datainpath, mld_varname, "_fesom_",
+                        mld_fname <- paste0(datainpath, "/", mld_varname, "_fesom_",
                                             year, "0101.nc")
                         # newer esm version: exp name in fesom file names
                         if (!file.exists(mld_fname)) {
-                            mld_fname <- paste0(datainpath, setting, "_", mld_varname, "_fesom_",
+                            mld_fname <- paste0(datainpath, "/", setting, "_", mld_varname, "_fesom_",
                                                 year, "0101.nc")
                         }
                         if (!file.exists(mld_fname)) {
@@ -3383,11 +3410,11 @@ if (nfiles == 0) { # read data which are constant in time
 
                     # or oce.diag not loaded yet
                     } else {
-                        mld_fname <- paste0(datainpath, mld_varname, "_fesom_",
+                        mld_fname <- paste0(datainpath, "/", mld_varname, "_fesom_",
                                             year, "0101.nc")
                         # newer esm version: exp name in fesom file names
                         if (!file.exists(mld_fname)) {
-                            mld_fname <- paste0(datainpath, setting, "_", mld_varname, "_fesom_",
+                            mld_fname <- paste0(datainpath, "/", setting, "_", mld_varname, "_fesom_",
                                                 year, "0101.nc")
                         }
                         if (!file.exists(mld_fname)) {
@@ -3882,7 +3909,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 ## Preparations1 before calculations
                 if (verbose > 1) {
-                    message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 if (exists("tmp")) rm(tmp)
@@ -3905,7 +3932,7 @@ if (nfiles == 0) { # read data which are constant in time
                             message(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n, 
                                          ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                             if (verbose > 2) {
-                                message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                             }
                         }
                         #indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -3921,7 +3948,7 @@ if (nfiles == 0) { # read data which are constant in time
                     if (verbose > 1 && ndepths > 1) {
                         message(paste0(indent, "Average over ", depths_plot, " m depths ..."))
                         if (verbose > 2) {
-                            message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                            message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
                         }
                     }
                     indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -3936,7 +3963,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 ## Preparations2 before calculations e.g. calc rho, f, ... if needed
                 if (verbose > 1) {
-                    message(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_prepare2(data_node) # overwrites data_node with the result of sub_prepare2()
@@ -3947,7 +3974,7 @@ if (nfiles == 0) { # read data which are constant in time
                         message(paste0(indent, "For Cross section bring data_node from (nod3d_n=", nod3d_n,
                                      ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                         if (verbose > 2) {
-                            message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                            message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                         }
                     }
                     indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -3970,7 +3997,7 @@ if (nfiles == 0) { # read data which are constant in time
                 if (verbose > 1) {
                     #message(paste0(indent, "Calc ", varname, " ..."))
                     if (verbose > 1) {
-                        message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
+                        message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
                     }
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4036,7 +4063,7 @@ if (nfiles == 0) { # read data which are constant in time
                         if (verbose > 1) {
                             message(paste0(indent, "Integrate between ", depths_plot, " m ..."))
                             if (verbose > 2) {
-                                message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                                message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate.r ..."))
                             }
                         }
                         sub_vertical_integral(data_node) # produces tmp
@@ -4100,7 +4127,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     message(paste0(indent, "For regular interpolation bring data_node from (nod3d_n=", nod3d_n,
                                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
-                                        message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                        message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                                     }
                                 }
                                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4340,7 +4367,7 @@ if (nfiles == 0) { # read data which are constant in time
                                             message(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
                                                          ") on (nod2d_n=", nod2d_n, " x ndepths=", dim(data_node)[3], ") ..."))
                                             if (verbose > 2) {
-                                                message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                                message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                                             }
                                         }
                                         sub_n3_to_n2xde(data_node) # produces tmp
@@ -4356,7 +4383,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                          ndepths, 
                                                          ") ..."))
                                             if (verbose > 2) {
-                                                message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                                message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                                             }
                                         }
                                         sub_n3_to_n2xde(data_node) # produces tmp
@@ -4580,7 +4607,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     transient_count <- c(3, dim(datamat)[3], 1)
                                 }
 
-                                outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
+                                outname <- paste0(transientpath, "/", runid, "_", setting, "_", output, "_",
                                                   varname, "_transient_", out_mode, "_", timespan, 
                                                   depths_fname, "_", area, "_", 
                                                   projection, 
@@ -4689,7 +4716,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 if (dim(datamat_reg)[4] == 1) { # only 1 depth, e.g. varname "c_baroclinic"
                                     out_mode <- "area"
                                     # check again if new path exist
-                                    reg_transient_outpath <- paste0(postpath, runid, "/", setting,
+                                    reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting,
                                                                "/regular_grid/",
                                                                out_mode, "/", area, "/", varname, "/")
                                     dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
@@ -4719,7 +4746,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     }
                                 }
 
-                                outname_reg <- paste0(reg_transient_outpath, runid, "_", 
+                                outname_reg <- paste0(reg_transient_outpath, "/", runid, "_", 
                                                       setting, "_", output, "_",
                                                       varname, "_transient_", out_mode, "_", timespan,
                                                       depths_fname, "_", area, "_",
@@ -5192,7 +5219,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     message(paste0(indent, "For ltm/plot bring data_node from (nod3d_n=", nod3d_n,
                                                    ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                                     if (verbose > 2) {
-                                        message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                                        message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                                     }
                                 }
                                 sub_n3_to_n2xde(data_node) # produces tmp
@@ -5228,7 +5255,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 if (verbose > 1) {
                                     message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
                                     if (verbose > 2) {
-                                        message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                                        message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
                                     }
                                 }
                                 sub_vertical_average(data_vert) # produces tmp
@@ -5471,19 +5498,19 @@ if (nfiles == 0) { # read data which are constant in time
             # nc name
             if (any(varname == c("iceextent", "icevol"))) {
                 if (is.null(sic_cond_fname)) {
-                    outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
+                    outname <- paste0(transientpath, "/", runid, "_", setting, "_", output, "_",
                                       varname, "_sic_transient_", out_mode, "_", 
                                       timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 } else {
-                    outname <- paste0(transientpath, runid, "_", setting, "_", output, "_",
+                    outname <- paste0(transientpath, "/", runid, "_", setting, "_", output, "_",
                                       varname, "_sic.", sic_cond_fname, ".", sic_thr*100, 
                                       "_transient_", out_mode, "_",
                                       timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 }
             } else {
-                outname <- paste0(transientpath, runid, "_", setting, "_", output, "_", 
+                outname <- paste0(transientpath, "/", runid, "_", setting, "_", output, "_", 
                                   varname, "_transient_", out_mode, "_", timespan,
                                   depths_fname, "_", area, "_", 
                                   ifelse(out_mode == "csec_mean" && csec_conds_n > 0, 
@@ -6019,7 +6046,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## Preparations1 before calculations
         if (verbose > 1) {
-            message(paste0(indent, "Run ", subroutinepath, "sub_prepare1.r ..."))
+            message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
         }
         if (exists("tmp")) rm(tmp)
         sub_prepare1(data_node_ltm) # produces tmp
@@ -6058,7 +6085,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     message(paste0(indent, "Bring data_node_ltm from (nod3d_n=", nod3d_n,
                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                     if (verbose > 2) {
-                        message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                     }
                 }
                 sub_n3_to_n2xde(data_node_ltm) # produces tmp
@@ -6072,7 +6099,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1 && ndepths > 1) {
                 message(paste0(indent, "Average over ", depths_plot, " m depths ..."))
                 if (verbose > 2) {
-                    message(paste0(indent, "   run ", subroutinepath, "sub_vertical_average.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
                 }
             }
             sub_vertical_average(data_vert_ltm) # prduces tmp
@@ -6086,7 +6113,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## Preparations2 before calculations e.g. calc rho, f, bathy, ... if needed
         #print(str(data_node_ltm))
         if (verbose > 1) {
-            message(paste0(indent, "Run ", subroutinepath, "sub_prepare2.r ..."))
+            message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
         }
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_prepare2(data_node_ltm) # overwrites data_node_ltm with the result of sub_prepare2()
@@ -6098,7 +6125,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 message(paste0(indent, "For Cross section bring data_node_ltm from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 1) {
-                    message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                 }
             }
             sub_n3_to_n2xde(data_node_ltm) # produces tmp
@@ -6119,7 +6146,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (verbose > 1) {
             #message(paste0(indent, "Calc ", varname, " ..."))
             if (verbose > 1) {
-                message(paste0(indent, "Run ", subroutinepath, "sub_calc.r ..."))
+                message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
             }
         }
         # ltm part
@@ -6154,7 +6181,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1) {
                 message(paste0(indent, "Integrate between ", depths_plot, " m ..."))
                 if (verbose > 2) {
-                    message(paste0(indent, "Run ", subroutinepath, "sub_vertical_integrate.r ..."))
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate.r ..."))
                 }
             }
             sub_vertical_integral(data_node_ltm) # produces tmp
@@ -6271,7 +6298,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     message(paste0(indent, "For regular interpolation bring data_node_ltm from (nod3d_n=", nod3d_n,
                                  ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                     if (verbose > 2) {
-                        message(paste0(indent, "   run ", subroutinepath, "sub_n3_to_n2xde.r ..."))
+                        message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                     }
                 }
                 sub_n3_to_n2xde(data_node_ltm) # produces tmp
@@ -6524,13 +6551,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     if (ltm_out) { # irregular
 
         if (nfiles > 0) {
-            outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
+            outname <- paste0(ltmpath, "/", runid, "_", setting, "_", output, "_",
                               varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, "_", 
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
                               p_ref_suffix, fname_suffix, ".nc")
         } else if (nfiles == 0) {
-            outname <- paste0(ltmpath, runid, "_", setting, "_",
+            outname <- paste0(ltmpath, "/", runid, "_", setting, "_",
                               varname, "_ltm_", out_mode, depths_fname, "_", area, "_",
                               projection, "_", output_type,
                               ssh_aviso_correct_fname, 
@@ -6638,7 +6665,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
     if (regular_ltm_out) {
         if (nfiles > 0) {
-            reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_", output, "_",
+            reg_outname <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_", output, "_",
                                   varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, 
                                   "_", projection, "_regular_dx", 
                                   sprintf("%.3f", regular_dx), "_dy",
@@ -6647,7 +6674,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   p_ref_suffix, fname_suffix, 
                                   ".nc")
         } else if (nfiles == 0) {
-            reg_outname <- paste0(reg_ltm_outpath, runid, "_", setting, "_",
+            reg_outname <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_",
                                   varname, "_ltm_", out_mode, depths_fname, "_", area,
                                   "_", projection, "_regular_dx",
                                   sprintf("%.3f", regular_dx), "_dy",
@@ -6734,7 +6761,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     # ltm moc output
     if (moc_ltm_out) {
 
-        moc_outname <- paste0(ltmpath, runid, "_", setting, "_", output, "_",
+        moc_outname <- paste0(ltmpath, "/", runid, "_", setting, "_", output, "_",
                               varname, "_ltm_", timespan, depths_fname, "_", area,
                               p_ref_suffix, fname_suffix, ".nc")
 
@@ -6909,7 +6936,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             } # which plot_type
 
-            plotname <- paste0(plotpath,  
+            plotname <- paste0(plotpath, "/",  
                                runid, "_", setting, "_", varnamei,
                                timespan_fname, depths_fname, "_", area, "_", 
                                projection, p_ref_suffix, fname_suffix, "_", plot_type, ".", plot_file)
@@ -7627,9 +7654,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 isobath_cols <- colorRampPalette(c("black", "gray100"))(nisobaths) 
                 for (i in 1:nisobaths) {
                     isobath <- isobaths[i]
-                    isobath_xy_file <- paste0(meshpath, "mesh_", meshid, "_",
+                    isobath_xy_file <- paste0(meshpath, "/mesh_", meshid, "_",
                                               isobath, "_m_isobath_xy.txt")
-                    isobath_xycont_file <- paste0(meshpath, "mesh_", meshid, "_",
+                    isobath_xycont_file <- paste0(meshpath, "/mesh_", meshid, "_",
                                                   isobath, "_m_isobath_xycont.txt")
                     if (file.exists(isobath_xycont_file)) {
                         if (verbose == 2 || verbose == 3) {

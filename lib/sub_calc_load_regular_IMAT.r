@@ -1,6 +1,6 @@
 sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy, 
                                        xp, yp,
-                                       interppath, imatfname,
+                                       interppath, interpfname,
                                        mv) {
     
     ## R-function for calculating IMAT
@@ -24,7 +24,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     # for every element
     pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
                            char=pb_char, width=pb_width,
-                           indent=paste0("     ", indent)) # 5 " " for default message()
+                           indent=paste0("   ", indent)) # 5 " " for default message()
     
     for (ii in 1:(dim(xp)[2])) {
         
@@ -63,6 +63,9 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
 
     } # for element ii
     
+    # close progress bar
+    close(pb)
+    
     #return(list(IMAT=IMAT, XI=XI, YI=YI, xi=xi, yi=yi, regular_dx=regular_dx, regular_dy=regular_dy)) 
     
     ## nc Output
@@ -75,7 +78,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     YI_var <- ncvar_def("YI", "degrees_north", list(yi_dim, xi_dim), mv, prec="double")
     IMAT_var <- ncvar_def("IMAT", "interp_value", list(yi_dim, xi_dim), mv, prec="double")
     
-    imatnc <- nc_create(paste0(interppath, imatfname), 
+    imatnc <- nc_create(paste0(interppath, "/", interpfname), 
                         list(xi_var, yi_var, XI_var, YI_var, IMAT_var), 
                         force_v4=force_v4)
     

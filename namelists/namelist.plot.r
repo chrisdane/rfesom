@@ -81,7 +81,6 @@ anom_colorbar <- NULL
 center_col <- "white"
 center_include <- T
 horizontal <- F
-colors_script <- paste0(subroutinepath, "functions/colors/color_function.r")
 
 # old: 
 #pal <- colorRampPalette(c("white", "#ccede1", "#99dbc4", "#3ebb75", "#4cbc38",

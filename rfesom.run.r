@@ -61,7 +61,7 @@ Egamma      <- -90
 cycl        <- T # treat cyclic elements; True for global mesh
 
 ## Overwrite default experiment and mesh options
-if (F) { # demo1
+if (T) { # demo1
     runid <- "demo1"
     meshid <- "demomesh"
     cycl <- F
@@ -253,7 +253,7 @@ if (runid == "demo1") {
     regular_transient_out   <- F
     out_mode                <- "mean" # "mean" "area" "areadepth" "meanint" "depth" "depthint" "moc_depth"
     #sd_out                  <- T
-    regular_dx               <- 0.1
+    regular_dx              <- 0.1
     #regular_dx              <- 0.099
     #regular_dy              <- 0.052
     #regular_dx              <- 0.355
@@ -266,7 +266,7 @@ if (runid == "demo1") {
 if (!exists("regular_dy")) {
     regular_dy          <- regular_dx # regular_dx # [deg]
 }
-output_type         <- "nodes" # for spatial netcdf output on irregular grid:
+output_type         <- "nodes" # for irregular netcdf output:
                                # "nodes": output is vector of length nod2d_n
                                # "elems": output is matrix of dimensions (3 x elem2d_n)
 moc_ltm_out      <- F # save moc ltm if out_mode == "moc_depth"
@@ -312,14 +312,14 @@ csec_ltm_out     <- F # save cross section ltm if out_mode == "csec_mean" or "cs
     ###############################################################################################
 
 ## Load Area and Projection Options
-source(paste0(rfesom_path, "namelists/namelist.area.r")) # change to your own namelist here
+source("namelists/namelist.area.r") # change to your own namelist here
 
 ## Load Plot Options
-source(paste0(rfesom_path, "namelists/namelist.plot.r")) # change to your own namelist here
+source("namelists/namelist.plot.r") # change to your own namelist here
 
 ## Load Variable Options
-source(paste0(rfesom_path, "namelists/namelist.var.r")) # change to your own namelist here
+source("namelists/namelist.var.r") # change to your own namelist here
 
 ## Run rfesom
-source(paste0(rfesom_path, "lib/main_rfesom.r"))
+source("lib/main_rfesom.r")
 

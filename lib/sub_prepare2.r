@@ -292,7 +292,7 @@ sub_prepare2 <- function(data_node) {
             }
             
             if (varname != "hvel_dot_gradbathy") {
-                fid <<- paste0(meshpath, "nod3d.out")
+                fid <<- paste0(meshpath, "/nod3d.out")
                 nod3d_n <<- as.numeric(readLines(fid, n=1))
                 if (verbose > 1) {
                     message(paste0(indent, "   read ", nod3d_n, 
@@ -308,7 +308,7 @@ sub_prepare2 <- function(data_node) {
                 nod_z <<- drop(nod3d[,4])
                 rm(tmp, nod3d, envir=.GlobalEnv)
                 
-                fid <<- paste0(meshpath, "aux3d.out")
+                fid <<- paste0(meshpath, "/aux3d.out")
                 aux3d_n <<- as.numeric(readLines(fid, n=1))
                 if (verbose > 1) {
                     message(paste0(indent, "   read ", aux3d_n*nod2d_n, 
@@ -336,7 +336,7 @@ sub_prepare2 <- function(data_node) {
             if (verbose > 1) {
                 message(paste0(indent, "Read original bathymetry information from depth.out ..."))
             }
-            fid <<- paste0(meshpath, "depth.out")
+            fid <<- paste0(meshpath, "/depth.out")
             topo <<- scan(fid, quiet=T)
             bathy_node <<- abs(topo)
         
