@@ -18,15 +18,14 @@
 ##                              a box but an irregular polygon              #
 ##  mapproj     mapproject()    if projection != "rectangular"              #
 ##  phonR       fillTriangle()  if plot_type == "interp2" # special         #
-##  pracma      mldivide()      if out_mode == "csec_mean" or         #
-##                              "csec_depth"                                #
+##  pracma      mldivide()      if out_mode == "csec_mean" or "csec_depth"  #
 ##  abind       abind()         concatinating multi-dim arrays              #
 ##  gsw         gsw_*()         Gibbs Sea Water functions                   #
 ##                                                                          #
 ## R-subroutines (.r files):                                                #
 ##  Filename                        Purpose                                 #
 ##  ------------------------------------------------------------------      #
-##  namelist.rfesom.r               load user settings                      #
+##  rfesom.run.r                    load user settings                      #
 ##  namelist.var.r                  load user variable properties           # 
 ##  namelist.area.r                 load user area properties               #
 ##  namelist.plot.r                 load user plot properties               #
@@ -325,10 +324,9 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
 if (plot_map || plot_csec) {
     if (!exists("plotpath")) {
         stop(paste0("You need to provde a 'plotpath' (plot_map=T)."))
-    } else {
-        plotpath <- normalizePath(plotpath)
-        plotpath <- paste0(plotpath, "/", varname)
     }
+    plotpath <- normalizePath(plotpath)
+    plotpath <- paste0(plotpath, "/", varname)
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
         message(paste0(indent, "Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
@@ -1274,6 +1272,7 @@ if (horiz_deriv_tag != F ||
         if (!exists("derivpath")) {
             stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
         }
+        derivpath <- normalizePath(derivpath)
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
             #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
             message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -1333,6 +1332,7 @@ if (zave_method == 2 &&
         if (!exists("derivpath")) {
             stop(paste0("You need to provde a 'derivpath' if horizontal derivative is needed."))
         }
+        derivpath <- normalizePath(derivpath)
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
             #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
             message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -1396,6 +1396,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
     if (!exists("interppath")) {
         stop(paste0("You need to provde 'interppath'."))
     }
+    interppath <- normalizePath(interppath)
     if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
         message(paste0(indent, "Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
         dir.create(interppath, recursive=T, showWarnings=T)
@@ -3098,9 +3099,9 @@ if (nfiles == 0) { # read data which are constant in time
             success <- load_package("ncdf.tools")
             if (!success) {
                 ncdf.tools_tag <- F
-                message(paste0(indent, "   note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get() if\n",
-                               indent, "         the whole netcdf file (i.e. all entries of all\n",
-                               indent, "         dimensions) needs to get loaded ..."))
+                message(paste0(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get() if\n",
+                               indent, "      the whole netcdf file (i.e. all entries of all\n",
+                               indent, "      dimensions) needs to get loaded ..."))
             } else if (success) {
                 ncdf.tools_tag <- T
             }
@@ -4497,7 +4498,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     stop("asd")
                                 }
 
-                                # multiplay data by cluster area (in [unit of 'Rearth' in namelist.rfesom.r]^2)
+                                # multiplay data by cluster area (in [unit of 'Rearth' in runscript]^2)
                                 if (verbose > 2) {
                                     message(paste0(indent, "Calc ",
                                                  paste0(dimnames(datavec)[[1]], collapse=","),
@@ -6908,7 +6909,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         for (ploti in 1:nplots) {
             
             varnamei <- dimnames(datamat_ltm)[[1]][ploti]
-            if (verbose > 1) {
+            if (verbose > 0) {
                 message(paste0(indent, "Open plot device for '", varnamei, "' ..."))
             }
 
@@ -7347,16 +7348,18 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                  anom_colorbar=anom_colorbar, center_include=center_include,
                                  verbose=F)
 
-            if (!user_levels_exist) {
-                message(indent, "   Note: you can define your own color levels with e.g.:\n",
-                        indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",
-                        indent, "      in namelist.var.r.")
-            }
-            if (!user_palname_exist && !user_cols_exist) {
-                message(indent, "   Note: you can define your own colors with e.g.:\n",
-                        indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or :\n", 
-                        indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
-                        indent, "      in namelist.var.r.")
+            if (verbose > 2) {
+                if (!user_levels_exist) {
+                    message(indent, "   Note: you can define your own color levels with e.g.:\n",
+                            indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",
+                            indent, "      in namelist.var.r.")
+                }
+                if (!user_palname_exist && !user_cols_exist) {
+                    message(indent, "   Note: you can define your own colors with e.g.:\n",
+                            indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or :\n", 
+                            indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
+                            indent, "      in namelist.var.r.")
+                }
             }
 
             # for testing

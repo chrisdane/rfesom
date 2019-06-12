@@ -4,7 +4,7 @@
 
 sub_prepare1 <- function(data_node) {
 
-    # if ocean only and sgs_u or sgs_v
+    # vertical derivative of data saved "vertically integrated from bottom"
     if (!cpl_tag && any(!is.na(match(c("sgs_u", "sgs_v"), varname_fesom)))) {
 
         ## sgs_u and sgs_v are saved as vertical integral
@@ -25,47 +25,25 @@ sub_prepare1 <- function(data_node) {
         tmp[sgsinds,,,] <<- 0 # for vertical derivative
 
         # vertical derivative (new and old yield the same result)
-        if (F) { # old
-            # create progress bar
-            pb <<- mytxtProgressBar(min=0, max=nod2d_n, style=pb_style,
-                                    char=pb_char, width=pb_width,
-                                    indent=paste0("     ", indent)) # 5 " " for default message()
-            for (i in 1:nod2d_n) {
-                for (j in 1:(aux3d_n-1)) {
-                    if (aux3d[j,i] > 0 && aux3d[j+1,i] > 0) {
-                        node_up <<- aux3d[j,i]
-                        node_low <<- aux3d[j+1,i]
-                        dz <<- nod3d_z[node_up] - nod3d_z[node_low]
-                        tmp[sgsinds,aux3d[j,i],,] <<- (data_node[sgsinds,node_up,,] -
-                                                       data_node[sgsinds,node_low,,])/dz
-                    } # 
-                } # j
-                # update progress bar
-                setTxtProgressBar(pb, i)
-            } # i
-       
-        # new
-        } else if (T) {
-            # create progress bar
-            pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                                    char=pb_char, width=pb_width,
-                                    indent=paste0("     ", indent)) # 5 " " for default message()
-            for (i in 1:(aux3d_n-1)) {
-                nodes_up <<- aux3d[i,]
-                nodes_low <<- aux3d[i+1,]
-                inds <<- nodes_up > 0 & nodes_low > 0
-                if (any(!is.na(inds))) {
-                    dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                    #message(dz)
-                    tmp[sgsinds,nodes_up[inds],,] <<- (data_node[sgsinds,nodes_up[inds],,] -
-                                                       data_node[sgsinds,nodes_low[inds],,])/dz
-                }
+        # create progress bar
+        pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                                char=pb_char, width=pb_width,
+                                indent=paste0("     ", indent)) # 5 " " for default message()
+        for (i in 1:(aux3d_n-1)) {
+            nodes_up <<- aux3d[i,]
+            nodes_low <<- aux3d[i+1,]
+            inds <<- nodes_up > 0 & nodes_low > 0
+            if (any(!is.na(inds))) {
+                dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
+                #message(dz)
+                tmp[sgsinds,nodes_up[inds],,] <<- (data_node[sgsinds,nodes_up[inds],,] -
+                                                   data_node[sgsinds,nodes_low[inds],,])/dz
+            }
 
-                # update progress bar
-                setTxtProgressBar(pb, i)
+            # update progress bar
+            setTxtProgressBar(pb, i)
 
-            } # for i aux3d_n-1
-        } # F
+        } # for i aux3d_n-1
 
         # close progress bar
         close(pb)
