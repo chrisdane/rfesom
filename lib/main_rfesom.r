@@ -316,37 +316,42 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         stop(paste0("You have no writing rights in 'postpath' = ", postpath, " ..."))
     }
 
+    # make dirs in postpath. at this point, writing rights were already checked
     if (transient_out) {
         if (!exists("transientpath")) {
-            transientpath <- normalizePath(paste0(postpath, "/", runid, "/", setting, "/",
-                                                  out_mode, "/", area, "/", varname))
+            transientpath <- paste0(postpath, "/", runid, "/", setting, "/",
+                                    out_mode, "/", area, "/", varname)
             dir.create(transientpath, recursive=T, showWarnings=F)
+            transientpath <- normalizePath(transientpath)
         }
     }
 
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (!exists("ltmpath")) {
-            ltmpath <- normalizePath(paste0(postpath, "/", runid, "/", setting, "/",
-                                            "ltm/", area, "/", varname))
+            ltmpath <- paste0(postpath, "/", runid, "/", setting, "/",
+                              "ltm/", area, "/", varname)
             dir.create(ltmpath, recursive=T, showWarnings=F)
+            ltmpath <- normalizePath(ltmpath)
         }
     }
 
     if (regular_transient_out) {
         if (!exists("reg_transient_outpath")) {
-            reg_transient_outpath <- normalizePath(paste0(postpath, "/", runid, "/", setting,
-                                                          "/regular_grid/",
-                                                          out_mode, "/", area, "/", varname))
+            reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting, 
+                                            "/regular_grid/", out_mode, "/", area, 
+                                            "/", varname)
             dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+            reg_transient_outpath <- normalizePath(reg_transient_outpath)
         }
     }
 
     if (regular_ltm_out) {
         if (!exists("reg_ltm_outpath")) {
-            reg_ltm_outpath <- normalizePath(paste0(postpath, "/", runid, "/", setting,
-                                                    "/regular_grid/ltm/", out_mode, "/", 
-                                                    area, "/", varname))
+            reg_ltm_outpath <- paste0(postpath, "/", runid, "/", setting,
+                                      "/regular_grid/ltm/", out_mode, "/", area, 
+                                      "/", varname)
             dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+            reg_ltm_outpath <- normalizePath(reg_ltm_outpath)
         }
     }
 
