@@ -37,10 +37,10 @@ if (F) {
     datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
     varname <- "virtual_salt"
     area <- "global"
-    years <- 1850:1851
-    regular_ltm_out <- F
-    transient_out <- T
-    out_mode <- "mean"
+    years <- 1850:2005
+    regular_ltm_out <- T
+    transient_out <- F
+    out_mode <- "area"
 }
 
 ###################### User input end ######################

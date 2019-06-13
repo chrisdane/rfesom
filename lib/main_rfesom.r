@@ -117,8 +117,6 @@ for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
     source(paste0(subroutinepath, "/functions/", i))
 }
 
-indent <- "   " # needed for load_package()
-
 ## load ncdf4 package which is almost always needed
 success <- load_package("ncdf4")
 if (!success) stop()
