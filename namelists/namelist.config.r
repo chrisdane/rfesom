@@ -11,7 +11,7 @@ p_ref <- "in-situ" # 1) "in-situ" for obtaining pressure from the
                    #    rho = gsw_rho(SA,CT,p) --> in-situ density
                    #    or
                    # 2) Positive number such as 0, 42, 1338, 4000 [dbar]
-                   #    as reference pressure for potential density.
+                   #    as reference pressure for potential density calculation.
                    #    rho = gsw_rho(SA,CT,p=p_ref) --> potential density
                    # You can overwrite this default value also in namelist.var.r
                    # in the respective variable specifications.
@@ -24,9 +24,9 @@ cp <- 3991.86795711963 # [m2 s-2 K-1] specific heat capacity of water
                        # or
                        # 2) "gsw_cp_t_exact" from
                        #    http://www.teos-10.org/pubs/gsw/html/gsw_cp_t_exact.html
-rho0 <- 1027 # [kg m-3] constant mean density
+rho0 <- 1027 # [kg m-3] a mean density
 mesh_dist_unit <- "m" # for mesh settings, let "m" to obtain SI units
-Rearth <- 6367.5*1e3 # earth radius in 'mesh_dist_unit'
+Rearth <- 6367.5*1e3 # earth radius; must have same unit as 'mesh_dist_unit'
 g <- 9.81 # [m s-2] acceleration due to gravity
 omega <- 2*pi/86400 # [s-1] angular frequency of earth 
 mv <- NA # missing value for netcdf output
@@ -44,61 +44,28 @@ horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
 
-## What? (see namelist.var.r)
-if (runid == "demo1") {
-    varname <- "ssh" 
-} else if (runid == "PI_CTRL_mw") {
-    varname <- "tos"
-} else {
-    #varname <- "ssh"    
-    #varname <- "tos"
-    #varname <- "temp"
-    #varname <- "sic"
-    #varname <- "foverh"
-    #varname <- "hvel"
-    #varname <- "vertvel"
-    #varname <- "hvel_geo"
-    #varname <- "wind"
-    #varname <- "curltau"
-    #varname <- "RossbyNo"
-    #varname <- "divuvt"
-    #varname <- "divuvteddy"
-    #varname <- "divuvsgsttot"
-    #varname <- "divuvsgst"
-    #varname <- "divuvsgsteddy"
-    #varname <- "divuvsgsttot"
-    #varname <- "divuvs"
-    #varname <- "divuvseddy"
-    #varname <- "vertvel"
-    #varname <- "mixlay"
-    #varname <- "qnet"
-    #varname <- "Nsquared"
-    #varname <- "c_barotrop"
-    #varname <- "c_barocline"
-    #varname <- "wkb_hvel_mode"
-    #varname <- "wkb_vertvel_mode"
-    #varname <- "c_long_rossby"
-    #varname <- "bathy"
-    #varname <- "qnet"
-    #varname <- "wind"
-    #varname <- "intz_uvteddy_div"
-    #varname <- "dxphi"
-    #varname <- "dyphi"
-    #varname <- "gradphi"
-    #varname <- "gradbathy"
-    #varname <- "hvel_dot_gradbathy"
-    #varname <- "Frhobudget"
-    #varname <- "Frho"
-    #varname <- "Frho2"
-    #varname <- "MOCw"
-    #varname <- "MOCv"
-    #varname <- "HRS"
-    #varname <- "VRS"
-    varname <- "wbeddy"
-    #varname <- "FeKe"
-    #varname <- "gradB"
-}
+## Default Mesh Options
+rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
+                 # If you dont know whether the coordinates in your *.out files are
+                 # rotated or not, check 'rotated_grid' in namelist.config of 
+                 # the model run (there, .true. means they are rotated so that the
+                 # north pole is NOT at 90° N) of the model run or ask the person 
+                 # who performed the run.
+Ealpha <- 50 # Euler angles (from namelist.config)
+Ebeta <- 15
+Egamma <- -90
+cycl <- T # treat cyclic elements; set true for global mesh
+cpl_tag <- T # F: ocean-only, T: coupled
+             # needed for filename convention:
+             # if cpl_tag == T
+             #      <varname_fesom>_fesom_YYYY0101.nc (older esm version)
+             #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
+             # if cpl_tag == F
+             #      <runid>.YYYY.oce.mean.nc
 
+
+## Default variable (see namelist.var.r)
+varname <- "ssh"
 
 ## At what depth? [m]
 depths <- 0
@@ -109,67 +76,24 @@ depths <- 0
 #      depths = "bottom"     # bottom layer
 integrate_depth <- F # if F, average between depths[1] and depths[2]
                      # if T, integrate from depths[1] to depths[2]
-if (F) { # me
-    #depths <- 0
-    #depths <- c(0, 150)
-    #depths <- c(0, "max")
-    depths <- c(0, "MLD")
-    #depths <- "bottom"
-    integrate_depth <- T
-}
-
 
 ## Where? (see namelist.area.r)
-if (runid == "demo1") {
-    area <- "lsea" 
-} else if (runid == "PI_CTRL_mw") {
-    area <- "global"
-} else { # me
-    #area <- "global"
-    #area <- "atlantic3"
-    #area <- "bigna"
-    #area <- "lsea"
-    #area <- "lseawNAtilt"
-    #area <- "lseawNA"
-    #area <- "lsea3"
-    area <- "LS30l"
-    #area <- "LS30l2"
-    #area <- "nadja1"
-    #area <- "Cstg"
-    #area <- "N20"
-    #area <- "N25"
-    #area <- "Cstg2"
-    #area <- "N35"
-    #area <- "N40"
-    #area <- "N45"
-    #area <- "N50"
-    #area <- "wunsch97"
-    #area <- "NA_sst1"
-    #area <- "moc_NA"
-}
+area <- "lsea"
 
 ## When? 
 # If user provides own fesom1.4 file on irregular grid via 
 # 'fnames_user' (in the runscript), 'years' and 'output' are ignored in the following. 
 # Instead, the 'recs' of the time dimension of 'fnames_user' will be used.
-if (runid == "demo1") {
-    years         <- 2009 # annual FESOM output files, woa13 overlap 65-04
-    recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
-                          # e.g. c(1,2,12) for DJF if output=="monthly"
-    output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
-                               # according to 'output_length_unit' in namelist.config
-    consider_leap <- T # if 'output' == 'daily' and data includes doy 366
-    snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
-                       # if snapshot not available
-    all_recs      <- T # read all records of one fesom output file if possible 
-                       # set to F if memory of computer is not big enough
-} else { # me
-    years <- 1948:2009 
-    recs <- 1:12
-    output <- "monthly" 
-    snapshot <- F 
-    all_recs <- T 
-}
+years         <- 2009 # annual FESOM output files, woa13 overlap 65-04
+recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
+                      # e.g. c(1,2,12) for DJF if output=="monthly"
+output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
+                           # according to 'output_length_unit' in namelist.config
+consider_leap <- T # if 'output' == 'daily' and data includes doy 366
+snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
+                   # if snapshot not available
+all_recs      <- T # read all records of one fesom output file if possible 
+                   # set to F if memory of computer is not big enough
 
 ## Which postprocessing output? (see table below for availabe output types)
 # ltm (long term mean) -> output has no time dimension)
@@ -179,31 +103,11 @@ regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
 regular_transient_out <- T # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "area" # what kind of ouptut (see table at the bottom) 
-regular_dx            <- regular_dy <- 1 # resolution of interpolated data on regular grid [degree]
+regular_dx            <- regular_dy <- 1/4 # resolution of interpolated data on regular grid [degree]
 uv_out                <- T # save horizontal components of vector variable
 sd_out                <- F # calc and save standard deviation
-
-if (runid == "demo1") { # demo
-    sd_out <- T
-    regular_dx <- regular_dy <- 1/4 # 2 1 1/4 1/3 [deg]
-} else { # me
-    regular_ltm_out         <- F
-    transient_out           <- T
-    regular_transient_out   <- F
-    out_mode                <- "mean" # "mean" "area" "areadepth" "meanint" "depth" "depthint" "moc_depth"
-    #sd_out                  <- T
-    regular_dx              <- 0.1
-    regular_dy              <- 0.1
-    #regular_dx              <- 0.099
-    #regular_dy              <- 0.052
-    #regular_dx              <- 0.355
-    #regular_dy              <- 0.185
-    #regular_dx              <- 0.25
-    #regular_dx              <- 0.355
-    #regular_dx              <- 0.5
-}
-moc_ltm_out  <- F # save moc ltm if out_mode == "moc_depth"
-csec_ltm_out <- F # save cross section ltm if out_mode == "csec_mean" or "csec_depth"
+moc_ltm_out           <- F # save moc ltm if out_mode == "moc_depth"
+csec_ltm_out          <- F # save cross section ltm if out_mode == "csec_mean" or "csec_depth"
 
 
 ###############################################################################################
