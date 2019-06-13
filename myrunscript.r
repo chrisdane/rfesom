@@ -20,7 +20,7 @@ source("namelists/namelist.config.r")
 # Any variable already defined in namelist.config.r can be overwritten here.
 # If you change nothing and run this runscript in R, by e.g. source("rfesom.run.r"), 
 # you'll see demo1.
-if (T) { # demo1
+if (F) { # demo1
     runid <- "demo1" # in filenames of fesom data
     meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
     meshpath <- "example_data/mesh/demomesh" # *.out files
@@ -41,13 +41,13 @@ if (T) { # demo1
     varname <- "tso"
     area <- "global"
 
-} else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet
+} else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     runid <- "hp5km08"
     datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
     varname <- "virtual_salt"
     area <- "global"
-    fnames_user <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom/zos_fesom_20050101_monmean.nc"
+    years <- 1850:1851
 
 } else if (F) { # me
     source("myrunids.r")

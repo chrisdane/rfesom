@@ -7,4 +7,5 @@ example_data/data/
 lib/
 namelists/
 README.md
-rfesom.run.r
+runscript.demo1.r
+myrunscript.r
