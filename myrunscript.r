@@ -41,7 +41,7 @@ if (F) { # demo1
     varname <- "tso"
     area <- "global"
 
-} else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet
+} else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     runid <- "hp5km08"
     datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
@@ -49,7 +49,7 @@ if (F) { # demo1
     area <- "global"
     years <- 1850:1851
 
-} else if (F) { # me
+} else if (T) { # me
     source("myrunids.r")
 }
 

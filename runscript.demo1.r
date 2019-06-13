@@ -20,38 +20,16 @@ source("namelists/namelist.config.r")
 # Any variable already defined in namelist.config.r can be overwritten here.
 # If you change nothing and run this runscript in R, by e.g. source("rfesom.run.r"), 
 # you'll see demo1.
-if (F) { # demo1
-    runid <- "demo1" # in filenames of fesom data
-    meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
-    meshpath <- "example_data/mesh/demomesh" # *.out files
-    rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
-    cycl <- F # demomesh is not global
-    datainpath <- "example_data/data" # fesom data
-    cpl_tag <- F # demodata is from ocean-only experiment
-    postpath <- "example_data/post" # where to save posprocessing output
-    plotpath <- "example_data/plot" # where to save plots
 
-} else if (F) { # martin
-    meshpath <- "/work/ab0995/a270046/meshes_default/core"
-    fnames_user <- "tos_PI_CTRL_fesom.nc" 
-    runid <- "PI_CTRL_mw"
-    interppath <- "/pf/a/a270106/snow_depth_PI_CTRL/interp"
-    postpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
-    plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
-    varname <- "tso"
-    area <- "global"
-
-} else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet
-    meshpath <- "/work/ab0995/a270046/meshes_default/core"
-    runid <- "hp5km08"
-    datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
-    varname <- "virtual_salt"
-    area <- "global"
-    years <- 1850:1851
-
-} else if (F) { # me
-    source("myrunids.r")
-}
+runid <- "demo1" # in filenames of fesom data
+meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
+meshpath <- "example_data/mesh/demomesh" # *.out files
+rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
+cycl <- F # demomesh is not global
+datainpath <- "example_data/data" # fesom data
+cpl_tag <- F # demodata is from ocean-only experiment
+postpath <- "example_data/post" # where to save posprocessing output
+plotpath <- "example_data/plot" # where to save plots
 
 ###################### User input end ######################
 
