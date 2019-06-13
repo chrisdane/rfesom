@@ -3898,17 +3898,17 @@ if (varname == "tos") {
     rotate_inds <- c(1, 2, 3, 4, 5, 6)
     vec <- F
 
-} else if (varname == "virtualsalt") {
+} else if (varname == "virtual_salt") {
     longname <- "Virtual Salt"
     subtitle <- ">0 increases salinity"
-    power_out <- 5
-    multfac_out <- base^power_out
-    multfac_out_plot <- base^-power_out
-    units_out <- paste0("psu m s-1 x ", multfac_out_plot)
-    var_label_plot <- substitute(paste("Virtual Salt Flux [psu m ", units_out^-1, 
-                                     "] " %*% " ", base^power_out),
+    units_out <- "psu m s-1"
+    power_plot <- 5
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("psu m s-1 x ", multfac_plot)
+    var_label_plot <- substitute(paste("Virtual Salt Flux [psu m ", var^-1, 
+                                     "] " %*% " ", base^-power_plot),
                               list(var="s", 
-                                   base=base, power_out=-power_out))
+                                   base=base, power_plot=power_plot))
     if (out_mode == "meanint") {
         #power_out <- 0
         #multfac_out <- base^power_out
@@ -3918,14 +3918,13 @@ if (varname == "tos") {
         units_out <- "Sv psu"
     }
     dim_tag <- "2D"
-    horiz_deriv_tag <- F
-    typesuffix <- c("forcing.")
-    diagsuffix <- c("diag.")
     varname_fesom <- c("virtual_salt")
-    rotate_inds <- F
-    vec <- F
+    if (!cpl_tag) {
+        typesuffix <- c("forcing.")
+        diagsuffix <- c("diag.")
+    }
 
-} else if (varname == "relaxsalt") {
+} else if (varname == "relax_salt") {
     longname <- "Saltinity Relaxation"
     subtitle <- ">0 increases salinity"
     power_out <- 6

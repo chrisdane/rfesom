@@ -55,16 +55,18 @@ fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
 ## check user input
-if (!exists("meshpath")) {
-    stop("No 'meshpath' provided.")
-} else {
-    meshpath <- normalizePath(meshpath)
+if (!exists("meshpath")) stop("No 'meshpath' provided.")
+if (file.access(meshpath, mode=0) == -1) { # does not exist
+    stop("meshpath = ", meshpath, " does not exist.")
 }
+meshpath <- normalizePath(meshpath)
 if (!exists("meshid")) {
     meshid <- basename(meshpath)
-    message("'meshid' not given. Use default: basename(meshpath) = ", meshid, "\n",
-            "You can set a meshid in the runscript with e.g.\n",
-            "   meshid <- \"core\"")
+    if (verbose > 2) {
+        message("'meshid' not given. Use default: basename(meshpath) = ", meshid, "\n",
+                "You can set a meshid in the runscript with e.g.\n",
+                "   meshid <- \"core\"")
+    }
 }
 if (!exists("subroutinepath")) {
     subroutinepath <- paste0(getwd(), "/lib") # path where subroutines are saved
@@ -73,9 +75,7 @@ subroutinepath <- normalizePath(subroutinepath)
 if (file.access(subroutinepath, mode=0) == -1) {
     stop("subroutinepath = ", subroutinepath, " does not exist.")
 }
-if (!exists("setting")) {
-    setting <- ""
-}
+if (!exists("setting")) setting <- ""
 if (!exists("regular_dy")) {
     message("'regular_dy' is not given. Use regular_dx ...")
     regular_dy <- regular_dx # regular_dx # [deg]
@@ -215,6 +215,21 @@ if (transient_out && integrate_depth && dim_tag == "3D" &&
     message(paste0("Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else ..."))
     stop()
 }
+if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
+    regular_transient_out <- F
+    regular_ltm_out <- F
+    if (out_mode == "csec_mean") {
+        csec_conds_n <- length(csec_conds) # apply conditions before averaging over section
+    } else if (out_mode == "csec_depth") {
+        csec_conds_n <- 0 # do not apply averaging when saving data of the complete section
+    }
+} else {
+    csec_conds_n <- 0
+}
+if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
+    regular_transient_out <- F
+    regular_ltm_out <- F
+}
 if (!exists("average_depth")) { # potentially set by user in namelist.var
     if (dim_tag == "2D" || 
         integrate_depth || 
@@ -261,21 +276,6 @@ if (any(out_mode == c("csec_mean", "csec_depth")) &&
     varname != "transport") {
     stop(paste0("For 'out_mode'=", out_mode, " 'varname' must be 'transport'"))
 }
-if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
-    regular_transient_out <- F
-    regular_ltm_out <- F
-    if (out_mode == "csec_mean") {
-        csec_conds_n <- length(csec_conds) # apply conditions before averaging over section
-    } else if (out_mode == "csec_depth") {
-        csec_conds_n <- 0 # do not apply averaging when saving data of the complete section
-    }
-} else {
-    csec_conds_n <- 0
-}
-if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
-    regular_transient_out <- F
-    regular_ltm_out <- F
-}
 if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
                                              "areadepth"))) {
     if (length(depths) == 1) {
@@ -284,7 +284,7 @@ if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
     }
 }
 if (regular_ltm_out && !any(out_mode == c("area", "areadepth"))) {
-    stop("You want regular ltm outout ('regular_ltm_out'=T) but then 'out_mode' must be one of 'area', 'areadepth'")
+    stop("You want regular ltm output ('regular_ltm_out'=T) but then 'out_mode' must be one of 'area', 'areadepth'")
 }
 if (regular_ltm_out && out_mode == "areadepth") {
     average_depth <- F
@@ -296,15 +296,16 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        postpath <- datainpath
-        message(indent, "No 'postpath' is given for saving postprocessing results.\n",
-                indent, "Use default: ", postpath, " (='datainpath') ...")
+        postpath <- paste0(getwd(), "/post")
+        message("No 'postpath' is given for saving postprocessing results.\n",
+                "   Use default: ", postpath, " (= getwd()'/post').\n",
+                "   You can set postpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
         postpath <- normalizePath(postpath)
     }
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'postpath' = ", postpath, " does not exist ... "))
-        message(paste0(indent, "Try to create 'postpath' = ", postpath, " ..."), appendLF=F)
+        message(paste0("Try to create 'postpath' = ", postpath, " ..."), appendLF=F)
         dir.create(postpath, recursive=T, showWarnings=F)
         if (file.access(postpath, mode=0) == -1) {
             message("")
@@ -335,41 +336,67 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         }
     }
 
-    if (regular_transient_out) {
-        if (!exists("reg_transient_outpath")) {
-            reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting, 
-                                            "/regular_grid/", out_mode, "/", area, 
-                                            "/", varname)
-            dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
-            reg_transient_outpath <- normalizePath(reg_transient_outpath)
+    if (any(regular_transient_out, regular_ltm_out)) {
+        
+        if (regular_transient_out) {
+            if (!exists("reg_transient_outpath")) {
+                reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting, 
+                                                "/regular_grid/", out_mode, "/", area, 
+                                                "/", varname)
+                dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+                reg_transient_outpath <- normalizePath(reg_transient_outpath)
+            }
         }
-    }
 
-    if (regular_ltm_out) {
-        if (!exists("reg_ltm_outpath")) {
-            reg_ltm_outpath <- paste0(postpath, "/", runid, "/", setting,
-                                      "/regular_grid/ltm/", out_mode, "/", area, 
-                                      "/", varname)
-            dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
-            reg_ltm_outpath <- normalizePath(reg_ltm_outpath)
+        if (regular_ltm_out) {
+            if (!exists("reg_ltm_outpath")) {
+                reg_ltm_outpath <- paste0(postpath, "/", runid, "/", setting,
+                                          "/regular_grid/ltm/", out_mode, "/", area, 
+                                          "/", varname)
+                dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+                reg_ltm_outpath <- normalizePath(reg_ltm_outpath)
+            }
         }
-    }
 
-} # check paths if transient_out
+        if (!exists("interppath")) {
+            # use default
+            interppath <- paste0(getwd(), "/mesh/", meshid, "/interp")
+            message("No 'interppath' is given for saving/reading regular interpolation matrix.\n",
+                    "   Use default: ", interppath, " (=getwd()'/mesh/'meshid'/interp')\n",
+                    "   You can set interppath <- \"/path/with/writing/rights\" in the runscript.")
+        } else {
+            interppath <- normalizePath(interppath)
+        }
+        if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
+            message(paste0("Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
+            dir.create(interppath, recursive=T, showWarnings=T)
+            if (file.access(interppath, mode=0) == -1) {
+                message("")
+                stop("Could not create 'interppath' = ", interppath)
+            } else {
+                message("done.")
+            }
+        } else if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
+            stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
+        }
+
+    } # if regular_transient_out regular_ltm_out
+
+} # check post paths if output wanted
 
 if (plot_map || plot_csec) {
     
     if (!exists("plotpath")) {
-        plotpath <- paste0(datainpath, "/", varname)
-        message(indent, "No 'postpath' is given for saving plots.\n",
-                indent, "Use default: ", plotpath, " (='datainpath'/'varname') ...")
+        plotpath <- paste0(getwd(), "/plot/", varname)
+        message("No 'plotpath' is given for saving plots.\n",
+                "   Use default: ", plotpath, " (= getwd()'/plot/'varname)\n",
+                "   You can set plotpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
         plotpath <- normalizePath(plotpath)
     }
-    plotpath <- paste0(plotpath, "/", varname)
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
-        message(paste0(indent, "Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
+        message(paste0("Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
         dir.create(plotpath, recursive=T, showWarnings=F)
         if (file.access(plotpath, mode=0) == -1) {
             message("")
@@ -473,9 +500,9 @@ if (fuser_tag) {
 }
 
 ## start
-message("*******************************************************************")
-message("Run R-function for reading, plotting, and saving FESOM Ocean output")
-message("*******************************************************************")
+message("************************************************************************")
+message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output *")
+message("************************************************************************")
 
 months_plot <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
@@ -791,7 +818,7 @@ if (verbose > 0) {
     message(paste0("runid: ", runid))
     message(paste0("setting: ", setting))
     message(paste0("mesh: ", meshid))
-    message(paste0("   rotate mesh: ", rotate_mesh))
+    message(paste0("   rotate mesh back to geographic coordinates: ", rotate_mesh))
     message(paste0("   treat cyclic elements: ", cycl))
     message(paste0("meshpath: ", meshpath))
     message(paste0("datainpath: ", datainpath))
@@ -848,25 +875,25 @@ if (verbose > 0) {
     if (transient_out) {
         message(paste0("save transient ", out_mode, " data in ", area, " area to:"))
         message(paste0("   ", transientpath))
-        message("   (you can change this by defining 'transientpath' in the runscript)")
+        message("   (you can change this by defining 'postpath' and/or 'transientpath' in the runscript)")
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         message(paste0("Save ltm data in ", area, " area to:"))
         message(paste0("   ", ltmpath))
-        message("   (you can change this by defining 'ltmpath' in the runscript)")
+        message("   (you can change this by defining 'postpath' and/or 'ltmpath' in the runscript)")
     }
     
     if (regular_transient_out) {
         message(paste0("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
         message(paste0("   ", reg_transient_outpath))
-        message("   (you can change this by defining 'reg_transient_outpath' in the runscript)")
+        message("   (you can change this by defining 'postpath' and/or 'reg_transient_outpath' in the runscript)")
     }
     
     if (regular_ltm_out) {
         message(paste0("Save ltm data in ", area, " area on regular (lon,lat) grid to:")) 
         message(paste0("   ", reg_ltm_outpath))
-        message("   (you can change this by defining 'reg_ltm_outpath' in the runscript)")
+        message("   (you can change this by defining 'postpath' and/or 'reg_ltm_outpath' in the runscript)")
     }
 
     message("==============================================")
@@ -1043,7 +1070,8 @@ if (!restart || # ... not a restart run
 
         ## Rotate coordinates back from rotated to geographical
         ## coordinates using Euler angles from FESOM code:
-        if (verbose > 1) {
+        if (verbose > 1 &&
+            !all(c(Ealpha, Ebeta, Egamma) == 0)) { # ugly workaround
             message(paste0(indent, "Rotate mesh around Ealpha=", Ealpha,
                          ", Ebeta=", Ebeta, ", Egamma=", Egamma, " ..."))
         }
@@ -1302,52 +1330,46 @@ if (horiz_deriv_tag != F ||
     (plot_map && plot_type == "interp" && 
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
-    if (F) { # old
-        deriv_2d_fname <- paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
-                                 ifelse(horiz_deriv_tag != F, horiz_deriv_tag, out_coords), 
-                                 ifelse(cycl, "_cycl", ""), ".nc")
+
+    if (!exists("derivpath")) {
+        # use default
+        derivpath <- paste0(getwd(), "/mesh/", meshid, "/derivatives")
+        message(indent, "No 'derivpath' is given for saving/reading horizontal derivative/custer area/resolution matrices.\n",
+                indent, "   Use default: ", derivpath, " (=getwd()'/mesh/'meshid'/derivatives')\n",
+                indent, "   You can set derivpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
-        deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
-                                  out_coords, ifelse(cycl, "_cycl", ""), ".nc")
+        derivpath <- normalizePath(derivpath)
+    }
+    if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
+        message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
+        dir.create(derivpath, recursive=T, showWarnings=T)
+        if (file.access(derivpath, mode=0) == -1) {
+            message("")
+            stop(indent, "Could not create 'derivpath' = ", derivpath)
+        } else {
+            message("done.")
+        }
+    } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
+        stop(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
     }
 
+    deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
+                              out_coords, ifelse(cycl, "_cycl", ""), ".nc")
+    
     if (!file.exists(deriv_2d_fname)) {
-        if (verbose > 1) {
-            message(paste0(indent, "Calc '", meshid,
-                         "' mesh bafuxy_2d/custer_area_2d/resolution as in fesom1.4 *.F90"))
-            message(paste0(indent, indent, "using deriv_2d.r and save result in"))
-            message(paste0(indent, indent, "'deriv_2d_fname' = ", deriv_2d_fname, " ..."))
+        if (verbose > 0) {
+            message(indent, "Calc horizontal derivative/custer area/resolution matrices for ", meshid, " mesh\n",
+                    indent, "   and save result in\n",
+                    indent, "   ", deriv_2d_fname, " (= deriv_2d_fname)")
+            message(indent, "Run lib/deriv_2d.r ...")
         }
-        if (!exists("derivpath")) {
-            derivpath <- paste0(meshpath, "/derivatives")
-            message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
-                    indent, "No 'derivpath' is given for saving the result.\n",
-                    indent, "Use default: ", derivpath, " (='meshpath'/derivatives) ...")
-        } else {
-            derivpath <- normalizePath(derivpath)
-        }
-        if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
-            #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
-            message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
-            dir.create(derivpath, recursive=T, showWarnings=F)
-            if (file.access(derivpath, mode=0) == -1) {
-                message("")
-                stop(" Could not create 'derivpath' = ", derivpath)
-            } else {
-                message("done.")
-            }
-        } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-            stop(paste0("You have no writing rights in 'derivpath' = ", derivpath, " ..."))
-        }
-
-        # Elementwise derivation:
         source(paste0(subroutinepath, "/deriv_2d.r"))
         deriv_2d <- deriv_2d_function(elem2d=elem2d, xcsur=xcsur, ycsur=ycsur,
                                       meshid=meshid, mv=mv, 
                                       deriv_2d_fname=deriv_2d_fname)
     } # if deriv_2d_fname does not exist
 
-    if (verbose > 1) {
+    if (verbose > 0) {
         message(paste0(indent, "Load ", meshid,
                      " mesh bafuxy_2d/cluster_area_2d/resolution file"))
         message(paste0(indent, indent, "'deriv_2d_fname' = ", deriv_2d_fname, " ..."))
@@ -1448,28 +1470,6 @@ if (any(regular_transient_out, regular_ltm_out)) {
 
     source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
     source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
-
-    if (!exists("interppath")) {
-        # use default
-        interppath <- paste0(meshpath, "/interp")
-        message(indent, "No 'interppath' is given for saving/reading regular interpolation matrix.\n",
-                indent, "   Use default: ", interppath, " (='meshpath'/interp)\n",
-                indent, "   You can set interppath <- \"/path/with/writing/rights\" in the runscript.")
-    } else {
-        interppath <- normalizePath(interppath)
-    }
-    if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
-        message(paste0(indent, "Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
-        dir.create(interppath, recursive=T, showWarnings=T)
-        if (file.access(interppath, mode=0) == -1) {
-            message("")
-            stop("Could not create 'interppath' = ", interppath)
-        } else {
-            message("done.")
-        }
-    } else if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
-        stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
-    }
 
     interpfname <- paste0(meshid,
                         "_dx", sprintf("%.3f", regular_dx),
@@ -7412,7 +7412,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                  anom_colorbar=anom_colorbar, center_include=center_include,
                                  verbose=F)
 
-            if (verbose > 2) {
+            if (verbose > 1) {
                 if (!user_levels_exist) {
                     message(indent, "   Note: you can define your own color levels with e.g.:\n",
                             indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",

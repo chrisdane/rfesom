@@ -65,7 +65,7 @@ cpl_tag <- T # F: ocean-only, T: coupled
 
 
 ## Default variable (see namelist.var.r)
-varname <- "ssh"
+varname <- "tso"
 
 ## At what depth? [m]
 depths <- 0
@@ -78,7 +78,7 @@ integrate_depth <- F # if F, average between depths[1] and depths[2]
                      # if T, integrate from depths[1] to depths[2]
 
 ## Where? (see namelist.area.r)
-area <- "lsea"
+area <- "global"
 
 ## When? 
 # If user provides own fesom1.4 file on irregular grid via 

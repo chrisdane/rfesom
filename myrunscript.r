@@ -18,19 +18,9 @@ source("namelists/namelist.config.r")
 ## Define mesh & experiment
 # Define paths either relative to this runscript or absolute.
 # Any variable already defined in namelist.config.r can be overwritten here.
-# If you change nothing and run this runscript in R, by e.g. source("rfesom.run.r"), 
-# you'll see demo1.
-if (F) { # demo1
-    runid <- "demo1" # in filenames of fesom data
-    meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
-    meshpath <- "example_data/mesh/demomesh" # *.out files
-    rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
-    cycl <- F # demomesh is not global
-    datainpath <- "example_data/data" # fesom data
-    cpl_tag <- F # demodata is from ocean-only experiment
-    postpath <- "example_data/post" # where to save posprocessing output
-    plotpath <- "example_data/plot" # where to save plots
-
+if (F) {
+    source("myrunids.r")
+    
 } else if (F) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     fnames_user <- "tos_PI_CTRL_fesom.nc" 
@@ -41,16 +31,16 @@ if (F) { # demo1
     varname <- "tso"
     area <- "global"
 
-} else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet
-    meshpath <- "/work/ab0995/a270046/meshes_default/core"
+} else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet
+    meshpath <- "/work/ollie/pool/FESOM/meshes_default/core"
     runid <- "hp5km08"
     datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
     varname <- "virtual_salt"
     area <- "global"
     years <- 1850:1851
-
-} else if (T) { # me
-    source("myrunids.r")
+    regular_ltm_out <- F
+    transient_out <- T
+    out_mode <- "mean"
 }
 
 ###################### User input end ######################

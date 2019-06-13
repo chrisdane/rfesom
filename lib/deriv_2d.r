@@ -22,8 +22,14 @@ derivative_stdbafu_x_2D[,1]= -1
 derivative_stdbafu_x_2D[1,2]= 1
 derivative_stdbafu_x_2D[2,3]= 1
 
+pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                       char=pb_char, width=pb_width,
+                       indent=paste0("   ", indent)) # 5 " " for default message()
+
+# for every 2d element
 for (i in 1:elem2d_n) {
-    if (i %% 1e5 == 0) message(paste0(i, "/", elem2d_n))
+    
+    #if (i %% 1e5 == 0) message(paste0(i, "/", elem2d_n))
 
     # cartesion coordinates on elements
     node <- elem2d[,i]
@@ -92,8 +98,14 @@ for (i in 1:elem2d_n) {
     #          sqrt(vek2(1,:).^2 + vek2(2,:).^2 + vek2(3,:).^2);...  
     #          sqrt(vek3(1,:).^2 + vek3(2,:).^2 + vek3(3,:).^2)];
     resolution[i] <- sqrt(voltriangle[i]*sqrt(3)) #sqrt(3)=1.73 # in unit_of_Rearth
+        
+    # update progress bar
+    setTxtProgressBar(pb, i)
 
 } # end i in 1:elem2d_n
+
+# close progress bar
+close(pb)
 
 ## output
 ncdf4 <- T

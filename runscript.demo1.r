@@ -13,14 +13,7 @@ rm(list=ls()); graphics.off()
 ## Load default options
 source("namelists/namelist.config.r") 
 
-###################### User input start ######################
-
-## Define mesh & experiment
-# Define paths either relative to this runscript or absolute.
-# Any variable already defined in namelist.config.r can be overwritten here.
-# If you change nothing and run this runscript in R, by e.g. source("rfesom.run.r"), 
-# you'll see demo1.
-
+## This is the demo1 runscript
 runid <- "demo1" # in filenames of fesom data
 meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
 meshpath <- "example_data/mesh/demomesh" # *.out files
@@ -30,8 +23,7 @@ datainpath <- "example_data/data" # fesom data
 cpl_tag <- F # demodata is from ocean-only experiment
 postpath <- "example_data/post" # where to save posprocessing output
 plotpath <- "example_data/plot" # where to save plots
-
-###################### User input end ######################
+varname <- "ssh"
 
 ## Load variable options
 source("namelists/namelist.var.r") 

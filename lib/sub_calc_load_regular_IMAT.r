@@ -21,11 +21,11 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     YI      = array(rep(yi, t=nxi), c(nyi,nxi))
     IMAT   = array(0, c(nyi, nxi))
     
-    # for every element
     pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
                            char=pb_char, width=pb_width,
                            indent=paste0("   ", indent)) # 5 " " for default message()
     
+    # for every element
     for (ii in 1:(dim(xp)[2])) {
         
         #if (ii %% 1e5 == 0) message(paste0(ii, "/", dim(xp)[2]))
