@@ -44,7 +44,7 @@ horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
 
-## Default Mesh Options
+## Default mesh options
 rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
                  # If you dont know whether the coordinates in your *.out files are
                  # rotated or not, check 'rotated_grid' in namelist.config of 
@@ -55,6 +55,8 @@ Ealpha <- 50 # Euler angles (from namelist.config)
 Ebeta <- 15
 Egamma <- -90
 cycl <- T # treat cyclic elements; set true for global mesh
+
+## Default experiment options
 cpl_tag <- T # F: ocean-only, T: coupled
              # needed for filename convention:
              # if cpl_tag == T
@@ -62,7 +64,6 @@ cpl_tag <- T # F: ocean-only, T: coupled
              #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
              # if cpl_tag == F
              #      <runid>.YYYY.oce.mean.nc
-
 
 ## Default variable (see namelist.var.r)
 varname <- "tso"

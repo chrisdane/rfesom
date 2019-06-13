@@ -15,15 +15,16 @@ source("namelists/namelist.config.r")
 
 ## This is the demo1 runscript
 runid <- "demo1" # in filenames of fesom data
-meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
 meshpath <- "example_data/mesh/demomesh" # *.out files
+meshid <- "demomesh" # name of the mesh; basename(meshpath) if not given
 rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
 cycl <- F # demomesh is not global
 datainpath <- "example_data/data" # fesom data
 cpl_tag <- F # demodata is from ocean-only experiment
 postpath <- "example_data/post" # where to save posprocessing output
 plotpath <- "example_data/plot" # where to save plots
-varname <- "ssh"
+varname <- "ssh" # see namelist.var.r
+area <- "lsea" # see namelist.area.r
 
 ## Load variable options
 source("namelists/namelist.var.r") 
