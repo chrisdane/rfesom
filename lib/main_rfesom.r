@@ -782,7 +782,7 @@ if (timespan == "") {
 }
 
 if (verbose > 0) {
-    message("verbose: ", verbose, " (change this in the runscript for more/less info).")
+    message("verbose: ", verbose, " (change this in the runscript for more/less info)")
     message(paste0("runid: ", runid))
     message(paste0("setting: ", setting))
     message(paste0("mesh: ", meshid))
@@ -843,25 +843,25 @@ if (verbose > 0) {
     if (transient_out) {
         message(paste0("save transient ", out_mode, " data in ", area, " area to:"))
         message(paste0("   ", transientpath))
-        message("You can change this by defining 'transientpath' in the runscript.")
+        message("   (you can change this by defining 'transientpath' in the runscript)")
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         message(paste0("Save ltm data in ", area, " area to:"))
         message(paste0("   ", ltmpath))
-        message("You can change this by defining 'ltmpath' in the runscript.")
+        message("   (you can change this by defining 'ltmpath' in the runscript)")
     }
     
     if (regular_transient_out) {
         message(paste0("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
         message(paste0("   ", reg_transient_outpath))
-        message("You can change this by defining 'reg_transient_outpath' in the runscript.")
+        message("   (you can change this by defining 'reg_transient_outpath' in the runscript)")
     }
     
     if (regular_ltm_out) {
         message(paste0("Save ltm data in ", area, " area on regular (lon,lat) grid to:")) 
         message(paste0("   ", reg_ltm_outpath))
-        message("You can change this by defining 'reg_ltm_outpath' in the runscript.")
+        message("   (you can change this by defining 'reg_ltm_outpath' in the runscript)")
     }
 
     message("==============================================")
@@ -1445,10 +1445,11 @@ if (any(regular_transient_out, regular_ltm_out)) {
     source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
 
     if (!exists("interppath")) {
+        # use default
         interppath <- paste0(meshpath, "/interp")
-        message(indent, "Need to calculate and save interpolation matrix for interpolation onto regular grid.\n",
-                indent, "No 'interppath' is given for saving the interpolation matrix.\n",
-                indent, "Use default: ", interppath, " (='meshpath'/interp) ...")
+        message(indent, "No 'interppath' is given for saving/reading regular interpolation matrix.\n",
+                indent, "   Use default: ", interppath, " (='meshpath'/interp)\n",
+                indent, "   You can set interppath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
         interppath <- normalizePath(interppath)
     }
@@ -1473,7 +1474,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
     # interpolation matrix already exists
     if (file.exists(paste0(interppath, "/", interpfname))) {
         if (verbose > 0) {
-            message(paste0(indent, "Load regular interpolation mat (dx=",
+            message(paste0(indent, "Found and load regular interpolation mat (dx=",
                          sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
                          " deg) for ", meshid, " mesh from"))
             message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
@@ -3942,7 +3943,8 @@ if (nfiles == 0) { # read data which are constant in time
 
                 indent <- "         "
                 if (verbose > 1) {
-                    message(paste0(indent, "Calc and save transient ", out_mode, " of area ", area, " ..."))
+                    message(paste0(indent, "Calc and save transient ", 
+                                   out_mode, " (='out_mode') of area ", area, " (='area') ..."))
                 }
 
                 ## Rotate vector components
@@ -3966,7 +3968,7 @@ if (nfiles == 0) { # read data which are constant in time
                 }
 
                 ## Preparations1 before calculations
-                if (verbose > 1) {
+                if (verbose > 2) {
                     message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4020,7 +4022,7 @@ if (nfiles == 0) { # read data which are constant in time
                 } # if average_depth
 
                 ## Preparations2 before calculations e.g. calc rho, f, ... if needed
-                if (verbose > 1) {
+                if (verbose > 2) {
                     message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4054,7 +4056,7 @@ if (nfiles == 0) { # read data which are constant in time
                 ## variable specific calculations
                 if (verbose > 1) {
                     #message(paste0(indent, "Calc ", varname, " ..."))
-                    if (verbose > 1) {
+                    if (verbose > 2) {
                         message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
                     }
                 }
@@ -4923,7 +4925,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                  " in ", depths_plot, " m depths in ", area,
                                                  " area to nc file ..."))
                                 }
-                                message(paste0(indent, "istart=c(", 
+                                message(paste0(indent, "   istart=c(", 
                                              paste0(transient_start_reg, collapse=","), 
                                              "), icount=c(", 
                                              paste0(transient_count_reg, collapse=","), ")"))
@@ -6103,7 +6105,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Preparations1 before calculations
-        if (verbose > 1) {
+        if (verbose > 2) {
             message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
         }
         if (exists("tmp")) rm(tmp)
@@ -6170,7 +6172,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## Preparations2 before calculations e.g. calc rho, f, bathy, ... if needed
         #print(str(data_node_ltm))
-        if (verbose > 1) {
+        if (verbose > 2) {
             message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
         }
         indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -6203,7 +6205,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## variable specific calculations
         if (verbose > 1) {
             #message(paste0(indent, "Calc ", varname, " ..."))
-            if (verbose > 1) {
+            if (verbose > 2) {
                 message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
             }
         }
@@ -7344,7 +7346,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
 
             ## create colorbar
-            if (verbose > 1) message(indent, "   Make colorbar ...")
+            if (verbose > 1) message(indent, "   Make colorbar using image.plot.pre() ...")
 
             # overwrite defaults of image.plot.pre() defined in namelist.plot.r
             user_levels_exist <- eval(parse(text=paste0("exists('", varnamei, "_levels')")))

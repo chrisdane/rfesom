@@ -1664,13 +1664,13 @@ if (varname == "tos") {
     units_out <- "m"
     multfac_plot <- 100 # m --> cm
     units_plot <- "cm"
-    var_label_plot <- paste0("Sea Surface Height [cm]")
+    var_label_plot <- "Sea Surface Height [cm]"
     dim_tag <- "2D"
-    typesuffix <- "oce."
-    diagsuffix <- ""
-    varname_fesom <- "ssh"
     if (cpl_tag) {
         varname_fesom <- "zos"
+    } else {
+        typesuffix <- "oce."
+        varname_fesom <- "ssh"
     }
 
 } else if (varname == "mixlay") {

@@ -5,7 +5,7 @@
 # R counts from 1, not zero
 # index syntax in R is [], not ()
 # T = TRUE, F = FALSE
-# not equal condition is !=
+# 'not equal' condition is !=
 
 ## clear work space and close possibly open plot devices
 rm(list=ls()); graphics.off()
@@ -32,11 +32,11 @@ cpl_tag <- F # F: ocean-only, T: coupled
 ## Define mesh & experiment
 # define paths either relative to this runscript or absolute
 if (T) { # demo1
-    meshid <- "demomesh"
+    runid <- "demo1" # in filenames of fesom data
+    meshid <- "demomesh" # 'name' of the mesh; basename(meshpath) if not given
     meshpath <- "example_data/mesh/demomesh" # *.out files
     cycl <- F # demomesh is not global
     datainpath <- "example_data/data" # fesom data
-    runid <- "demo1" # in filenames of fesom data
     postpath <- "example_data/post" # where to save posprocessing output
     plotpath <- "example_data/plot" # where to save plots
 
@@ -46,8 +46,8 @@ if (T) { # demo1
     fnames_user <- "tos_PI_CTRL_fesom.nc" 
     runid <- "PI_CTRL_mw"
     interppath <- "/pf/a/a270106/snow_depth_PI_CTRL/interp"
-    postpath <- "/pf/a/a270106/snow_depth_PI_CTRL/"
-    plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL/"
+    postpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
+    plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
 
 } else if (F) { # me
     source("~/scripts/r/myrunids.r")
@@ -67,13 +67,13 @@ if (T) { # demo1
 ## Load postprocessing options
 source("namelists/namelist.config.r") 
 
-## Load variable Options
+## Load variable options
 source("namelists/namelist.var.r") 
 
-## Load area and projection Options
+## Load area and projection options
 source("namelists/namelist.area.r") 
 
-## Load plot Options
+## Load plot options
 source("namelists/namelist.plot.r") 
 
 ## Run rfesom
