@@ -28,7 +28,7 @@ if (F) {
     interppath <- "/pf/a/a270106/snow_depth_PI_CTRL/interp"
     postpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
     plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
-    varname <- "tso"
+    varname <- "tos"
     area <- "global"
 
 } else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet

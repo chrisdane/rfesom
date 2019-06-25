@@ -12,10 +12,10 @@ units_out <- "units_out"
 units_plot <- "units_plot"
 base <- 10
 power_out <- 0
-multfac_out <- base^power_out # -> 10^0 = 1 so nothing happens to data
+multfac_out <- base^power_out # -> 10^0 = 1 
 power_plot <- 0
 multfac_plot <- base^power_plot # for nicer colorbar range
-var_label_plot <- "my_var_label_plot" # for plot
+var_label_plot <- varname
 subtitle <- "" # for plot
 horiz_deriv_tag <- F
 rotate_inds <- F
