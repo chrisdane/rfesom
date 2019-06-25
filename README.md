@@ -6,18 +6,47 @@ With this [R](https://cran.r-project.org/) tool you can read/post-process/plot F
 
 Please note that the tool was only tested on linux so far and bugs do exist.
 
-## 1 How to run
+## 1 How to install
 
 Clone this repo with
 ```
 $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ```
 
-Install R or load via module:
+## 2 Demo
+
+Run `rfesom` either in an active R session with
+```R
+source("runscript.demo1.r")
 ```
-$ module load r
+or via 
+```bash
+$ Rcript runscript.demo1.r
+``` 
+or 
+```bash
+$ nohup Rscript runscript.demo1.r > runscript.demo1.r 2>&1 &
 ```
-Start R via
+in background so that you can close your connection when running a long job.
+
+Three files are produced:
+1. \*transient\*.nc
+2. \*ltm\*.nc
+3. \*.png
+
+The 1st file contains the sea surface height (SSH) on a regular (longitude, latitude) grid with a cell size of 1/4° (see `regular_dx` and `regular_dy` in `namelists/rfesom.namelist.r`) and with 12 time records (12 months of the year 2009). This file was produced because `varname="ssh"` (check `namelists/rfesom.vardef.r`), `regular_anim_output=T` (T/F for TRUE/FALSE) and `anim_mode="area"`. The "anim" implies that the the post processed FESOM data shall have a time dimension ("transient"). `recs=1:12` and `years=2009` select the time range and the spatial region `area="lsea"` is defined in `namelists/refesom.areadef.r`. Since SSH is a 2D variable, the `depths` argument is ignored.
+
+The 2nd file contains the same as the 1st but the temporal average over the 12 months of the year 2009, i.e. there is no time dimension in the output. This file was produced because `regular_ltm_output=T` ("ltm" for time mean).
+
+The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and was produced because `plot_map=T`. Note that `rfesom` only plots temporal averaged data if the selected time period is longer than one 1.
+
+## 3 Troubleshooting
+
+Install R or load it via `module`:
+```
+$ module load r # you can check the available modules with 'module avail' 
+```
+Start R with
 ```
 $ R
 ```
@@ -27,43 +56,35 @@ install.packages("ncdf4")
 # or
 install.packages("ncdf4", lib="/my/own/package/directory")
 ```
-The default package installation path is 
+The default package installation path is `.libPaths()`, i.e. by default
 ```
-.libPaths()
+install.packages("ncdf4", lib=.libPaths()[1])
 ```
+
+In order to install a package, the same compiler version that was used to build R is needed. This is not always guaranteed if programs were loaded with the default settings of `module`. To find out the compiler that was used to build R, first, identify the exeutable. Within R, run
+```
+file.path(R.home(), "bin", "exec", "R")
+[1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R"
+```
+Then, in shell, type
+```
+ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
+        linux-vdso.so.1 =>  (0x00007ffd249ee000)
+        libR.so => not found
+        libRblas.so => not found
+        libgomp.so.1 => /sw/rhel6-x64/gcc/gcc-4.8.2/lib64/libgomp.so.1 (0x00002b5263631000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00002b5263840000)
+        libc.so.6 => /lib64/libc.so.6 (0x00002b5263a5d000)
+        librt.so.1 => /lib64/librt.so.1 (0x00002b5263df1000)
+        /lib64/ld-linux-x86-64.so.2 (0x000055c633768000)
+```
+Apparently, this R version was build with `gcc-4.8.2`.
 Quit R via
 ```
 q()
 ```
 
-### 1.1 Example dataset
-
-Run `rfesom` either in an active R session with
-```R
-source("rfesom.r")
-```
-or via 
-```bash
-$ Rcript rfesom.r
-``` 
-or 
-```bash
-$ nohup Rscript rfesom.r > rfesom.log 2>&1 &
-```
-in background.
-
-Three files are produced:
-1. \*transient\*.nc
-2. \*ltm\*.nc
-3. *.png
-
-The 1st file contains the sea surface height (SSH) on a regular (longitude, latitude) grid with a cell size of 1/4° (see `regular_dx` and `regular_dy` in `namelists/rfesom.namelist.r`) and with 12 time records (12 months of the year 2009). This file was produced because `varname="ssh"` (check `namelists/rfesom.vardef.r`), `regular_anim_output=T` (T/F for TRUE/FALSE) and `anim_mode="area"`. The "anim" implies that the the post processed FESOM data shall have a time dimension ("transient"). `recs=1:12` and `years=2009` select the time range and the spatial region `area="lsea"` is defined in `namelists/refesom.areadef.r`. Since SSH is a 2D variable, the `depths` argument is ignored.
-
-The 2nd file contains the same as the 1st but the temporal average over the 12 months of the year 2009, i.e. there is no time dimension in the output. This file was produced because `regular_ltm_output=T` ("ltm" for time mean).
-
-The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and was produced because `plot_map=T`. Note that `rfesom` only plots temporal averaged data if the selected time period is longer than one 1.
-
-### 1.2 Your own data
+### 4 Your own data
 
 Modify the three files `rfesom.namelist.r`, `rfesom.vardef.r` and `rfesom.areadef.r` according to your needs.
 If you save your own namelist you need to change the line 
@@ -74,15 +95,15 @@ source("myown.rfesom.namelist.r")
 ```
 in `rfesom.r`. Note that the two files `rfesom.vardef.r` and `rfesom.areadef.r` are already called in `rfesom.namelist.r`.
 
-## References  
+## 5 References  
 
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.
 
 Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung, and J. Schröter, 2014b: The Finite Element Sea Ice-Ocean Model (FESOM) v.1.4: formulation of an ocean general circulation model. Geoscientific Model Development, 7 (2), 663–693, doi:10.5194/gmd-7-663-2014.
 
-## Available variables  
+## 6 Available variables  
 
-(automated list based on namelist.var.r)
+(automated list based on the `longname` definitions in `namelist.var.r`)
 
 | Variable name                                     |
 |---------------------------------------------------|
