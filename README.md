@@ -16,7 +16,7 @@ Please note that the tool was only tested on linux so far and bugs do exist.
       * [References](#references)
       * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 11:26:35 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 11:28:11 CEST 2019 -->
 
 <!--te-->
 
