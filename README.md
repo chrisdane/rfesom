@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 17:17:04 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 17:32:04 CEST 2019 -->
 
 <!--te-->
 
@@ -84,7 +84,7 @@ install.packages("ncdf4", lib="/my/own/package/directory")
 if you want to set a path where the package should be installed. The default package installation path is the first entry of `.libPaths()`, i.e. by default the argument `lib=.libPaths()[1]`.
 <br/>
 
-Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typcial error looks like
+Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typical error looks like
 ```
 version `CXXABI_1.3.8' not found
 ```
@@ -106,7 +106,7 @@ $ ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
         librt.so.1 => /lib64/librt.so.1 (0x00002b5263df1000)
         /lib64/ld-linux-x86-64.so.2 (0x000055c633768000)
 ```
-Apparently, this R version was build with `gcc-4.8.2`. Now, load the correct `gcc` version with
+Apparently, this R binary was build with `gcc-4.8.2`. Now, load the correct `gcc` version with
 ```
 module purge
 module load gcc/4.8.2 r 
