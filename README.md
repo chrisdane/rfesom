@@ -16,18 +16,18 @@ $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ## 2 Demo
 
 Run `rfesom` either in an active R session with
-```R
+```
 source("runscript.demo1.r")
 ```
-or via 
-```bash
+or from terminal with 
+```
 $ Rcript runscript.demo1.r
 ``` 
 or 
-```bash
+```
 $ nohup Rscript runscript.demo1.r > runscript.demo1.r 2>&1 &
 ```
-in background so that you can close your connection when running a long job.
+so that the program runs in background and you can close close the connection when running a long job.
 
 Three files are produced:
 1. \*transient\*.nc
@@ -42,6 +42,7 @@ The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and
 
 ## 3 Troubleshooting
 
+### Getting R
 Install R or load it via `module`:
 ```
 $ module load r # you can check the available modules with 'module avail' 
@@ -50,23 +51,34 @@ Start R with
 ```
 $ R
 ```
-and install the `ncdf4` package:
-```R
+Quit R via
+```
+q()
+```
+
+### Installing new R packages (or libraries)
+
+You can install the `ncdf4` package with
+```
 install.packages("ncdf4")
-# or
+```
+or with
+```
 install.packages("ncdf4", lib="/my/own/package/directory")
 ```
-The default package installation path is `.libPaths()`, i.e. by default
+if you want to set a path where the package should be installed. The default package installation path is `.libPaths()`, i.e. by default
 ```
 install.packages("ncdf4", lib=.libPaths()[1])
 ```
 
-In order to install a package, the same compiler version that was used to build R is needed. This is not always guaranteed if programs were loaded with the default settings of `module`. To find out the compiler that was used to build R, first, identify the exeutable. Within R, run
+Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. 
+
+A solution to this is as follows: identify the R executable. Within R, run
 ```
 file.path(R.home(), "bin", "exec", "R")
-[1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R"
+[1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R" # example
 ```
-Then, in shell, type
+Then, in the shell, type
 ```
 ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
         linux-vdso.so.1 =>  (0x00007ffd249ee000)
@@ -78,11 +90,13 @@ ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
         librt.so.1 => /lib64/librt.so.1 (0x00002b5263df1000)
         /lib64/ld-linux-x86-64.so.2 (0x000055c633768000)
 ```
-Apparently, this R version was build with `gcc-4.8.2`.
-Quit R via
+Apparently, this R version was build with `gcc-4.8.2`. Hence, load he correct `gcc` version with
 ```
-q()
+module purge
+module load gcc/4.8.2 r 
 ```
+and rerun the package installtion, which will be now build the correct compiler.
+
 
 ### 4 Your own data
 
