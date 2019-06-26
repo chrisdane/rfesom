@@ -40,7 +40,7 @@ The 2nd file contains the same as the 1st but the temporal average over the 12 m
 
 The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and was produced because `plot_map=T`. Note that `rfesom` only plots temporal averaged data if the selected time period is longer than one 1.
 
-## 3 Troubleshooting
+## 3 Help
 
 ### Getting R
 Install R or load it via `module`:
@@ -71,7 +71,10 @@ if you want to set a path where the package should be installed. The default pac
 install.packages("ncdf4", lib=.libPaths()[1])
 ```
 
-Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. 
+Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. A typcial error of this type looks like
+```
+version `CXXABI_1.3.8' not found
+```
 
 A solution to this is as follows: identify the R executable. Within R, run
 ```
@@ -90,32 +93,20 @@ ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
         librt.so.1 => /lib64/librt.so.1 (0x00002b5263df1000)
         /lib64/ld-linux-x86-64.so.2 (0x000055c633768000)
 ```
-Apparently, this R version was build with `gcc-4.8.2`. Hence, load he correct `gcc` version with
+Apparently, this R version was build with `gcc-4.8.2`. Now, load the correct `gcc` version with
 ```
 module purge
 module load gcc/4.8.2 r 
 ```
-and rerun the package installtion, which will be now build the correct compiler.
+and rerun the package installation given above.
 
-
-### 4 Your own data
-
-Modify the three files `rfesom.namelist.r`, `rfesom.vardef.r` and `rfesom.areadef.r` according to your needs.
-If you save your own namelist you need to change the line 
-```R
-...
-source("myown.rfesom.namelist.r")
-...
-```
-in `rfesom.r`. Note that the two files `rfesom.vardef.r` and `rfesom.areadef.r` are already called in `rfesom.namelist.r`.
-
-## 5 References  
+## 4 References  
 
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.
 
 Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung, and J. Schröter, 2014b: The Finite Element Sea Ice-Ocean Model (FESOM) v.1.4: formulation of an ocean general circulation model. Geoscientific Model Development, 7 (2), 663–693, doi:10.5194/gmd-7-663-2014.
 
-## 6 Available variables  
+## 5 Available variables  
 
 (automated list based on the `longname` definitions in `namelist.var.r`)
 
