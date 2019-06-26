@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:15:10 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 12:20:59 CEST 2019 -->
 
 <!--te-->
 
@@ -62,11 +62,11 @@ Install R or load it via `module`:
 ```
 $ module load r # you can check the available modules with 'module avail' 
 ```
-Start R with
+From terminal, start R with
 ```
 $ R
 ```
-Quit R via
+Within R, quit via
 ```
 q()
 ```
@@ -81,10 +81,11 @@ or with
 ```
 install.packages("ncdf4", lib="/my/own/package/directory")
 ```
-if you want to set a path where the package should be installed. The default package installation path is `.libPaths()`, i.e. by default
+if you want to set a path where the package should be installed. The default package installation path is the first entry of `.libPaths()`, i.e. by default
 ```
 install.packages("ncdf4", lib=.libPaths()[1])
 ```
+<br/>
 
 Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typcial error looks like
 ```
