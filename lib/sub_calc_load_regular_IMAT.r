@@ -8,13 +8,17 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     if (!success) stop()
     success <- load_package("ncdf4")
     if (!success) stop()
-    
+   
+    # how to define the regular grid correctly?
+    # https://github.com/chrisdane/rfesom/issues/1 
     xlim <- range(xp)
     ylim <- range(yp)
     x_len <- diff(xlim)
     y_len <- diff(ylim)
     xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, l=x_len/regular_dx)
     yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, l=y_len/regular_dy)
+    #xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, b=regular_dx)
+    #yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, b=regular_dy)
     nxi     = length(xi)
     nyi     = length(yi)
     XI      = array(rep(xi, e=nyi), c(nyi,nxi))

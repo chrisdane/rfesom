@@ -102,9 +102,10 @@ all_recs      <- T # read all records of one fesom output file if possible
 ltm_out               <- F # irregular time-average output
 regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
-regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
+regular_transient_out <- T # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "area" # what kind of ouptut (see table at the bottom) 
-regular_dx            <- regular_dy <- 1/4 # resolution of interpolated data on regular grid [degree]
+regular_dx            <- 1/4 # resolution of interpolated data on regular grid [degree] 
+regular_dy            <- regular_dx # can be different than regular_dx
 uv_out                <- T # save horizontal components of vector variable
 sd_out                <- F # calc and save standard deviation
 moc_ltm_out           <- F # save moc ltm if out_mode == "moc_depth"

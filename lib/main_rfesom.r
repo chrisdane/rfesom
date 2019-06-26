@@ -54,12 +54,16 @@
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
+message("************************************************************************")
+message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output *")
+message("************************************************************************")
+
 ## check user input
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
 if (file.access(meshpath, mode=0) == -1) { # does not exist
     stop("meshpath = ", meshpath, " does not exist.")
 }
-meshpath <- normalizePath(meshpath)
+meshpath <- suppressWarnings(normalizePath(meshpath))
 if (!exists("meshid")) {
     meshid <- basename(meshpath)
     if (verbose > 2) {
@@ -71,7 +75,7 @@ if (!exists("meshid")) {
 if (!exists("subroutinepath")) {
     subroutinepath <- paste0(getwd(), "/lib") # path where subroutines are saved
 }
-subroutinepath <- normalizePath(subroutinepath)
+subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
 if (file.access(subroutinepath, mode=0) == -1) {
     stop("subroutinepath = ", subroutinepath, " does not exist.")
 }
@@ -159,7 +163,7 @@ if (fuser_tag) {
     if (!exists("datainpath")) {
         stop("No 'datainpath' provided.")
     } else {
-        datainpath <- normalizePath(datainpath)
+        datainpath <- suppressWarnings(normalizePath(datainpath))
     }
 }
 if (nfiles == 0) {
@@ -299,11 +303,11 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                 "   Use default: ", postpath, " (= getwd()'/post').\n",
                 "   You can set postpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
-        postpath <- normalizePath(postpath)
+        postpath <- suppressWarnings(normalizePath(postpath))
     }
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'postpath' = ", postpath, " does not exist ... "))
-        message(paste0("Try to create 'postpath' = ", postpath, " ..."), appendLF=F)
+        message(paste0("Try to create 'postpath' = ", postpath, " ... "), appendLF=F)
         dir.create(postpath, recursive=T, showWarnings=F)
         if (file.access(postpath, mode=0) == -1) {
             message("")
@@ -321,7 +325,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             transientpath <- paste0(postpath, "/", runid, "/", setting, "/",
                                     out_mode, "/", area, "/", varname)
             dir.create(transientpath, recursive=T, showWarnings=F)
-            transientpath <- normalizePath(transientpath)
+            transientpath <- suppressWarnings(normalizePath(transientpath))
         }
     }
 
@@ -330,7 +334,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             ltmpath <- paste0(postpath, "/", runid, "/", setting, "/",
                               "ltm/", area, "/", varname)
             dir.create(ltmpath, recursive=T, showWarnings=F)
-            ltmpath <- normalizePath(ltmpath)
+            ltmpath <- suppressWarnings(normalizePath(ltmpath))
         }
     }
 
@@ -342,7 +346,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                                                 "/regular_grid/", out_mode, "/", area, 
                                                 "/", varname)
                 dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
-                reg_transient_outpath <- normalizePath(reg_transient_outpath)
+                reg_transient_outpath <- suppressWarnings(normalizePath(reg_transient_outpath))
             }
         }
 
@@ -352,7 +356,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                                           "/regular_grid/ltm/", out_mode, "/", area, 
                                           "/", varname)
                 dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
-                reg_ltm_outpath <- normalizePath(reg_ltm_outpath)
+                reg_ltm_outpath <- suppressWarnings(normalizePath(reg_ltm_outpath))
             }
         }
 
@@ -363,7 +367,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                     "   Use default: ", interppath, " (=getwd()'/mesh/'meshid'/interp')\n",
                     "   You can set interppath <- \"/path/with/writing/rights\" in the runscript.")
         } else {
-            interppath <- normalizePath(interppath)
+            interppath <- suppressWarnings(normalizePath(interppath))
         }
         if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
             message(paste0("Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
@@ -390,7 +394,7 @@ if (plot_map || plot_csec) {
                 "   Use default: ", plotpath, " (= getwd()'/plot/'varname)\n",
                 "   You can set plotpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
-        plotpath <- normalizePath(plotpath)
+        plotpath <- suppressWarnings(normalizePath(plotpath))
     }
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
         #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
@@ -498,10 +502,6 @@ if (fuser_tag) {
 }
 
 ## start
-message("************************************************************************")
-message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output *")
-message("************************************************************************")
-
 months_plot <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
 
@@ -545,11 +545,11 @@ if (fuser_tag) {
                         message("   note: 'consider_leap' is set to true (T) AND")
                         message("         your 'output' is daily             AND")
                         message("         your 'years' contain leap years    AND")
-                        message(paste0("         your 'recs' start and end at months: recs[1]=", 
-                              recs[1], ", recs[length(recs)]=", recs[length(recs)], "."))
-                        message(paste0("         So it is assumed you want to include leap days"))
-                        message(paste0("         of leap years, e.g. day 366 of year ", 
-                                     years[which(is.leap(years)[1])], "."))
+                        message("         your 'recs' start and end at months: recs[1]=", 
+                                recs[1], ", recs[length(recs)]=", recs[length(recs)], ".")
+                        message("         So it is assumed you want to include leap days")
+                        message("         of leap years, e.g. day 366 of year ", 
+                                years[which(is.leap(years)[1])], ".")
                         message("         If you do not want that, set 'consider_leap'")
                         message("         to false (F) and rerun the script.")
                         message("   =================================================")
@@ -637,14 +637,14 @@ if (!fuser_tag) {
 
 ## Create Time vectors step 5: finish time
 if (fuser_tag) {
-    # ntime, dt, time, recvec, recvec_plot, timevec
+    # ntime, dt, time, recvec, recvec_plot, timechar
 
 } else if (!fuser_tag) {
 
     ntime <- length(yearvec)
     dt <- 1/npy
     if (leap_tag) dt_leap <- 1/npy_leap
-    if (djf) {
+    if (djf) { # assumes monthly data
         if (include_zeroth_december) {
             if (length(yearvec) == 3) { # only 1 year
                 time <- c(yearvec[1] + 1, yearvec[2:3] + (1:2)*dt) - dt
@@ -685,8 +685,13 @@ if (fuser_tag) {
         time <- yearvec + dt*(1:npy)[recs] - dt
         recvec <- rep(recs, t=nyears)
     }
-    recvec_plot <- sprintf(paste0("%.", max(nchar(recvec)), "i"), recvec)
-    timevec <- as.numeric(paste0(yearvec, recvec_plot))
+    #recvec_plot <- sprintf(paste0("%.", max(nchar(recvec)), "i"), recvec)
+    recvec_plot <- sprintf(paste0("%.", nchar(npy), "i"), recvec) # 1 --> 01 or 001
+    timechar <- as.numeric(paste0(yearvec, recvec_plot))
+    # if monthly: 200912 (npy = 12)
+    # if 5day: 200969 (npy = 73)
+    # if daily: 2009335 (npy = 365) 
+
 } # if fuser_tag
 
 ## Create Time vectors step 6: Make timespan vector
@@ -820,6 +825,9 @@ if (verbose > 0) {
     message(paste0("   treat cyclic elements: ", cycl))
     message(paste0("meshpath: ", meshpath))
     message(paste0("datainpath: ", datainpath))
+    if (exists("fnames_user")) {
+        message("fnames_user: ", fnames_user)
+    }
     message(paste0("varname: ", varname))
     message(paste0("longname: ", longname))
     if (nfiles > 0) {
@@ -1336,7 +1344,7 @@ if (horiz_deriv_tag != F ||
                 indent, "   Use default: ", derivpath, " (=getwd()'/mesh/'meshid'/derivatives')\n",
                 indent, "   You can set derivpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
-        derivpath <- normalizePath(derivpath)
+        derivpath <- suppressWarnings(normalizePath(derivpath))
     }
     if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
         message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -1407,7 +1415,7 @@ if (zave_method == 2 &&
                     indent, "No 'derivpath' is given for saving the result. Use default ...")
             derivpath <- paste0(meshpath, "/derivatives")
         } else {
-            derivpath <- normalizePath(derivpath)
+            derivpath <- suppressWarnings(normalizePath(derivpath))
         }
         if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
             #message(paste0("'derivpath' = ", derivpath, " does not exist ..."))
@@ -3342,14 +3350,16 @@ if (nfiles == 0) { # read data which are constant in time
             }
         }
 
-        # time_user
+        # try to obtain the time dimension of user file
         if (fuser_tag) {
             time_dim_names <- c("time", "T", "month", "months", "year", "years")
             dim_names <- names(ncids[[1]]$dim)
+            # success
             if (any(match(time_dim_names, dim_names))) {
                 time_dim <- which(!is.na(match(time_dim_names, dim_names)))
                 time <- ncids[[1]]$dim[[time_dim]]$vals[recs]
                 timeunit <- ncids[[1]]$dim[[time_dim]]$units
+            # no success
             } else {
                 message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
                         " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
@@ -3364,13 +3374,32 @@ if (nfiles == 0) { # read data which are constant in time
                     time <- 1
                     timeunit <- "timeunit"
                 }
-            } # if no standard time dim given in fuser
+            } # if time dim found in fuser
             ntime <- length(time)
-            timevec <- time
+            timechar <- timedate <- timesec <- time
+            timesec_unit <- timeunit
             timespan <- time[1]
             if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
-        } # fuser_tag
         
+        } else {
+            # time axis for nc output
+            # there are two POSIXt types, POSIXct and POSIXlt
+            # "ct" stands for calendar time
+            # "lt" for local time, keeps the date as a list of time attributes (such as "hour" and "mon")
+            # --> unclass(as.POSIXlt(x))$mon
+            origin <- "1970-01-01" # needs to be this, dont know why
+            if (output == "monthly") { # yyyymm01 -> day must be provided, also if format="%Y%m", dont know why 
+                timedate <- as.POSIXlt(paste0(timechar, 01), format="%Y%m%d", origin=origin, tz="UTC")
+            } else if (output == "daily") {
+                timedata <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
+            } else if (outpt == "5day") {
+                stop("how?")
+            }
+            timesec <- as.numeric(timedate) # date --> seconds
+            timesec_unit <- paste0("seconds since ", origin) 
+        
+        }  # if fuser_tag
+
         if (length(ncids) == 1) {
             var_nc_inds <- rep(1, t=length(varname_fesom))
         
@@ -3604,16 +3633,16 @@ if (nfiles == 0) { # read data which are constant in time
             ## Transient time variable
             if (rec_tag) {
                 if (leap_tag && is.leap(year)) {
-                    timei <- timevec[(total_rec+1):(total_rec+nrecspf_leap)]
+                    timei <- timechar[(total_rec+1):(total_rec+nrecspf_leap)]
                 } else {
-                    timei <- timevec[(total_rec+1):(total_rec+nrecspf)]
+                    timei <- timechar[(total_rec+1):(total_rec+nrecspf)]
                 }
             } else if (!rec_tag) {
                 if (fuser_tag) {
                     timei <- time[recsi[rec]]
                 } else if (!fuser_tag) {
                     timei <- recsi + (year_cnt - 1)*length(recsi)
-                    timei <- timevec[timei[rec]]
+                    timei <- timechar[timei[rec]]
                 }
             }
             if (!fuser_tag) {
@@ -4145,7 +4174,7 @@ if (nfiles == 0) { # read data which are constant in time
                             if (any(out_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
                                 data_funi <- array(NA, dim=c(dim(data_node)[1], ntime, 1)) # dim(data_funi) = c(nvars,ntime,ndepths=1)
                                 dimnames(data_funi) <- c(dimnames(data_node)[1],
-                                                         list(time=timevec,
+                                                         list(time=timechar,
                                                               depth=paste0(depths_plot, "m_", out_mode)))
         
                                 if (out_mode == "max3D") {
@@ -4156,7 +4185,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 data_funi <- array(NA, 
                                                    dim=c(dim(data_node)[1], ntime, ndepths),
                                                    dimnames=c(dimnames(data_node)[1],
-                                                              list(time=timevec,
+                                                              list(time=timechar,
                                                                    depth=interpolate_depths)))
                                 # dim(data_funi) = c(nvars,ntime,ndepths)
                             
@@ -4168,7 +4197,7 @@ if (nfiles == 0) { # read data which are constant in time
                             data_reg_funi <- array(NA, 
                                                    dim=c(dim(data_node)[1], ntime, 1),
                                                    dimnames=c(dimnames(data_node)[1],
-                                                              list(time=timevec,
+                                                              list(time=timechar,
                                                                    depth=paste0(depths_plot, "_", out_mode))))
                         } # regular_transient_out && out_mode != "area"
                     
@@ -4696,7 +4725,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                       vals=1:dim(datamat)[3],
                                                       create_dimvar=F)
 
-                                time_var <- ncvar_def(name="timevec", 
+                                time_var <- ncvar_def(name="timechar", 
                                                       units=timeunit, 
                                                       dim=time_dim,
                                                       missval=-9999, 
@@ -4731,7 +4760,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 
                                 ncvar_put(outnc, xp_var, xp)
                                 ncvar_put(outnc, yp_var, yp)
-                                ncvar_put(outnc, time_var, timevec)
+                                ncvar_put(outnc, time_var, timechar)
 
                                 ncatt_put(outnc, 0, "runid", runid)
                                 ncatt_put(outnc, 0, "setting", setting)
@@ -4823,24 +4852,14 @@ if (nfiles == 0) { # read data which are constant in time
                                 if (T) {
                                     system(paste0("rm ", outname_reg), ignore.stderr=T) # silent
                                 }
-
              
-                                time_dim <- ncdim_def(name="time", units="",
-                                                      vals=time, create_dimvar=T)
-                                lon_dim <- ncdim_def(name="lon", units="", 
-                                                     vals=xi, create_dimvar=T)
-                                lat_dim <- ncdim_def(name="lat", units="", 
-                                                     vals=yi, create_dimvar=T)
+                                time_dim <- ncdim_def(name="time", units=timesec_unit, vals=timesec)                          
+                                lon_dim <- ncdim_def(name="lon", units="degree_east", vals=xi)
+                                lat_dim <- ncdim_def(name="lat", units="degree_north", vals=yi)
 
-                                time_var <- ncvar_def(name="timevec", units=timeunit,
+                                time_var <- ncvar_def(name="timechar", units=timeunit,
                                                       dim=time_dim,
                                                       missval=-9999, prec="integer")
-                                lon_var <- ncvar_def(name="lons", units="degrees_east", 
-                                                     dim=lon_dim, 
-                                                     missval=mv, prec=prec)
-                                lat_var <- ncvar_def(name="lats", units="degrees_north", 
-                                                     dim=lat_dim,
-                                                     missval=mv, prec=prec)
                                 if (out_mode == "areadepth") {
                                     depth_dim <- ncdim_def(name="depth", units="",
                                                            vals=-interpolate_depths, 
@@ -4865,9 +4884,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     }
                                  
                                     outnc_reg <- nc_create(filename=outname_reg,
-                                                           vars=c(list(time_var,
-                                                                       lon_var, lat_var),
-                                                                  data_reg_var),
+                                                           vars=c(list(time_var), data_reg_var),
                                                            force_v4=force_v4)
                                 
                                 } else if (out_mode == "areadepth") {
@@ -4883,18 +4900,14 @@ if (nfiles == 0) { # read data which are constant in time
                                     }
                                     
                                     outnc_reg <- nc_create(filename=outname_reg, 
-                                                           vars=c(list(time_var, depth_var, 
-                                                                       lon_var, lat_var), 
-                                                                  data_reg_var),
+                                                           vars=c(list(time_var, depth_var), data_reg_var),
                                                            force_v4=force_v4)
                                 } # area or areadepth
 
-                                ncvar_put(outnc_reg, lon_var, xi)
-                                ncvar_put(outnc_reg, lat_var, yi)
                                 if (out_mode == "areadepth") {
                                     ncvar_put(outnc_reg, depth_var, -interpolate_depths)
                                 }
-                                ncvar_put(outnc_reg, time_var, timevec)
+                                ncvar_put(outnc_reg, time_var, timechar)
                                 
                                 ncatt_put(outnc_reg, 0, "runid", runid)
                                 ncatt_put(outnc_reg, 0, "setting", setting)
@@ -5118,11 +5131,11 @@ if (nfiles == 0) { # read data which are constant in time
                             if (out_mode == "csec_mean") {
                                 data_funi <- array(NA, c(dim(data_vert_csec)[1], ntime),
                                                    dimnames=c(dimnames(data_vert_csec)[1], 
-                                                              list(rec=timevec)))
+                                                              list(rec=timechar)))
                             } else if (out_mode == "csec_depth") {
                                 data_funi <- array(NA, c(dim(data_vert_csec)[1:3], ntime),
                                                    dimnames=c(dimnames(data_vert_csec)[1:3], 
-                                                              list(rec=timevec)))
+                                                              list(rec=timechar)))
                             }
                         }
                         if (rec_tag) {
@@ -5233,13 +5246,13 @@ if (nfiles == 0) { # read data which are constant in time
                             stop("not yet")
                             data_funi <- array(NA, c(dim(data_node), ntime),
                                                dimnames=c(dimnames(data)[1],
-                                                          list(rec=timevec)))
+                                                          list(rec=timechar)))
                         } else if (out_mode == "moc_depth") {
                             data_funi <- array(NA, c(dim(data_node)[1:3], ntime),
                                                dimnames=c(var=dimnames(data_node)[1],
                                                           list(lat=moc_reg_lat, 
                                                                depth=interpolate_depths,
-                                                               rec=timevec)))
+                                                               rec=timechar)))
                         }
                     }
                     if (rec_tag) {
@@ -5641,7 +5654,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
 
             ## Set dimension variables for nc file
-            time_var <- ncvar_def(name="timevec", 
+            time_var <- ncvar_def(name="timechar", 
                                   units=timeunit, 
                                   dim=time_dim,
                                   missval=-9999, 
@@ -5827,7 +5840,7 @@ if (nfiles == 0) { # read data which are constant in time
             } # moc_depth
 
             ## Put dimensions to transient nc file
-            ncvar_put(outnc, time_var, timevec)
+            ncvar_put(outnc, time_var, timechar)
 
             if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 ncvar_put(outnc, depth_var, -interpolate_depths)
@@ -6728,7 +6741,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
     if (regular_ltm_out) {
         if (nfiles > 0) {
-            reg_outname <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_", output, "_",
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_", output, "_",
                                   varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, 
                                   "_", projection, "_regular_dx", 
                                   sprintf("%.3f", regular_dx), "_dy",
@@ -6737,7 +6750,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                   p_ref_suffix, fname_suffix, 
                                   ".nc")
         } else if (nfiles == 0) {
-            reg_outname <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_",
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, "_", setting, "_",
                                   varname, "_ltm_", out_mode, depths_fname, "_", area,
                                   "_", projection, "_regular_dx",
                                   sprintf("%.3f", regular_dx), "_dy",
@@ -6750,13 +6763,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
         if (T) {
-            system(paste0("rm ", reg_outname), ignore.stderr=T) # silent
+            system(paste0("rm ", outname_reg_ltm), ignore.stderr=T) # silent
         }
 
         ## nc out
         if (verbose > 1) {
             message(paste0("   Save regular ", out_mode, " (=out_mode) ltm file:"))
-            message(paste0("      ", reg_outname, " (=reg_outname)"))
+            message(paste0("      ", outname_reg_ltm, " (=outname_reg_ltm)"))
         }
         
         if (F) { # old
@@ -6797,7 +6810,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
         }
         
-        regular_nc <- nc_create(filename=reg_outname,
+        regular_nc <- nc_create(filename=outname_reg_ltm,
                                 vars=datamat_reg_var,
                                 force_v4=force_v4)
         for (i in 1:length(datamat_reg_var)) {
@@ -7418,7 +7431,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 }
                 if (!user_palname_exist && !user_cols_exist) {
                     message(indent, "   Note: you can define your own colors with e.g.:\n",
-                            indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or :\n", 
+                            indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or\n", 
                             indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
                             indent, "      in namelist.var.r.")
                 }
