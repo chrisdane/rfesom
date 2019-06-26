@@ -4,7 +4,7 @@ With this [R](https://cran.r-project.org/) tool you can read/post-process/plot F
 
 Please note that the tool was only tested on linux so far and bugs do exist.
 
-**Table of Contents**
+__**Table of Contents**__
 <!--ts-->
    * [rfesom](#rfesom)
    * [How to install](#how-to-install)
@@ -15,7 +15,7 @@ Please note that the tool was only tested on linux so far and bugs do exist.
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 11:34:11 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 11:35:29 CEST 2019 -->
 
 <!--te-->
 
