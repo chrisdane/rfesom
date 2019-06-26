@@ -6,14 +6,28 @@ With this [R](https://cran.r-project.org/) tool you can read/post-process/plot F
 
 Please note that the tool was only tested on linux so far and bugs do exist.
 
-## 1 How to install
+<!--ts-->
+   * [rfesom](#rfesom)
+      * [How to install](#how-to-install)
+      * [Demo](#demo)
+      * [Help](#help)
+         * [Getting R](#getting-r)
+         * [Installing new R packages (or libraries)](#installing-new-r-packages-or-libraries)
+      * [References](#references)
+      * [Available variables](#available-variables)
+
+<!-- Added by: a270073, at: Wed Jun 26 10:24:00 CEST 2019 -->
+
+<!--te-->
+
+## How to install
 
 Clone this repo with
 ```
 $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ```
 
-## 2 Demo
+## Demo
 
 Run `rfesom` either in an active R session with
 ```
@@ -40,7 +54,7 @@ The 2nd file contains the same as the 1st but the temporal average over the 12 m
 
 The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and was produced because `plot_map=T`. Note that `rfesom` only plots temporal averaged data if the selected time period is longer than one 1.
 
-## 3 Help
+## Help
 
 ### Getting R
 Install R or load it via `module`:
@@ -100,13 +114,13 @@ module load gcc/4.8.2 r
 ```
 and rerun the package installation given above.
 
-## 4 References  
+## References  
 
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.
 
 Wang, Q., S. Danilov, D. Sidorenko, R. Timmermann, C. Wekerle, X. Wang, T. Jung, and J. Schröter, 2014b: The Finite Element Sea Ice-Ocean Model (FESOM) v.1.4: formulation of an ocean general circulation model. Geoscientific Model Development, 7 (2), 663–693, doi:10.5194/gmd-7-663-2014.
 
-## 5 Available variables  
+## Available variables  
 
 (automated list based on the `longname` definitions in `namelist.var.r`)
 
