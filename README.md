@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:20:59 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 12:23:53 CEST 2019 -->
 
 <!--te-->
 
@@ -73,7 +73,7 @@ q()
 
 ## Installing new R packages (or libraries)
 
-You can install the `ncdf4` package with
+Within R, you can install the `ncdf4` package with
 ```
 install.packages("ncdf4")
 ```
