@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:23:53 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 13:26:46 CEST 2019 -->
 
 <!--te-->
 
@@ -40,7 +40,7 @@ $ Rcript runscript.demo1.r
 ``` 
 or 
 ```
-$ nohup Rscript runscript.demo1.r > runscript.demo1.r 2>&1 &
+$ nohup Rscript runscript.demo1.r > runscript.demo1.log 2>&1 &
 ```
 so that the program runs in background and you can close the connection when running a long job.
 
@@ -92,7 +92,7 @@ Package installation from source requires the same compiler that was used for bu
 version `CXXABI_1.3.8' not found
 ```
 
-A solution to this is as follows: identify the R executable. Within R, run
+A solution to this is as follows. First, identify the R executable. Within R, run
 ```
 file.path(R.home(), "bin", "exec", "R")
 [1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R"
