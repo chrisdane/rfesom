@@ -5,8 +5,9 @@ With this [R](https://cran.r-project.org/) tool you can read/post-process/plot F
 
 Please note that the tool was only tested on linux so far and bugs do exist.
 
+
 __Table of Contents__<br/>
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯<br/>
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯<br/>
 <!--ts-->
    * [How to install](#how-to-install)
    * [Demo](#demo)
@@ -16,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:09:00 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 12:09:56 CEST 2019 -->
 
 <!--te-->
 
