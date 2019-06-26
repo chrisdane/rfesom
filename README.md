@@ -1,11 +1,12 @@
 __rfesom__<br/>
-¯¯¯¯¯¯¯
+¯¯¯¯¯¯¯¯¯¯<br/>
+
 With this [R](https://cran.r-project.org/) tool you can read/post-process/plot FESOM version 1.x ([Danilov et al. 2004](https://www.sciencedirect.com/science/article/pii/S146350030200063X?via%3Dihub); [Wang et al. 2014](https://www.geosci-model-dev.net/7/663/2014/)) data.
 
 Please note that the tool was only tested on linux so far and bugs do exist.
 
 __Table of Contents__<br/>
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯<br/>
 <!--ts-->
    * [How to install](#how-to-install)
    * [Demo](#demo)
@@ -15,7 +16,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:07:50 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 12:09:00 CEST 2019 -->
 
 <!--te-->
 
