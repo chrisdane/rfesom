@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Wed Jun 26 12:11:34 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Jun 26 12:15:10 CEST 2019 -->
 
 <!--te-->
 
@@ -42,7 +42,7 @@ or
 ```
 $ nohup Rscript runscript.demo1.r > runscript.demo1.r 2>&1 &
 ```
-so that the program runs in background and you can close close the connection when running a long job.
+so that the program runs in background and you can close the connection when running a long job.
 
 Three files are produced:
 1. \*transient\*.nc
@@ -86,7 +86,7 @@ if you want to set a path where the package should be installed. The default pac
 install.packages("ncdf4", lib=.libPaths()[1])
 ```
 
-Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. A typcial error of this type looks like
+Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typcial error looks like
 ```
 version `CXXABI_1.3.8' not found
 ```
@@ -94,11 +94,11 @@ version `CXXABI_1.3.8' not found
 A solution to this is as follows: identify the R executable. Within R, run
 ```
 file.path(R.home(), "bin", "exec", "R")
-[1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R" # example
+[1] "/sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R"
 ```
 Then, in the shell, type
 ```
-ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
+$ ldd /sw/rhel6-x64/r/r-3.5.3-gcc48/lib64/R/bin/exec/R
         linux-vdso.so.1 =>  (0x00007ffd249ee000)
         libR.so => not found
         libRblas.so => not found
