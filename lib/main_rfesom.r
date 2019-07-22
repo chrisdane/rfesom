@@ -155,7 +155,7 @@ if (fuser_tag) {
                 "   runid <- \"myexp\"")
         runid <- "runid"
     }
-    if (!exists(datainpath)) {
+    if (!exists("datainpath")) {
         datainpath <- dirname(fnames_user[1])
     }
 } else if (!fuser_tag) {

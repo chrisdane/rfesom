@@ -21,7 +21,7 @@ source("namelists/namelist.config.r")
 if (F) {
     source("myrunids.r")
     
-} else if (F) { # martin
+} else if (T) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     fnames_user <- "tos_PI_CTRL_fesom.nc" 
     runid <- "PI_CTRL_mw"
@@ -31,7 +31,7 @@ if (F) {
     varname <- "tos"
     area <- "global"
 
-} else if (T) { # hp5km08 --> historic with coupled Greenland ice sheet
+} else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet
     meshpath <- "/work/ollie/pool/FESOM/meshes_default/core"
     runid <- "hp5km08"
     datainpath <- "/work/ollie/lackerma/awicm_pism_tests/hp5km08/awicm/outdata/fesom"
