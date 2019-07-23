@@ -23,12 +23,15 @@ if (F) {
     
 } else if (T) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
-    fnames_user <- "tos_PI_CTRL_fesom.nc" 
+    #fnames_user <- "tos_PI_CTRL_fesom.nc" 
+    fnames_user <- "/pf/a/a270106/snow_depth_PI_CTRL/tos_fesom_DJF1.nc" 
     runid <- "PI_CTRL_mw"
     interppath <- "/pf/a/a270106/snow_depth_PI_CTRL/interp"
+    #interppath <- "/work/ba0941/a270073/mesh/core/interp"
     postpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
     plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
-    varname <- "tos"
+    derivpath <- "/work/ba0941/a270073/mesh/core/derivatives"
+    varname <- "resolutionkm"
     area <- "global"
 
 } else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet

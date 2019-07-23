@@ -3148,19 +3148,27 @@ sub_calc <- function(data_node) {
 
         } else if (any(varname == c("resolutionkm", "resolutiondeg"))) {
             
-            # dim(resolution) = elem2d_n
-            resolution <- replicate(resolution, n=dim(data_node)[1]) # nvars
-            resolution <- replicate(resolution, n=dim(data_node)[3]) # ndepths=1
-            resolution <- replicate(resolution, n=dim(data_node)[4]) # nrecspf=1
-
             ## bring derivative back from (elem2d_n x ndepths) to (nod2d_n x ndepths)
             if (verbose > 1) {
-                message(paste0(indent, "Bring derivative back from (3 x elem2d_n=", elem2d_n, " x ndepths=",
-                             ndepths, ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                message(paste0(indent, "   run ", subroutinepath, "/sub_e2xde_to_n2xde.r ..."))
+                message(paste0(indent, "Bring resolution from elem2d_n=", elem2d_n, 
+                               " to nod2d_n=", nod2d_n, " ..."))
             }
-            sub_e2xde_to_n2xde(resolution) # produces tmp
-            data_node <- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
+            tmp <- rep(0, t=nod2d_n)
+            inds <- tmp
+            # dim(resolution) = elem2d_n
+            pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                                   char=pb_char, width=pb_width,
+                                   indent=paste0(indent, "  ")) # 5 " " for default message()
+            for (i in 1:elem2d_n) {
+                elnodes <- elem2d[,i]
+                tmp[elnodes] <- tmp[elnodes] + rep(resolution[i], t=3)
+                inds[elnodes] <- inds[elnodes] + 1
+                setTxtProgressBar(pb, i)
+            }
+            close(pb)
+            tmp <- tmp/inds # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
+            data_node <- array(tmp, dim=dim(data_node),
+                               dimnames=dimnames(data_node))
 
             if (varname == "resolutiondeg") {
                 

@@ -143,7 +143,9 @@ if (is.null(varname_fesom)) {
 }
 if (exists("fnames_user")) {
     fuser_tag <- T
-    nfiles <- length(fnames_user)
+    if (nfiles != 0) { # variable like resolution in case of user provided file
+        nfiles <- length(fnames_user)
+    }
 } else {
     fuser_tag <- F
 }
@@ -316,7 +318,10 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             message("done")
         }
     } else if (file.access(postpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        stop(paste0("You have no writing rights in 'postpath' = ", postpath, " ..."))
+        message("You have no writing rights in 'postpath' = ", postpath, " ...")
+        postpath <- paste0(getwd(), "/post")
+        message("   Use default: ", postpath, " (= getwd()'/post').\n",
+                "   You can set postpath <- \"/path/with/writing/rights\" in the runscript.")
     }
 
     # make dirs in postpath. at this point, writing rights were already checked
@@ -378,8 +383,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             } else {
                 message("done.")
             }
-        } else if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
-            stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
         }
 
     } # if regular_transient_out regular_ltm_out
@@ -389,6 +392,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
 if (plot_map || plot_csec) {
     
     if (!exists("plotpath")) {
+        # use default
         plotpath <- paste0(getwd(), "/plot/", varname)
         message("No 'plotpath' is given for saving plots.\n",
                 "   Use default: ", plotpath, " (= getwd()'/plot/'varname)\n",
@@ -407,7 +411,10 @@ if (plot_map || plot_csec) {
             message("done.")
         }   
     } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        stop(paste0("You have no writing rights in 'plotpath' = ", plotpath, " ..."))
+        message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
+        plotpath <- paste0(getwd(), "/plot/", varname)
+        message("   Use default: ", plotpath, " (= getwd()'/plot/'varname)\n",
+                "   You can set plotpath <- \"/path/with/writing/rights\" in the runscript.")
     }
     success <- load_package("fields")
     if (!success) stop()
@@ -1065,7 +1072,7 @@ if (!restart || # ... not a restart run
 
     if (rotate_mesh) {
         if (cycl) {
-            if (verbose > 1) {
+            if (verbose > 2) {
                     message(paste0(indent, "Treat cyclic elements part 1 ..."))
             }
             inds <- which(nod_x > 180)
@@ -1088,7 +1095,7 @@ if (!restart || # ... not a restart run
         rm(rotated_coords)
 
         if (cycl) {
-            if (verbose > 1) {
+            if (verbose > 2) {
                 message(paste0(indent, "Treat cyclic elements part 2 ..."))
             }
             inds <- which(abs(nod_x[elem2d[,3]] - nod_x[elem2d[,2]]) > 170 |
@@ -1356,7 +1363,10 @@ if (horiz_deriv_tag != F ||
             message("done.")
         }
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        stop(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
+        message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
+        derivpath <- paste0(getwd(), "/mesh/", meshid, "/derivatives")
+        message(indent, "   Use default: ", derivpath, " (=getwd()'/mesh/'meshid'/derivatives')\n",
+                indent, "   You can set derivpath <- \"/path/with/writing/rights\" in the runscript.")
     }
 
     deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
@@ -1411,6 +1421,7 @@ if (zave_method == 2 &&
             message(paste0(indent, indent, "'deriv_3d_fname' = ", deriv_3d_fname, " ..."))
         }
         if (!exists("derivpath")) {
+            # use default
             message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
                     indent, "No 'derivpath' is given for saving the result. Use default ...")
             derivpath <- paste0(meshpath, "/derivatives")
@@ -1428,7 +1439,10 @@ if (zave_method == 2 &&
                 message("done.")
             }
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-            stop(paste0("You have no writing rights in 'derivpath' = ", derivpath, " ..."))
+            message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
+            derivpath <- paste0(getwd(), "/mesh/", meshid, "/derivatives")
+            message(indent, "   Use default: ", derivpath, " (=getwd()'/mesh/'meshid'/derivatives')\n",
+                    indent, "   You can set derivpath <- \"/path/with/writing/rights\" in the runscript.")
         }
 
         # load elem3d
@@ -1500,9 +1514,11 @@ if (any(regular_transient_out, regular_ltm_out)) {
             message(paste0(indent, indent, "sub_calc_load_regular_IMAT.r and save result in"))
             message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
         }
-       
         if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
-            stop(paste0("You have no writing rights in 'interppath' = ", interppath, " ..."))
+            message("You have no writing rights in 'interppath' = ", interppath, " ...")
+            interppath <- paste0(getwd(), "/mesh/", meshid, "/interp")
+            message("   Use default: ", interppath, " (=getwd()'/mesh/'meshid'/interp')\n",
+                    "   You can set interppath <- \"/path/with/writing/rights\" in the runscript.")
         }
         dir.create(interppath, recursive=T, showWarnings=F)
         sub_calc_load_regular_IMAT(regular_dx=regular_dx, regular_dy=regular_dy,
@@ -7590,7 +7606,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (plot_file == "png") {
                     polygon(xpvec, ypvec, col=ip$cols[col_inds_vec], border=elem_border_col)
                 } else if (plot_file == "pdf") {
-                    polygon(xpvec, ypvec, col=ip$cols[col_inds_vec], border=ip$cols[col_inds_vec])
+                    if (!is.na(elem_border_col)) {
+                        polygon(xpvec, ypvec, col=ip$cols[col_inds_vec], border=ip$cols[col_inds_vec])
+                    } else {
+                        polygon(xpvec, ypvec, col=ip$cols[col_inds_vec], border=elem_border_col)
+                    }
                 }
 
                 ## for debugging:
