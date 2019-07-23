@@ -59,6 +59,8 @@ message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output 
 message("* https://github.com/chrisdane/rfesom                                  *")
 message("************************************************************************")
 
+helppage <- "https://github.com/chrisdane/rfesom#help"
+
 ## check user input
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
 if (file.access(meshpath, mode=0) == -1) { # does not exist
@@ -120,14 +122,14 @@ for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
 
 ## load ncdf4 package which is almost always needed
 success <- load_package("ncdf4")
-if (!success) stop()
+if (!success) stop(helppage)
 
 # TODO: check all needed packages at the beginning!!! e.g. gsw
 
 ## load akima package and functions needed if
 if (plot_map && plot_type == "interp") {
     success <- load_package("akima")
-    if (!success) stop()
+    if (!success) stop(helppage)
     source(paste0(subroutinepath, "/m2lon.r"))
     source(paste0(subroutinepath, "/m2lat.r"))
 }
@@ -204,7 +206,7 @@ if (!uv_out && sd_method == "ackermann83") {
 }
 if (uv_out || sd_out || horiz_deriv_tag != F) {
     success <- load_package("abind")
-    if (!success) stop()
+    if (!success) stop(helppage)
 }
 if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
     varname != "transport") {
@@ -267,7 +269,7 @@ if (integrate_depth && length(depths) != 2) {
 }
 if (integrate_depth && any(depths == "MLD")) {
     success <- load_package("abind")
-    if (!success) stop()
+    if (!success) stop(helppage)
 }
 if (dim_tag == "2D" && transient_out &&
     (!any(out_mode == c("mean", "meanint", "min", "max")))) {
@@ -414,7 +416,7 @@ if (plot_map || plot_csec) {
                 "   You can set plotpath <- \"/path/with/writing/rights\" in the runscript.")
     }
     success <- load_package("fields")
-    if (!success) stop()
+    if (!success) stop(helppage)
 } # check paths if plot_mat || plot_csec
 
 
@@ -1584,7 +1586,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
         ## Project coordinates from geographical to target projection (variable "projection")
         success <- load_package("mapproj")
-        if (!success) stop()
+        if (!success) stop(helppage)
  
         xp <- array(NA, dim(xc))
         yp <- xp
@@ -1611,7 +1613,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
         if (projection != "rectangular") {
             ## Project coordinates from geographical to target projection (variable "projection")
             success <- load_package("mapproj")
-            if (!success) stop()
+            if (!success) stop(helppage)
 
             xp <- array(NA, dim(xc))
             yp <- xp
@@ -1629,7 +1631,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
             if (projection == "stereographic") {
                 ## Find all projected coordinates within chosen plot area (variable "area")
                 success <- load_package("maps")
-                if (!success) stop()
+                if (!success) stop(helppage)
            
                 map("world", t="n", proj=projection, 
                     orient=orient, par=projection_par,
@@ -1651,7 +1653,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                 # are -180:180 and not 0:360.
                 if (F) { # this was buggy
                     success <- load_package("maps")
-                    if (!success) stop()
+                    if (!success) stop(helppage)
 
                     tmp <- map("world", t="n", proj=projection, orient=orient, 
                                par=projection_par, plot=F)
@@ -1708,7 +1710,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                 if (length(poly_geogr_lim_lon) > 1 && # not a single point
                     poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
                     success <- load_package("splancs")
-                    if (!success) stop()
+                    if (!success) stop(helppage)
 
                     if (F) {
                         # even worse
@@ -1726,7 +1728,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                                                        bound=T, quiet=F)
                         } else if (T) {
                             success <- load_package("sp")
-                            if (!success) stop()
+                            if (!success) stop(helppage)
                             tmp[[i]] <- point.in.polygon(xc[i,], yc[i,], 
                                                          poly_geogr_lim_lon, poly_geogr_lim_lat, 
                                                          mode.checked=F) 
@@ -1758,7 +1760,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                     
                     # find polygon in which the point is located
                     success <- load_package("sp")
-                    if (!success) stop()
+                    if (!success) stop(helppage)
                     for (i in 1:elem2d_n) {
                         poly <- cbind(xc[,i], yc[,i])
                         poly <- rbind(poly, poly[1,])
@@ -1799,7 +1801,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
             if (length(poly_geogr_lim_lon) > 1 &&
                 poly_geogr_lim_lon[1] == poly_geogr_lim_lon[length(poly_geogr_lim_lon)]) {
                 success <- load_package("splancs")
-                if (!success) stop()
+                if (!success) stop(helppage)
 
                 poly_node_inds_geogr <- splancs::inpip(cbind(xcsur, ycsur), 
                                                        cbind(poly_geogr_lim_lon, 
@@ -1817,7 +1819,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
                 # find polygon in which the point is located
                 success <- load_package("sp")
-                if (!success) stop()
+                if (!success) stop(helppage)
                 for (i in 1:elem2d_n) {
                     poly <- cbind(xc[,i], yc[,i])
                     poly <- rbind(poly, poly[1,])
@@ -2080,8 +2082,7 @@ if (transient_out &&
     
         #stop("asd")
     
-    }
-
+    } # if F show csection
 
     ## analyse cross-section: which trianglse are crossed by section...
     P <- rep(NA, t=6)
@@ -2161,145 +2162,145 @@ if (transient_out &&
 
             #___SOLVE LINEAR EQUATION SYSTEM____________________________________
             success <- load_package("pracma")
-        if (!success) stop()
+            if (!success) stop(helppage)
 
-        if (F) { # try if base::solve() is successful or pracma::mldivide() must be used
-            if (i == 1) {
-                try <- tryCatch(solve(A, P), error=function(e) e, warning=function(w) w)
-                if (any(attributes(try)$names == "message")) {
-                    message(paste0(indent, "Warning: 'stats::solve(A, P)' was not successful:"))
-                    message(paste0(indent, indent, "         '", try$message, "'"))
-                    message(paste0(indent, "         Use 'pracma::mldivide(A, P)' instead ..."))
-                    mldivide_check <- T
+            if (F) { # try if base::solve() is successful or pracma::mldivide() must be used
+                if (i == 1) {
+                    try <- tryCatch(solve(A, P), error=function(e) e, warning=function(w) w)
+                    if (any(attributes(try)$names == "message")) {
+                        message(paste0(indent, "Warning: 'stats::solve(A, P)' was not successful:"))
+                        message(paste0(indent, indent, "         '", try$message, "'"))
+                        message(paste0(indent, "         Use 'pracma::mldivide(A, P)' instead ..."))
+                        mldivide_check <- T
+                    } else {
+                        mldivide_check <- F
+                    }
+                } # 1st element
+
+                if (mldivide_check) {
+                    X <- mldivide(A, P)
                 } else {
-                    mldivide_check <- F
+                    X <- solve(A, P)
                 }
-            } # 1st element
-
-            if (mldivide_check) {
+            } else { # use pracma::mldivide() as default
                 X <- mldivide(A, P)
-            } else {
-                X <- solve(A, P)
             }
-        } else { # use pracma::mldivide() as default
-            X <- mldivide(A, P)
-        }
-        
-        # if cutted element
-        if (((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
-             (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) ||
-            ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
-             (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) ||
-            ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
-             (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps))) {
             
-            #message(paste0("elem ", elem_area_inds[i], " = (", 
-            #             round(xcsur[elem2d[,elem_area_inds[i]]], 4), ",", 
-            #             round(ycsur[elem2d[,elem_area_inds[i]]], 4), ")"))
-            csec_crossed_tri[elem_area_inds[i]] <- 1
-            csec_crossed_nodes[elem2d[,elem_area_inds[i]]] <- 1
+            # if cutted element
+            if (((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
+                 (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) ||
+                ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
+                 (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) ||
+                ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
+                 (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps))) {
+                
+                #message(paste0("elem ", elem_area_inds[i], " = (", 
+                #             round(xcsur[elem2d[,elem_area_inds[i]]], 4), ",", 
+                #             round(ycsur[elem2d[,elem_area_inds[i]]], 4), ")"))
+                csec_crossed_tri[elem_area_inds[i]] <- 1
+                csec_crossed_nodes[elem2d[,elem_area_inds[i]]] <- 1
 
-            # CALC: coordinates of cross-section points of triangle
-            # edge and crossection vector
-            if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
-                (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
+                # CALC: coordinates of cross-section points of triangle
+                # edge and crossection vector
+                if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
+                    (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
 
-                P_x_cut <- xc[1,elem_area_inds[i]] + 
-                           X[1]*(xc[2,elem_area_inds[i]] - xc[1,elem_area_inds[i]])/norm_tri_edge1
-                P_y_cut <- yc[1,elem_area_inds[i]] + 
-                           X[1]*(yc[2,elem_area_inds[i]] - yc[1,elem_area_inds[i]])/norm_tri_edge1
-             
-                #if isempty(find(  abs(obj(csi).crossed_edge_pts_x{segi-1}-P_x_cut)<=eps & abs(obj(csi).crossed_edge_pts_y{segi-1}-P_y_cut)<=eps,1));
-                #    obj(csi).crossed_edge_pts_x{segi-1} = [obj(csi).crossed_edge_pts_x{segi-1} P_x_cut];
-                #    obj(csi).crossed_edge_pts_y{segi-1} = [obj(csi).crossed_edge_pts_y{segi-1} P_y_cut];
-                #end
+                    P_x_cut <- xc[1,elem_area_inds[i]] + 
+                               X[1]*(xc[2,elem_area_inds[i]] - xc[1,elem_area_inds[i]])/norm_tri_edge1
+                    P_y_cut <- yc[1,elem_area_inds[i]] + 
+                               X[1]*(yc[2,elem_area_inds[i]] - yc[1,elem_area_inds[i]])/norm_tri_edge1
+                 
+                    #if isempty(find(  abs(obj(csi).crossed_edge_pts_x{segi-1}-P_x_cut)<=eps & abs(obj(csi).crossed_edge_pts_y{segi-1}-P_y_cut)<=eps,1));
+                    #    obj(csi).crossed_edge_pts_x{segi-1} = [obj(csi).crossed_edge_pts_x{segi-1} P_x_cut];
+                    #    obj(csi).crossed_edge_pts_y{segi-1} = [obj(csi).crossed_edge_pts_y{segi-1} P_y_cut];
+                    #end
 
-                if (F) {
-                    message(paste0(i, " (1,2): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                                     abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
+                    if (F) {
+                        message(paste0(i, " (1,2): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                                         abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
+                    }
+
+                    if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                    abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
+                        csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
+                        csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
+                    }
                 }
 
-                if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
-                    csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
-                    csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
-                }
-            }
+                if ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
+                    (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) {
 
-            if ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
-                (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) {
+                    P_x_cut <- xc[2,elem_area_inds[i]] + 
+                               X[3]*(xc[3,elem_area_inds[i]] - xc[2,elem_area_inds[i]])/norm_tri_edge2
+                    P_y_cut <- yc[2,elem_area_inds[i]] + 
+                               X[3]*(yc[3,elem_area_inds[i]] - yc[2,elem_area_inds[i]])/norm_tri_edge2
+                   
+                    if (F) {
+                        message(paste0(i, " (3,4): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                                          abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
+                    }
 
-                P_x_cut <- xc[2,elem_area_inds[i]] + 
-                           X[3]*(xc[3,elem_area_inds[i]] - xc[2,elem_area_inds[i]])/norm_tri_edge2
-                P_y_cut <- yc[2,elem_area_inds[i]] + 
-                           X[3]*(yc[3,elem_area_inds[i]] - yc[2,elem_area_inds[i]])/norm_tri_edge2
-               
-                if (F) {
-                    message(paste0(i, " (3,4): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                                      abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
-                }
-
-                if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
-                    csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
-                    csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
-                }   
-            }
-
-            if ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
-                (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps)) {
-
-                P_x_cut <- xc[3,elem_area_inds[i]] + 
-                           X[5]*(xc[1,elem_area_inds[i]] - xc[3,elem_area_inds[i]])/norm_tri_edge3
-                P_y_cut <- yc[3,elem_area_inds[i]] +
-                           X[5]*(yc[1,elem_area_inds[i]] - yc[3,elem_area_inds[i]])/norm_tri_edge3
-
-                if (F) {
-                    message(paste0(i, " (5,6): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                                      abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
+                    if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                    abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
+                        csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
+                        csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
+                    }   
                 }
 
-                if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
-                                abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
-                    csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
-                    csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
+                if ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
+                    (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps)) {
+
+                    P_x_cut <- xc[3,elem_area_inds[i]] + 
+                               X[5]*(xc[1,elem_area_inds[i]] - xc[3,elem_area_inds[i]])/norm_tri_edge3
+                    P_y_cut <- yc[3,elem_area_inds[i]] +
+                               X[5]*(yc[1,elem_area_inds[i]] - yc[3,elem_area_inds[i]])/norm_tri_edge3
+
+                    if (F) {
+                        message(paste0(i, " (5,6): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                                          abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1]))
+                    }
+
+                    if (is.na(which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
+                                    abs(csec_edge_pointsy[[j-1]] - P_y_cut) <= eps)[1])) {
+                        csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], P_x_cut)
+                        csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], P_y_cut)
+                    }
                 }
+
+                # SEARCH both boundary points
+                XXX <- rep(0, t=6)
+                if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
+                    (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
+                    XXX[2] <- 1
+                }
+                if ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
+                    (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) {
+                    XXX[4] <- 1
+                }
+                if ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
+                    (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps)) {
+                    XXX[6] <- 1
+                }
+                max_norm[j-1] <- max(max_norm[j-1], X[which(XXX == 1)])
+                min_norm[j-1] <- min(min_norm[j-1], X[which(XXX == 1)])
+
+            } else { # if not cutted element
+                csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], numeric(0))
+                csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], numeric(0))
+            
             }
 
-            # SEARCH both boundary points
-            XXX <- rep(0, t=6)
-            if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
-                (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
-                XXX[2] <- 1
-            }
-            if ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
-                (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) {
-                XXX[4] <- 1
-            }
-            if ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
-                (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps)) {
-                XXX[6] <- 1
-            }
-            max_norm[j-1] <- max(max_norm[j-1], X[which(XXX == 1)])
-            min_norm[j-1] <- min(min_norm[j-1], X[which(XXX == 1)])
+        } # for j in length(map_geogr_lim_lon)
 
-        } else { # if not cutted element
-            csec_edge_pointsx[[j-1]] <- c(csec_edge_pointsx[[j-1]], numeric(0))
-            csec_edge_pointsy[[j-1]] <- c(csec_edge_pointsy[[j-1]], numeric(0))
-        
-        }
+        # update progress bar
+        setTxtProgressBar(pb, i)
 
-    } # for j in length(map_geogr_lim_lon)
+    } # for i elem_area_inds_n
 
-    # update progress bar
-    setTxtProgressBar(pb, i)
+    # close progress bar
+    close(pb)
 
-} # for i elem_area_inds_n
-
-# close progress bar
-close(pb)
-
-#stop("asd")
+    #stop("asd")
 
     ## through out csection edges without any interpolated points (e.g. because edge is too small)
     if (any(sapply(csec_edge_pointsx, function(x) length(x) == 0))) {
@@ -2346,7 +2347,6 @@ close(pb)
     #fprintf(' --> wanted dR = %1.4f deg\n',wanted_step);
     #_______________________________________________________________________________
     
-
     for (i in 2:csec_n_vertices) {
 
         #%___CALC: SUPPORTING POINTS |---o---|---o---|...____________________
@@ -2692,7 +2692,7 @@ close(pb)
                            col=2, lwd=3)
                 } else {
                     success <- load_package("maps")
-                    if (!success) stop()
+                    if (!success) stop(helppage)
                     map("world", 
                         xlim=c(range(csec_interp_points[[1]][1,])[1] - abs(0.5*range(csec_interp_points[[1]][1,])[1]),
                                range(csec_interp_points[[1]][1,])[2] + abs(0.5*range(csec_interp_points[[1]][1,])[2])),
@@ -2785,7 +2785,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
 
             # find surface nodes within polygon
             success <- load_package("sp")
-            if (!success) stop()
+            if (!success) stop(helppage)
             moc_mask_inds <- sp::point.in.polygon(point.x=xcsur, point.y=ycsur,
                                                   pol.x=moc_mask_coords[,1], pol.y=moc_mask_coords[,2])
             moc_mask_inds <- which(moc_mask_inds == 1 | moc_mask_inds == 2 | moc_mask_inds == 3) # outside or on edge or on vertex
@@ -5083,7 +5083,7 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                             dimnames(transport)[[1]] <- list(var=varname)
                             success <- load_package("abind")
-                            if (!success) stop()
+                            if (!success) stop(helppage)
                             data_vert_csec <- abind(data_vert_csec, transport, along=1, use.dnns=T)
 
                         } else if (varname == "sitransport") {
@@ -7118,7 +7118,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             } else if (projection == "stereographic") {
                 success <- load_package("maps")
-                if (!success) stop()
+                if (!success) stop(helppage)
                 
                 map(continentdata, t="n", 
                     proj=projection, orient=orient, par=projection_par,
@@ -7128,7 +7128,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             } else if (projection == "orthographic") {
                 success <- load_package("maps")
-                if (!success) stop()
+                if (!success) stop(helppage)
 
                 xyp <- map(continentdata, 
                            proj=projection, orient=orient, par=projection_par, 
@@ -7173,7 +7173,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     }
                     
                     success <- load_package("maps")
-                    if (!success) stop()
+                    if (!success) stop(helppage)
 
                     if (projection == "rectangular") {
                         
@@ -7521,7 +7521,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 packages <- c("splancs", "phonR")
                 for (i in 1:length(packages)) {
                     success <- load_package(packages[i])
-                    if (!success) stop()
+                    if (!success) stop(helppage)
                 }
                 rm(packages)
 
@@ -7784,7 +7784,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     message(paste0(indent, "   Add grid to plot (plot_grid=T)..."))
                 }
                 success <- load_package("maps")
-                if (!success) stop()
+                if (!success) stop(helppage)
 
                 if (projection == "rectangular") {
                     if (area == "pacific") {
