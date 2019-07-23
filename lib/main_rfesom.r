@@ -56,6 +56,7 @@ fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 
 message("************************************************************************")
 message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output *")
+message("* https://github.com/chrisdane/rfesom                                  *")
 message("************************************************************************")
 
 ## check user input
@@ -65,12 +66,8 @@ if (file.access(meshpath, mode=0) == -1) { # does not exist
 }
 meshpath <- suppressWarnings(normalizePath(meshpath))
 if (!exists("meshid")) {
-    meshid <- basename(meshpath)
-    if (verbose > 2) {
-        message("'meshid' not given. Use default: basename(meshpath) = ", meshid, "\n",
-                "You can set a meshid in the runscript with e.g.\n",
-                "   meshid <- \"core\"")
-    }
+    stop("'meshid' not given. You can set a meshid in the runscript with e.g.\n",
+         "   meshid <- \"core\"")
 }
 if (!exists("subroutinepath")) {
     subroutinepath <- paste0(getwd(), "/lib") # path where subroutines are saved

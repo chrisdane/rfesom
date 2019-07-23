@@ -21,7 +21,7 @@ source("namelists/namelist.config.r")
 if (F) {
     source("myrunids.r")
     
-} else if (T) { # martin
+} else if (F) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     #fnames_user <- "tos_PI_CTRL_fesom.nc" 
     fnames_user <- "/pf/a/a270106/snow_depth_PI_CTRL/tos_fesom_DJF1.nc" 
@@ -31,6 +31,14 @@ if (F) {
     postpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
     plotpath <- "/pf/a/a270106/snow_depth_PI_CTRL"
     derivpath <- "/work/ba0941/a270073/mesh/core/derivatives"
+    varname <- "resolutionkm"
+    area <- "global"
+
+} else if (T) { # christian
+    meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom/p_mesh_MP/mesh"
+    meshid <- "p_mesh_MP"
+    datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1"
+    runid <- "MPmes"
     varname <- "resolutionkm"
     area <- "global"
 
@@ -48,14 +56,14 @@ if (F) {
 
 ###################### User input end ######################
 
+## Load plot options
+source("namelists/namelist.plot.r") 
+
 ## Load variable options
 source("namelists/namelist.var.r") 
 
 ## Load area and projection options
 source("namelists/namelist.area.r") 
-
-## Load plot options
-source("namelists/namelist.plot.r") 
 
 ## Run rfesom
 source("lib/main_rfesom.r")

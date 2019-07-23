@@ -26,14 +26,14 @@ plotpath <- "example_data/plot" # where to save plots
 varname <- "ssh" # see namelist.var.r
 area <- "lsea" # see namelist.area.r
     
+## Load plot options
+source("namelists/namelist.plot.r") 
+
 ## Load variable options
 source("namelists/namelist.var.r") 
 
 ## Load area and projection options
 source("namelists/namelist.area.r") 
-
-## Load plot options
-source("namelists/namelist.plot.r") 
 
 ## Run rfesom
 source("lib/main_rfesom.r")

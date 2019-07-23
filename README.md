@@ -113,6 +113,12 @@ module load gcc/4.8.2 r
 ```
 and rerun the package installation given above.
 
+In order to not run into this problem again and again, I defined the following alias in my `.bashrc`:
+```
+alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r ..."; module load gcc/4.8.2; module load r; echo "module list ..."; module list; R --quiet'
+```
+
+
 # References  
 
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.

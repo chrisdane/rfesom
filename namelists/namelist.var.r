@@ -4669,11 +4669,12 @@ if (varname == "tos") {
     horiz_deriv_tag <- "geo"
     rotate_inds <- F
     vec <- F
-    #pal <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
+    axis.addzlims <- T # show min and max resolution in colorbar 
+    #resolutionkm_cols <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
     #                          "seagreen2", "palegreen2", "gold2", "darkorange", "orangered", "red"))
-    pal <- colorRampPalette(rev(c("orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
-                                   "seagreen2", "palegreen2", "gold2", "darkorange", "orangered", "red", "darkred")))
-    levels_resolutionkm <- c(5:10, seq(10, 25, b=5), seq(30, 100, b=10), 150, 200, 250)
+    #resolutionkm_cols <- colorRampPalette(rev(c("orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
+    #                               "seagreen2", "palegreen2", "gold2", "darkorange", "orangered", "red", "darkred")))
+    #resolutionkm_levels <- c(5:10, seq(10, 25, b=5), seq(30, 100, b=10), 150, 200, 250)
 
 } else if (varname == "resolutiondeg") {
     longname <- "Resolution"
