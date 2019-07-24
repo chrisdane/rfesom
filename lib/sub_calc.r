@@ -3154,12 +3154,20 @@ sub_calc <- function(data_node) {
                                " to nod2d_n=", nod2d_n, " ..."))
             }
             
+            success <- load_package("Rcpp")
+            if (!success) {
+                Rcpp_tag <- F
+                message(paste0(indent, "note: a much faster C version of the following task is available via the Rcpp package.\n",
+                               indent, "      Consider installing with install.packages(\"Rcpp\")"))
+            } else if (success) {
+                Rcpp_tag <- T
+            }
             # check if Rcpp
-            if (T) {
-                #dyn.load(.so)
-                library(Rcpp)
+            if (Rcpp_tag) {
                 #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
-                dyn.load(subroutinepath, "/sourceCpp/sub_e2_to_n2")
+                tmp <- dyn.load(paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so"))
+                sub_e2_to_n2 <- Rcpp:::sourceCppFunction(function(elem2d, data_elem2d, nod2d_n) {}, 
+                                                         isVoid=F, dll=tmp, symbol='sourceCpp_1_sub_e2_to_n2')
                 tmp <- sub_e2_to_n2(elem2d, resolution, nod2d_n) 
             } else {
                 tmp <- rep(0, t=nod2d_n)
