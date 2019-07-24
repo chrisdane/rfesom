@@ -926,7 +926,7 @@ if (!restart || # ... not a restart run
     (restart && dim_tag == "3D" && nod3d_check == F)) { # ... or if restart and new variable 
                                                     # is 2D and 2D mesh was not leaded yet
 
-    nod2d_n <- as.numeric(readLines(paste0(meshpath, "/nod2d.out"), n=1))
+    nod2d_n <- as.integer(readLines(paste0(meshpath, "/nod2d.out"), n=1))
     pos <- 1:nod2d_n # old here
     surfnodes <- pos # old here
 

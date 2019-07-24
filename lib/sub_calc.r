@@ -3153,20 +3153,32 @@ sub_calc <- function(data_node) {
                 message(paste0(indent, "Bring resolution from elem2d_n=", elem2d_n, 
                                " to nod2d_n=", nod2d_n, " ..."))
             }
-            tmp <- rep(0, t=nod2d_n)
-            inds <- tmp
-            # dim(resolution) = elem2d_n
-            pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
-                                   char=pb_char, width=pb_width,
-                                   indent=paste0(indent, "  ")) # 5 " " for default message()
-            for (i in 1:elem2d_n) {
-                elnodes <- elem2d[,i]
-                tmp[elnodes] <- tmp[elnodes] + rep(resolution[i], t=3)
-                inds[elnodes] <- inds[elnodes] + 1
-                setTxtProgressBar(pb, i)
+            
+            # check if Rcpp
+            if (T) {
+                #dyn.load(.so)
+                library(Rcpp)
+                #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
+                dyn.load(subroutinepath, "/sourceCpp/sub_e2_to_n2")
+                tmp <- sub_e2_to_n2(elem2d, resolution, nod2d_n) 
+            } else {
+                tmp <- rep(0, t=nod2d_n)
+                inds <- tmp
+                # dim(resolution) = elem2d_n
+                pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                                       char=pb_char, width=pb_width,
+                                       indent=paste0(indent, "  ")) # 5 " " for default message()
+                for (i in 1:elem2d_n) {
+                    elnodes <- elem2d[,i]
+                    tmp[elnodes] <- tmp[elnodes] + rep(resolution[i], t=3)
+                    inds[elnodes] <- inds[elnodes] + 1
+                    setTxtProgressBar(pb, i)
+                }
+                close(pb)
+                tmp <- tmp/inds # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
             }
-            close(pb)
-            tmp <- tmp/inds # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
+
+            # correct dims
             data_node <- array(tmp, dim=dim(data_node),
                                dimnames=dimnames(data_node))
 
