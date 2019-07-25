@@ -19,8 +19,10 @@ source("namelists/namelist.config.r")
 # Define paths either relative to this runscript or absolute.
 # Any variable already defined in namelist.config.r can be overwritten here.
 if (F) {
-    source("myrunids.r")
-    
+    source("../myrunids.r")
+    years <- 1948:1955
+    varname <- "temp"
+
 } else if (F) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     #fnames_user <- "tos_PI_CTRL_fesom.nc" 
@@ -35,12 +37,23 @@ if (F) {
     area <- "global"
 
 } else if (T) { # christian
-    meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom/p_mesh_MP/mesh"
-    meshid <- "p_mesh_MP"
-    datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1"
     runid <- "MPmes"
-    varname <- "resolutionkm"
-    area <- "global"
+    meshid <- "p_mesh_MP"
+    cpl_tag <- F
+    if (T) {
+        fesom_version <- "1.4"
+        setting <- "fesom1"
+        meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom/p_mesh_MP/mesh"
+        datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1"
+        varname <- "temp"
+    } else if (F) {
+        fesom_version <- "2.0"
+        setting <- "fesom2"
+        meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom2/p_mesh_MP/mesh"
+        datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1_fesom2"
+        varname <- "sst" 
+    }
+    years <- 1948#:1955
 
 } else if (F) { # hp5km08 --> historic with coupled Greenland ice sheet
     meshpath <- "/work/ollie/pool/FESOM/meshes_default/core"

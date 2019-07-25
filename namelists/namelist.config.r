@@ -43,6 +43,15 @@ horiz_deriv_node3d <- T # method for calculating horizontal derivative of 3D var
 horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
+## Default experiment options
+fesom_version <- "1.4"
+cpl_tag <- T # F: ocean-only, T: coupled
+             # needed for filename convention:
+             # if cpl_tag == T
+             #      <varname_fesom>_fesom_YYYY0101.nc (older esm version)
+             #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
+             # if cpl_tag == F
+             #      <runid>.YYYY.oce.mean.nc
 
 ## Default mesh options
 rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
@@ -56,17 +65,11 @@ Ebeta <- 15
 Egamma <- -90
 cycl <- T # treat cyclic elements; set true for global mesh
 
-## Default experiment options
-cpl_tag <- T # F: ocean-only, T: coupled
-             # needed for filename convention:
-             # if cpl_tag == T
-             #      <varname_fesom>_fesom_YYYY0101.nc (older esm version)
-             #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
-             # if cpl_tag == F
-             #      <runid>.YYYY.oce.mean.nc
-
 ## Default variable (see namelist.var.r)
-varname <- "tso"
+varname <- "tos"
+
+## Where? (see namelist.area.r)
+area <- "global"
 
 ## At what depth? [m]
 depths <- 0
@@ -77,9 +80,6 @@ depths <- 0
 #      depths = "bottom"     # bottom layer
 integrate_depth <- F # if F, average between depths[1] and depths[2]
                      # if T, integrate from depths[1] to depths[2]
-
-## Where? (see namelist.area.r)
-area <- "global"
 
 ## When? 
 # If user provides own fesom1.4 file on irregular grid via 
@@ -102,7 +102,7 @@ all_recs      <- T # read all records of one fesom output file if possible
 ltm_out               <- F # irregular time-average output
 regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
-regular_transient_out <- T # regular (i.e. interpolated) transient output (see table at the bottom)
+regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "area" # what kind of ouptut (see table at the bottom) 
 regular_dx            <- 1/4 # resolution of interpolated data on regular grid [degree] 
 regular_dy            <- regular_dx # can be different than regular_dx

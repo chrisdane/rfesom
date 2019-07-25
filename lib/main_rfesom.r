@@ -54,10 +54,10 @@
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
 
-message("************************************************************************")
-message("* Run rfesom for reading, postprocessing and plotting FESOM 1.4 output *")
-message("* https://github.com/chrisdane/rfesom                                  *")
-message("************************************************************************")
+message("********************************************************************")
+message("* Run rfesom for reading, postprocessing and plotting FESOM output *")
+message("* https://github.com/chrisdane/rfesom                              *")
+message("********************************************************************")
 
 helppage <- "https://github.com/chrisdane/rfesom#help"
 
@@ -823,7 +823,9 @@ if (timespan == "") {
 }
 
 if (verbose > 0) {
+    message("==============================================")
     message("verbose: ", verbose, " (change this in the runscript for more/less info)")
+    message(paste0("fesom_version: ", fesom_version))
     message(paste0("runid: ", runid))
     message(paste0("setting: ", setting))
     message(paste0("mesh: ", meshid))
@@ -931,7 +933,8 @@ if (!restart || # ... not a restart run
     surfnodes <- pos # old here
 
     if (verbose > 0) {
-        message(paste0("1) Read '", meshid, "' mesh (nod2d_n=", nod2d_n, ") ..."))
+        message("1) Read '", meshid, "' mesh from ", meshpath, " ...\n",
+                "   nod2d_n=", nod2d_n)
     }
 
     ## check whether R package "data.table" is loaded
@@ -1490,10 +1493,15 @@ if (any(regular_transient_out, regular_ltm_out)) {
     source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
     source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
 
+    # if namelist.config@fesom: rotated_grid = .true.
+    #    --> namelist@rfesom: rotate_mesh = T
     interpfname <- paste0(meshid,
-                        "_dx", sprintf("%.3f", regular_dx),
-                        "_dy", sprintf("%.3f", regular_dy),
-                        "_imat", ifelse(cycl, "_cycl", ""), ".nc")
+                          "_dx", sprintf("%.3f", regular_dx),
+                          "_dy", sprintf("%.3f", regular_dy),
+                          "_imat", 
+                          #ifelse(rotate_mesh, "_rotated_grid_true", "_rotated_grid_false"),
+                          ifelse(cycl, "_cycl", ""), 
+                          ".nc")
 
     # interpolation matrix already exists
     if (file.exists(paste0(interppath, "/", interpfname))) {
@@ -3276,7 +3284,7 @@ if (nfiles == 0) { # read data which are constant in time
 
         ## construct fesom filenames
         for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
-            
+           
             if (fuser_tag) {
                 ## check nc fast: library(raster); b <- brick("akhil.nc", var="hur")
                 #fnames[file] <- paste0(datainpath, fnames_user[year_cnt])
@@ -3284,65 +3292,81 @@ if (nfiles == 0) { # read data which are constant in time
 
             } else if (!fuser_tag) {
 
-                # coupled fesom-echam
-                if (cpl_tag) {
-                    
-                    if ((runid == "bold" && setting == "cpl_output_01") || # tido
-                        (runid == "awicm-CMIP6_hu" && setting == "pi")) { # hu
-                        fnames[file] <- paste0(datainpath, "/fesom.", year, ".",
-                                               typesuffix[file], diagsuffix[file],
-                                               snapshotsuffix[file], "nc")
+                if (fesom_version == "1.4") {
+
+                    if (cpl_tag) { # coupled fesom-echam
+                        
+                        if ((runid == "bold" && setting == "cpl_output_01") || # tido
+                            (runid == "awicm-CMIP6_hu" && setting == "pi")) { # hu
+                            fnames[file] <- paste0(datainpath, "/fesom.", year, ".",
+                                                   typesuffix[file], diagsuffix[file],
+                                                   snapshotsuffix[file], "nc")
+                       
+                        } else if (setting == "htrans02") {
+                            fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
+                                                   year, "0101_monmean.nc")
+
+                        # coupled default
+                        } else { 
+                            fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
+                                                   year, "0101.nc")
+                            # newer esm version: exp name in fesom file names
+                            if (!file.exists(fnames[file])) {
+                                fnames[file] <- paste0(datainpath, "/", setting, "_", varname_fesom[file], 
+                                                       "_fesom_", year, "0101.nc")
+                            }
+                        }
+
+                    }  else if (!cpl_tag) { # ocean-only
                    
-                    } else if (setting == "htrans02") {
-                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
-                                               year, "0101_monmean.nc")
+                        if (any(runid == c("demo1"))) {
+                            fnames[file] <- paste0(datainpath, "/demo.", year, ".", 
+                                                   typesuffix[file], diagsuffix[file], 
+                                                   snapshotsuffix[file], "nc")
 
-                    # coupled default
-                    } else { 
-                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
-                                               year, "0101.nc")
-                        # newer esm version: exp name in fesom file names
-                        if (!file.exists(fnames[file])) {
-                            fnames[file] <- paste0(datainpath, "/", setting, "_", varname_fesom[file], 
-                                                   "_fesom_", year, "0101.nc")
-                        }
-                    }
+                        # xuezhu wangs 1st CORE2 spinups (w/out GIS)
+                        } else if (runid == "CORE2" || runid == "CORE2_ctl") {
+                            fnames[file] <- paste0(datainpath, "/CORE2.", year, ".", 
+                                                   typesuffix[file], diagsuffix[file], 
+                                                   snapshotsuffix[file], "nc")
+                        
+                        # claudis
+                        } else if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
+                                                      "Arc22_sub", "Arc22_sub_small"))) {
+                            if (runid == "Arc22_sub_daily" && dim_tag == "2D") {
+                                fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
+                                                       typesuffix[file], diagsuffix[file],
+                                                       snapshotsuffix[file], "sub.n2d.nc")
+                            } else {
+                                fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
+                                                       typesuffix[file], diagsuffix[file],
+                                                       snapshotsuffix[file], "sub.nc")
+                            }
 
-                # ocean-only
-                }  else if (!cpl_tag) {
-               
-                    if (any(runid == c("demo1"))) {
-                        fnames[file] <- paste0(datainpath, "/demo.", year, ".", 
-                                               typesuffix[file], diagsuffix[file], 
-                                               snapshotsuffix[file], "nc")
-
-                    # xuezhu wangs 1st CORE2 spinups (w/out GIS)
-                    } else if (runid == "CORE2" || runid == "CORE2_ctl") {
-                        fnames[file] <- paste0(datainpath, "/CORE2.", year, ".", 
-                                               typesuffix[file], diagsuffix[file], 
-                                               snapshotsuffix[file], "nc")
-                    
-                    # claudis
-                    } else if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
-                                                  "Arc22_sub", "Arc22_sub_small"))) {
-                        if (runid == "Arc22_sub_daily" && dim_tag == "2D") {
-                            fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
-                                                   typesuffix[file], diagsuffix[file],
-                                                   snapshotsuffix[file], "sub.n2d.nc")
+                        # default 
                         } else {
-                            fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
-                                                   typesuffix[file], diagsuffix[file],
-                                                   snapshotsuffix[file], "sub.nc")
+                            fnames[file] <- paste0(datainpath, "/", runid, ".", year, ".", 
+                                                   typesuffix[file], diagsuffix[file], 
+                                                   snapshotsuffix[file], "nc")
                         }
 
-                    # default 
-                    } else {
-                        fnames[file] <- paste0(datainpath, "/", runid, ".", year, ".", 
-                                               typesuffix[file], diagsuffix[file], 
-                                               snapshotsuffix[file], "nc")
-                    }
+                    } # if cpl_tag
 
-                } # if cpl_tag
+                } else if (fesom_version == "2.0") {
+                    
+                    if (cpl_tag) { # coupled fesom-echam
+
+                    }  else if (!cpl_tag) { # ocean-only
+                        # ssh.MPmes.1955.nc
+                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], 
+                                               ".", runid, ".", year, ".nc") 
+                    
+                    } # if cpl_tag
+
+                } else {
+                    stop("fesom_version = ", fesom_version, " not defined.")
+                
+                } # which fesom_version
 
             } # if fuser_tag
 
@@ -3376,7 +3400,7 @@ if (nfiles == 0) { # read data which are constant in time
             } else {
                 message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
                         " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
-                non_nod_dims <- which(regexpr("node", dim_names) == -1)
+                non_nod_dims <- which(regexpr("nod", dim_names) == -1)
                 if (length(non_nod_dims) > 0) {
                     non_nod_dims <- non_nod_dims[1]
                     message(indent, "Use dimension no. ", non_nod_dims, ": \"", dim_names[non_nod_dims], "\" for time ...")
@@ -3784,7 +3808,7 @@ if (nfiles == 0) { # read data which are constant in time
                     varsin <- ncdf.tools::infoNcdfVars(ncids[[var_nc_inds[file]]])
                     varsin <- unlist(varsin[which(varsin[,2] == varname_fesom[file]),])
                     if (length(varsin) == 0) {
-                        stop("Cannot find needed variable '", varname_fesom[file], "'. Abort.")
+                        stop("Cannot find needed variable '", varname_fesom[file], "'.")
                     }
                     if (F) { # old
                         dimcheck <- c(dimsin["length"][which(dimsin["id"] == as.numeric(varsin["dim.id.1"])),], # time dim
@@ -4329,12 +4353,20 @@ if (nfiles == 0) { # read data which are constant in time
                                 } # if total_rec == 0
                                
                                 ## interpolate on regular grid
+                                # progress bar of case: only one depth but more than 1 vars
+                                if (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) {
+
+                                }
                                 for (i in 1:dim(data_elem)[1]) { # nvars
                                     if (dim(data_elem)[1] > 1 && verbose > 2) {
                                         message(paste0(indent, "   var = ", 
                                                      dimnames(data_elem)[[1]][i], " ..."))
                                     }
+                                
+                                    # progress bar of case: only one depth and only 1 var but several nrecspf
+                                    if (dim(data_vert)[3] == 1 && dim(data_elem)[1] == 1 && dim(data_elem)[5] > 1) {
 
+                                    }
                                     for (j in 1:dim(data_elem)[5]) { # nrecspf
                                         if (dim(data_elem)[5] > 1 && verbose > 2) {
                                             message(paste0(indent, "      time = ",
@@ -4358,6 +4390,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                                   #datamat=drop(data_elem[i,,,,j])
                                                                   datamat=drop(tmp)
                                                                   ))
+                                        # todo: check differnet progress bars  
+
                                     } # for j nrecspf
                                 } # for i nvars
                                 rm(tmp)
@@ -5996,7 +6030,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ## ltm average starts here
         if (!rec_tag) {
             if (verbose > 1) {
-                message(paste0(indent, "Divide by 'total_rec'=", total_rec, " ..."))
+                message(paste0(indent, "Divide by total_rec=", total_rec, " ..."))
             }
             data_node_ltm <- data_node_ltm/total_rec
             if (sd_out) {
@@ -6014,7 +6048,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (leap_tag && any(is.leap(years))) {
                     nyears_leap <- length(which(is.leap(years)))
                     if (verbose > 1) {
-                        message(paste0(indent, "Divide rec ", nrecspf_leap, " by 'nyears_leap'=", nyears_leap, " ..."))
+                        message(paste0(indent, "Divide rec ", nrecspf_leap, " by nyears_leap=", nyears_leap, " ..."))
                     }
                     data_node_ltm[,,,nrecspf_leap] <- data_node_ltm[,,,nrecspf_leap]/nyears_leap # (var,node,time,depth)
                     if (sd_out) {
@@ -6026,7 +6060,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 }
 
                 if (verbose > 1) {
-                    message(paste0(indent, "Divide recs (1,...,", nrecspf, ") by 'nyears'=", nyears, " ..."))
+                    message(paste0(indent, "Divide recs (1,...,", nrecspf, ") by nyears=", nyears, " ..."))
                 }
                 data_node_ltm[,,,1:nrecspf] <- data_node_ltm[,,,1:nrecspf]/nyears
                 if (sd_out) {
@@ -6060,7 +6094,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
             if (verbose > 1) {
-                message(paste0(indent, "Divide by 'nrecspf'=", nrecspf, " ..."))
+                message(paste0(indent, "Divide by nrecspf=", nrecspf, " ..."))
             }
 
             # sum over all times of a year (e.g. months)

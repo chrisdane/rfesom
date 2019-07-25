@@ -31,16 +31,26 @@ typesuffix <- ""
 
 
 ## Overwrite defaults with variable-specific info
-if (varname == "tos") { 
+if (varname == "tos") { # fesom 1.4
     longname <- "Sea Surface Temperature"
     units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
     dim_tag <- "2D"
-    if (!cpl_tag) {
-        typesuffix <- "oce."
-        diagsuffix <- ""
-    }
     varname_fesom <- "tos"
+
+} else if (varname == "tso") { # fesom 1.4
+    longname <- "Sea Surface Temperature snapshot"
+    units_plot <- "degC"
+    var_label_plot <- expression(paste("SST snapshot [", degree, "C]"))
+    dim_tag <- "2D"
+    varname_fesom <- "tso"
+
+} else if (varname == "sst") { # fesom 2.0 
+    longname <- "Sea Surface Temperature"
+    units_plot <- "degC"
+    var_label_plot <- expression(paste("SST [", degree, "C]"))
+    dim_tag <- "2D"
+    varname_fesom <- "sst"
 
 } else if (any(varname == c("temp", "thetao"))) {
     longname <- "Potential Temperature"

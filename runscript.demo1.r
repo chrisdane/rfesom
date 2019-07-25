@@ -25,7 +25,9 @@ postpath <- "example_data/post" # where to save posprocessing output
 plotpath <- "example_data/plot" # where to save plots
 varname <- "ssh" # see namelist.var.r
 area <- "lsea" # see namelist.area.r
-    
+regular_transient_out <- T
+out_mode <- "area"
+
 ## Load plot options
 source("namelists/namelist.plot.r") 
 
