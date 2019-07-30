@@ -7,5 +7,6 @@
 !lib/
 !namelists/
 !README.md
+!.pre-push
 !runscript.demo1.r
 !myrunscript.r

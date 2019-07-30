@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# update README on pre-push via https://github.com/ekalinin/github-markdown-toc
+echo
+echo "***** run .git/hooks/pre-push *****"
+home=$(git rev-parse --show-toplevel)
+fname=$home/lib/functions/gh-md-toc
+if [[ -x $fname && -f $home/README.md ]]; then
+    echo "Run $fname ..."
+    $(dirname $fname)/./$(basename $fname) --insert $home/README.md
+else
+    echo "Cannot run $fname. Not found or not executable or $home/README.md does not exist."
+fi
+echo "***** finish .git/hooks/pre-push ****"
+echo
+exit 0
