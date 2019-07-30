@@ -7,7 +7,7 @@ Please note that the tool was only tested on linux so far and bugs do exist.
 <br/><br/>
 
 __Table of Contents__<br/>
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯<br/>
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 <!--ts-->
    * [How to install](#how-to-install)
    * [Demo](#demo)
