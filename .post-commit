@@ -9,7 +9,7 @@ echo "***** run .post-commit *****"
 if [ -a .commit ]; then
     rm .commit
     home=$(git rev-parse --show-toplevel)
-    git add $home/README
+    git add $home/README.md
     git commit --amend -C HEAD --no-verify
 fi
 
