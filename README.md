@@ -13,11 +13,12 @@ __Table of Contents__<br/>
    * [Demo](#demo)
    * [Help](#help)
       * [Getting R](#getting-r)
+      * [R syntax basics](#r-syntax-basics)
       * [Installing new R packages (or libraries)](#installing-new-r-packages-or-libraries)
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Mon Jul 22 13:47:44 CEST 2019 -->
+<!-- Added by: a270073, at: Tue Jul 30 10:35:48 CEST 2019 -->
 
 <!--te-->
 
