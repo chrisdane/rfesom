@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# 2nd part of
+# https://stackoverflow.com/questions/3284292/can-a-git-hook-automatically-add-files-to-the-commit
+# see .pre-commit
+
+echo
+echo "***** run .post-commit *****"
+if [ -a .commit ]; then
+    rm .commit
+    home=$(git rev-parse --show-toplevel)
+    git add $home/README
+    git commit --amend -C HEAD --no-verify
+fi
+
+echo "***** finish .post-commit ****"
+echo
+exit 0

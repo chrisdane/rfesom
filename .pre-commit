@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# todo:
+# ln -s ~/scripts/r/rfesom/.pre-commit ~/scripts/r/rfesom/.git/hooks/pre-commit
+# ln -s ~/scripts/r/rfesom/.post-commit ~/scripts/r/rfesom/.git/hooks/post-commit
+
+# update README on pre-push via https://github.com/ekalinin/github-markdown-toc
+echo
+echo "***** run .pre-commit *****"
+home=$(git rev-parse --show-toplevel)
+fname=$home/lib/functions/gh-md-toc
+if [[ -x $fname && -f $home/README.md ]]; then
+    echo "Run $fname ..."
+    $(dirname $fname)/./$(basename $fname) --insert $home/README.md
+    
+    # automatic git add after readme update
+    # https://stackoverflow.com/questions/3284292/can-a-git-hook-automatically-add-files-to-the-commit
+    # check .post-commit
+    touch .commit 
+else
+    echo "Cannot run $fname. Not found or not executable or $home/README.md does not exist."
+    exit 0
+fi
+
+echo "***** finish .pre-commit ****"
+echo
+exit 0
