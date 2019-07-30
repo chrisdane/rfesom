@@ -71,6 +71,12 @@ Within R, quit via
 q()
 ```
 
+## R syntax basics
+* R counts from 1, not zero
+* index syntax is `[]`, not `()`. I.e. `mat[1,2]` yields the 1st row and 2nd column element of the 2d-array `mat` 
+* T = TRUE, F = FALSE
+* 'not equal' condition is `!=`
+
 ## Installing new R packages (or libraries)
 
 Within R, you can install the `ncdf4` package with
