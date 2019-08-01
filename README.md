@@ -18,7 +18,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Thu Aug  1 16:23:45 CEST 2019 -->
+<!-- Added by: a270073, at: Thu Aug  1 16:29:36 CEST 2019 -->
 
 <!--te-->
 
@@ -122,12 +122,13 @@ module load gcc/4.8.2 r
 ```
 and rerun the package installation given above.
 
-In order to not run into this problem again and again, I defined the following alias in my `.bashrc`:
+In order to not to run into this problem again and again, I defined the following alias in my `.bashrc`:
 ```
 alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r netcdf_c ..."; module load gcc/4.8.2 r netcdf_c; echo "module list ..."; module list; R --quiet'
 ```
-Then, when I type 'R' in the terminal, the following appears:
+Then, running R includes the following:
 ```
+$ R
 module purge ...
 module load gcc/4.8.2 r netcdf_c ...
 module list ...
