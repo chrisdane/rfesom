@@ -6180,6 +6180,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (nfiles == 0) {
             if (!exists("data_node_ltm")) {
+                message(indent, "Prepare matrix ...")
                 data_node_ltm <- array(NA, 
                                        dim=c(1, 
                                              ifelse(dim_tag == "2D", nod2d_n, nod3d_n), 

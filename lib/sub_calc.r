@@ -3154,11 +3154,12 @@ sub_calc <- function(data_node) {
                                " to nod2d_n=", nod2d_n, " ..."))
             }
             
-            success <- load_package("Rcpp")
+            success <- load_package("Rcpp", indent=indent)
             if (!success) {
                 Rcpp_tag <- F
-                message(paste0(indent, "note: a much faster C version of the following task is available via the Rcpp package.\n",
-                               indent, "      Consider installing with install.packages(\"Rcpp\")"))
+                message(indent, "note: a much faster C version of the following task is available via the Rcpp package.\n",
+                        indent, "      Consider installing it with install.packages(\"Rcpp\").\n",
+                        indent, "      ", helppage)
             } else if (success) {
                 Rcpp_tag <- T
             }
