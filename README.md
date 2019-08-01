@@ -89,6 +89,8 @@ install.packages("ncdf4", lib="/my/own/package/directory")
 if you want to set a path where the package should be installed. The default package installation path is the first entry of `.libPaths()`, i.e. by default the argument `lib=.libPaths()[1]`.
 <br/>
 
+### Some strange library not found
+
 Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typical error looks like
 ```
 version `CXXABI_1.3.8' not found
@@ -122,7 +124,6 @@ In order to not run into this problem again and again, I defined the following a
 ```
 alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r ..."; module load gcc/4.8.2; module load r; echo "module list ..."; module list; R --quiet'
 ```
-
 
 # References  
 
