@@ -46,12 +46,13 @@ if (F) {
         meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom/p_mesh_MP/mesh"
         datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1"
         varname <- "temp"
-    } else if (F) {
+    } else if (T) {
         fesom_version <- "2.0"
         setting <- "fesom2"
         meshpath <- "/pf/a/a270061/prep_bound/PlioMIP2/fesom2/p_mesh_MP/mesh"
         datainpath <- "/mnt/lustre01/work/ab0246/a270061/out/partMesh/s1_fesom2"
-        varname <- "sst" 
+        varname <- "temp" #"sst"
+        recs <- 1
     }
     years <- 1948#:1955
 
