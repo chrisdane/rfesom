@@ -20,7 +20,7 @@ source(paste0(rfesompath, "/namelists/namelist.config.r"))
 # Define paths either relative to this runscript or absolute.
 # Any variable already defined in namelist.config.r can be overwritten here.
 if (F) {
-    source("../myrunids.r")
+    source("../../myrunids.r")
     years <- 1948:1955
     varname <- "temp"
 
