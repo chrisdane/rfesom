@@ -19,7 +19,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: mozi, at: Thu 01 Aug 2019 04:48:29 PM CEST -->
+<!-- Added by: a270073, at: Thu Aug  1 16:55:23 CEST 2019 -->
 
 <!--te-->
 
@@ -30,7 +30,7 @@ $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ```
 
 # Get R
-Install R or load it via `module`:
+[Download and install R from source](https://cran.r-project.org/) or load it via `module`:
 ```
 $ module load r # you can check the available modules with 'module avail' 
 ```
