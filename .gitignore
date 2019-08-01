@@ -2,10 +2,9 @@
 *
 
 ## except 
+!runscripts/
+!namelists/
+!lib/
 !example_data/mesh/
 !example_data/data/
-!lib/
-!namelists/
 !README.md
-!runscript.demo1.r
-!myrunscript.r

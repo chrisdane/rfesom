@@ -9,9 +9,10 @@
 
 ## clear work space and close possibly open plot devices
 rm(list=ls()); graphics.off()
+rfesompath <- system("git rev-parse --show-toplevel", intern=T) # default; change here if necessary
 
 ## Load default options
-source("namelists/namelist.config.r") 
+source(paste0(rfesompath, "/namelists/namelist.config.r")) 
 
 ###################### User input start ######################
 
@@ -71,13 +72,13 @@ if (F) {
 ###################### User input end ######################
 
 ## Load plot options
-source("namelists/namelist.plot.r") 
+source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
 
 ## Load variable options
-source("namelists/namelist.var.r") 
+source(paste0(rfesompath, "/namelists/namelist.var.r"))
 
 ## Load area and projection options
-source("namelists/namelist.area.r") 
+source(paste0(rfesompath, "/namelists/namelist.area.r"))
 
 ## Run rfesom
-source("lib/main_rfesom.r")
+source(paste0(rfesompath, "/lib/main_rfesom.r"))
