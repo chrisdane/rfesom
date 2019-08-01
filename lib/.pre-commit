@@ -1,10 +1,6 @@
 #!/bin/sh
 
-# todo:
-# ln -s ~/scripts/r/rfesom/.pre-commit ~/scripts/r/rfesom/.git/hooks/pre-commit
-# ln -s ~/scripts/r/rfesom/.post-commit ~/scripts/r/rfesom/.git/hooks/post-commit
-
-# update README on pre-push via https://github.com/ekalinin/github-markdown-toc
+# update README on `git commit` via https://github.com/ekalinin/github-markdown-toc
 echo
 echo "***** run .pre-commit *****"
 home=$(git rev-parse --show-toplevel)
