@@ -17,7 +17,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Thu Aug  1 14:52:33 CEST 2019 -->
+<!-- Added by: a270073, at: Thu Aug  1 15:01:08 CEST 2019 -->
 
 <!--te-->
 
@@ -123,7 +123,15 @@ and rerun the package installation given above.
 
 In order to not run into this problem again and again, I defined the following alias in my `.bashrc`:
 ```
-alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r ..."; module load gcc/4.8.2; module load r; echo "module list ..."; module list; R --quiet'
+alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r netcdf_c ..."; module load gcc/4.8.2 r netcdf_c; echo "module list ..."; module list; R --quiet'
+```
+Then, when I type 'R' in the terminal, the following appears:
+```
+module purge ...
+module load gcc/4.8.2 r netcdf_c ...
+module list ...
+Currently Loaded Modulefiles:
+  1) gcc/4.8.2              2) r/3.5.3                3) netcdf_c/4.3.2-gcc48
 ```
 
 # References  
