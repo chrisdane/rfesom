@@ -11,7 +11,7 @@ home=$(git rev-parse --show-toplevel)
 fname=$home/lib/functions/gh-md-toc
 if [[ -x $fname && -f $home/README.md ]]; then
     echo "Run $fname ..."
-    $(dirname $fname)/./$(basename $fname) --insert $home/README.md
+    $(dirname $fname)/./$(basename $fname) --noback-insert $home/README.md
     
     # automatic git add after readme update
     # https://stackoverflow.com/questions/3284292/can-a-git-hook-automatically-add-files-to-the-commit
