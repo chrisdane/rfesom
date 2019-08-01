@@ -15,10 +15,11 @@ __Table of Contents__<br/>
       * [R syntax basics](#r-syntax-basics)
       * [Installing new R packages (= libraries)](#installing-new-r-packages--libraries)
          * [Some strange library not found](#some-strange-library-not-found)
+   * [Contribute](#contribute)
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Thu Aug  1 16:29:36 CEST 2019 -->
+<!-- Added by: mozi, at: Thu 01 Aug 2019 04:48:29 PM CEST -->
 
 <!--te-->
 
@@ -140,9 +141,18 @@ Currently Loaded Modulefiles:
 Run `lib././set_links.sh` to set git hook links for automatic `README.md` updates on `git commit`:
 ```
 $ cat lib/set_links.sh
+#!/bin/bash
 
+echo
+echo "******** run set_links.sh **********"
+home=$(git rev-parse --show-toplevel)
+echo "ln -s $home/lib/.pre-commit $home/.git/hooks/pre-commit"
+ln -s $home/lib/.pre-commit $home/.git/hooks/pre-commit
+echo "ln -s $home/lib/.post-commit $home/.git/hooks/post-commit"
+ln -s $home/lib/.post-commit $home/.git/hooks/post-commit
+echo "******** finish set_links.sh **********"
+echo
 ```
-
 
 # References  
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.
