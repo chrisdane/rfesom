@@ -19,7 +19,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Thu Aug  1 16:56:35 CEST 2019 -->
+<!-- Added by: a270073, at: Thu Aug  1 16:59:03 CEST 2019 -->
 
 <!--te-->
 
@@ -138,7 +138,7 @@ Currently Loaded Modulefiles:
 ```
 
 # Contribute
-Run `lib././set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit`:
+Run `$ lib././set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit`:
 ```
 $ cat lib/set_links.sh
 #!/bin/bash
