@@ -13,16 +13,14 @@ rm(list=ls()); graphics.off()
 ## Load default options
 source("namelists/namelist.config.r") 
 
-## This is the demo1 runscript
-runid <- "demo1" # in filenames of fesom data
+## This is the demo runscript
+runid <- "demo" # in filenames of fesom data
 cpl_tag <- F # demodata is from ocean-only experiment
-meshpath <- "example_data/mesh/demomesh" # *.out files
+meshpath <- "example_data/mesh" # *.out files
 meshid <- "demomesh" # name of the mesh; basename(meshpath) if not given
 rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
 cycl <- F # demomesh is not global
 datainpath <- "example_data/data" # fesom data
-postpath <- "example_data/post" # where to save posprocessing output
-plotpath <- "example_data/plot" # where to save plots
 varname <- "ssh" # see namelist.var.r
 area <- "lsea" # see namelist.area.r
 regular_transient_out <- T
