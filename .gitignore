@@ -7,7 +7,5 @@
 !lib/
 !namelists/
 !README.md
-!.pre-commit
-!.post-commit
 !runscript.demo1.r
 !myrunscript.r

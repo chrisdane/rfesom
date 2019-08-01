@@ -136,6 +136,14 @@ Currently Loaded Modulefiles:
   1) gcc/4.8.2              2) r/3.5.3                3) netcdf_c/4.3.2-gcc48
 ```
 
+# Contribute
+Run `lib././set_links.sh` to set git hook links for automatic `README.md` updates on `git commit`:
+```
+$ cat lib/set_links.sh
+
+```
+
+
 # References  
 Danilov, S., G. Kivman, and J. Schröter, 2004: A finite-element ocean model: principles and evaluation. Ocean Modelling, 6 (2), 125–150, doi:10.1016/S1463-5003(02)00063-X.
 
