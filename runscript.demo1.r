@@ -17,7 +17,7 @@ source("namelists/namelist.config.r")
 runid <- "demo" # in filenames of fesom data
 cpl_tag <- F # demodata is from ocean-only experiment
 meshpath <- "example_data/mesh" # *.out files
-meshid <- "demomesh" # name of the mesh; basename(meshpath) if not given
+meshid <- "demomesh" # name of the mesh; used for saving mesh-related things like interp matrix
 rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
 cycl <- F # demomesh is not global
 datainpath <- "example_data/data" # fesom data
