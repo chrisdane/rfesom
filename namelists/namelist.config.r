@@ -85,7 +85,7 @@ integrate_depth <- F # if F, average between depths[1] and depths[2]
 # If user provides own fesom1.4 file on irregular grid via 
 # 'fnames_user' (in the runscript), 'years' and 'output' are ignored in the following. 
 # Instead, the 'recs' of the time dimension of 'fnames_user' will be used.
-years         <- 2009 # annual FESOM output files, woa13 overlap 65-04
+years         <- 1948 # annual FESOM output files, woa13 overlap 65-04
 recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
                       # e.g. c(1,2,12) for DJF if output=="monthly"
 output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
