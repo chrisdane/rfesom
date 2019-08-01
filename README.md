@@ -13,10 +13,11 @@ __Table of Contents__<br/>
       * [Getting R](#getting-r)
       * [R syntax basics](#r-syntax-basics)
       * [Installing new R packages (or libraries)](#installing-new-r-packages-or-libraries)
+         * [Some strange library not found](#some-strange-library-not-found)
    * [References](#references)
    * [Available variables](#available-variables)
 
-<!-- Added by: a270073, at: Thu Aug  1 14:37:24 CEST 2019 -->
+<!-- Added by: a270073, at: Thu Aug  1 14:52:33 CEST 2019 -->
 
 <!--te-->
 
