@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Sat Aug  3 01:24:58 CEST 2019 -->
+<!-- Added by: mozi, at: Sat 03 Aug 2019 01:34:09 AM CEST -->
 
 <!--te-->
 
@@ -70,7 +70,7 @@ variables:
 ```
 
 ## Demo2
-Saves 1) 1948 mean (ltm) and 2) 12 (monthly) records and 3) standard deviation (sd) of ssh on regular coordinates as netcdf and make a spatial plot of the temporal mean and sd fields.
+Saves 1) 1948 mean, 2) standard deviation (sd) and 3) 12 (monthly) records of ssh on regular coordinates as netcdf and saves a spatial plot of the temporal mean and sd fields.
 ```
 $ ncdump -h demo__monthly_ssh_ltm_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250.nc
 dimensions:
@@ -83,7 +83,6 @@ dimensions:
                ssh_sd:units = "m" ;
                ssh_sd:_FillValue = NaN ;
 $ ncdump -h demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250.nc 
-netcdf demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250 {
 dimensions:
         time = 12 ;
         lon = 96 ;
@@ -136,7 +135,7 @@ Using this tool with your own modified runscript works best if
 * R counts from 1, not zero
 * index syntax is `[]`, not `()`. So `mat2[1,2]` yields the 1st row and 2nd column element of the 2d-array `mat2` and `mat3[1:2,,c(4,6,8)]` all entries of the 2nd dimension of the 3d-array `mat3` in the 1st and 2nd row and the 4th, 6th and 8th entries of the 3rd dimension. 
 * T = TRUE, F = FALSE
-* official assignment symbol is `<-`, e.g. `a <- 1` (`a = 1` works as well)
+* variable assignment symbol is `<-`, e.g. `a <- 1` (`a = 1` works as well)
 * 'not equal' condition is `!=`
 
 ## Installing new R packages (= libraries)
