@@ -18,12 +18,13 @@ __Table of Contents__<br/>
    * [Help](#help)
       * [R syntax basics](#r-syntax-basics)
       * [Installing new R packages (= libraries)](#installing-new-r-packages--libraries)
-         * [Some strange library not found](#some-strange-library-not-found)
+         * [Missing header or config files](#missing-header-or-config-files)
+         * [Unable to load shared library](#unable-to-load-shared-library)
    * [Contribute](#contribute)
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Sat 03 Aug 2019 12:46:27 AM CEST -->
+<!-- Added by: mozi, at: Sat 03 Aug 2019 01:14:42 AM CEST -->
 
 <!--te-->
 
@@ -64,8 +65,8 @@ dimensions:
         lat = 48 ;
 variables:
         double resolutionkm(lat, lon) ;
-                resolutionkm:units = "km" ;
-                resolutionkm:_FillValue = NaN ;
+               resolutionkm:units = "km" ;
+               resolutionkm:_FillValue = NaN ;
 ```
 
 ## Demo2
@@ -76,11 +77,11 @@ dimensions:
         lon = 96 ;
         lat = 48 ;
         double ssh(lat, lon) ;
-                ssh:units = "m" ;
-                ssh:_FillValue = NaN ;
+               ssh:units = "m" ;
+               ssh:_FillValue = NaN ;
         double ssh_sd(lat, lon) ;
-                ssh_sd:units = "m" ;
-                ssh_sd:_FillValue = NaN ;
+               ssh_sd:units = "m" ;
+               ssh_sd:_FillValue = NaN ;
 $ ncdump -h demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250.nc 
 netcdf demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250 {
 dimensions:
@@ -89,9 +90,9 @@ dimensions:
         lat = 48 ;
 variables:
         double ssh(time, lat, lon) ;
-                ssh:units = "m" ;
-                ssh:_FillValue = NaN ;
-                ssh:long_name = "Sea Surface Height" ;
+               ssh:units = "m" ;
+               ssh:_FillValue = NaN ;
+               ssh:long_name = "Sea Surface Height" ;
 ```
 
 ## Demo3
@@ -102,9 +103,9 @@ dimensions:
         time = 12 ;
 variables:
         double temp_mean(time) ;
-                temp_mean:units = "degC" ;
-                temp_mean:_FillValue = NaN ;
-                temp_mean:long_name = "Potential Temperature" ;
+               temp_mean:units = "degC" ;
+               temp_mean:_FillValue = NaN ;
+               temp_mean:long_name = "Potential Temperature" ;
 ```
 
 ## Demo4
@@ -116,9 +117,9 @@ dimensions:
         depth = 31 ;
 variables:
         double temp_depth(depth, time) ;
-                temp_depth:units = "degC" ;
-                temp_depth:_FillValue = NaN ;
-                temp_depth:long_name = "Potential Temperature" ;
+               temp_depth:units = "degC" ;
+               temp_depth:_FillValue = NaN ;
+               temp_depth:long_name = "Potential Temperature" ;
 ```
 
 # Modify the runscript
@@ -149,10 +150,30 @@ install.packages("ncdf4", lib="/my/own/package/directory")
 ```
 if you want to set a path where the package should be installed. The default package installation path is the first entry of `.libPaths()`, i.e. by default the argument `lib=.libPaths()[1]`.
 
-### Some strange library not found
+### Missing header or config files
+Some packages may need special header files or libraries that can be provided in an active R session as follows:
+* package: rgdal 
+```
+GDAL_ROOT="/sw/rhel6-x64/gdal-2.1.3-gcc48"
+PROJ4_ROOT="/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
+LDFLAGS=paste0("-Wl,-rpath,", GDAL_ROOT, "/lib:", PROJ4_ROOT, "/lib")
+install.packages("rgdal", configure.args=paste0("--with-gdal-config=", GDAL_ROOT, "/bin/gdal-config --with-proj-include=", PROJ4_ROOT, "/include --with-proj-lib=", PROJ4_ROOT, "/lib PKG_LIBS=", LDFLAGS))
+```
+
+* pakage: rgeos
+```
+export LD_LIBRARY_PATH=/sw/rhel6-x64/geos-3.6.1-gcc48/lib/:$LD_LIBRARY_PATH
+```
+
+* package: units
+```
+export LD_LIBRARY_PATH=/sw/rhel6-x64/util/udunits-2.2.26-gcc64/lib:$LD_LIBRARY_PATH
+```
+
+### Unable to load shared library
 Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typical error looks like
 ```
-version `CXXABI_1.3.8' not found
+libstdc++.so.6: version `CXXABI_1.3.8' not found
 ```
 
 A solution to this is as follows. First, identify the R executable. Within R, run
