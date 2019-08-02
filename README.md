@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Sat 03 Aug 2019 01:14:42 AM CEST -->
+<!-- Added by: mozi, at: Sat 03 Aug 2019 01:23:34 AM CEST -->
 
 <!--te-->
 
@@ -35,7 +35,7 @@ $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ```
 
 # Get R
-[Download and install R from source](https://cran.r-project.org/) or load it via `module`:
+[Download and install R](https://cran.r-project.org/) or load it via `module`:
 ```
 $ module load r # you can check the available modules with 'module avail' 
 ```
@@ -123,7 +123,7 @@ variables:
 ```
 
 # Modify the runscript
-Different postprocessing options are available, see namelist.config.r:
+Different postprocessing options for different variables (see appendix here and `namelist.var.r`) are available, see `namelist.config.r`:
 todo: insert table
 
 Using this tool with your own modified runscript works best if 
@@ -158,6 +158,13 @@ GDAL_ROOT="/sw/rhel6-x64/gdal-2.1.3-gcc48"
 PROJ4_ROOT="/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
 LDFLAGS=paste0("-Wl,-rpath,", GDAL_ROOT, "/lib:", PROJ4_ROOT, "/lib")
 install.packages("rgdal", configure.args=paste0("--with-gdal-config=", GDAL_ROOT, "/bin/gdal-config --with-proj-include=", PROJ4_ROOT, "/include --with-proj-lib=", PROJ4_ROOT, "/lib PKG_LIBS=", LDFLAGS))
+```
+
+* package: proj4
+```
+PROJ4_ROOT="/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
+LDFLAGS=paste0("-Wl,-rpath,", GDAL_ROOT, "/lib")
+install.packages("proj4", configure.args=paste0("--with-proj-include=", PROJ4_ROOT, "/include --with-proj-lib=", PROJ4_ROOT, "/lib PKG_LIBS=", LDFLAGS))
 ```
 
 * pakage: rgeos
