@@ -10,6 +10,10 @@ __Table of Contents__<br/>
    * [Install](#install)
    * [Get R](#get-r)
    * [Demo](#demo)
+      * [Demo1](#demo1)
+      * [Demo2](#demo2)
+      * [Demo3](#demo3)
+      * [Demo4](#demo4)
    * [Modify the runscript](#modify-the-runscript)
    * [Help](#help)
       * [R syntax basics](#r-syntax-basics)
@@ -19,7 +23,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Sat 03 Aug 2019 12:32:15 AM CEST -->
+<!-- Added by: mozi, at: Sat 03 Aug 2019 12:46:27 AM CEST -->
 
 <!--te-->
 
@@ -51,12 +55,79 @@ $ nohup Rscript runscripts/demo.run.r > demo.run.log 2>&1 &
 ```
 so that the program runs in background and you can close the connection when running a long job.
 
-Different files are produced depending on the the chosen configs. See further info in the `demo.run.r`.
+## Demo1
+Saves fesoms mesh resolution in km on regular coordinates as netcdf and saves a spatial plot:
+```
+$ ncdump -h demo__resolutionkm_ltm_area_lsea_rectangular_regular_dx0.250_dy0.250.nc 
+dimensions:
+        lon = 96 ;
+        lat = 48 ;
+variables:
+        double resolutionkm(lat, lon) ;
+                resolutionkm:units = "km" ;
+                resolutionkm:_FillValue = NaN ;
+```
+
+## Demo2
+Saves 1) 1948 mean (ltm) and 2) 12 (monthly) records and 3) standard deviation (sd) of ssh on regular coordinates as netcdf and make a spatial plot of the temporal mean and sd fields.
+```
+$ ncdump -h demo__monthly_ssh_ltm_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250.nc
+dimensions:
+        lon = 96 ;
+        lat = 48 ;
+        double ssh(lat, lon) ;
+                ssh:units = "m" ;
+                ssh:_FillValue = NaN ;
+        double ssh_sd(lat, lon) ;
+                ssh_sd:units = "m" ;
+                ssh_sd:_FillValue = NaN ;
+$ ncdump -h demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250.nc 
+netcdf demo__monthly_ssh_transient_area_Jan-Dec_1948_mean_lsea_rectangular_regular_dx0.250_dy0.250 {
+dimensions:
+        time = 12 ;
+        lon = 96 ;
+        lat = 48 ;
+variables:
+        double ssh(time, lat, lon) ;
+                ssh:units = "m" ;
+                ssh:_FillValue = NaN ;
+                ssh:long_name = "Sea Surface Height" ;
+```
+
+## Demo3
+Saves potential temperature field mean in area "lsea" averaged between 0 and 100 meters depth as netcdf and saves a spatial plot of the temporal and depth mean.
+```
+$ ncdump -h demo__monthly_temp_transient_mean_Jan-Dec_1948_mean_0-100m_lsea_rectangular.nc
+dimensions:
+        time = 12 ;
+variables:
+        double temp_mean(time) ;
+                temp_mean:units = "degC" ;
+                temp_mean:_FillValue = NaN ;
+                temp_mean:long_name = "Potential Temperature" ;
+```
+
+## Demo4
+Saves potential temperature field mean in area "lsea" as a function of depth as netcdf and saves a spatial plot of the temporal and depth mean.
+```
+$ ncdump -h demo__monthly_temp_transient_depth_Jan-Dec_1948_mean_0-3600m_lsea_rectangular.nc
+dimensions:
+        time = 12 ;
+        depth = 31 ;
+variables:
+        double temp_depth(depth, time) ;
+                temp_depth:units = "degC" ;
+                temp_depth:_FillValue = NaN ;
+                temp_depth:long_name = "Potential Temperature" ;
+```
 
 # Modify the runscript
+Different postprocessing options are available, see namelist.config.r:
+todo: insert table
+
 Using this tool with your own modified runscript works best if 
-* You make a copy of `runscripts/myrunscript.r` into e.g. `rfesom` or whereever you want
-* In doing so, any future `git pull`s will not change your individualized runscript
+* you make a copy of `runscripts/myrunscript.r` into e.g. `rfesom` or whereever you want
+* by that, any future `git pull`s will not change your individualized runscript
 
 # Help
 
