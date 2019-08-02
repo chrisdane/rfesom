@@ -19,7 +19,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Thu 01 Aug 2019 10:37:42 PM CEST -->
+<!-- Added by: mozi, at: Sat 03 Aug 2019 12:32:15 AM CEST -->
 
 <!--te-->
 
@@ -34,44 +34,29 @@ $ git clone --recurse-submodules https://github.com/chrisdane/rfesom.git
 ```
 $ module load r # you can check the available modules with 'module avail' 
 ```
-From terminal, start R with
-```
-$ R
-```
-Within R, quit via
-```
-q()
-```
 
 # Demo
 Go to `cd rfesom` and run either in an active R session with
 ```
 $ R # from terminal
-source("runscript.demo1.r") # from within R
+source("runscripts/demo.run.r") # from within R
 ```
 or from terminal with 
 ```
-$ Rcript runscript.demo1.r
+$ Rcript runscripts/demo.run.r
 ``` 
 or 
 ```
-$ nohup Rscript runscript.demo1.r > runscript.demo1.log 2>&1 &
+$ nohup Rscript runscripts/demo.run.r > demo.run.log 2>&1 &
 ```
 so that the program runs in background and you can close the connection when running a long job.
 
-Three files are produced:
-1. \*transient\*.nc
-2. \*ltm\*.nc
-3. \*.png
-
-The 1st file contains the sea surface height (SSH) on a regular (longitude, latitude) grid with a cell size of 1/4° (see `regular_dx` and `regular_dy` in `namelists/rfesom.namelist.r`) and with 12 time records (12 months of the year 2009). This file was produced because `varname="ssh"` (check `namelists/rfesom.vardef.r`), `regular_anim_output=T` (T/F for TRUE/FALSE) and `anim_mode="area"`. The "anim" implies that the the post processed FESOM data shall have a time dimension ("transient"). `recs=1:12` and `years=2009` select the time range and the spatial region `area="lsea"` is defined in `namelists/refesom.areadef.r`. Since SSH is a 2D variable, the `depths` argument is ignored.
-
-The 2nd file contains the same as the 1st but the temporal average over the 12 months of the year 2009, i.e. there is no time dimension in the output. This file was produced because `regular_ltm_output=T` ("ltm" for time mean).
-
-The 3rd file is a .png plot (`plot_file=".png"`) of the data of the 2nd file and was produced because `plot_map=T`. Note that `rfesom` only plots temporal averaged data if the selected time period is longer than one 1.
+Different files are produced depending on the the chosen configs. See further info in the `demo.run.r`.
 
 # Modify the runscript
-TODO
+Using this tool with your own modified runscript works best if 
+* You make a copy of `runscripts/myrunscript.r` into e.g. `rfesom` or whereever you want
+* In doing so, any future `git pull`s will not change your individualized runscript
 
 # Help
 
@@ -79,6 +64,7 @@ TODO
 * R counts from 1, not zero
 * index syntax is `[]`, not `()`. So `mat2[1,2]` yields the 1st row and 2nd column element of the 2d-array `mat2` and `mat3[1:2,,c(4,6,8)]` all entries of the 2nd dimension of the 3d-array `mat3` in the 1st and 2nd row and the 4th, 6th and 8th entries of the 3rd dimension. 
 * T = TRUE, F = FALSE
+* official assignment symbol is `<-`, e.g. `a <- 1` (`a = 1` works as well)
 * 'not equal' condition is `!=`
 
 ## Installing new R packages (= libraries)
@@ -91,7 +77,6 @@ or with
 install.packages("ncdf4", lib="/my/own/package/directory")
 ```
 if you want to set a path where the package should be installed. The default package installation path is the first entry of `.libPaths()`, i.e. by default the argument `lib=.libPaths()[1]`.
-<br/>
 
 ### Some strange library not found
 Package installation from source requires the same compiler that was used for building R. On a supercomputer, this sometimes raises a problem if compilers and/or R were loaded via the default `module load gcc r` command, which loads the current default version numbers which are not neccesarily compatible. Then, running the command given above for installing a package, a typical error looks like
@@ -125,16 +110,16 @@ and rerun the package installation given above.
 
 In order to not to run into this problem again and again, I defined the following alias in my `.bashrc`:
 ```
-alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r netcdf_c ..."; module load gcc/4.8.2 r netcdf_c; echo "module list ..."; module list; R --quiet'
+alias R='echo "module purge ..."; module purge; echo "module load gcc/4.8.2 r ..."; module load gcc/4.8.2 r; echo "module list ..."; module list; R --quiet'
 ```
 Then, running R includes the following:
 ```
 $ R
 module purge ...
-module load gcc/4.8.2 r netcdf_c ...
+module load gcc/4.8.2 r ...
 module list ...
 Currently Loaded Modulefiles:
-  1) gcc/4.8.2              2) r/3.5.3                3) netcdf_c/4.3.2-gcc48
+  1) gcc/4.8.2              2) r/3.5.3
 ```
 
 # Contribute

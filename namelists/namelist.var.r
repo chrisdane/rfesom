@@ -4670,15 +4670,13 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "resolutionkm") {
     longname <- "Resolution"
     subtitle <- ""
+    units_out <- "km"
     power_out <- -3 ## resolution unit is 'mesh_dist_unit' # m --> km
     multfac_out <- base^power_out
-    units_out <- "km"
     var_label_plot <- "Mesh Resolution [km]"
-    var_label_plot_roundfac <- 0
+    units_plot <- "km"
     dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
-    rotate_inds <- F
-    vec <- F
     axis.addzlims <- T # show min and max resolution in colorbar 
     #resolutionkm_cols <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
     #                          "seagreen2", "palegreen2", "gold2", "darkorange", "orangered", "red"))

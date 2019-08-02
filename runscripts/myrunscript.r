@@ -1,6 +1,8 @@
-##########################
-## runscript for rfesom ##
-##########################
+#########################################
+## runscript for rfesom                ##
+## https://github.com/chrisdane/rfesom ##
+#########################################
+
 # hints:
 # R counts from 1, not zero
 # index syntax in R is [], not ()
@@ -16,7 +18,6 @@ source(paste0(rfesompath, "/namelists/namelist.config.r"))
 
 ###################### User input start ######################
 
-## Define mesh & experiment
 # Define paths either relative to this runscript or absolute.
 # Any variable already defined in namelist.config.r can be overwritten here.
 if (F) {

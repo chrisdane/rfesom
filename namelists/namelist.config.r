@@ -100,7 +100,7 @@ all_recs      <- T # read all records of one fesom output file if possible
 # ltm (long term mean) -> output has no time dimension)
 # transient -> output has time dimension
 ltm_out               <- F # irregular time-average output
-regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
+regular_ltm_out       <- F # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
 regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "area" # what kind of ouptut (see table at the bottom) 
@@ -113,41 +113,45 @@ csec_ltm_out          <- F # save cross section ltm if out_mode == "csec_mean" o
 
 
 ###############################################################################################
-# Output table                  what is saved               netcdf output dimensions
-#                               x=lons of 'area',           [number of dimension(s): length(s) 
-#                               y=lats of 'area',            of the dimension(s)]
-#                               z='depths'
-#                               t=time
+#
+# Output table              what is saved               netcdf output dimensions
+#                           x=lons of 'area',           [number of dimension(s): length(s) 
+#                           y=lats of 'area',            of the dimension(s)]
+#                           z='depths'
+#                           t=time
+#
 # =============================================================================================
-# ltm output if:
-#       ltm_out         = T     t_mean( z_*mean/int*(X) )   2: nnodes2D 
-#       regular_ltm_out = T     t_mean( z_*mean/int*(X) )   2: nlon x nlat (regular)
 #
-# transient output if:
-#       transient_out   = T
+#   if ltm_out              t_mean( z_*mean/int*(X) )   2: nnodes2D 
+#   if regular_ltm_out      t_mean( z_*mean/int*(X) )   2: nlon x nlat (regular)
 #
-# output modes:
-#   out_mode = 
-#       "mean"                  xy_mean( z_*mean/int*(X) )  1: ntime
-#       "meanint"               xy_int( z_*mean/int*(X) )   1: ntime
-#       "sum"                   xy_sum( z_*mean/int*(X) )   1: ntime
-#       "max"                   xy_max( z_*mean/int*(X) )   1: ntime
-#       "max3D"                 xyz_max(X)                  1: ntime
-#       "min"                   xy_min( z_*mean/int*(X) )   1: ntime
-#       "depth"                 xy_mean(X)                  2: ndepth x ntime
-#       "depthint"              xy_int(X)                   2: ndepth x ntime
-#       "depthmax"              xy_max(X)                   2: ndepth x ntime
-#       "area"                  z_*mean/int*(X)             3: nlon x nlat x ntime (regular_transient_out==T)
-#       "area"                  z_*mean/int*(X)             3: nnodes2D x ntime (transient_out==T && output_type == "nodes")
-#       "area"                  z_*mean/int*(X)             3: 3 x nelem2D x ntime (transient_out==T && output_type == "elems")
-#       "areadepth"             X                           4: nlon x nlat x ndepth x ntime (regular_transient_out==T)
-#       "csec_mean"             crossection_mean(X)         1: ntime
-#       "csec_depth"            crossection(X)              3: npoint_crossection x ndepth x ntime
-#       "moc_depth"             moc as in fpost1.4          3: nlat x ndepth x ntime
+#   if transient_out 
+#       if out_mode == 
+#           "mean"          xy_mean( z_*mean/int*(X) )  1: ntime
+#           "meanint"       xy_int( z_*mean/int*(X) )   1: ntime
+#           "sum"           xy_sum( z_*mean/int*(X) )   1: ntime
+#           "max"           xy_max( z_*mean/int*(X) )   1: ntime
+#           "max3D"         xyz_max(X)                  1: ntime
+#           "min"           xy_min( z_*mean/int*(X) )   1: ntime
+#           "depth"         xy_mean(X)                  2: ndepth x ntime
+#           "depthint"      xy_int(X)                   2: ndepth x ntime
+#           "depthmax"      xy_max(X)                   2: ndepth x ntime
+#           "area"          z_*mean/int*(X)             3: nnodes2D x ntime (if output_type == "nodes")
+#           "area"          z_*mean/int*(X)             3: 3 x nelem2D x ntime (if output_type == "elems")
+#           "csec_mean"     crossection_mean(X)         1: ntime
+#           "csec_depth"    crossection(X)              3: npoint_crossection x ndepth x ntime
+#           "moc_depth"     moc as in fpost1.4          3: nlat x ndepth x ntime
+#      
+#   else if regular_transient_out
+#       if out_mode == 
+#           "area"          z_*mean/int*(X)             3: nlon x nlat x ntime
+#           "areadepth"     X                           4: nlon x nlat x ndepth x ntime
+#           
 # =============================================================================================
 #
 # Note: z_*mean/int* means that either the vertical *mean* or *integral* is calculated
-#       depending on how "integrate_depth" is defined (FALSE for depth mean, TRUE for depth integral).
+#       between depths[1] and depths[2] depending on how "integrate_depth" is defined 
+#       (F for depth mean, T for depth integral).
 #
 ###############################################################################################
 
