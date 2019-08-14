@@ -16,7 +16,7 @@ multfac_out <- base^power_out # -> 10^0 = 1
 power_plot <- 0
 multfac_plot <- base^power_plot # for nicer colorbar range
 var_label_plot <- varname
-subtitle <- "" # for plot
+subtitle <- "" # plotted and attached as nc description if not ""
 horiz_deriv_tag <- F
 rotate_inds <- F
 vec <- F
@@ -142,7 +142,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "potdens") {
     longname <- "Potential Density"
-    subtitle <- ""
     units_out <- "kg m-3"
     var_label_plot <- expression(paste(sigma[theta], " [kg m"^"-3","]"))
     multfac_out <- 1
@@ -161,7 +160,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "insitub") {
     longname <- "In situ Buoyancy"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     units_out <- paste0("m s-2")
@@ -207,7 +205,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "potb") {
     longname <- "Potential Buoyancy"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     units_out <- paste0("m s-2")
@@ -253,7 +250,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "u") {
     longname <- "Zonal Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Zonal Velocity u [m s"^"-1","]"))
     multfac_out <- 1
@@ -267,7 +263,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "v") {
     longname <- "Meridional Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Meridional Velocity v [m s"^"-1","]"))
     multfac_out <- 1
@@ -303,7 +298,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uu") {
     longname <- "Zonal Velocity Squared"
-    subtitle <- ""
     units_out <- "m2 s-2"
     var_label_plot <- expression(paste("u"^"2", " [m"^"2", " s"^"-2","]"))
     multfac_out <- 1
@@ -322,7 +316,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "u_u") {
     longname <- "Mean Zonal Velocity Squared"
-    subtitle <- ""
     units_out <- "m2 s-2"
     var_label_plot <- expression(paste(bar("u")^"2", " [m"^"2", " s"^"-2","]"))
     multfac_out <- 1
@@ -341,7 +334,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vv") {
     longname <- "Meridional Velocity Squared"
-    subtitle <- ""
     units_out <- "m2 s-2"
     var_label_plot <- expression(paste("v"^"2", " [m"^"2", " s"^"-2","]"))
     multfac_out <- 1
@@ -360,7 +352,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "v_v") {
     longname <- "Mean Meridional Velocity Squared"
-    subtitle <- ""
     units_out <- "m2 s-2"
     var_label_plot <- expression(paste(bar("v")^"2", " [m"^"2", " s"^"-2","]"))
     multfac_out <- 1
@@ -379,7 +370,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "u_geo") {
     longname <- "Zonal Geostrophic Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Zonal Geostrophic Velocity u", ""[geo], " [m s"^"-1","]"))
     multfac_out <- 1
@@ -393,7 +383,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "v_geo") {
     longname <- "Meridional Geostrophic Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Meridional Geostrophic Velocity v", ""[geo], " [m s"^"-1","]"))
     multfac_out <- 1
@@ -425,7 +414,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uveddy") {
     longname <- "Horizontal Eddy Momentum Flux"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     if (power_out != 0) {
@@ -451,7 +439,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "usgs") {
     longname <- "SGS Zonal Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Zonal Velocity [m"," s"^"-1","]"))
     multfac_out <- 1
@@ -465,7 +452,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vsgs") {
     longname <- "SGS Meridional Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Meridional Velocity [m"," s"^"-1","]"))
     multfac_out <- 1
@@ -479,7 +465,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvsgs") {
     longname <- "Horizontal SGS Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Horizontal Velocity [m"," s"^"-1","]"))
     multfac_out <- 1
@@ -493,7 +478,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "utemp") {
     longname <- "Mean Zonal Advective Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste(bar(u), " ", bar(T), " [°C ",
                                      var1, " ", var2^-1, "]"),
@@ -509,7 +493,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vtemp") {
     longname <- "Mean Meridional Advective Flux of Temperature"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste(bar(v), " ", bar(T), " [°C ", 
                                      var1, " ", var2^-1, "]"),
@@ -525,7 +508,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvtemp") {
     longname <- "Mean Horizontal Advective Flux Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(T), "| [°C ", 
                                      var1, " ", var2^-1, "]"),
@@ -541,7 +523,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvtemptot") {
     longname <- "Total Horizontal Advective Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste("|", bar(paste(bold(u)[h], "T")), "| [°C ",
                                      var1, " ", var2^-1, "]"),
@@ -557,7 +538,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uteddy") {
     longname <- "Eddy Zonal Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste(bar(paste("u'T'")), " [°C ",
                                      var1, " ", var2^-1, "]"),
@@ -573,7 +553,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vteddy") {
     longname <- "Eddy Meridional Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- substitute(paste(bar(paste("v'T'")), " [°C ",
                                      var1, " ", var2^-1, "]"),
@@ -589,7 +568,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvteddy") {
     longname <- "Eddy Horizontal Temperature Flux"
-    subtitle <- ""
     power_out <- 3
     multfac_out <- base^power_out
     if (!integrate_depth) {
@@ -613,7 +591,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "usgstemp") {
     stop("not complete")
     longname <- "Total SGS Zonal Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- expression(paste("Total SGS Zonal Temperature Flux [", degree, "C m s"^"-1","]"))
     multfac_out <- 1
@@ -628,7 +605,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "vsgstemp") {
     stop("not complete")
     longname <- "Total SGS Meridional Temperature Flux"
-    subtitle <- ""
     units_out <- "degC m s-1"
     var_label_plot <- expression(paste("Total SGS Meridional Temperature Flux [", degree, "C m s"^"-1","]"))
     multfac_out <- 1
@@ -642,7 +618,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvsgstemptot") {
     longname <- "Total Horizontal SGS Temperature Flux"
-    subtitle <- ""
     units_out <- "°C m s-1"
     var_label_plot <- substitute(paste(bar(paste(bold(u)["sgs,h"], "T")),
                                      " [°C ", var1, " ", var2^-1, "]"),
@@ -683,7 +658,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "usalt") {
     longname <- "Zonal Advective Flux of Salinity"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- substitute(paste(bar(u), " ", bar(S), " [psu ",
                                      var1, " ", var2^-1, "]"),
@@ -699,7 +673,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vsalt") {
     longname <- "Meridional Advective Flux of Salinity"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- substitute(paste(bar(v), " ", bar(S), " [psu ",
                                      var1, " ", var2^-1, "]"),
@@ -715,7 +688,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvsalt") {
     longname <- "Horizontal Advective Flux of Salinity"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(S), "| [psu ",
                                      var1, " ", var2^-1, "]"),
@@ -731,7 +703,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "useddy") {
     longname <- "Zonal Eddy Salinity Flux"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- substitute(paste(bar(paste("u'S'")), " [psu ",
                                      var1, " ", var2^-1, "]"),
@@ -747,7 +718,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vseddy") {
     longname <- "Meridional Eddy Salinity Flux"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- substitute(paste(bar(paste("v'S'")), " [psu ",
                                      var1, " ", var2^-1, "]"),
@@ -763,7 +733,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvseddy") {
     longname <- "Norm of Horizontal Eddy Salinity Flux"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     if (power_out != 0) {
@@ -789,7 +758,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "usgssalt") {
     stop("not complete")
     longname <- "SGS Zonal Salinity Flux"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Zonal Salinity Flux [psu m s"^"-1","]"))
     multfac_out <- 1
@@ -804,7 +772,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "vsgssalt") {
     stop("not complete")
     longname <- "SGS Meridional Salinity Flux"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Meridional Salinity Flux [psu m s"^"-1","]"))
     multfac_out <- 1
@@ -819,7 +786,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "uvsgssalttot") {
     stop("not complete")
     longname <- "Total Horizontal SGS Salinity Flux"
-    subtitle <- ""
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Horizontal Salinity Flux [psu m s"^"-1","]"))
     multfac_out <- 1
@@ -833,7 +799,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "urho") {
     longname <- "Zonal in situ Density Flux"
-    subtitle <- ""
     units_out <- "kg m-2 s-1"
     var_label_plot <- substitute(paste(bar(u), " ", bar(rho), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
@@ -849,7 +814,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vrho") {
     longname <- "Meridional in situ Density Flux"
-    subtitle <- ""
     units_out <- "kg m-2 s-1"
     var_label_plot <- substitute(paste(bar(v), " ", bar(rho), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
@@ -865,7 +829,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvrho") {
     longname <- "Norm of Horizontal in situ Density Flux"
-    subtitle <- ""
     units_out <- "kg m-2 s-1"
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(rho), "|  [kg ",
                                      var1^-2, " ", var2^-1, "]"),
@@ -881,7 +844,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "urhoeddy") {
     longname <- "Zonal Eddy in situ Density Flux"
-    subtitle <- ""
     units_out <- "kg m-2 s-1"
     var_label_plot <- substitute(paste(bar(paste("u'", rho, "'")), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
@@ -897,7 +859,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vrhoeddy") {
     longname <- "Meridional Eddy in situ Density Flux"
-    subtitle <- ""
     units_out <- "kg m-2 s-1"
     var_label_plot <- substitute(paste(bar(paste("v'", rho, "'")), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
@@ -913,7 +874,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvrhoeddy") {
     longname <- "Norm of Horizontal Eddy in situ Density Flux"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     if (power_out != 0) {
@@ -938,7 +898,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "relvorti") {
     longname <- "Relative Vorticity"
-    subtitle <- ""
     power_out <- 6
     multfac_out <- base^power_out
     units_out <- paste0("s-1 x ", multfac_out)
@@ -958,7 +917,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "revortif") {
     longname <- "Relative Vorticity / f"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     units_out <- "#"
@@ -991,7 +949,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "strain_normal") {
     longname <- "Horizontal Strain (normal part)"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("s-2 x ", multfac_out)
@@ -1008,7 +965,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "strain_shear") {
     longname <- "Horizontal Strain (shear part)"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("s-2 x ", multfac_out)
@@ -1025,7 +981,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "strain") {
     longname <- "Horizontal Strain"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("s-2 x ", multfac_out)
@@ -1042,7 +997,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "relvortisq") {
     longname <- "Squared Relative Vorticity"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("s-2 x ", multfac_out)
@@ -1059,7 +1013,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "okubo") {
     longname <- "Okubo-Weiss Parameter"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("s-2 x ", multfac_out)
@@ -1076,7 +1029,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "potvorti") {
     longname <- "Ertel Potential Vorticity"
-    subtitle <- ""
     power_out <- 10
     multfac_out <- base^power_out
     units_out <- paste0("s-3 x ", multfac_out)
@@ -1093,7 +1045,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "potvorti_bc") {
     longname <- "PV_bc"
-    subtitle <- ""
     power_out <- 10
     multfac_out <- base^power_out
     units_out <- paste0("s-3 x ", multfac_out)
@@ -1110,7 +1061,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "potvorti_vert") {
     longname <- "PV_vert"
-    subtitle <- ""
     power_out <- 10
     multfac_out <- base^power_out
     units_out <- paste0("s-3 x ", multfac_out)
@@ -1127,7 +1077,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "richardson") {
     longname <- "Gradient Richardson Number"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     units_out <- paste0("#")# x ", multfac_out)
@@ -1144,7 +1093,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "mke") {
     longname <- "Mean Kinetic Energy"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("m2 s-2 x ", multfac_out)
@@ -1186,7 +1134,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "tke") {
     longname <- "Total Kinetic Energy"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("m2 s-2 x 1e", power_out)
@@ -1227,47 +1174,28 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "eke") {
     longname <- "Eddy Kinetic Energy"
-    subtitle <- ""
-    if (!integrate_depth) {
-        power_out <- 4 # [m^2 s^(-2)] --> [cm^2/s^2] or use the same for depth integration case
-        multfac_out <- base^power_out
-        units_out <- "cm2 s-2"
-        var_label_plot <- substitute(paste("EKE = 1/2 ", bar(paste(bold(u)[h], "'"^2)), 
+    if (integrate_depth) {
+        units_out <- units_plot <- "m3 s-2"
+        var_label_plot <- substitute(paste(integral(), " 1/2 ", 
+                                           bar(paste(bold(u)[h], "'"^2)),
+                                           " dz [", var1^3, " ", var2^-2, "]"),
+                                     list(var1="m", var2="s"))
+        if (out_mode == "meanint" || out_mode == "depthint") {
+            units_out <- "m5 s-2"
+        }
+    } else {
+        units_out <- units_plot <- "m2 s-2"
+        var_label_plot <- substitute(paste("1/2 ", bar(paste(bold(u)[h], "'"^2)), 
                                          " [", var1^2, " ", var2^-2, "]"),
-                                   list(var1="cm", var2="s"))
-    } else if (integrate_depth) {
-        power_out <- 0
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-2")
-        var_label_plot <- substitute(paste("EKE = ", integral(), " 1/2 ", 
-                                         bar(paste(bold(u)[h], "'"^2)),
-                                         " dz [", var1^3, " ", var2^-2, "]"),
                                    list(var1="m", var2="s"))
+        if (out_mode == "meanint" || out_mode == "depthint") {
+            units_out <- "m4 s-2"
+        }
     }
-    if (!(out_mode == "meanint" || out_mode == "depthint") &&
-        integrate_depth) {
-        power_out <- 0
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-2")
-    } else if ((out_mode == "meanint" || out_mode == "depthint") &&
-               !integrate_depth) {
-        power_out <- 0
-        multfac_out <- base^power_out
-        units_out <- paste0("m4 s-2")
-    } else if ((out_mode == "meanint" || out_mode == "depthint") &&
-               integrate_depth) {
-        power_out <- 0
-        multfac_out <- base^power_out
-        units_out <- paste0("m5 s-2")
-    }
-    var_label_plot_roundfac <- 0
     dim_tag <- "3D"
-    horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.")
     varname_fesom <- c("u", "v", "uu", "vv")
-    rotate_inds <- F # not necessary! EKE is scalar and uu and vv have no factor
-    vec <- F
 
 } else if (varname == "HRS") {
     longname <- "Horizontal Reynolds Stress"
@@ -1351,7 +1279,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "KmKe") {
     longname <- "Kinetic Mean -> Kinetic Eddy Conversion"
-    subtitle <- ""
     if (!integrate_depth) {
         power_out <- 8
         multfac_out <- base^power_out
@@ -1383,7 +1310,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "wb") {
     longname <- "wb (Potential Mean -> Kinetic Mean Conversion)"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("m2 s-3 x ", multfac_out)
@@ -1414,7 +1340,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvb") {
     longname <- "Norm of horizontal mean buoyancy flux"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     if (power_out != 0) {
@@ -1461,7 +1386,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "PmPe") {
     longname <- "Potential Mean -> Potential Eddy Conversion"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("m2 s-3 x ", multfac_out)
@@ -1529,7 +1453,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvbeddy") {
     longname <- "Norm of Horizontal Eddy Buoyancy Flux"
-    subtitle <- ""
     if (integrate_depth) {
         power_out <- 4
         multfac_out <- base^power_out
@@ -1596,7 +1519,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "gradT") {
     longname <- "grad_h T"
-    subtitle <- ""
     power_out <- 2
     multfac_out_plot <- base^power_out
     units_out <- paste0("K km-1 x ", multfac_out_plot)
@@ -1617,7 +1539,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "gradB") {
     longname <- "grad_h B"
-    subtitle <- ""
     insitudens_tag <- T # calc in-situ density from T,S
     buoyancy_tag <- T # use buoyancy instead of density
     units_out <- "s-2"
@@ -1653,7 +1574,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "gradmld") {
     longname <- "grad_h MLD"
-    subtitle <- ""
     power_out <- 0
     multfac_out_plot <- base^power_out
     units_out <- paste0("m km-1")
@@ -1970,7 +1890,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "Kv") {
     longname <- "Vertical Diffusivity"
-    subtitle <- ""
     power_out <- 0
     multfac_out_plot <- base^power_out
     units_out <- paste0("m2 s-1")
@@ -1999,7 +1918,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "Kh") {
     longname <- "Horizontal Diffusivity"
-    subtitle <- ""
     power_out <- 0
     multfac_out_plot <- base^power_out
     #units_out <- paste0("m^2 s^-1 x ", multfac_out_plot)
@@ -2019,7 +1937,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "K_GM") {
     longname <- "GM Thickness Diffusivity"
-    subtitle <- ""
     power_out <- 0
     multfac_out_plot <- base^power_out
     #units_out <- paste0("m^2 s^-1 x ", multfac_out_plot)
@@ -2039,7 +1956,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "ptr1") {
     longname <- "Passive Tracer"
-    subtitle <- ""
     power_out <- 0
     multfac_out_plot <- base^power_out
     #units_out <- paste0("m^2 s^-1 x ", multfac_out_plot)
@@ -2062,7 +1978,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "FmKm") {
     longname <- "Mean Wind Stress Energy"
-    subtitle <- ""
     power_out <- 4
     multfac_out_plot <- base^power_out
     units_out <- paste0("m3 s-3 x ", multfac_out_plot)
@@ -2101,7 +2016,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvrho") {
     longname <- "div_h(u_h rho)"
-    subtitle <- ""
     power_out <- 3
     multfac_out <- base^power_out
     units_out <- paste0("kg m-3 s-1 x ", multfac_out)
@@ -2148,7 +2062,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvrhoeddy") {
     longname <- "div_h(u_h'rho')"
-    subtitle <- ""
     power_out <- 7
     multfac_out <- base^power_out
     units_out <- paste0("kg m-3 s-1 x ", multfac_out)
@@ -2195,7 +2108,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvb") {
     longname <- "div_h(u_h b)"
-    subtitle <- ""
     power_out <- 6
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -2242,7 +2154,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvbeddy") {
     longname <- "div_h(u_h'b')"
-    subtitle <- ""
     power_out <- 10
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -2287,7 +2198,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvsgsb") {
     longname <- "div_h(u_sgs_h b)"
-    subtitle <- ""
     power_out <- 9
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -2424,7 +2334,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvttot") {
     longname <- "div_h(u_h t)"
-    subtitle <- ""
     power_out <- 7
     multfac_out <- base^power_out
     units_out <- paste0("degC s-1 x ", multfac_out)
@@ -2584,7 +2493,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvt2") {
     longname <- "grad_laplace_inv_div_h(u_h t)"
-    subtitle <- ""
     power_out <- 7
     multfac_out <- base^power_out
     units_out <- paste0("m s-1 degC x ", multfac_out)
@@ -2926,7 +2834,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "dzwrho") {
     longname <- "dz(wrho)"
-    subtitle <- ""
     power_out <- 8
     multfac_out <- base^power_out
     units_out <- paste0("kg m-3 s-1 x ", multfac_out)
@@ -2975,7 +2882,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "dzwb") {
     longname <- "dz(wb)"
-    subtitle <- ""
     power_out <- 8
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -3024,7 +2930,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "dzwt") {
     longname <- "dz(wT)"
-    subtitle <- ""
     power_out <- 8
     multfac_out <- base^power_out
     units_out <- paste0("degC s-1 x ", multfac_out)
@@ -3071,7 +2976,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "dzws") {
     longname <- "dz(wS)"
-    subtitle <- ""
     power_out <- 8
     multfac_out <- base^power_out
     units_out <- paste0("psu s-1 x ", multfac_out)
@@ -3118,7 +3022,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "dzwbeddy") {
     longname <- "dz(w'b')"
-    subtitle <- ""
     power_out <- 12
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -3170,7 +3073,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "hdiffb") {
     longname <- "Horizontal Buoyancy Diffusion"
-    subtitle <- ""
     power_out <- 14
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -3202,7 +3104,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vdiffrho") {
     longname <- "Vertical Density Diffusion"
-    subtitle <- ""
     power_out <- 5
     multfac_out <- base^power_out
     units_out <- paste0("kg m-3 s-1 x ", multfac_out)
@@ -3235,7 +3136,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vdiffb") {
     longname <- "Vertical Buoyancy Diffusion"
-    subtitle <- ""
     power_out <- 5
     multfac_out <- base^power_out
     units_out <- paste0("m s-3 x ", multfac_out)
@@ -3284,7 +3184,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vdifft") {
     longname <- "Vertical Temperature Diffusion"
-    subtitle <- ""
     power_out <- 5
     multfac_out <- base^power_out
     units_out <- paste0("degC s-1 x ", multfac_out)
@@ -3333,7 +3232,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vdiffs") {
     longname <- "Vertical Salinity Diffusion"
-    subtitle <- ""
     power_out <- 9
     multfac_out <- base^power_out
     units_out <- paste0("psu s-1 x ", multfac_out)
@@ -3382,7 +3280,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "slopeSx") {
     longname <- "Isoneutral Slope x"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("# x ", multfac_out)
@@ -3413,7 +3310,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "slopeSy") {
     longname <- "Isoneutral Slope y"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("# x ", multfac_out)
@@ -3444,7 +3340,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "slopeS") {
     longname <- "Isoneutral Slope"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("# x ", multfac_out)
@@ -3475,7 +3370,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "slopeSsq") {
     longname <- "Isoneutral Slope Squared"
-    subtitle <- ""
     power_out <- 4
     multfac_out <- base^power_out
     units_out <- paste0("# x ", multfac_out)
@@ -3578,7 +3472,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "Tair") {
     longname <- "Air Temperature 2m"
-    subtitle <- ""
     units_out <- "degC"
     var_label_plot <- expression(paste("Air Temperature [", degree, "C]"))
     dim_tag <- "2D"
@@ -3592,7 +3485,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "runoff") {
     longname <- "Runoff"
-    subtitle <- ""
     units_out <- "m a-1"
     var_label_plot <- expression(paste("Runoff [m a"^"-1","]"))
     dim_tag <- "2D"
@@ -3606,7 +3498,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "fwflux") {
     longname <- "Freshwater Flux"
-    subtitle <- ""
     units_out <- "km3 a-1"
     var_label_plot <- expression(paste("FW Flux [km"^"3"," a"^"-1","]"))
     var_label_plot_roundfac <- 4
@@ -3621,7 +3512,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "shum") {
     longname <- "Air Specific Humidity"
-    subtitle <- ""
     units_out <- "g kg-1"
     var_label_plot <- expression(paste("Air Specific Humidity [g kg"^"-1","]"))
     dim_tag <- "2D"
@@ -3734,7 +3624,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "curlwind") {
     longname <- "Curl of Wind Speed"
-    subtitle <- ""
     units_out <- "s-1"
     var_label_plot <- expression(paste("Curl of Wind Speed [s"^"-1","]"))
     dim_tag <- "2D"
@@ -3748,7 +3637,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "taux") {
     longname <- "Meridional Wind Stress"
-    subtitle <- ""
     units_out <- "N m-2"
     var_label_plot <- expression(paste("Meridional Wind Stress [N m"^"-2","]"))
     dim_tag <- "2D"
@@ -3762,7 +3650,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "tauy") {
     longname <- "Zonal Wind Stress"
-    subtitle <- ""
     units_out <- "N m-2"
     var_label_plot <- expression(paste("Zonal Wind Stress [N m"^"-2","]"))
     dim_tag <- "2D"
@@ -3776,7 +3663,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "tau") {
     longname <- "Norm of Wind Stress"
-    subtitle <- ""
     units_out <- "N m-2"
     power_out <- 0
     multfac_out <- base^power_out
@@ -3837,7 +3723,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "twindenergy") {
     longname <- "Total Wind Energy"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     multfac_out_plot <- base^-power_out
@@ -3861,7 +3746,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "mwindenergy") {
     longname <- "Mean Wind Energy"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     multfac_out_plot <- base^-power_out
@@ -3885,7 +3769,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "ewindenergy") {
     longname <- "Eddy Wind Energy"
-    subtitle <- ""
     power_out <- 0
     multfac_out <- base^power_out
     multfac_out_plot <- base^-power_out
@@ -3960,7 +3843,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "cdrag") {
     longname <- "Drag Coefficient"
-    subtitle <- ""
     power_out <- 3
     multfac_out <- base^power_out
     multfac_out_plot <- base^-power_out
@@ -4364,7 +4246,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uice") {
     longname <- "Sea Ice Zonal Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Sea Ice Zonal Velocity [m s"^"-1","]"))
     multfac_out <- 1
@@ -4378,7 +4259,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "vice") {
     longname <- "Sea Ice Meridional Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Sea Ice Meridional Velocity [m s"^"-1","]"))
     multfac_out <- 1
@@ -4392,7 +4272,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "hvelice") {
     longname <- "Horizontal Ice Velocity"
-    subtitle <- ""
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Horizontal Ice Velocity [m s"^"-1","]"))
     multfac_out <- 1
@@ -4409,7 +4288,6 @@ if (varname == "tos") { # fesom 1.4
     sic_thr <- 0.15 # same units_out as FESOM sea ice concentration variable ('area')
     sic_cond <- ">"
     #subtitle <- paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
-    subtitle <- ""
     nsidc_iceedge <- F
     if (nsidc_iceedge) {
         nsidc_path <- "/work/ba0941/a270073/data/NSIDC/SMMR/"
@@ -4431,7 +4309,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "hice") {
     longname <- "Sea Ice Thickness"
-    subtitle <- ""
     units_out <- "m"
     var_label_plot <- expression(paste("Effective Sea Ice Thickness [m]"))
     multfac_out <- 1
@@ -4468,7 +4345,7 @@ if (varname == "tos") { # fesom 1.4
     sic_thr <- NULL #0.15 # same units_out as FESOM sea ice concentration variable ('area')
     sic_cond <- NULL #">" # choose: ">", ">=", "<", "<="
     sic_cond_fname <- NULL
-    subtitle <- "" #paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
+    #subtitle <- paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
     power_out <- 9 # [m^3] --> [km^3]
     multfac_out <- base^-power_out
     units_out <- paste0("km3")
@@ -4484,7 +4361,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "hsnow") {
     longname <- "Snow Thickness"
-    subtitle <- ""
     units_out <- "m"
     var_label_plot <- expression(paste("Effective Snow Thickness [m]"))
     multfac_out <- 1
@@ -4583,7 +4459,6 @@ if (varname == "tos") { # fesom 1.4
     }
 
     longname <- "Transport"
-    subtitle <- ""
     var_label_plot <- expression(paste("Transport [Sv]"))
     units_out <- "Sv"
     multfac_out <- 1
@@ -4669,7 +4544,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "resolutionkm") {
     longname <- "Resolution"
-    subtitle <- ""
     units_out <- "km"
     power_out <- -3 ## resolution unit is 'mesh_dist_unit' # m --> km
     multfac_out <- base^power_out
@@ -4686,7 +4560,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "resolutiondeg") {
     longname <- "Resolution"
-    subtitle <- ""
     units_out <- "deg"
     var_label_plot <- expression(paste("Mesh Resolution [", degree, "]"))
     multfac_out <- 1
@@ -4699,7 +4572,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "mesharea") {
     longname <- "Mesh Area"
-    subtitle <- ""
     power_out <- 3
     multfac_out <- base^-power_out * 1e-6 # m^2 --> 1e3 km^2
     multfac_out_plot <- base^power_out
@@ -4715,7 +4587,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "rossbyrad") {
     longname <- "First Barolinic Rossby Radius of Deformation"
-    subtitle <- ""
     power_out <- 3
     multfac_out <- base^-power_out
     units_out <- "km"

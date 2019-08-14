@@ -20,12 +20,7 @@ source(paste0(rfesompath, "/namelists/namelist.config.r"))
 
 # Define paths either relative to this runscript or absolute.
 # Any variable already defined in namelist.config.r can be overwritten here.
-if (F) {
-    source("../../myrunids.r")
-    years <- 1948:1955
-    varname <- "temp"
-
-} else if (F) { # martin
+if (F) { # martin
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     #fnames_user <- "tos_PI_CTRL_fesom.nc" 
     fnames_user <- "/pf/a/a270106/snow_depth_PI_CTRL/tos_fesom_DJF1.nc" 
@@ -38,7 +33,7 @@ if (F) {
     varname <- "resolutionkm"
     area <- "global"
 
-} else if (T) { # christian
+} else if (F) { # christian
     runid <- "MPmes"
     meshid <- "p_mesh_MP"
     cpl_tag <- F
@@ -68,6 +63,9 @@ if (F) {
     regular_ltm_out <- T
     transient_out <- F
     out_mode <- "area"
+
+} else { # chris
+    source("~/scripts/r/myrunids.r")
 }
 
 ###################### User input end ######################

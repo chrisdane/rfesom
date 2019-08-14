@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Mon 12 Aug 2019 10:40:29 AM CEST -->
+<!-- Added by: a270073, at: Wed Aug 14 17:07:47 CEST 2019 -->
 
 <!--te-->
 
@@ -137,6 +137,29 @@ Using this tool with your own modified runscript works best if
 * T = TRUE, F = FALSE
 * variable assignment symbol is `<-`, e.g. `a <- 1` (`a = 1` works as well)
 * 'not equal' condition is `!=`
+* By default, subsetting in R removes redundant dimensions, i.e. the effect of matlabs `squeeze()` is applied autmatically. For example
+```
+a <- array(1:6, c(3,2)); message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); length(a); message("length of 1d-subset of 2d-array"); length(a[1,])
+dim of 2d-array
+[1] 3 2
+dim of 1d-subset of 2d-array
+NULL
+length of 2d-array
+[1] 6
+length of 1d-subset of 2d-array
+[1] 2
+```
+However, `rfesom` uses the 'matlab' way of subsetting:
+```
+a <- array(1:6, c(3,2)); message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); dim of 2d-arrayage("length of 1d-subset of 2d-array"); length(a[1,])
+[1] 3 2
+dim of 1d-subset of 2d-array
+[1] 1 2
+length of 2d-array
+[1] 6
+length of 1d-subset of 2d-array
+[1] 2
+```
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with

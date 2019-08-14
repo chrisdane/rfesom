@@ -3611,7 +3611,7 @@ if (nfiles == 0) { # read data which are constant in time
         } # if rec_tag
         icounts <- array(NA, c(nfiles, 2))
         
-        recsloop_systime <- system.time({
+        #recsloop_systime <- system.time({
         for (rec in 1:length(recsi)) {
             indent <- "      "
             if (rec_tag) {
@@ -4558,24 +4558,25 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                             }
 
+                            if (verbose > 1) {
+                                message(indent, "Calculate transient ", out_mode, " (=out_mode)", appendLF=F)
+                                if (dim_tag == "3D") {
+                                    message(" at ", depths_plot, appendLF=F)
+                                    if (!(depths == 1 && depths == "bottom")) {
+                                        message(" m", appendLF=F)
+                                    }
+                                    message(" (=depths_plot)", appendLF=F)
+                                }
+                                message("")
+                                if (verbose > 2) {
+                                    message(paste0(indent, "and save at 'time_inds'=",
+                                                 paste(time_inds, collapse=",")))
+                                }
+                            }
+                            
+                            ## which calculation mode: mean, max, etc ...
                             if (any(out_mode == c("mean", "depth", "meanint", "depthint"))) {
                               
-                                if (verbose > 1) {
-                                    message(indent, "Calculate transient ", out_mode, " (=out_mode)", appendLF=F)
-                                    if (dim_tag == "3D") {
-                                        message(" at ", depths_plot, appendLF=F)
-                                        if (!(depths == 1 && depths == "bottom")) {
-                                            message(" m", appendLF=F)
-                                        }
-                                        message(" (=depths_plot)", appendLF=F)
-                                    }
-                                    message("")
-                                    if (verbose > 2) {
-                                        message(paste0(indent, "and save at 'time_inds'=",
-                                                     paste(time_inds, collapse=",")))
-                                    }
-                                }
-
                                 if (rec_tag && leap_tag && is.leap(year)) {
                                     if (out_mode == "mean" && zave_method == 2) { # special
                                         if (!exists("patch_vol_leap")) {
@@ -4613,35 +4614,90 @@ if (nfiles == 0) { # read data which are constant in time
                                         }
                                     }
                                 } # if leap years are present
-
-                                # calculate min/max/mean/median/nominal resolution of area as scalars
-                                # resolution is defined per 2d-element (check deriv_2d.r)
-                                if (F) {
-                                    res_data <- replicate(resolution, n=1) # dim = elem2d_n
-                                    res_data <- replicate(res_data, n=1)
-                                    res_data <- replicate(res_data, n=1)
-                                    res_data <- replicate(res_data, n=1)
-                                    res_data <- aperm(res_data, c(2, 3, 1, 4, 5)) # dim = c(nvars, 1, nelem2d_n, ndepths, nrecspf)
-                                    sub_e2xde_to_n2xde(res_data) # produces tmp
-                                    res_data <- tmp
-                                    rm(tmp)
-                                    if (resolution_unit != "km") { # for output, convert to km
-                                        if (resolution_unit == "m") { # m --> km
-                                            fac <- 1e-3
-                                        } else {
-                                            stop("not defined")
+                                
+                                # Calculate min/max/mean/median/nominal resolution of area as scalars.
+                                # Resolution is defined per 2d-element (check deriv_2d.r).
+                                # In these modes, the deriv_2d_nc was already loaded anyway.
+                                # From CMIP6_global_attributes_filenames_CVs_v6.2.6.pdf:
+                                # In general, the nominal resolution characterizes the resolution of the 
+                                # grid used to report model output fields, which may differ from the native 
+                                # grid on which the fields are calculated by the model.
+                                add_res_to_nc <- T
+                                if (add_res_to_nc) {
+                                    if (out_mode == "mean" && zave_method == 2) {
+                                        stop("not yet") 
+                                    } else {
+                                        if (verbose > 2) {
+                                            message(indent, "   Calc min/max/mean/median/nominal res of ", area , " area ...")
                                         }
-                                        res_data <- res_data*fac
-                                    } # if resolution_unit != "km"    
-                                    stop("asd")
-                                }
+                                        res_node <- replicate(resolution, n=1) # resolution in elem space; dim = elem2d_n
+                                        res_node <- replicate(res_node, n=1)
+                                        res_node <- replicate(res_node, n=1)
+                                        res_node <- replicate(res_node, n=1)
+                                        res_node <- aperm(res_node, c(2, 3, 1, 4, 5)) # dim = c(nvars, 1, nelem2d_n, ndepths, nrecspf)
+                                        sub_e2xde_to_n2xde(res_node) # produces tmp
+                                        res_node <- drop(tmp[,poly_node_inds_geogr,,]) # resolution in node space
+                                        rm(tmp)
+                                        # force km
+                                        if (resolution_unit != "km") { # for output, convert to km
+                                            if (resolution_unit == "m") { # this should be the default; m --> km
+                                                fac <- 1e-3
+                                                res_node_unit <- "km"
+                                            } else {
+                                                stop("not defined")
+                                            }
+                                            res_node <- res_node*fac
+                                        } else {
+                                            res_node_unit <- resolution_unit
+                                        } # if resolution_unit != "km"
+                                        res_node_min <- min(res_node)
+                                        res_node_max <- max(res_node)
+                                        res_node_mean_simple <- mean(res_node)
+                                        if (rec_tag && leap_tag && is.leap(year)) {
+                                            res_node_int <- res_node*drop(patch_area_leap[1,,1,1])
+                                            tmp_area <- sum(patch_area_leap[1,which(!is.na(datavec[1,,1,1])),1,1]) 
+                                        } else {
+                                            res_node_int <- res_node*drop(patch_area[1,,1,1])
+                                            tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,1])),1,1])
+                                        }
+                                        # sum data over nodes in area
+                                        res_node_int <- sum(res_node_int)
+                                        res_node_mean_weighted <- res_node_int/tmp_area
+                                        res_node_median <- median(res_node)
+                                        res_node_nominal <- min(res_node)
+                                        if (res_node_nominal < 0.72) {
+                                            res_node_nominal <- 0.5
+                                        } else if (res_node_nominal => 0.72 && res_node_nominal < 1.6) {
+                                            res_node_nominal <- 1
+                                        } else if (res_node_nominal => 1.6 && res_node_nominal < 3.6) {
+                                            res_node_nominal <- 2.5
+                                        } else if (res_node_nominal => 3.6 && res_node_nominal < 7.2) {
+                                            res_node_nominal <- 5
+                                        } else if (res_node_nominal => 7.2 && res_node_nominal < 16) {
+                                            res_node_nominal <- 10
+                                        } else if (res_node_nominal => 16 && res_node_nominal < 36) {
+                                            res_node_nominal <- 25
+                                        } else if (res_node_nominal => 36 && res_node_nominal < 72) {
+                                            res_node_nominal <- 50
+                                        } else if (res_node_nominal => 72 && res_node_nominal < 160) {
+                                            res_node_nominal <- 100
+                                        } else if (res_node_nominal => 160 && res_node_nominal < 360) {
+                                            res_node_nominal <- 250
+                                        } else if (res_node_nominal => 360 && res_node_nominal < 720) {
+                                            res_node_nominal <- 500
+                                        } else if (res_node_nominal => 720 && res_node_nominal < 1600) {
+                                            res_node_nominal <- 1000
+                                        } else if (res_node_nominal => 1600 && res_node_nominal < 3600) {
+                                            res_node_nominal <- 2500
+                                        } else if (res_node_nominal => 3600 && res_node_nominal < 7200) {
+                                            res_node_nominal <- 5000
+                                        } else if (res_node_nominal => 7200) {
+                                            res_node_nominal <- 10000
+                                        }
+                                    }
+                                } # if add_res_to_nc
 
                                 # multiplay data by cluster area (in [unit of 'Rearth' in runscript]^2)
-                                if (verbose > 2) {
-                                    message(paste0(indent, "Calc ",
-                                                 paste0(dimnames(datavec)[[1]], collapse=","),
-                                                 " x patch_area ..."))
-                                }
                                 if (out_mode == "mean" && zave_method == 2) {
                                     if (rec_tag && leap_tag && is.leap(year)) {
                                         area_int <- datavec*patch_vol_leap
@@ -4667,6 +4723,7 @@ if (nfiles == 0) { # read data which are constant in time
                                 # sum data over nodes in area
                                 area_int <- apply(area_int, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
                                 area_int[area_int == 0] <- NA # where there are no values at depth
+                                stop("asd")
 
                                 if (out_mode == "mean" && zave_method == 2) {
                                     area_mean <- area_int/sum(cluster_vol_3d[nod3d_z_inds])
@@ -4683,7 +4740,7 @@ if (nfiles == 0) { # read data which are constant in time
                                         } else {
                                             tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,i])),1,i])
                                         }
-                                        if (F && verbose > 2) {
+                                        if (verbose > 2) {
                                             message(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
                                         }
                                         area_mean[,,i] <- area_mean[,,i]/tmp_area
@@ -4695,7 +4752,6 @@ if (nfiles == 0) { # read data which are constant in time
                                     data_funi[,time_inds,] <- area_mean
                                 
                                 } else if (any(out_mode == c("meanint", "depthint"))) {
-
                                     data_funi[,time_inds,] <- area_int
                                 }
 
@@ -4821,6 +4877,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                                 if (p_ref_suffix != "") {
                                     ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+                                }
+                                if (subtitle != "") {
+                                    ncatt_put(outnc, 0, "description", subtitle)
                                 }
                             } # end if total_rec == 0			    
 
@@ -4970,6 +5029,9 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                                 if (p_ref_suffix != "") {
                                     ncatt_put(outnc_reg, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+                                }
+                                if (subtitle != "") {
+                                    ncatt_put(outnc, 0, "description", subtitle)
                                 }
                             } # if total_rec == 0
                             
@@ -5528,12 +5590,12 @@ if (nfiles == 0) { # read data which are constant in time
                     for (i in 1:dim(data_node)[1]) { # nvars
                         if (rec_tag) {
                             if (leap_tag && is.leap(year)) {
-                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] + data_node[i,,,]
+                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf_leap] + data_node[i,1:icounts[i,1],,]
                             } else {
-                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] + data_node[i,,,]
+                                data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] <- data_node_ltm[i,1:icounts[i,1],1,1:nrecspf] + data_node[i,1:icounts[i,1],,]
                             }
                         } else {
-                            data_node_ltm[i,1:icounts[i,1],,] <- data_node_ltm[i,1:icounts[i,1],,] + data_node[i,,,]
+                            data_node_ltm[i,1:icounts[i,1],,] <- data_node_ltm[i,1:icounts[i,1],,] + data_node[i,1:icounts[i,1],,]
                         }
                     }
 
@@ -5573,7 +5635,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
 
         } # for recsi timesteps (e.g. monthly, daily, hourly) per fesom file loop
-        }) # recsloop_systime 
+        #}) # recsloop_systime 
         #stop("asd")
     
     } # end year loop
@@ -5963,6 +6025,9 @@ if (nfiles == 0) { # read data which are constant in time
                                   csec_cond_vals[i], prec="double")
                     }
                 }
+            }
+            if (subtitle != "") {
+                ncatt_put(outnc, 0, "description", subtitle)
             }
 
             ## Close nc
@@ -6782,6 +6847,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (p_ref_suffix != "") {
             ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
         }
+        if (subtitle != "") {
+            ncatt_put(outnc, 0, "description", subtitle)
+        }
 
         nc_close(outnc)
 
@@ -6876,6 +6944,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ncatt_put(regular_nc, 0, "regular_dy", sprintf("%.3f", regular_dy))
         if (p_ref_suffix != "") {
             ncatt_put(regular_nc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
+        }
+        if (subtitle != "") {
+            ncatt_put(outnc, 0, "description", subtitle)
         }
 
         nc_close(regular_nc)
@@ -6982,6 +7053,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (p_ref_suffix != "") {
             ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
         }
+        if (subtitle != "") {
+            ncatt_put(outnc, 0, "description", subtitle)
+        }
 
         ## Close nc
         nc_close(outnc) 
@@ -7060,7 +7134,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             } # which plot_type
 
-            plotname <- paste0(plotpath, "/",  
+            plotname <- paste0(plotpath, "/", varname, "/",  
                                runid, "_", setting, "_", varnamei,
                                timespan_fname, depths_fname, "_", area, "_", 
                                projection, p_ref_suffix, fname_suffix, "_", plot_type, ".", plot_file)
