@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Wed Aug 14 21:07:52 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Aug 14 21:10:02 CEST 2019 -->
 
 <!--te-->
 
@@ -265,7 +265,7 @@ Currently Loaded Modulefiles:
 ```
 
 # Contribute
-Run `$ lib././set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit` using the `github-markdown-toc` repo https://github.com/jordantrizz/github-markdown-toc forked from https://github.com/ekalinin/github-markdown-toc:
+Run `$ lib/./set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit` using the `nobackup` branch of the `github-markdown-toc` repo https://github.com/jordantrizz/github-markdown-toc forked from https://github.com/ekalinin/github-markdown-toc:
 ```
 $ cat lib/set_links.sh
 #!/bin/bash
