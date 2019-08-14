@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Wed Aug 14 19:16:51 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Aug 14 19:21:04 CEST 2019 -->
 
 <!--te-->
 
@@ -172,9 +172,9 @@ length of 2d-array
 length of 1d-subset of 2d-array
 [1] 2
 ```
-For further information check the `drop` argument of the the `[` function: ```?`[` ```.
+For further information check the `drop` argument of the the `[` function: <code>?&grave;[&grave;</code>.
 
-Or not: ```List`1` ```
+Or not: ```Lisit`1` ```
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with
