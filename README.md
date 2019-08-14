@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Wed 14 Aug 2019 07:00:16 PM CEST -->
+<!-- Added by: a270073, at: Wed Aug 14 19:07:50 CEST 2019 -->
 
 <!--te-->
 
@@ -132,7 +132,7 @@ Using this tool with your own modified runscript works best if
 # Help
 
 ## R syntax basics
-* any help text for a function can be obtained within R by ?functionname, e.g. ?sum
+* any help text for a function can be obtained within R by `?<functionname>`, e.g. `?sum`
 * R counts from 1, not zero
 * index syntax is `[]`, not `()`. So `mat2[1,2]` yields the 1st row and 2nd column element of the 2d-array `mat2` and `mat3[1:2,,c(4,6,8)]` all entries of the 2nd dimension of the 3d-array `mat3` in the 1st and 2nd row and the 4th, 6th and 8th entries of the 3rd dimension. 
 * booleans `TRUE` and `FALSE` can be abbreviated with `T` and `F`
@@ -140,23 +140,25 @@ Using this tool with your own modified runscript works best if
 * 'not equal' condition is `!=`
 * By default, subsetting in R removes redundant dimensions, i.e. the effect of matlabs `squeeze()` is applied automatically. For example
 ```
-a <- array(1:6, c(3,2)); a; message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); length(a); message("length of 1d-subset of 2d-array"); length(a[1,])
+a <- array(1:6, c(3,2)); message("a:"); a; message("dim of 2d-array:"); dim(a); message("dim of 1d-subset of 2d-array:"); dim(a[1,]); message("length of 2d-array:"); length(a); message("length of 1d-subset of 2d-array:"); length(a[1,])
+a:
      [,1] [,2]
 [1,]    1    4
 [2,]    2    5
 [3,]    3    6
-dim of 2d-array
+dim of 2d-array:
 [1] 3 2
-dim of 1d-subset of 2d-array
-NULL # 1d-subset is a vector: in R, vectors have no dimension but only a length
-length of 2d-array
+dim of 1d-subset of 2d-array:
+NULL
+length of 2d-array:
 [1] 6
-length of 1d-subset of 2d-array
+length of 1d-subset of 2d-array:
 [1] 2
 ```
 However, `rfesom` uses the 'matlab' way of subsetting:
 ```
-a <- array(1:6, c(3,2)); a; message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); dim of 2d-arrayage("length of 1d-subset of 2d-array"); length(a[1,])
+a <- array(1:6, c(3,2)); message("a:"); a; message("dim of 2d-array:"); dim(a); message("dim of 1d-subset of 2d-array:"); dim(a[1,]); message("length of 2d-array:"); length(a); message("length of 1d-subset of 2d-array:"); length(a[1,])
+a:
      [,1] [,2]
 [1,]    1    4
 [2,]    2    5
@@ -170,7 +172,7 @@ length of 2d-array
 length of 1d-subset of 2d-array
 [1] 2
 ```
-For further information check the help page of the `[` function for the `drop` argument: `?\`[\``
+For further information check the help page of the `[` function for the `drop` argument: `?`[``
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with

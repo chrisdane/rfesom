@@ -4667,31 +4667,31 @@ if (nfiles == 0) { # read data which are constant in time
                                         res_node_nominal <- min(res_node)
                                         if (res_node_nominal < 0.72) {
                                             res_node_nominal <- 0.5
-                                        } else if (res_node_nominal => 0.72 && res_node_nominal < 1.6) {
+                                        } else if (res_node_nominal >= 0.72 && res_node_nominal < 1.6) {
                                             res_node_nominal <- 1
-                                        } else if (res_node_nominal => 1.6 && res_node_nominal < 3.6) {
+                                        } else if (res_node_nominal >= 1.6 && res_node_nominal < 3.6) {
                                             res_node_nominal <- 2.5
-                                        } else if (res_node_nominal => 3.6 && res_node_nominal < 7.2) {
+                                        } else if (res_node_nominal >= 3.6 && res_node_nominal < 7.2) {
                                             res_node_nominal <- 5
-                                        } else if (res_node_nominal => 7.2 && res_node_nominal < 16) {
+                                        } else if (res_node_nominal >= 7.2 && res_node_nominal < 16) {
                                             res_node_nominal <- 10
-                                        } else if (res_node_nominal => 16 && res_node_nominal < 36) {
+                                        } else if (res_node_nominal >= 16 && res_node_nominal < 36) {
                                             res_node_nominal <- 25
-                                        } else if (res_node_nominal => 36 && res_node_nominal < 72) {
+                                        } else if (res_node_nominal >= 36 && res_node_nominal < 72) {
                                             res_node_nominal <- 50
-                                        } else if (res_node_nominal => 72 && res_node_nominal < 160) {
+                                        } else if (res_node_nominal >= 72 && res_node_nominal < 160) {
                                             res_node_nominal <- 100
-                                        } else if (res_node_nominal => 160 && res_node_nominal < 360) {
+                                        } else if (res_node_nominal >= 160 && res_node_nominal < 360) {
                                             res_node_nominal <- 250
-                                        } else if (res_node_nominal => 360 && res_node_nominal < 720) {
+                                        } else if (res_node_nominal >= 360 && res_node_nominal < 720) {
                                             res_node_nominal <- 500
-                                        } else if (res_node_nominal => 720 && res_node_nominal < 1600) {
+                                        } else if (res_node_nominal >= 720 && res_node_nominal < 1600) {
                                             res_node_nominal <- 1000
-                                        } else if (res_node_nominal => 1600 && res_node_nominal < 3600) {
+                                        } else if (res_node_nominal >= 1600 && res_node_nominal < 3600) {
                                             res_node_nominal <- 2500
-                                        } else if (res_node_nominal => 3600 && res_node_nominal < 7200) {
+                                        } else if (res_node_nominal >= 3600 && res_node_nominal < 7200) {
                                             res_node_nominal <- 5000
-                                        } else if (res_node_nominal => 7200) {
+                                        } else if (res_node_nominal >= 7200) {
                                             res_node_nominal <- 10000
                                         }
                                     }
