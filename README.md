@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Wed Aug 14 19:21:04 CEST 2019 -->
+<!-- Added by: a270073, at: Wed Aug 14 21:07:04 CEST 2019 -->
 
 <!--te-->
 
@@ -163,18 +163,16 @@ a:
 [1,]    1    4
 [2,]    2    5
 [3,]    3    6
-dim of 2d-array
+dim of 2d-array:
 [1] 3 2
-dim of 1d-subset of 2d-array
+dim of 1d-subset of 2d-array:
 [1] 1 2
-length of 2d-array
+length of 2d-array:
 [1] 6
-length of 1d-subset of 2d-array
+length of 1d-subset of 2d-array:
 [1] 2
 ```
 For further information check the `drop` argument of the the `[` function: <code>?&grave;[&grave;</code>.
-
-Or not: ```Lisit`1` ```
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with
@@ -267,7 +265,7 @@ Currently Loaded Modulefiles:
 ```
 
 # Contribute
-Run `$ lib././set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit`:
+Run `$ lib././set_links.sh` to set git hook links for automatic table of content updates in the `README.md` on `git commit` using the `github-markdown-toc` repo [https://github.com/jordantrizz/github-markdown-toc] forked from [https://github.com/ekalinin/github-markdown-toc]:
 ```
 $ cat lib/set_links.sh
 #!/bin/bash
