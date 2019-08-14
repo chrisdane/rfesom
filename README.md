@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Wed Aug 14 17:07:47 CEST 2019 -->
+<!-- Added by: mozi, at: Wed 14 Aug 2019 07:00:16 PM CEST -->
 
 <!--te-->
 
@@ -132,18 +132,23 @@ Using this tool with your own modified runscript works best if
 # Help
 
 ## R syntax basics
+* any help text for a function can be obtained within R by ?functionname, e.g. ?sum
 * R counts from 1, not zero
 * index syntax is `[]`, not `()`. So `mat2[1,2]` yields the 1st row and 2nd column element of the 2d-array `mat2` and `mat3[1:2,,c(4,6,8)]` all entries of the 2nd dimension of the 3d-array `mat3` in the 1st and 2nd row and the 4th, 6th and 8th entries of the 3rd dimension. 
-* T = TRUE, F = FALSE
+* booleans `TRUE` and `FALSE` can be abbreviated with `T` and `F`
 * variable assignment symbol is `<-`, e.g. `a <- 1` (`a = 1` works as well)
 * 'not equal' condition is `!=`
-* By default, subsetting in R removes redundant dimensions, i.e. the effect of matlabs `squeeze()` is applied autmatically. For example
+* By default, subsetting in R removes redundant dimensions, i.e. the effect of matlabs `squeeze()` is applied automatically. For example
 ```
-a <- array(1:6, c(3,2)); message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); length(a); message("length of 1d-subset of 2d-array"); length(a[1,])
+a <- array(1:6, c(3,2)); a; message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); length(a); message("length of 1d-subset of 2d-array"); length(a[1,])
+     [,1] [,2]
+[1,]    1    4
+[2,]    2    5
+[3,]    3    6
 dim of 2d-array
 [1] 3 2
 dim of 1d-subset of 2d-array
-NULL
+NULL # 1d-subset is a vector: in R, vectors have no dimension but only a length
 length of 2d-array
 [1] 6
 length of 1d-subset of 2d-array
@@ -151,7 +156,12 @@ length of 1d-subset of 2d-array
 ```
 However, `rfesom` uses the 'matlab' way of subsetting:
 ```
-a <- array(1:6, c(3,2)); message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); dim of 2d-arrayage("length of 1d-subset of 2d-array"); length(a[1,])
+a <- array(1:6, c(3,2)); a; message("dim of 2d-array"); dim(a); message("dim of 1d-subset of 2d-array"); dim(a[1,]); message("length of 2d-array"); dim of 2d-arrayage("length of 1d-subset of 2d-array"); length(a[1,])
+     [,1] [,2]
+[1,]    1    4
+[2,]    2    5
+[3,]    3    6
+dim of 2d-array
 [1] 3 2
 dim of 1d-subset of 2d-array
 [1] 1 2
@@ -160,6 +170,7 @@ length of 2d-array
 length of 1d-subset of 2d-array
 [1] 2
 ```
+For further information check the help page of the `[` function for the `drop` argument: `?\`[\``
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with
@@ -176,17 +187,25 @@ if you want to set a path where the package should be installed. The default pac
 Some packages may need special header files or libraries that can be provided in an active R session as follows:
 * package: rgdal 
 ```
-GDAL_ROOT="/sw/rhel6-x64/gdal-2.1.3-gcc48"
-PROJ4_ROOT="/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
-LDFLAGS=paste0("-Wl,-rpath,", GDAL_ROOT, "/lib:", PROJ4_ROOT, "/lib")
-install.packages("rgdal", configure.args=paste0("--with-gdal-config=", GDAL_ROOT, "/bin/gdal-config --with-proj-include=", PROJ4_ROOT, "/include --with-proj-lib=", PROJ4_ROOT, "/lib PKG_LIBS=", LDFLAGS))
+gdal_path <- "/sw/rhel6-x64/gdal-2.1.3-gcc48"
+proj4_path <- "/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
+pkg_libs <- paste0("-Wl,-rpath,", gdal_path, "/lib:", proj4_path, "/lib")
+install.packages("rgdal", 
+                 configure.args=paste0("--with-gdal-config=", gdal_path, "/bin/gdal-config 
+                                        --with-proj-include=", proj4_path, "/include 
+                                        --with-proj-lib=", proj4_path, "/lib 
+                                        PKG_LIBS=", pkg_libs))
 ```
 
 * package: proj4
 ```
-PROJ4_ROOT="/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
-LDFLAGS=paste0("-Wl,-rpath,", GDAL_ROOT, "/lib")
-install.packages("proj4", configure.args=paste0("--with-proj-include=", PROJ4_ROOT, "/include --with-proj-lib=", PROJ4_ROOT, "/lib PKG_LIBS=", LDFLAGS))
+gdal_path <- "/sw/rhel6-x64/gdal-2.1.3-gcc48"
+proj4_path <- "/sw/rhel6-x64/graphics/proj4-4.9.3-gcc48"
+pkg_libs <- paste0("-Wl,-rpath,", gdal_path, "/lib")
+install.packages("proj4", 
+                 configure.args=paste0("--with-proj-include=", proj4_path, "/include 
+                                        --with-proj-lib=", proj4_path, "/lib 
+                                        PKG_LIBS=", pkg_libs))
 ```
 
 * pakage: rgeos
