@@ -579,7 +579,7 @@ if (fuser_tag) {
                         recs_leap <- c(365, 366)
                     }
 
-                    if (!exists("recs_leap")) stop("this should not happen?!")
+                    if (!exists("recs_leap")) stop("recs_leap: this should not happen")
 
                 } else {
                     leap_tag <-F
@@ -3842,7 +3842,7 @@ if (nfiles == 0) { # read data which are constant in time
                         nodedim <- which(dimcheck == nod3d_n)
                     }
                 } # old new
-                if (nodedim == 0) stop("this should not happen")
+                if (nodedim == 0) stop("nodedim: this should not happen")
                 dimcheck <- c(dimcheck[nodedim], dimcheck[-nodedim]) 
 
                 # check number of nodes of variable
@@ -4037,7 +4037,7 @@ if (nfiles == 0) { # read data which are constant in time
                 }
 
                 ## Preparations1 before calculations
-                if (verbose > 2) {
+                if (verbose > 1) {
                     message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4091,7 +4091,7 @@ if (nfiles == 0) { # read data which are constant in time
                 } # if average_depth
 
                 ## Preparations2 before calculations e.g. calc rho, f, ... if needed
-                if (verbose > 2) {
+                if (verbose > 1) {
                     message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
@@ -4124,10 +4124,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 ## variable specific calculations
                 if (verbose > 1) {
-                    #message(paste0(indent, "Calc ", varname, " ..."))
-                    if (verbose > 2) {
-                        message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
-                    }
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_calc(data_node) # overwrites data_node with the result of sub_calc()
@@ -4247,7 +4244,7 @@ if (nfiles == 0) { # read data which are constant in time
                         (regular_transient_out && out_mode == "areadepth")) {
 
                         if (length(poly_inds_geogr) == 0) {
-                            stop("this should not happen")
+                            stop("poly_inds_geogr: this should not happen")
                         }
 
                         if (!average_depth && !integrate_depth) {
@@ -4618,10 +4615,6 @@ if (nfiles == 0) { # read data which are constant in time
                                 # Calculate min/max/mean/median/nominal resolution of area as scalars.
                                 # Resolution is defined per 2d-element (check deriv_2d.r).
                                 # In these modes, the deriv_2d_nc was already loaded anyway.
-                                # From CMIP6_global_attributes_filenames_CVs_v6.2.6.pdf:
-                                # In general, the nominal resolution characterizes the resolution of the 
-                                # grid used to report model output fields, which may differ from the native 
-                                # grid on which the fields are calculated by the model.
                                 add_res_to_nc <- T
                                 if (add_res_to_nc) {
                                     if (out_mode == "mean" && zave_method == 2) {
@@ -4637,8 +4630,10 @@ if (nfiles == 0) { # read data which are constant in time
                                         res_node <- aperm(res_node, c(2, 3, 1, 4, 5)) # dim = c(nvars, 1, nelem2d_n, ndepths, nrecspf)
                                         sub_e2xde_to_n2xde(res_node) # produces tmp
                                         res_node <- drop(tmp[,poly_node_inds_geogr,,]) # resolution in node space
+                                        # this may result single NAns if sub-data set (by ncl script)
                                         rm(tmp)
-                                        # force km
+                                        
+                                        ## Force km
                                         if (resolution_unit != "km") { # for output, convert to km
                                             if (resolution_unit == "m") { # this should be the default; m --> km
                                                 fac <- 1e-3
@@ -4650,21 +4645,34 @@ if (nfiles == 0) { # read data which are constant in time
                                         } else {
                                             res_node_unit <- resolution_unit
                                         } # if resolution_unit != "km"
-                                        res_node_min <- min(res_node)
-                                        res_node_max <- max(res_node)
-                                        res_node_mean_simple <- mean(res_node)
+
+                                        ## Calc different resolution properties 
+                                        res_node_min <- min(res_node, na.rm=T)
+                                        res_node_max <- max(res_node, na.rm=T)
+                                        res_node_median_simple <- median(res_node, na.rm=T)
+                                        res_node_mean_simple <- mean(res_node, na.rm=T)
                                         if (rec_tag && leap_tag && is.leap(year)) {
-                                            res_node_int <- res_node*drop(patch_area_leap[1,,1,1])
-                                            tmp_area <- sum(patch_area_leap[1,which(!is.na(datavec[1,,1,1])),1,1]) 
+                                            res_node_int <- res_node[!is.na(res_node)]*drop(patch_area_leap[1,!is.na(res_node),1,1])
+                                            tmp_area <- sum(patch_area_leap[1,!is.na(res_node),1,1]) 
                                         } else {
-                                            res_node_int <- res_node*drop(patch_area[1,,1,1])
-                                            tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,1])),1,1])
+                                            res_node_int <- res_node[!is.na(res_node)]*drop(patch_area[1,!is.na(res_node),1,1])
+                                            tmp_area <- sum(patch_area[1,!is.na(res_node),1,1])
                                         }
-                                        # sum data over nodes in area
-                                        res_node_int <- sum(res_node_int)
+                                        res_node_int <- sum(res_node_int) # sum data over nodes in area
                                         res_node_mean_weighted <- res_node_int/tmp_area
-                                        res_node_median <- median(res_node)
-                                        res_node_nominal <- min(res_node)
+                                        # Nominal resolution calculation from CMIP6_global_attributes_filenames_CVs_v6.2.6.pdf:
+                                        # In general, the nominal resolution characterizes the resolution of the 
+                                        # grid used to report model output fields, which may differ from the native 
+                                        # grid on which the fields are calculated by the model.
+                                        # 1.) For each grid cell, calculate the distance (in km) between each pair 
+                                        # of cell vertices and select the maximum distance ("d_max"). For latxlon grid cells, 
+                                        # for example, "d_max" would be the diagonal distance.
+                                        # 2.) Calculate the mean over all cells of "d_max", weighting each by the grid-cell's 
+                                        # area (A). This defines the "mean resolution" (d_max). The formula is:
+                                        # bar(d_max) = sum(A_i)^-1 * sum(d_max_i*A_i) for all i surface nodes
+                                        # Note: For unstructured grid, there is no "d_max"?
+                                        #       Use area weighted mean instead. Is this correct?
+                                        res_node_nominal <- res_node_mean_weighted 
                                         if (res_node_nominal < 0.72) {
                                             res_node_nominal <- 0.5
                                         } else if (res_node_nominal >= 0.72 && res_node_nominal < 1.6) {
@@ -4723,7 +4731,6 @@ if (nfiles == 0) { # read data which are constant in time
                                 # sum data over nodes in area
                                 area_int <- apply(area_int, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
                                 area_int[area_int == 0] <- NA # where there are no values at depth
-                                stop("asd")
 
                                 if (out_mode == "mean" && zave_method == 2) {
                                     area_mean <- area_int/sum(cluster_vol_3d[nod3d_z_inds])
@@ -4872,6 +4879,14 @@ if (nfiles == 0) { # read data which are constant in time
                                 ncatt_put(outnc, 0, "projection", projection)
                                 ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
                                 ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
+                                if (exists("res_node_min")) {
+                                    ncatt_put(outnc, 0, paste0("resolution_min_", res_node_unit), res_node_min)
+                                    ncatt_put(outnc, 0, paste0("resolution_max_", res_node_unit), res_node_max)
+                                    ncatt_put(outnc, 0, paste0("resolution_median_", res_node_unit), res_node_median_simple)
+                                    ncatt_put(outnc, 0, paste0("resolution_mean_simple_", res_node_unit), res_node_mean_simple)
+                                    ncatt_put(outnc, 0, paste0("resolution_mean_weigthed_", res_node_unit), res_node_mean_weighted)
+                                    ncatt_put(outnc, 0, paste0("resolution_nominal_", res_node_unit), res_node_nominal)
+                                }
                                 if (dim_tag == "3D") {
                                     ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
                                 }
@@ -6002,6 +6017,14 @@ if (nfiles == 0) { # read data which are constant in time
             if (dim_tag == "3D") {
                 ncatt_put(outnc, 0, "depths_m", depths_plot, prec="double")
             }
+            if (exists("res_node_min")) {
+                ncatt_put(outnc, 0, paste0("resolution_min_", res_node_unit), res_node_min)
+                ncatt_put(outnc, 0, paste0("resolution_max_", res_node_unit), res_node_max)
+                ncatt_put(outnc, 0, paste0("resolution_median_simple_", res_node_unit), res_node_median_simple)
+                ncatt_put(outnc, 0, paste0("resolution_mean_simple_", res_node_unit), res_node_mean_simple)
+                ncatt_put(outnc, 0, paste0("resolution_mean_weigthed_", res_node_unit), res_node_mean_weighted)
+                ncatt_put(outnc, 0, paste0("resolution_nominal_", res_node_unit), res_node_nominal)
+            }
             if (regexpr("MOC", varname) != -1 && exists("moc_mask_file")) {
                 ncatt_put(outnc, 0, "moc_mask", moc_mask_file)
             }
@@ -6233,7 +6256,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Preparations1 before calculations
-        if (verbose > 2) {
+        if (verbose > 1) {
             message(paste0(indent, "Run ", subroutinepath, "/sub_prepare1.r ..."))
         }
         if (exists("tmp")) rm(tmp)
@@ -6301,11 +6324,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## Preparations2 before calculations e.g. calc rho, f, bathy, ... if needed
         #print(str(data_node_ltm))
-        if (verbose > 2) {
+        if (verbose > 1) {
             message(paste0(indent, "Run ", subroutinepath, "/sub_prepare2.r ..."))
         }
         indent_save <- indent; indent <- paste0(indent_save, "   ")
-        sub_prepare2(data_node_ltm) # overwrites data_node_ltm with the result of sub_prepare2()
+        sub_prepare2(data_node_ltm) # creates data_node
+        data_node_ltm <- data_node
+        rm(data_node)
         indent <- indent_save
         #print(str(data_node_ltm))
 
@@ -6333,13 +6358,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## variable specific calculations
         if (verbose > 1) {
-            #message(paste0(indent, "Calc ", varname, " ..."))
-            if (verbose > 2) {
-                message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
-            }
+            message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
         }
         # ltm part
-        if (exists("data_node")) stop("this should not happen")
+        if (exists("data_node")) stop("data_node: this should not happen")
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_calc(data_node_ltm) # data_node is result of sub_calc()
         if (exists("data_node")) {

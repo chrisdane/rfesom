@@ -1538,24 +1538,24 @@ if (varname == "tos") { # fesom 1.4
     vec <- F
 
 } else if (varname == "gradB") {
-    longname <- "grad_h B"
+    longname <- "Horizonal buoyancy gradient"
     insitudens_tag <- T # calc in-situ density from T,S
     buoyancy_tag <- T # use buoyancy instead of density
-    units_out <- "s-2"
     if (integrate_depth) {
         units_out <- "m s-2"
         power_plot <- 4
         multfac_plot <- base^power_plot
         units_plot <- paste0("m s-2 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(),
-                                           "|", bold(nabla)[h], bar(b), "| dz [", var1, 
-                                           , " ", var2^-2, " m] " %*% " ", base^-power_plot),
+                                           "|", bold(nabla)[h], bar(b), "| dz [", 
+                                           var1, " ", var2^-2, "] " %*% " ", base^-power_plot),
                                    list(var1="m", var2="s", 
                                         base=base, power_plot=power_plot))
         if (any(out_mode == c("meanint", "depthint"))) {
             units_out <- "m3 s-2"
         }
     } else {
+        units_out <- "s-2"
         power_plot <- 8
         multfac_plot <- base^power_plot
         units_plot <- paste0("s-2 x ", multfac_plot)

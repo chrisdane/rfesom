@@ -1,7 +1,5 @@
 ## R
 
-## 
-
 sub_prepare2 <- function(data_node) {
 
     ## check user input
@@ -17,7 +15,11 @@ sub_prepare2 <- function(data_node) {
     ## at the end of this block your data_node has a further entry
     ## with the wanted type of density if needed.
     if (insitudens_tag || potdens_tag || buoyancy_tag) {
-      
+     
+        if (verbose > 0) {
+            message("")
+        }
+
         ## use rho as calculated by fesom
         if ("rho" %in% varname_fesom) { # rho is in situ rho in fesom ocean only
 
@@ -97,9 +99,8 @@ sub_prepare2 <- function(data_node) {
             if (!exists("p_node")) { # only once
                 if (dim_tag == "3D") {
                     if (verbose > 0) {
-                        message(paste0(indent, "Calc pressure ..."))
+                        message(paste0(indent, "Calc pressure p = gsw::gsw_p_from_z(z, latitude) ..."))
                         if (verbose > 1) {
-                            message(paste0(indent, "   p = gsw_p_from_z(z, latitude)"))
                             message(paste0(indent, "   with z        height, zero at surface and positive upwards [ m ]"))
                             message(paste0(indent, "        latitude latitude in decimal degrees, positive to the north of the equator."))
                         }
@@ -120,9 +121,8 @@ sub_prepare2 <- function(data_node) {
             ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
             ##  latitude    latitude in decimal degrees, positive to the north of the equator.
             if (verbose > 0) {
-                message(paste0(indent, "Calc absolute salinity ..."))
+                message(paste0(indent, "Calc absolute salinity SA = gsw::gsw_SA_from_SP(SP, p, longitude, latitude) ..."))
                 if (verbose > 1) {
-                    message(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
                     message(paste0(indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]"))
                     message(paste0(indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
                     message(paste0(indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich."))
@@ -144,9 +144,8 @@ sub_prepare2 <- function(data_node) {
             ##  SA  Absolute Salinity [ g/kg ]
             ##  pt  potential temperature (ITS-90) [ degC ]
             if (verbose > 0) {
-                message(paste0(indent, "Calc Conservative Temperature ..."))
+                message(paste0(indent, "Calc Conservative Temperature CT = gsw::gsw_CT_from_pt(SA, pt) ..."))
                 if (verbose > 1) {
-                    message(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
                     message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
                     message(paste0(indent, "        pt potential temperature (ITS-90) [ degC ]"))
                 }
@@ -178,7 +177,7 @@ sub_prepare2 <- function(data_node) {
                 } else if (potdens_tag) {
                     message(p_ref, " (='p_ref')", appendLF=F) 
                 }
-                message(")")
+                message(") ...")
                 message(indent, "   with SA Absolute Salinity [g/kg]")
                 message(indent, "        CT Conservative Temperature [degC]")
                 if (insitudens_tag) {
@@ -199,7 +198,9 @@ sub_prepare2 <- function(data_node) {
                                                            p=p_node)
                 }
                 if (buoyancy_tag) {
-                    if (verbose > 0) message(indent, "insitub = -g/rho0*insitudens (g=", g, ",rho0=", rho0, ")")
+                    if (verbose > 0) {
+                        message(indent, "insitub = -g/rho0*insitudens (from namelist.config.r: g=", g, ", rho0=", rho0, ")")
+                    }
                     insitudens_node <<- -g/rho0*insitudens_node
                     dimnames(insitudens_node)[[1]] <<- "insitub"
                 }

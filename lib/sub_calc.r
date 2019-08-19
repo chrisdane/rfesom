@@ -66,7 +66,7 @@ sub_calc <- function(data_node) {
         } else {
             data_node <- data_node[varname,,,]
         }
-        if (verbose > 1) message(indent, "Selected ", dimnames(data_node)[[1]], " data ...")
+        if (verbose > 2) message(indent, "Selected ", dimnames(data_node)[[1]], " from data matrix ...")
 
     } # select a specific var from data array
 
@@ -1682,7 +1682,7 @@ sub_calc <- function(data_node) {
 
             #time1 <- array(NA, c(aux3d_n, elem2d_n))
             #time2 <- time1
-            `[` <- fctbackup # restore to default for loop
+            `[` <- fctbackup # restore to R's default for loop
 
             #stop("asd")
             # create progress bar
@@ -1831,7 +1831,7 @@ sub_calc <- function(data_node) {
 
 
         ## horizontal derivative in level space which is much faster than in node-space
-        ## but somehow it doenst work yet ...
+        ## but somehow it doesnt work yet ...
         if (horiz_deriv_elem2d) {
         
             ## bring data_node on level space
