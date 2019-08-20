@@ -107,7 +107,8 @@ out_mode              <- "area" # what kind of ouptut (see table at the bottom)
 regular_dx            <- 1/4 # resolution of interpolated data on regular grid [degree] 
 regular_dy            <- regular_dx # can be different than regular_dx
 uv_out                <- T # save horizontal components of vector variable
-sd_out                <- F # calc and save standard deviation
+rms_out               <- F # calc and save root mean square = sqrt( E[x^2] )
+sd_out                <- F # calc and save population standard deviation = sqrt( E[x^2] - (E[x])^2)
 moc_ltm_out           <- F # save moc ltm if out_mode == "moc_depth"
 csec_ltm_out          <- F # save cross section ltm if out_mode == "csec_mean" or "csec_depth"
 

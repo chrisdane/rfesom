@@ -33,29 +33,28 @@ typesuffix <- ""
 ## Overwrite defaults with variable-specific info
 if (varname == "tos") { # fesom 1.4
     longname <- "Sea Surface Temperature"
-    units_plot <- "degC"
+    units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
     dim_tag <- "2D"
     varname_fesom <- "tos"
 
 } else if (varname == "tso") { # fesom 1.4
     longname <- "Sea Surface Temperature snapshot"
-    units_plot <- "degC"
+    units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST snapshot [", degree, "C]"))
     dim_tag <- "2D"
     varname_fesom <- "tso"
 
 } else if (varname == "sst") { # fesom 2.0 
     longname <- "Sea Surface Temperature"
-    units_plot <- "degC"
+    units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
     dim_tag <- "2D"
     varname_fesom <- "sst"
 
 } else if (any(varname == c("temp", "thetao"))) {
     longname <- "Potential Temperature"
-    units_out <- "degC"
-    units_plot <- "degC"
+    units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("Potential Temperature [", degree, "C]"))
     if (integrate_depth) {
         power_out <- -3
@@ -247,6 +246,13 @@ if (varname == "tos") { # fesom 1.4
     varname_fesom <- c("temp", "salt")
     rotate_inds <- F
     vec <- F
+
+} else if (varname == "tossq") { 
+    longname <- "Squared Sea Surface Temperature"
+    units_out <- units_plot <- "degC2"
+    var_label_plot <- expression(paste("Squared SST [", degree, "C"^"2", "]"))
+    dim_tag <- "2D"
+    varname_fesom <- "tossq"
 
 } else if (varname == "u") {
     longname <- "Zonal Velocity"

@@ -491,8 +491,9 @@ if (exists("recs")) {
     }
     if (all_recs) { # user choice
         rec_tag <- T
-        if (length(recs) == 1 || fuser_tag) {
-            rec_tag <- F
+        #if (length(recs) == 1 || fuser_tag) { # dont read complete nc if fuser_tag
+        if (length(recs) == 1) {
+            rec_tag <- F 
         }
     } else if (!all_recs) {
         rec_tag <- F
@@ -516,6 +517,7 @@ months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
 leap_tag <- F # default
 if (fuser_tag) {
     #nyears <- length(fnames_user)
+    nyears <- 1 # just used for ltm
     #timeunit <- ""
     #npy
 
@@ -3176,7 +3178,6 @@ if (nfiles == 0) { # read data which are constant in time
         message(paste0("      in region '", area, "' (=area) ..."))
     }
 
-
     ## check whether R package "ncdf.tools" is loaded and can be used
     ## note: if the data is so large that rec_tag is set to FALSE,
     ##       than using ncdf.tools package doesnt work since it loads the
@@ -3184,7 +3185,7 @@ if (nfiles == 0) { # read data which are constant in time
     ## e.g. 5 GB fesom file (dim = 3668773 x 365)
     ##      all_recs = T : 2.17 mins (36 GB virtual mem)
     ##      all_recs = F : 3.5 mins
-    if (rec_tag) {
+    if (rec_tag && !fuser_tag) {
         if (((length(recs) == npy && all(recs == 1:npy)) || # read all records of a file at once
              (leap_tag && length(recs_leap) == npy_leap && all(recs_leap == 1:npy_leap)))) {
             success <- load_package("ncdf.tools")
@@ -3205,7 +3206,6 @@ if (nfiles == 0) { # read data which are constant in time
     } else {
         ncdf.tools_tag <- F
     }
-
 
     ## Data read loop preparation
     # Note: built-in functions such as mean() or apply()
@@ -3788,6 +3788,28 @@ if (nfiles == 0) { # read data which are constant in time
             indent <- "         "
             ## Read raw FESOM output
             for (file in 1:nfiles) {
+                
+                # find available variables in user provided file
+                if (fuser_tag) {
+                    if (ncdf.tools_tag == F) {
+                        varname_fuser <- names(ncids[[var_nc_inds[file]]]$var)
+                        if (length(varname_fuser) == 0) {
+                            stop("Your file\n", "   ", ncids[[var_nc_inds[file]]]$filename, "\n",
+                                 "does not contain a single variable")
+                        }
+                        
+                        # check if one of the variables in the user file equals varname_fesom
+                        if (any(varname_fuser %in% varname_fesom)) { # use the varname options of the runscript
+                            varname_fesom <- varname_fuser[which(varname_fuser %in% varname_fesom)]
+                        } else { # use defaults options from namelist.var.r
+                            varname_fesom <- varname_fuser
+                        }
+
+                    } else { # if ncdf.tools_tag == T
+                        stop("asdadasdasdas")
+                    } # if ncdf.tools_tag
+                }
+
                 if (verbose > 1) {
                     message(paste0(indent, "Get '", varname_fesom[file],
                                  "' from ", fnames[file]))
@@ -3827,23 +3849,19 @@ if (nfiles == 0) { # read data which are constant in time
                 }
                 
                 # order correct dims: 1:node, 2:time
-                # this does not work if 2d and 3d vars are loaded together:
-                if (F) {
-                    if (dim_tag == "2D") {
-                        nodedim <- which(dimcheck == nod2d_n)
-                    } else if (dim_tag == "3D") {
-                        nodedim <- which(dimcheck == nod3d_n)
-                    }
-                } else {
-                    if (exists("nod2d_n") && exists("nod3d_n")) {
-                        nodedim <- which(dimcheck == nod2d_n | dimcheck == nod3d_n)
-                    } else if (exists("nod2d_n") && !exists("nod3d_n")) {
-                        nodedim <- which(dimcheck == nod2d_n)
-                    } else if (!exists("nod2d_n") && exists("nod3d_n")) {
-                        nodedim <- which(dimcheck == nod3d_n)
-                    }
-                } # old new
-                if (nodedim == 0) stop("nodedim: this should not happen")
+                if (exists("nod2d_n") && exists("nod3d_n")) {
+                    nodedim <- which(dimcheck == nod2d_n | dimcheck == nod3d_n)
+                } else if (exists("nod2d_n") && !exists("nod3d_n")) {
+                    nodedim <- which(dimcheck == nod2d_n)
+                } else if (!exists("nod2d_n") && exists("nod3d_n")) {
+                    nodedim <- which(dimcheck == nod3d_n)
+                }
+                if (length(nodedim) == 0) {
+                    stop("The nc dimensions of file\n", "   ", ncids[[var_nc_inds[file]]]$filename, "\n",
+                         "do not equal\n", 
+                         ifelse(exists("nod2d_n"), paste0("nod2d_n = ", nod2d_n, "\n"), ""),
+                         ifelse(exists("nod3d_n"), paste0("nod3d_n = ", nod3d_n, "\n"), ""))
+                }
                 dimcheck <- c(dimcheck[nodedim], dimcheck[-nodedim]) 
 
                 # check number of nodes of variable
@@ -5539,7 +5557,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                         if (verbose > 1) {
                             message(paste0(indent, "Sum transient ",
-                                         paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for sd ..."))
+                                         paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for rms/sd ..."))
                         }
 
                         if (rec_tag) {
@@ -7181,6 +7199,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
             } # which plot_type
 
+            if (!dir.exists(paste0(plotpath, "/", varname))) {
+                dir.create(paste0(plotpath, "/", varname), recursive=T, showWarnings=F)
+            }
             plotname <- paste0(plotpath, "/", varname, "/",  
                                runid, "_", setting, "_", varnamei,
                                timespan_fname, depths_fname, "_", area, "_", 

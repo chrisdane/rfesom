@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: a270073, at: Tue Aug 20 10:07:45 CEST 2019 -->
+<!-- Added by: a270073, at: Tue Aug 20 11:57:33 CEST 2019 -->
 
 <!--te-->
 
@@ -173,6 +173,15 @@ length of 1d-subset of 2d-array:
 [1] 2
 ```
 For further information check the `drop` argument of the the `[` function: <code>?&grave;[&grave;</code>.
+
+* elements from `list` or `data.frame` objects can be accessed via the `$` notation:
+```
+list1 <- list()
+list1$arr1 <- array(1:6, c(2, 3))
+list1$char1 <- c("a", "b", "c")
+list1$[tabtab]
+st1$arr1   list1$char1
+```
 
 ## Installing new R packages (= libraries)
 Within R, you can install the `ncdf4` package with
