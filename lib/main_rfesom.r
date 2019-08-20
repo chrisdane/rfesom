@@ -170,6 +170,7 @@ if (fuser_tag) {
 if (nfiles == 0) {
     transient_out <- F
     regular_transient_out <- F
+    rms_out <- F
     sd_out <- F
 }
 if (out_mode == "area" && regular_transient_out && transient_out) {
@@ -204,7 +205,7 @@ if (!uv_out && sd_method == "ackermann83") {
                  " is not a vector variable. continue with 'sd_method'=default ..."))
     sd_method <- "default"
 }
-if (uv_out || sd_out || horiz_deriv_tag != F) {
+if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
     success <- load_package("abind")
     if (!success) stop(helppage)
 }
@@ -849,7 +850,7 @@ if (verbose > 0) {
         }
         message(paste0("snapshot: ", snapshot))
         if (exists("nyears")) {
-            message(paste0("Years: ", ifelse(nyears == 1, years, 
+            message(paste0("years: ", ifelse(nyears == 1, years, 
                                paste0(years[1], "-", years[nyears]))))
         }
         if (all(diff(recs) == 1) && length(recs) > 100) {
@@ -4008,7 +4009,7 @@ if (nfiles == 0) { # read data which are constant in time
             }
            
             ## Calculate and save transient data for each timestep if wanted
-            if (any(transient_out, regular_transient_out, sd_out)) {
+            if (any(transient_out, regular_transient_out, rms_out, sd_out)) {
 
                 indent <- "         "
                 if (verbose > 1) {
@@ -5406,7 +5407,7 @@ if (nfiles == 0) { # read data which are constant in time
                 } # if normal, csec, or moc output
 
 				## prepare and sum transient data for ltm
-                if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map)) {
+                if (any(ltm_out, regular_ltm_out, moc_ltm_out, rms_out, sd_out, plot_map)) {
 
                     ## vertical average for ltm if not done before
                     if (F && !integrate_depth && !average_depth) {
@@ -5490,7 +5491,7 @@ if (nfiles == 0) { # read data which are constant in time
                         data_node_ltm <- array(0,
                                                dim=dim(data_node), # c(nvars,nod2d_n,ndepths=1,nrecspf)
                                                dimnames=dimnames(data_node))
-                        if (sd_out) {
+                        if (rms_out || sd_out) {
                             data_node_sd <- data_node_ltm
                             if (sd_method == "ackermann83") {
                                 uv_sd <- array(0, 
@@ -5499,7 +5500,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                                           dimnames(data_node)[[1]][2])),
                                                           dimnames(data_node_sd)[2:4]))
                             }
-                        } # if sd_out
+                        } # if rms_out || sd_out
 
                         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                             mld_node_ltm <- mld_node
@@ -5537,7 +5538,7 @@ if (nfiles == 0) { # read data which are constant in time
                         }
                     } # if mld needed
 
-                    if (sd_out) {
+                    if (rms_out || sd_out) {
 
                         if (verbose > 1) {
                             message(paste0(indent, "Sum transient ",
@@ -5572,9 +5573,9 @@ if (nfiles == 0) { # read data which are constant in time
                             }
                         } # if sd_method == "ackermann83"
 
-                    } # if sd_out
+                    } # if rms_out || sd_out
 
-                } # if (any(ltm_out, regular_ltm_out, moc_ltm_out, sd_out, plot_map))
+                } # if (any(ltm_out, regular_ltm_out, moc_ltm_out, rms_out, sd_out, plot_map))
 
             # else if not transient or sd out
             } else { 
@@ -5636,7 +5637,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 } # if any(ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out, plot_map)
 
-            } # if (any(transient_out, regular_transient_out, sd_out))  
+            } # if (any(transient_out, regular_transient_out, rms_out, sd_out))  
 
             # set total counter
             if (rec_tag) {
@@ -6102,7 +6103,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     }
    
     ## continue with already calculated data
-    if (any(transient_out, regular_transient_out, sd_out) && nfiles > 0) { # nfiles > 0 for not bathy, resolution, etc.
+    if (any(transient_out, regular_transient_out, rms_out, sd_out) && nfiles > 0) { # nfiles > 0 for not bathy, resolution, etc.
 
         # append sum(u*v) to sd if needed to only have one sd matrix
         if (sd_method == "ackermann83") {
@@ -6110,7 +6111,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(uv_sd)
         }
 
-    } # if any(transient_out, regular_transient_out, sd_out)
+    } # if any(transient_out, regular_transient_out, rms_out, sd_out)
 
     ## Calculate Mean for 'timespan' of already calculated data
     if (total_rec > 1) {
@@ -6121,7 +6122,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 message(paste0(indent, "Divide by total_rec=", total_rec, " ..."))
             }
             data_node_ltm <- data_node_ltm/total_rec
-            if (sd_out) {
+            if (rms_out || sd_out) {
                 data_node_sd <- data_node_sd/total_rec
             }
             if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -6139,7 +6140,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                         message(paste0(indent, "Divide rec ", nrecspf_leap, " by nyears_leap=", nyears_leap, " ..."))
                     }
                     data_node_ltm[,,,nrecspf_leap] <- data_node_ltm[,,,nrecspf_leap]/nyears_leap # (var,node,time,depth)
-                    if (sd_out) {
+                    if (rms_out || sd_out) {
                         data_node_sd[,,,nrecspf_leap] <- data_node_sd[,,,nrecspf_leap]/nyears_leap
                     }
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -6151,7 +6152,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     message(paste0(indent, "Divide recs (1,...,", nrecspf, ") by nyears=", nyears, " ..."))
                 }
                 data_node_ltm[,,,1:nrecspf] <- data_node_ltm[,,,1:nrecspf]/nyears
-                if (sd_out) {
+                if (rms_out || sd_out) {
                     data_node_sd[,,,1:nrecspf] <- data_node_sd[,,,1:nrecspf]/nyears
                 }
                 if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -6167,7 +6168,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                          dimnames=c(dimnames(data_node_ltm)[1:2],
                                     list(depth=depths_plot,
                                          time=timespan)))
-            if (sd_out) {
+            if (rms_out || sd_out) {
                 tmp_sd <- array(0,
                                 dim=c(dim(data_node_sd)[1:2], 1, 1),
                                 dimnames=c(dimnames(data_node_sd)[1:2],
@@ -6190,7 +6191,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             for (i in 1:dim(data_node_ltm)[4]) { # nrecspf
                 tmp[,,1,1] <- tmp[,,,1] + data_node_ltm[,,,i]
                 #message(range(data_node_ltm[,,,i], na.rm=T))
-                if (sd_out) {
+                if (rms_out || sd_out) {
                      tmp_sd[,,,1] <- tmp_sd[,,,1] + data_node_sd[,,,i]
                 }
                 if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -6202,7 +6203,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             # note: leap years were already taken into account before
             data_node_ltm <- tmp/nrecspf
             rm(tmp)
-            if (sd_out) {
+            if (rms_out || sd_out) {
                 data_node_sd <- tmp_sd/nrecspf
                 rm(tmp_sd)
             }
@@ -6230,7 +6231,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if total_rec > 1
 
     ## calc varname with ltm data if not calculated before (=not transient)
-    if (!any(transient_out, regular_transient_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
+    if (!any(transient_out, regular_transient_out, rms_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
 
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
@@ -6329,8 +6330,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
         indent_save <- indent; indent <- paste0(indent_save, "   ")
         sub_prepare2(data_node_ltm) # creates data_node
-        data_node_ltm <- data_node
-        rm(data_node)
+        if (exists("data_node")) {
+            data_node_ltm <- data_node
+            rm(data_node)
+        }
         indent <- indent_save
         #print(str(data_node_ltm))
 
@@ -6425,14 +6428,30 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## dim(data_node_ltm) = c(nvars,nod2d_n,depths=1,nrecspf=1)
     ## is time-averaged and depth-averaged/-integrated 
 
+    ## Calculate root mean square
+    if (rms_out) {
+
+        if (verbose > 1) {
+            for (i in 1:dim(data_node_ltm)[1]) { # nvars
+                message(paste0(indent, "Calc rms(", dimnames(data_node_ltm)[[1]][i], 
+                             ") = sqrt( E[", dimnames(data_node_ltm)[[1]][i], 
+                             "^2] ) ..."))
+            }
+        }
+        # data_node_sd = E[X^2]
+        data_node_rms <- sqrt(data_node_sd)
+        dimnames(data_node_rms)[[1]] <- paste0(dimnames(data_node_ltm)[[1]], "_rms")
+    
+    } # if rms_out
+    
     ## Calculate standard deviation
     if (sd_out) {
 
-        if (sd_method == "default") {
+        if (sd_method == "default") { # population standard deviation
             if (verbose > 1) {
                 for (i in 1:dim(data_node_ltm)[1]) { # nvars
-                    message(paste0(indent, "Calc sd(", dimnames(data_node_ltm)[[1]][i], 
-                                 ") = sqrt( E[", dimnames(data_node_sd)[[1]][i], 
+                    message(paste0(indent, "Calc population sd(", dimnames(data_node_ltm)[[1]][i], 
+                                 ") = sqrt( E[", dimnames(data_node_ltm)[[1]][i], 
                                  "^2] - E[", dimnames(data_node_ltm)[[1]][i], "]^2 ) ..."))
                 }
             }
@@ -6442,6 +6461,20 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         } else if (sd_method == "ackermann83") {
 
+            if (verbose > 1) {
+                message(indent, "Calc sd of vector speed\n",
+                        indent, "  sd_s(x) = 1/S * sqrt[ mean(u)^2*var(u) + mean(v)^2*var(v) + 2*mean(u)*mean(v)*cov(u,v) ]   (7)\n",
+                        indent, "and sd of vector direction\n",
+                        indent, "   sd_d(x) = 1/(S^2) * sqrt[ mean(v)^2*var(u) + mean(u)^2*var(v) - 2*mean(u)*mean(v)*cov(u,v) ]   (11)\n",
+                        indent, "with\n",
+                        indent, "   S = sqrt(E[u]^2 + E[v]^2)   (2)\n",
+                        indent, "   mean(u) = E[u]\n",
+                        indent, "   var(u) = E[u^2] - E[u]^2\n",
+                        indent, "   cov(u,v) = E[uv] - E[u]*E[v]\n",
+                        indent, "from Ackermann (1983): Means and Standard Deviations of Horizontal Wind Components\n",
+                        indent, "   https://doi.org/10.1175/1520-0450(1983)022<0959:MASDOH>2.0.CO;2")
+            }
+            
             uv_varinds <- c(1, 2)
             uv_varnames <- dimnames(data_node_ltm)
             uv_sq_varinds <- c(1, 2)
@@ -6453,22 +6486,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                             paste0(dimnames(data_node_sd)[[1]], collapse=","), ")?"))
             }
 
-            if (verbose > 1) {
-                message(paste0(indent, "Calc sd of vector speed"))
-                message(paste0(indent, "   sd_s(x) = 1/S * sqrt[ mean(u)^2*var(u) + mean(v)^2*var(v) + ",
-                             "2*mean(u)*mean(v)*cov(u,v) ]   (7)"))
-                message(paste0(indent, "and sd of vector direction"))
-                message(paste0(indent, "   sd_d(x) = 1/(S^2) * sqrt[ mean(v)^2*var(u) + mean(u)^2*var(v) - ",
-                             "2*mean(u)*mean(v)*cov(u,v) ]   (11)"))
-                message(paste0(indent, "   with"))
-                message(paste0(indent, "      S = sqrt(E[u]^2 + E[v]^2)   (2)"))
-                message(paste0(indent, "      mean(u) = E[u]"))
-                message(paste0(indent, "      var(u) = E[u^2] - E[u]^2"))
-                message(paste0(indent, "      cov(u,v) = E[uv] - E[u]*E[v]"))
-                message(paste0(indent, "   from Ackermann (1983): Means and Standard Deviations of Horizontal Wind Components"))
-                message(paste0(indent, "        https://doi.org/10.1175/1520-0450(1983)022<0959:MASDOH>2.0.CO;2"))
-            }
-            
             # data_node_ltm = E[u], E[v]; data_sd = E[u^2], E[v^2], E[u*v]
             uvar <- data_sd[1,,,] - udata^2
             if (any(uvar < 0)) {
@@ -6485,19 +6502,23 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         } # which sd_method
 
-        ## append sd to data to only have one matrix
-        if (sd_out) {
-            data_node_ltm <- abind(data_node_ltm, data_node_sd, along=1, use.dnns=T)
-            rm(data_node_sd)
-        }
-
     } # sd_out
+
+    ## append rms and/or sd to data to only have one matrix
+    if (rms_out) {
+        data_node_ltm <- abind(data_node_ltm, data_node_rms, along=1, use.dnns=T)
+        rm(data_node_rms)
+    }
+    if (sd_out) {
+        data_node_ltm <- abind(data_node_ltm, data_node_sd, along=1, use.dnns=T)
+        rm(data_node_sd)
+    }
 
     ## At this point
     ## dim(data_node_ltm) = c(nvars+sd(nvars),nod2d_n,depths=1,nrecspf=1)
     ## is time-averaged and depth-averaged/-integrated data and sd of data if wanted
 
-    ## Arrange data_node_ltm (includes sd if sd_out) as datamatrix
+    ## Arrange data_node_ltm (includes sd if rms_out || sd_out) as datamatrix
     if (plot_map 
         || (ltm_out && output_type == "elems") 
         || regular_ltm_out) {
@@ -6968,7 +6989,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ncatt_put(regular_nc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
         }
         if (subtitle != "") {
-            ncatt_put(outnc, 0, "description", subtitle)
+            ncatt_put(regular_nc, 0, "description", subtitle)
         }
 
         nc_close(regular_nc)

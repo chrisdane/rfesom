@@ -1491,6 +1491,11 @@ if (varname == "tos") { # fesom 1.4
         units_plot <- "cm h-1"
         var_label_plot <- expression(paste("w [cm h"^"-1","]"))
     } else if (T) {
+        multfac_plot <- 86400 # m s-1 --> m day-1
+        units_plot <- "m day-1"
+        var_label_plot <- expression(paste("w [m day"^"-1","]"))
+    }
+    } else if (F) {
         multfac_plot <- 100*86400 # m s-1 --> cm day-1
         units_plot <- "cm day-1"
         var_label_plot <- expression(paste("w [cm day"^"-1","]"))
@@ -1617,7 +1622,7 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
-    p_ref <- 1000 # [dbar] overwrites default from runscript
+    #p_ref <- 1000 # [dbar] overwrites default from runscript
     units_out <- "s-2"
     power_plot <- 5
     multfac_plot <- base^power_plot
