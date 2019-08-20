@@ -4861,7 +4861,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                                         time_dim), 
                                                                missval=mv, 
                                                                prec=prec, 
-                                                               longname=longname)
+                                                               longname=paste0(longname, 
+                                                                               ifelse(subtitle == "", "", paste0(", ", subtitle))))
                                 }
                                 outnc <- nc_create(outname, 
                                                    vars=c(data_var, 
@@ -4893,9 +4894,6 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                                 if (p_ref_suffix != "") {
                                     ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
-                                }
-                                if (subtitle != "") {
-                                    ncatt_put(outnc, 0, "description", subtitle)
                                 }
                             } # end if total_rec == 0			    
 
@@ -5001,7 +4999,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                                        dim=list(lon_dim, lat_dim,
                                                                                 time_dim),
                                                                        missval=mv,
-                                                                       longname=longname,
+                                                                       longname=paste0(longname, 
+                                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                                        prec=prec)
                                     }
                                  
@@ -5017,7 +5016,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                                        dim=list(lon_dim, lat_dim, 
                                                                                 depth_dim, time_dim),
                                                                        missval=mv,
-                                                                       longname=longname,
+                                                                       longname=paste0(longname, 
+                                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                                        prec=prec)
                                     }
                                     
@@ -5045,9 +5045,6 @@ if (nfiles == 0) { # read data which are constant in time
                                 }
                                 if (p_ref_suffix != "") {
                                     ncatt_put(outnc_reg, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
-                                }
-                                if (subtitle != "") {
-                                    ncatt_put(outnc, 0, "description", subtitle)
                                 }
                             } # if total_rec == 0
                             
@@ -5735,7 +5732,7 @@ if (nfiles == 0) { # read data which are constant in time
                 message(paste0(indent, indent, outname))
             }
 
-            ## Set dimensions for nc file
+            ## Set dimensions for transient nc file
             time_dim <- ncdim_def(name="time", 
                                   units="", 
                                   vals=time, 
@@ -5839,7 +5836,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                    units=units_out,
                                                    dim=time_dim,
                                                    missval=mv,
-                                                   longname=longname,
+                                                   longname=paste0(longname, 
+                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                    prec=prec)
                 }
 
@@ -5850,6 +5848,7 @@ if (nfiles == 0) { # read data which are constant in time
                                                     units="m",
                                                     dim=time_dim,
                                                     missval=-9999,
+                                                    paste0(longname, ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                     prec="integer")
                     }
                 }
@@ -5863,7 +5862,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                    units=units_out,
                                                    dim=list(time_dim, depth_dim),
                                                    missval=mv,
-                                                   longname=longname,
+                                                   longname=paste0(longname, 
+                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                    prec=prec)
                 }
             } # depth depthmax
@@ -5897,13 +5897,17 @@ if (nfiles == 0) { # read data which are constant in time
                         data_fun_var[[i]] <- ncvar_def(name=name,
                                                        units=unit,
                                                        dim=time_dim, 
-                                                       missval=mv, 
+                                                       missval=mv,
+                                                       longname=paste0(longname, 
+                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                        prec=prec)
                     } else if (out_mode == "csec_depth") {
                         data_fun_var[[i]] <- ncvar_def(name=name,
                                                        units=unit,
                                                        dim=list(csec_dist_dim, depth_dim, time_dim), 
-                                                       missval=mv, 
+                                                       missval=mv,
+                                                       longname=paste0(longname, 
+                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                        prec=prec)
                     }
                     
@@ -5918,6 +5922,8 @@ if (nfiles == 0) { # read data which are constant in time
                                                    units=units_out,
                                                    dim=list(moc_reg_lat_dim, depth_dim, time_dim),
                                                    missval=mv,
+                                                   longname=paste0(longname, 
+                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                                    prec=prec)
                 }
             } # moc_depth
@@ -6049,9 +6055,6 @@ if (nfiles == 0) { # read data which are constant in time
                                   csec_cond_vals[i], prec="double")
                     }
                 }
-            }
-            if (subtitle != "") {
-                ncatt_put(outnc, 0, "description", subtitle)
             }
 
             ## Close nc
@@ -6844,7 +6847,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             data_var[[i]] <- ncvar_def(name=name, 
                                        units=units_out, 
                                        dim=dim_list,
-                                       missval=mv, longname=longname,
+                                       missval=mv, 
+                                       longname=paste0(longname, 
+                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                        prec=prec)
         }
 
@@ -6889,9 +6894,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
         if (p_ref_suffix != "") {
             ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
-        }
-        if (subtitle != "") {
-            ncatt_put(outnc, 0, "description", subtitle)
         }
 
         nc_close(outnc)
@@ -6960,12 +6962,18 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 datamat_reg_var[[i]] <- ncvar_def(name=name, 
                                                   units=units_out, 
                                                   dim=list(lon_dim, lat_dim, depth_dim),
-                                                  missval=mv, prec=prec)
+                                                  missval=mv, 
+                                                  longname=paste0(longname, 
+                                                                  ifelse(subtitle == "", "", paste0(", ", subtitle))),
+                                                  prec=prec)
             } else {
                 datamat_reg_var[[i]] <- ncvar_def(name=name, 
                                                   units=units_out, 
                                                   dim=list(lon_dim, lat_dim),
-                                                  missval=mv, prec=prec)
+                                                  missval=mv, 
+                                                  longname=paste0(longname, 
+                                                                  ifelse(subtitle == "", "", paste0(", ", subtitle))),
+                                                  prec=prec)
             }
         }
         
@@ -6987,9 +6995,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ncatt_put(regular_nc, 0, "regular_dy", sprintf("%.3f", regular_dy))
         if (p_ref_suffix != "") {
             ncatt_put(regular_nc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
-        }
-        if (subtitle != "") {
-            ncatt_put(regular_nc, 0, "description", subtitle)
         }
 
         nc_close(regular_nc)
@@ -7064,6 +7069,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                            units=units_out,
                                            dim=list(moc_reg_lat_dim, depth_dim),
                                            missval=mv,
+                                           longname=paste0(longname, 
+                                                           ifelse(subtitle == "", "", paste0(", ", subtitle))),
                                            prec=prec)
         }
 
@@ -7095,9 +7102,6 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
         if (p_ref_suffix != "") {
             ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
-        }
-        if (subtitle != "") {
-            ncatt_put(outnc, 0, "description", subtitle)
         }
 
         ## Close nc
