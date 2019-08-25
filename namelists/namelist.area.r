@@ -219,6 +219,16 @@
                                    header=F, col.names=c("x", "y"))
                 map_geogr_lim_lon <- polycoords$x
                 map_geogr_lim_lat <- polycoords$y
+            } else if (area == "LS20to30l") {
+                polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_2000_and_lt_3000m_chull.txt",
+                                   header=F, col.names=c("x", "y"))
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
+            } else if (area == "LS20to30h") {
+                polycoords <- read.table("~/scripts/r/LSea2_mesh_LS_ge_2000_and_lt_3000m_chull.txt",
+                                   header=F, col.names=c("x", "y"))
+                map_geogr_lim_lon <- polycoords$x
+                map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS35h") {
                 polycoords <- read.table("~/scripts/r/LSea2_mesh_LS_ge_3500m_chull.txt",
                                    header=F, col.names=c("x", "y"))

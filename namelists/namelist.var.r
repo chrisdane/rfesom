@@ -57,15 +57,15 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("Potential Temperature [", degree, "C]"))
     if (integrate_depth) {
-        power_out <- -3
-        multfac_out <- base^power_out
         units_out <- "degC m"
-        units_plot <- "degC m"
+        power_plot <- -3
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("degC m x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), " T dz [",
                                          var1, " ", var2,
-                                         "] " %*% " ", base^power_out),
+                                         "] " %*% " ", base^-power_plot),
                                   list(var1="°C", var2="m",
-                                       base=base, power_out=-power_out))
+                                       base=base, power_plot=power_plot))
         if (any(out_mode == c("meanint", "depthint"))) {
             units_out <- "degC m3"
         }
@@ -112,6 +112,20 @@ if (varname == "tos") { # fesom 1.4
     if (cpl_tag) {
         varname_fesom <- "so"
     }
+
+} else if (varname == "tob") { 
+    longname <- "sea_water_potential_temperature_at_sea_floor"
+    units_out <- units_plot <- "degC"
+    var_label_plot <- expression(paste(T[bottom], " [", degree, "C]"))
+    dim_tag <- "2D"
+    varname_fesom <- "tob"
+
+} else if (varname == "sob") { 
+    longname <- "sea_water_salinity_at_sea_floor"
+    units_out <- units_plot <- "psu"
+    var_label_plot <- expression(paste(S[bottom], " [", degree, "C]"))
+    dim_tag <- "2D"
+    varname_fesom <- "sob"
 
 } else if (varname == "insitudens") {
     longname <- "In Situ Density"
@@ -1599,7 +1613,7 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- T
 
-} else if (varname == "ssh") {
+} else if (any(varname == c("zos", "ssh"))) {
     longname <- "Sea Surface Height"
     units_out <- "m"
     multfac_plot <- 100 # m --> cm
@@ -1613,9 +1627,16 @@ if (varname == "tos") { # fesom 1.4
         varname_fesom <- "ssh"
     }
 
+} else if (varname == "zossq") { 
+    longname <- "Squared Sea Surface Height"
+    units_out <- units_plot <- "m2"
+    var_label_plot <- expression(paste("Squared SSH [m"^"2", "]"))
+    dim_tag <- "2D"
+    varname_fesom <- "zossq"
+
 } else if (varname == "mixlay") {
     longname <- "Mixed Layer Depth"
-    units_out <- "m"
+    units_out <- units_plot <- "m"
     var_label_plot <- "MLD [m]"
     dim_tag <- "2D"
     typesuffix <- "oce."
@@ -2014,11 +2035,11 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- base^power_plot
     units_plot <- paste0("m3 s-3 x ", multfac_plot)
     var_label_plot <- substitute(paste(rho[0]^-1 , " ", 
-                                     bar(paste(bold(u)[h], "'" %.% "", bold(tau)[0], "'")),
-                                     " [", var1^3, " ", var2^-3, 
-                                     "] " %*% " ", base^power_plot),
-                          list(var1="m", var2="s", 
-                               base=base, power_plot=-power_plot))
+                                       bar(paste(bold(u)[h], "'" %.% "", bold(tau)[0], "'")),
+                                       " [", var1^3, " ", var2^-3, 
+                                       "] " %*% " ", base^power_plot),
+                                 list(var1="m", var2="s", 
+                                      base=base, power_plot=-power_plot))
     dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
@@ -2254,32 +2275,29 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvt") {
     longname <- "Divergence of mean horizontal temperature flux"
-    power_out <- 5
-    multfac_out <- base^power_out
-    units_plot <- "degC s-1"
+    units_out <- "degC s-1"
+    power_plot <- 5
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("degC s-1 x ", multfac_out)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
                                      " [", var1, " ", var2^-1,
-                                     "] " %*% " ", base^power_out),
+                                     "] " %*% " ", base^-power_plot),
                                list(var1="°C", var2="s",
-                                    base=base, power_out=-power_out))
-    multfac_out <- 1
-    units_out <- units_plot
+                                    base=base, power_plot=power_plot))
     if (any(out_mode == c("meanint", "depthint"))) {
-        multfac_out <- 1
         units_out <- "degC m2 s-1"
     }
     if (integrate_depth) {
-        power_out <- 4
-        multfac_out <- base^power_out
-        units_plot <- "degC m s-1"
+        units_out <- "degC m s-1"
+        power_plot <- 4
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("degC s-1 x ", multfac_out)
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
                                          " dz [°C ", var1, " ", var2^-1,
-                                         "] " %*% " ", base^power_out),
+                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s",
-                                       base=base, power_out=-power_out))
-        multfac_out <- 1
-        units_out <- units_plot
+                                       base=base, power_plot=power_plot))
         if (any(out_mode == c("meanint", "depthint"))) {
             units_out <- "degC m3 s-1"
         }
@@ -2297,32 +2315,29 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "divuvteddy") {
     longname <- "Divergence of eddy horizontal temperature flux"
-    power_out <- 8
-    multfac_out <- base^power_out
-    units_plot <- "degC s-1"
+    units_out <- units_plot <- "degC s-1"
+    power_plot <- 8
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("degC s-1 x ", multfac_out)
     var_label_plot <- substitute(paste(bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
                                      " [", var1, " ", var2^-1,
-                                     "] " %*% " ", base^power_out),
+                                     "] " %*% " ", base^-power_plot),
                                list(var1="°C", var2="s",
-                                    base=base, power_out=-power_out))
-    multfac_out <- 1
-    units_out <- units_plot
+                                    base=base, power_plot=power_plot))
     if (any(out_mode == c("meanint", "depthint"))) {
-        multfac_out <- 1
         units_out <- "degC m2 s-1"
     }
     if (integrate_depth) {
-        power_out <- 7
-        multfac_out <- base^power_out
-        units_plot <- "degC m s-1"    
+        units_out <- "degC m s-1"    
+        power_plot <- 7
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("degC m s-1 x ", multfac_out)
         var_label_plot <- substitute(paste(integral(),
                                          bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
                                          " dz [°C ", var1, " ", var2^-1,
-                                         "] " %*% " ", base^power_out),
+                                         "] " %*% " ", base^-power_plot),
                                   list(var1="m", var2="s",
-                                       base=base, power_out=-power_out))
-        multfac_out <- 1
-        units_out <- units_plot     
+                                       base=base, power_plot=power_plot))
         if (any(out_mode == c("meanint", "depthint"))) {
             units_out <- "degC m3 s-1"
         }
@@ -3408,6 +3423,32 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- T
 
+} else if (varname == "opottempmint") {
+    longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
+    units_out <- units_plot <- "degC kg m-2"
+    dim_tag <- "2D"
+    varname_fesom <- "opottempmint"
+    var_label_plot <- substitute(paste(integral(), " ",
+                                       rho, " T dz [°C kg ", var^-2,
+                                       "]",
+                                       #"] " %*% " ", base^power_out),
+                                 list(var="m"
+                                      #, base=base, power_out=-power_out
+                                      )))
+
+} else if (varname == "somint") {
+    longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
+    units_out <- units_plot <- "g m-2"
+    dim_tag <- "2D"
+    varname_fesom <- "somint"
+    var_label_plot <- substitute(paste(integral(), " ",
+                                       rho, " S dz [g ", var^-2,
+                                       "]",
+                                       #"] " %*% " ", base^power_out),
+                                 list(var="m"
+                                      #, base=base, power_out=-power_out
+                                      )))
+
 } else if (varname == "uv_bott_force_mean") {
     longname <- "Mean Bottom Stress Energy"
     C_d <- 0.0025 # Quadratic bottom drag coeff.
@@ -3870,27 +3911,22 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "Ftemp") {
     longname <- "Temperature flux to ocean"
     subtitle <- ">0 surface temperature gain"
-    power_out <- 6
-    multfac_out <- base^power_out
-    multfac_out_plot <- base^-power_out
-    units_out <- paste0("m s-1 degC x ", multfac_out_plot)
+    units_out <- "m s-1 degC"
+    power_plot <- 6
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("m s-1 degC x ", multfac_plot)
     var_label_plot <- substitute(paste("Temperature flux to ocean [°C ",
                                      var1, " ", var2^-1, "] " %*% " ",
-                                     base^power_out),
+                                     base^-power_plot),
                               list(var1="m", var2="s", base=base,
-                                   power_out=-power_out))
+                                   power_plot=power_plot))
     if (out_mode == "meanint") {
-        power_out <- 0
-        multfac_out <- base^power_out
-        units_out <- paste0("m3 s-1 degC")
+        units_out <- "m3 s-1 degC"
     }
     dim_tag <- "3D" # because of rho
-    horiz_deriv_tag <- F
     typesuffix <- c("oce.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
     varname_fesom <- c("rho", "qnet")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "Fsalt") {
     longname <- "Salt flux to ocean"

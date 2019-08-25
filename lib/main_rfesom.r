@@ -265,8 +265,9 @@ if (cpl_tag ||
 if (dim_tag == "2D" || varname == "rossbyrad") {
     integrate_depth <- F
 }
-if (integrate_depth && length(depths) != 2) {
-    stop(paste0("Cannot integrate over 'depths'=", paste0(depths, collapse=","), " ..."))
+if (dim_tag == "3D" && integrate_depth && length(depths) != 2) {
+    message(paste0("Cannot integrate over 'depths'=", paste0(depths, collapse=","), ". Set integrate_depth to FALSE ..."))
+    integrate_depth <- F
 }
 if (integrate_depth && any(depths == "MLD")) {
     success <- load_package("abind")
@@ -1849,10 +1850,11 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                 # from element to nodes
                 poly_node_inds_geogr <- elem2d[,poly_node_inds_geogr]
 
-                # check
+                # check arbitrary polygon
                 if (F) {
                     plot(map_geogr_lim_lon, map_geogr_lim_lat, pch=4,
                          xlim=range(xcsur[poly_node_inds_geogr]), ylim=range(ycsur[poly_node_inds_geogr]))
+                    points(xcsur[poly_node_inds_geogr], ycsur[poly_node_inds_geogr], col=2)
                     polygon(xcsur[poly_node_inds_geogr], ycsur[poly_node_inds_geogr])
                 }
             
@@ -2803,7 +2805,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
             moc_mask <- rep(0, t=nod2d_n)
             moc_mask[moc_mask_inds] <- 1
             
-            # show surface nodes
+            # show surface nodes if there is an open plot
             if (length(dev.list()) > 0) {
                 points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
             }
@@ -3419,7 +3421,7 @@ if (nfiles == 0) { # read data which are constant in time
             timespan <- time[1]
             if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
         
-        } else {
+        } else { # fuser_tag = F
             # time axis for nc output
             # there are two POSIXt types, POSIXct and POSIXlt
             # "ct" stands for calendar time
@@ -3866,7 +3868,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 # check number of nodes of variable
                 if (dimcheck[1] != icount[1]) { # icount[1] always equals icount_leap[1]
-                    if (verbose > 1) {
+                    if (verbose > 2) {
                         message(paste0(indent, "   Note: ", varname_fesom[file], " data saved on ",
                                      dimcheck[1], " nodes instead of ", icount[1]))
                     }

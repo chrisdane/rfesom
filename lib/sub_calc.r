@@ -2589,8 +2589,18 @@ sub_calc <- function(data_node) {
     } # Fsalt2
 
     # upper boundary conditions which need sea water functions
-    if (any(varname == c("Ftemp",
-                         "Fthermal", "Fthermalbudget", 
+    if (varname == "Ftemp") {
+        if (verbose > 0) {
+            message(paste0(indent, "Ftemp = Qnet/(rho*cp)"))
+        }
+        if (F) { # to do: non-constant cp
+            data_node <- data_node[which(varname_fesom == "qnet"),,,]/(cp_node*data_node[which(varname_fesom == "rho"),,,])
+        } else if (T) {
+            data_node <- data_node[which(varname_fesom == "qnet"),,,]/(cp*data_node[which(varname_fesom == "rho"),,,])
+        }
+    } # Ftemp
+
+    if (any(varname == c("Fthermal", "Fthermalbudget", 
                          "Fhaline", "Fhalinebudget",
                          "Frho", "Frhobudget",
                          "FthermalB", "FthermalBbudget",
@@ -2631,9 +2641,9 @@ sub_calc <- function(data_node) {
         } # if total_rec == 0
         
         saltind <- which(vars == "salt" | vars == "so" | vars == "sos")
-        if (is.na(saltind)) stop("could not found variable salt, so or sos.")
+        if (is.na(saltind)) stop("could not find variable salt, so or sos.")
         tempind <- which(vars == "temp" | vars == "thetao" | vars == "tos")
-        if (is.na(tempind)) stop("could not found variable temp, thetao or tos.")
+        if (is.na(tempind)) stop("could not find variable temp, thetao or tos.")
         
         # cp from TEOS10
         if (is.character(cp) && cp == "gsw_cp_t_exact") {
@@ -2684,18 +2694,11 @@ sub_calc <- function(data_node) {
                                                      t=drop(t_node[,,,i]),
                                                      p=p_node)
             }
-        # or constant number
+        # or constant cp
         } else {
             if (!is.finite(cp)) stop("'cp' either needs to be a finite numeric or 'gsw_cp_t_exact'.")
             cp_node <- cp
         }
-
-        if (varname == "Ftemp") {
-            if (verbose > 0) {
-                message(paste0(indent, "Ftemp = Qnet/(rho*cp)"))
-            }
-            data_node <- data_node[which(varname_fesom == "qnet"),,,]/(cp_node*data_node[which(varname_fesom == "rho"),,,])
-        } # Ftemp
 
         # forcing data which needs alpha, beta, rho
         if (any(varname == c("Fthermal", "Fthermalbudget", 
