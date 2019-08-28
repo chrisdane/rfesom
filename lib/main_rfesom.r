@@ -4641,7 +4641,7 @@ if (nfiles == 0) { # read data which are constant in time
                                     if (out_mode == "mean" && zave_method == 2) {
                                         stop("not yet") 
                                     } else {
-                                        if (verbose > 2) {
+                                        if (verbose > 1) {
                                             message(indent, "   Calc min/max/mean/median/nominal res of ", area , " area ...")
                                         }
                                         res_node <- replicate(resolution, n=1) # resolution in elem space; dim = elem2d_n
