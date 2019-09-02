@@ -827,7 +827,6 @@ if (timespan == "") {
 }
 
 if (verbose > 0) {
-    message("==============================================")
     message("verbose: ", verbose, " (change this in the runscript for more/less info)")
     message(paste0("fesom_version: ", fesom_version))
     message(paste0("runid: ", runid))
