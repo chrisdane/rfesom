@@ -10,6 +10,9 @@ plot_type <- "const" #"const" # "const" or "interp"
                      # "interp2": testing
                      # note: "interp" plots landmasses which do not represent the land masses
                      #       of the mesh. For the actual land masses, use "const".
+plot_moc_mask <- T # plot moc mask area
+plot_csec <- T # make a plot of the location of the cross secion if out_mode == "csec_mean" or "csec_depth"?
+
 plot_file <- "png" # "png" or "pdf"
 plot_size <- c(2666, 2666)
 dpi <- 400
@@ -52,9 +55,6 @@ quiver_scale_fac <- 0.05 #25 # play around with scaling arrow length
 quiver_arrow_edge_angle <- 10 # [degree]
 quiver_arrow_edge_length <- 0.05
 quiver_legend_velocity  <- 0.04 # [unit of variable]
-
-plot_moc_mask <- T # plot moc mask area
-plot_csec <- F # make a plot of the location of the cross secion if out_mode == "csec_mean" or "csec_depth"?
 
 # which font to use
 font_family <- "Droid Sans Mono"

@@ -53,13 +53,14 @@
 ## vector/array element-selection as in matlab
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # use drop() to reduce dimensions
+# restore default: `[` <- fctbackup
 
 message("********************************************************************")
 message("* Run rfesom for reading, postprocessing and plotting FESOM output *")
 message("* https://github.com/chrisdane/rfesom                              *")
 message("********************************************************************")
 
-helppage <- "https://github.com/chrisdane/rfesom#help"
+helppage <- "https://github.com/chrisdane/rfesom#installing-new-r-packages--libraries"
 
 ## check user input
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
@@ -209,10 +210,10 @@ if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
     success <- load_package("abind")
     if (!success) stop(helppage)
 }
-if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
-    varname != "transport") {
-    out_mode <- "mean"
-}
+#if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
+#    varname != "transport") {
+#    out_mode <- "mean"
+#}
 if (transient_out && integrate_depth && dim_tag == "3D" &&
     (out_mode != "mean" && out_mode != "meanint")) {
     message(paste0("Output should be integrated over depth ('integrate_depth'=T) but out_mode=", out_mode, "."))
@@ -254,9 +255,6 @@ if (regexpr("MOC", varname) != -1) plot_map <- F
 if (moc_ltm_out && regexpr("MOC", varname) == -1) {
     moc_ltm_out <- F # calc MOC only when varname is MOCx
 }
-if (csec_ltm_out && varname != "transport") {
-    csec_ltm_out <- F # calc csec_ltm only if varname is transport
-}
 ## If there are data loaded from diag file, then snapshot is not possible
 if (cpl_tag ||
     (!cpl_tag && nfiles > 0 && any(diagsuffix == "diag."))) {
@@ -277,9 +275,16 @@ if (dim_tag == "2D" && transient_out &&
     (!any(out_mode == c("mean", "meanint", "min", "max")))) {
     stop(message(paste0("Choose a proper 'out_mode' for the 2D variable '", varname, " ...")))
 }
-if (any(out_mode == c("csec_mean", "csec_depth")) &&
-    varname != "transport") {
-    stop(paste0("For 'out_mode'=", out_mode, " 'varname' must be 'transport'"))
+#if (transient_out && any(out_mode == c("csec_mean", "csec_depth")) &&
+#    varname != "transport") {
+#    stop(paste0("For 'out_mode'=", out_mode, " 'varname' must be 'transport'"))
+#}
+#if (csec_ltm_out && varname != "transport") {
+#    csec_ltm_out <- F # calc csec_ltm only if varname is transport
+#}
+csec_ltm_out <- F # TODO
+if (csec_ltm_out || regexpr("csec_", out_mode) != -1) {
+    plot_map <- F # TODO
 }
 if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
                                              "areadepth"))) {
@@ -2124,10 +2129,6 @@ if (transient_out &&
     # points(xc[,elem_area_inds], yc[,elem_area_inds], col="red")
 
     # create progress bar
-    pb <<- mytxtProgressBar(min=0, max=elem_area_inds_n, style=pb_style,
-                            char=pb_char, width=pb_width,
-                            indent=paste0("     ", indent)) # 5 " " for default message()
-
     for (i in 1:elem_area_inds_n) { # check all 2d elems within area
 
         #progress_function(elem_area_inds_n, i, indent=paste0(indent, "   "))
@@ -2179,7 +2180,7 @@ if (transient_out &&
 
             if (F) { # try if base::solve() is successful or pracma::mldivide() must be used
                 if (i == 1) {
-                    try <- tryCatch(solve(A, P), error=function(e) e, warning=function(w) w)
+                    try <- tryCatch(base::solve(A, P), error=function(e) e, warning=function(w) w)
                     if (any(attributes(try)$names == "message")) {
                         message(paste0(indent, "Warning: 'stats::solve(A, P)' was not successful:"))
                         message(paste0(indent, indent, "         '", try$message, "'"))
@@ -2191,14 +2192,21 @@ if (transient_out &&
                 } # 1st element
 
                 if (mldivide_check) {
-                    X <- mldivide(A, P)
+                    X <- pracma::mldivide(A, P)
                 } else {
-                    X <- solve(A, P)
+                    X <- base::solve(A, P)
                 }
             } else { # use pracma::mldivide() as default
-                X <- mldivide(A, P)
+                X <- pracma::mldivide(A, P)
             }
-            
+           
+            # open progress bar here after load_package
+            if (i == 1 && j == 2) {
+                pb <- mytxtProgressBar(min=0, max=elem_area_inds_n, style=pb_style,
+                                       char=pb_char, width=pb_width,
+                                       indent=paste0("  ", indent)) # 5 " " for default message()
+            }
+
             # if cutted element
             if (((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
                  (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) ||
@@ -2218,10 +2226,10 @@ if (transient_out &&
                 if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
                     (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
 
-                    P_x_cut <- xc[1,elem_area_inds[i]] + 
-                               X[1]*(xc[2,elem_area_inds[i]] - xc[1,elem_area_inds[i]])/norm_tri_edge1
-                    P_y_cut <- yc[1,elem_area_inds[i]] + 
-                               X[1]*(yc[2,elem_area_inds[i]] - yc[1,elem_area_inds[i]])/norm_tri_edge1
+                    P_x_cut <- drop(xc[1,elem_area_inds[i]] + 
+                                    X[1]*(xc[2,elem_area_inds[i]] - xc[1,elem_area_inds[i]])/norm_tri_edge1)
+                    P_y_cut <- drop(yc[1,elem_area_inds[i]] + 
+                                    X[1]*(yc[2,elem_area_inds[i]] - yc[1,elem_area_inds[i]])/norm_tri_edge1)
                  
                     #if isempty(find(  abs(obj(csi).crossed_edge_pts_x{segi-1}-P_x_cut)<=eps & abs(obj(csi).crossed_edge_pts_y{segi-1}-P_y_cut)<=eps,1));
                     #    obj(csi).crossed_edge_pts_x{segi-1} = [obj(csi).crossed_edge_pts_x{segi-1} P_x_cut];
@@ -2243,10 +2251,10 @@ if (transient_out &&
                 if ((X[3] >= 0 && (X[3] - norm_tri_edge2) <= eps) && 
                     (X[4] >= 0 && (X[4] - csec_norm_edge[j-1]) <= eps)) {
 
-                    P_x_cut <- xc[2,elem_area_inds[i]] + 
-                               X[3]*(xc[3,elem_area_inds[i]] - xc[2,elem_area_inds[i]])/norm_tri_edge2
-                    P_y_cut <- yc[2,elem_area_inds[i]] + 
-                               X[3]*(yc[3,elem_area_inds[i]] - yc[2,elem_area_inds[i]])/norm_tri_edge2
+                    P_x_cut <- drop(xc[2,elem_area_inds[i]] + 
+                                    X[3]*(xc[3,elem_area_inds[i]] - xc[2,elem_area_inds[i]])/norm_tri_edge2)
+                    P_y_cut <- drop(yc[2,elem_area_inds[i]] + 
+                                    X[3]*(yc[3,elem_area_inds[i]] - yc[2,elem_area_inds[i]])/norm_tri_edge2)
                    
                     if (F) {
                         message(paste0(i, " (3,4): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
@@ -2263,10 +2271,10 @@ if (transient_out &&
                 if ((X[5] >= 0 && (X[5] - norm_tri_edge3) <= eps) && 
                     (X[6] >= 0 && (X[6] - csec_norm_edge[j-1]) <= eps)) {
 
-                    P_x_cut <- xc[3,elem_area_inds[i]] + 
-                               X[5]*(xc[1,elem_area_inds[i]] - xc[3,elem_area_inds[i]])/norm_tri_edge3
-                    P_y_cut <- yc[3,elem_area_inds[i]] +
-                               X[5]*(yc[1,elem_area_inds[i]] - yc[3,elem_area_inds[i]])/norm_tri_edge3
+                    P_x_cut <- drop(xc[3,elem_area_inds[i]] + 
+                                    X[5]*(xc[1,elem_area_inds[i]] - xc[3,elem_area_inds[i]])/norm_tri_edge3)
+                    P_y_cut <- drop(yc[3,elem_area_inds[i]] +
+                                    X[5]*(yc[1,elem_area_inds[i]] - yc[3,elem_area_inds[i]])/norm_tri_edge3)
 
                     if (F) {
                         message(paste0(i, " (5,6): ", which(abs(csec_edge_pointsx[[j-1]] - P_x_cut) <= eps &
@@ -2366,10 +2374,10 @@ if (transient_out &&
 
         # CROSS-SECTION CONSISTS OF TWO POINTS
         if (csec_n_vertices == 2) {
-            csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1] + min_norm[i-1]*csec_e_vec_edge[1,i-1],
-                                       map_geogr_lim_lat[i-1] + min_norm[i-1]*csec_e_vec_edge[2,i-1])
-            csec_BND_point2[,i-1] <- c(map_geogr_lim_lon[i-1] + max_norm[i-1]*csec_e_vec_edge[1,i-1],
-                                       map_geogr_lim_lat[i-1] + max_norm[i-1]*csec_e_vec_edge[2,i-1])
+            csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1] + min_norm[i-1]*drop(csec_e_vec_edge[1,i-1]),
+                                       map_geogr_lim_lat[i-1] + min_norm[i-1]*drop(csec_e_vec_edge[2,i-1]))
+            csec_BND_point2[,i-1] <- c(map_geogr_lim_lon[i-1] + max_norm[i-1]*drop(csec_e_vec_edge[1,i-1]),
+                                       map_geogr_lim_lat[i-1] + max_norm[i-1]*drop(csec_e_vec_edge[2,i-1]))
 
             auxnorm_edge <- sqrt((csec_BND_point2[1,i-1] - csec_BND_point1[1,i-1])^2 +
                                  (csec_BND_point2[2,i-1] - csec_BND_point1[2,i-1])^2)
@@ -2378,25 +2386,25 @@ if (transient_out &&
             nr_support_points <- ceiling((max_norm[i-1] - min_norm[i-1])/wanted_step)
             step <- (max_norm[i-1] - min_norm[i-1])/nr_support_points
             
-            csec_support_points[[i-1]] = rbind(csec_BND_point1[1,i-1] + 
+            csec_support_points[[i-1]] = rbind(drop(csec_BND_point1[1,i-1]) + 
                                                seq(0, max_norm[i-1] - min_norm[i-1], b=step)*
-                                               csec_e_vec_edge[1,i-1],
-                                               csec_BND_point1[2,i-1] + 
+                                               drop(csec_e_vec_edge[1,i-1]),
+                                               drop(csec_BND_point1[2,i-1]) + 
                                                seq(0, max_norm[i-1] - min_norm[i-1], b=step)*
-                                               csec_e_vec_edge[2,i-1])
+                                               drop(csec_e_vec_edge[2,i-1]))
                                               
         # CROSS-SECTION CONSISTS OF MORE THAN TWO POINTS
         } else if (csec_n_edges != 2) { 
             
             if (i == 2) {
-                csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1] + min_norm[i-1]*csec_e_vec_edge[1,i-1],
-                                           map_geogr_lim_lat[i-1] + min_norm[i-1]*csec_e_vec_edge[2,i-1])
+                csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1] + min_norm[i-1]*drop(csec_e_vec_edge[1,i-1]),
+                                           map_geogr_lim_lat[i-1] + min_norm[i-1]*drop(csec_e_vec_edge[2,i-1]))
                 csec_BND_point2[,i-1] <- c(map_geogr_lim_lon[i], map_geogr_lim_lat[i])
 
             } else if (i == length(map_geogr_lim_lon)) {
                 csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1], map_geogr_lim_lat[i-1])
-                csec_BND_point2[,i-1] <- c(map_geogr_lim_lon[i-1] + max_norm[i-1]*csec_e_vec_edge[1,i-1],
-                                           map_geogr_lim_lat[i-1] + max_norm[i-1]*csec_e_vec_edge[2,i-1])
+                csec_BND_point2[,i-1] <- c(map_geogr_lim_lon[i-1] + max_norm[i-1]*drop(csec_e_vec_edge[1,i-1]),
+                                           map_geogr_lim_lat[i-1] + max_norm[i-1]*drop(csec_e_vec_edge[2,i-1]))
 
             } else {
                 csec_BND_point1[,i-1] <- c(map_geogr_lim_lon[i-1], map_geogr_lim_lat[i-1])
@@ -2411,12 +2419,12 @@ if (transient_out &&
             step <- (sqrt((csec_BND_point2[1,i-1] - csec_BND_point1[1,i-1])^2 +
                           (csec_BND_point2[2,i-1] - csec_BND_point1[2,i-1])^2))/nr_support_points
 
-            csec_support_points[[i-1]] <- rbind(csec_BND_point1[1,i-1] + 
+            csec_support_points[[i-1]] <- rbind(drop(csec_BND_point1[1,i-1]) + 
                                                 seq(0, auxnorm_edge, b=step)*
-                                                csec_e_vec_edge[1,i-1],
-                                                csec_BND_point1[2,i-1] + 
+                                                drop(csec_e_vec_edge[1,i-1]),
+                                                drop(csec_BND_point1[2,i-1]) + 
                                                 seq(0, auxnorm_edge, b=step)*
-                                                csec_e_vec_edge[2,i-1])
+                                                drop(csec_e_vec_edge[2,i-1]))
         
         } # if csec_n_vertices == 2 or not
 
@@ -2468,9 +2476,12 @@ if (transient_out &&
             message("YC")
             message(YC[,1:4])
         }
-
+        
+        #`[` <- fctbackup
+        #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
         for (j in 1:dim(XC)[2]) { # for every element on csection
-            A <- rbind(XC[,j], YC[,j], c(1, 1, 1))
+            #A <- rbind(XC[,j], YC[,j], c(1, 1, 1)) # with default `[`
+            A <- t(cbind(XC[,j], YC[,j], c(1, 1, 1))) # with drop=F
             P <- rbind(csec_interp_points[[i-1]],
                        rep(1, t=length(csec_interp_points[[i-1]][1,])))
             X <- solve(A, P)
@@ -2514,7 +2525,7 @@ if (transient_out &&
             csec_interp_index[[i-1]] <- rev(csec_interp_index[[i-1]])
             csec_interp_points[[i-1]] <- csec_interp_points[[i-1]][,length(csec_interp_points[[i-1]][1,]):1]
             csec_DeltaR[[i-1]] <- rev(csec_DeltaR[[i-1]])
-            message(str(csec_DeltaR))
+            #message(str(csec_DeltaR))
             csec_interp_index2[[i-1]] <- rev(csec_interp_index2[[i-1]])
             csec_edge_pointsx[[i-1]] <- rev(csec_edge_pointsx[[i-1]])
             csec_edge_pointsy[[i-1]] <- rev(csec_edge_pointsy[[i-1]])
@@ -2566,21 +2577,22 @@ if (transient_out &&
     csec_inds[csec_node_inds] <- 1:csec_crossed_nodes_n
 
     nod2d_n_save <- nod2d_n
-    nod2d_n <- length(csec_node_inds)
-    aux3d_save <- aux3d
-    aux3d <- aux3d[,csec_node_inds]
-    pos_nodes <- rep(NA, t=nod2d_n_save)
-    pos_nodes[csec_node_inds] <- 1:length(csec_node_inds)
-    xcsur_save <- xcsur
-    xcsur <- xcsur[csec_node_inds]
-    ycsur_save <- ycsur
-    ycsur <- ycsur[csec_node_inds]
+    nod2d_csec_n <- length(csec_node_inds)
+    #aux3d_save <- aux3d
+    #aux3d <- aux3d[,csec_node_inds]
+    pos_csec <- rep(NA, t=nod2d_n_save)
+    pos_csec[csec_node_inds] <- 1:length(csec_node_inds)
+    #xcsur_save <- xcsur
+    #xcsur <- xcsur[csec_node_inds]
+    #ycsur_save <- ycsur
+    #ycsur <- ycsur[csec_node_inds]
 
     #___CALC: HORIZONTAL INTERPOLATION COEFFITIENT______________________
     # align all edges of cross section along 1 dimension
-    XC <- xc[,csec_elem_inds]
-    YC <- yc[,csec_elem_inds]
+    #XC <- xc[,csec_elem_inds]
+    #YC <- yc[,csec_elem_inds]
 
+    # put all segments of cross section together
     csec_interp_points_vec <- matrix(unlist(csec_interp_points), nrow=2)
     csec_interp_index_vec <- unlist(csec_interp_index) 
     csec_DeltaR_vec <- unlist(csec_DeltaR)
@@ -2602,20 +2614,27 @@ if (transient_out &&
 
     # check csection
     if (plot_csec) {
-        if (!dir.exists(paste0(plotpath, "/", varname))) {
-            dir.create(paste0(plotpath, "/", varname), recursive=T, showWarnings=F)
+        if (!dir.exists(paste0(plotpath, "/csec_locations"))) {
+            dir.create(paste0(plotpath, "/csec_locations"), recursive=T, showWarnings=F)
         }
-        plotname <- paste0(plotpath, "/", varname, "/",
+        zoomout_fac <- 5
+        plotname <- paste0(plotpath, "/csec_locations/",
                            runid, "_", setting, 
                            "_csec_location_", area,
-                           ".", plot_file)
-        if (!file.exists(plotname)) {
-
+                           "_zoomout", zoomout_fac, ".", plot_file)
+        
+        if (file.exists(plotname)) { # found plot
             if (verbose > 1) {
-                message(paste0(indent, "Open cross section '", area, "' location plot device ..."))
+                message(indent, "Found ", area, " cross section plot:\n", 
+                        indent, "  ", plotname)
+            }
+        
+        } else { # create csec plot
+            if (verbose > 1) {
+                message(indent, "Open cross section '", area, "' location plot device ...")
             }
             if (plot_file == "png") {
-                ng(plotname,
+                png(plotname,
                     width=plot_size[1], height=plot_size[2],
                     res=dpi, bg=bg_col,
                     family=font_family)
@@ -2630,11 +2649,36 @@ if (transient_out &&
                 par(mar=c(5,3,4,6))
             }
 
+            # xlim ylim asp needs to be true for having a proper arrow
+            xlim <- vector("list", l=length(csec_interp_points))
+            ylim <- xlim
+            for (i in 1:length(csec_interp_points)) { # for every segment of cross section
+                xlim[[i]] <- c(mean(csec_interp_points[[i]][1,]) - 
+                               zoomout_fac*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
+                                                   diff(range(csec_interp_points[[i]][2,])))))),
+                               mean(csec_interp_points[[i]][1,]) + 
+                               zoomout_fac*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
+                                                   diff(range(csec_interp_points[[i]][2,])))))))
+                ylim[[i]] <- c(mean(csec_interp_points[[i]][2,]) - 
+                               zoomout_fac*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
+                                                   diff(range(csec_interp_points[[i]][2,])))))),
+                               mean(csec_interp_points[[i]][2,]) + 
+                               zoomout_fac*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
+                                                   diff(range(csec_interp_points[[i]][2,])))))))
+            }
+            xlim <- range(xlim)
+            ylim <- range(ylim)
+
+            # open plot
+            plot(0, 0, t="n", xlim=xlim, ylim=ylim, las=1, 
+                 xlab="Longitude [°]", ylab="Latitude [°]")
+
+            # add bathy first if available 
             bathyf <- paste0("/work/ba0941/a270073/post/", 
                              substr(runid, 1, 5), 
-                             "/", setting, "/regular_grid/ltm/global/bathy/",
+                             "/", setting, "/regular_grid/ltm/area/global/bathy/",
                              substr(runid, 1, 5), 
-                             "_", setting, "_bathy_ltm_global_rectangular_regular_dx0.100_dy0.100.nc")
+                             "_", setting, "_bathy_ltm_area_global_rectangular_regular_dx0.100_dy0.100.nc")
             if (file.exists(bathyf)) {
                 bathync <- nc_open(bathyf)
                 bathy <- ncvar_get(bathync, "bathy")
@@ -2642,93 +2686,70 @@ if (transient_out &&
                 levels <- pretty(range(bathy, na.rm=T), n=10)
                 cols <- colorRampPalette(c("#c5ebdc", "#a0dfda", "#7fd5e8", "#5ecbe6", "#49add9",
                                            "#3d82c9", "#3259af", "#26468b", "#212f5c", "#141c34"))(length(levels) - 1)
-                xlim <- vector("list", l=length(csec_interp_points))
-                ylim <- xlim
-                for (i in 1:length(csec_interp_points)) {
-                    xlim[[i]] <- c(mean(csec_interp_points[[i]][1,]) - 
-                                   1*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
-                                                       diff(range(csec_interp_points[[i]][2,])))))),
-                                   mean(csec_interp_points[[i]][1,]) + 
-                                   1*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
-                                                       diff(range(csec_interp_points[[i]][2,])))))))
-                    ylim[[i]] <- c(mean(csec_interp_points[[i]][2,]) - 
-                                   1*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
-                                                       diff(range(csec_interp_points[[i]][2,])))))),
-                                   mean(csec_interp_points[[i]][2,]) + 
-                                   1*ceiling(max(abs(c(diff(range(csec_interp_points[[i]][1,])),
-                                                       diff(range(csec_interp_points[[i]][2,])))))))
-                }
-                xlim <- range(xlim)
-                ylim <- range(ylim)
-                image.plot(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy,
-                           xlim=xlim, ylim=ylim,
-                           breaks=levels, col=cols)
-                for (i in 1:length(csec_interp_points)) {
-
-                    # draw interp points of csection
-                    points(csec_interp_points[[i]][1,], csec_interp_points[[i]][2,], col=i, cex=0.5)
-                    
-                    if (T) {
-                        arrows(x0=mean(csec_interp_points[[i]][1,]),
-                               y0=mean(csec_interp_points[[i]][2,]),
-                               x1=mean(csec_interp_points[[i]][1,]) + 
-                                  csec_n_vec_edge[1,i]/(sqrt(csec_n_vec_edge[1,i]^2 + csec_n_vec_edge[2,i]^2))*2,
-                               y1=mean(csec_interp_points[[i]][2,]) + 
-                                  csec_n_vec_edge[2,i]/(sqrt(csec_n_vec_edge[1,i]^2 + csec_n_vec_edge[2,i]^2))*2,
-                               col=i, lwd=3)
-                    } else {
-                        quiver(x=mean(csec_interp_points[[i]][1,]),
-                               y=mean(csec_interp_points[[i]][2,]),
-                               u=csec_n_vec_edge[1,i],
-                               v=csec_n_vec_edge[2,i],
-                               col=i, lwd=3)
-                    }
-                }
-                if (F) {
+                if (T) {
+                    image(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy,
+                          breaks=levels, col=cols, add=T)
+                } else if (F) {
                     contour(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy, add=T,
                             levels=c(500, 600, 700))
                 }
-                box()
+            } # if bathyf exists
 
-            ## bathy does not exist
-            } else {
-
-                project <- F
-                if (project) {
-                    stop("not")
-                    xy0 = mapproject(x=mean(csec_interp_points[[1]][1,]),
-                                     y=mean(csec_interp_points[[1]][2,]))
-                    xy1 = mapproject(x=mean(csec_interp_points[[1]][1,]) + csec_n_vec_edge[1,1]/(sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2))*10,
-                                     y=mean(csec_interp_points[[1]][2,]) + csec_n_vec_edge[2,1]/(sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2))*10)
-                    arrows(x0=xy0$x, y0=xy0$y,
-                           x1=xy1$x, y1=xy1$y,
-                           col=2, lwd=3)
+            if (T) { # ad coastline from maps package
+                success <- load_package("maps")
+                if (success) {
+                    map("world", add=T) 
                 } else {
-                    success <- load_package("maps")
-                    if (!success) stop(helppage)
-                    map("world", 
-                        xlim=c(range(csec_interp_points[[1]][1,])[1] - abs(0.5*range(csec_interp_points[[1]][1,])[1]),
-                               range(csec_interp_points[[1]][1,])[2] + abs(0.5*range(csec_interp_points[[1]][1,])[2])),
-                        ylim=c(range(csec_interp_points[[1]][2,])[1] - abs(0.5*range(csec_interp_points[[1]][2,])[1]),
-                               range(csec_interp_points[[1]][2,])[2] + abs(0.5*range(csec_interp_points[[1]][2,])[2])))
-                    points(csec_interp_points[[1]][1,], csec_interp_points[[1]][2,]) 
-                    arrows(x0=mean(csec_interp_points[[1]][1,]),
-                           y0=mean(csec_interp_points[[1]][2,]),
-                           x1=mean(csec_interp_points[[1]][1,]) + csec_n_vec_edge[1,1]/(sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2))*10,
-                           y1=mean(csec_interp_points[[1]][2,]) + csec_n_vec_edge[2,1]/(sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2))*10,
-                           col=2, lwd=3)
+                    message("Could not load 'maps' package. ", helppage)
                 }
-            }
+            } # if add coastline from maps package
+
+            # add cross section points and normal arrow for every csection segment
+            for (i in 1:length(csec_interp_points)) { 
+
+                # points of csection
+                points(csec_interp_points[[i]][1,], csec_interp_points[[i]][2,], col=i, cex=0.5)
+               
+                # normal arrow
+                arrow_enhancefac <- 5
+                x0 <- mean(csec_interp_points[[i]][1,])
+                y0 <- mean(csec_interp_points[[i]][2,])
+                x1 <- drop(mean(csec_interp_points[[1]][1,]) + 
+                           arrow_enhancefac*csec_n_vec_edge[1,1]/
+                           (sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2)))
+                y1 <- drop(mean(csec_interp_points[[1]][2,]) + 
+                           arrow_enhancefac*csec_n_vec_edge[2,1]/
+                           (sqrt(csec_n_vec_edge[1,1]^2 + csec_n_vec_edge[2,1]^2)))
+                if (F) { # project coords
+                    if (i == 1) {
+                        success <- load_package("mapproj")
+                        if (!success) stop(helppage)
+                    }
+                    xy0 <- mapproject(x=x0, y=y0)
+                    x0 <- xy0$x
+                    y0 <- xy0$y
+                    xy1 <- mapproject(x=x1, y=y1)
+                    x1 <- xy1$x
+                    y1 <- xy1$y
+                } # project or not
+                
+                if (T) { # use arrows()
+                    arrows(x0=x0, y0=y0, x1=x1, y1=y1,
+                           col=i, lwd=3)
+                } else if (T) { # use quiver()
+                    quiver(x=x0, y=y0,
+                           u=arrow_enhancefac*csec_n_vec_edge[1,i],
+                           v=arrow_enhancefac*csec_n_vec_edge[2,i],
+                           col=i, lwd=3)
+                }
+            } # for i every csec segment
        
+            box()
             if (verbose > 1) {
                 message(paste0(indent, "Save ", plotname, " ..."))
             }
             dev.off()
 
-        } else {
-            if (verbose > 1) {
-                message(paste0(indent, "Cross section location plot: ", plotname))
-            }
         } # if csec location plot already exists
  
     } # if plot_csec
@@ -2859,18 +2880,16 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
 if (nfiles > 0) {
 
     if (dim_tag == "2D") {
-        
         if (verbose > 0) {
             message(paste0("4) Vertical interpolation not necessary for ", 
                         dim_tag, " variable ", varname, " ..."))
         }
-        
         depths_plot <- ""
         depths_fname <- ""
         interpolate_depths <- 0
         ndepths <- 1
     
-    } else {
+    } else { # 3D
 
         ## In case of restart, reload vertical interpolation coefficients...
         if (restart 
@@ -4119,21 +4138,6 @@ if (nfiles == 0) { # read data which are constant in time
                 sub_prepare2(data_node) # overwrites data_node with the result of sub_prepare2()
                 indent <- indent_save; rm(indent_save)
 
-                if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
-                    if (verbose > 1) { 
-                        message(paste0(indent, "For Cross section bring data_node from (nod3d_n=", nod3d_n,
-                                     ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                        if (verbose > 2) {
-                            message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
-                        }
-                    }
-                    indent_save <- indent; indent <- paste0(indent_save, "   ")
-                    sub_n3_to_n2xde(data_node) # produces tmp
-                    indent <- indent_save; rm(indent_save)
-                    data_global_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
-                    rm(tmp)
-                }
-
 
                 ## At this point,
                 ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
@@ -4145,7 +4149,7 @@ if (nfiles == 0) { # read data which are constant in time
 
                 ## variable specific calculations
                 if (verbose > 1) {
-                    message(paste0(indent, "Run ", subroutinepath, "/sub_calc.r ..."))
+                    message(indent, "Run ", subroutinepath, "/sub_calc.r ...")
                 }
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_calc(data_node) # overwrites data_node with the result of sub_calc()
@@ -5111,249 +5115,270 @@ if (nfiles == 0) { # read data which are constant in time
 
 
                 } else if (any(out_mode == c("csec_mean", "csec_depth"))) {
+
+                    if (verbose > 1) { 
+                        message(paste0(indent, "For cross section bring data_node from (nod3d_n=", nod3d_n,
+                                     ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+                        if (verbose > 2) {
+                            message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
+                        }
+                    }
+                    indent_save <- indent; indent <- paste0(indent_save, "   ")
+                    sub_n3_to_n2xde(data_node) # produces tmp
+                    indent <- indent_save; rm(indent_save)
+                    data_global_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
+                    rm(tmp)
+
+                    # change depth and time dimensions of data_global_vert
+                    #data_global_vert <- aperm(data_global_vert, c(1, 2, 4, 3))
+                    
                     if (verbose > 1) {
-                        message(paste0(indent, "Interpolate '", area, "' area '", out_mode,
-                                     "' data from nodes to elements ..."))
+                        message(indent, "Interpolate from nodes to elements ...")
                     }
 
-                    ## change depth and time dimensions of data_global_vert
-                    #data_global_vert <- aperm(data_global_vert, c(1, 2, 4, 3))
+                    csec_use_middle <- F
+                    if (csec_use_middle) {
+                        # average over upper and lower nodes of prism
+                        # from patrick; probably because he lost 1 value by dz = diff(z)
+                        data_global_vert <- (data_global_vert[,,2:ndepths,] +
+                                             data_global_vert[,,1:(ndepths-1),])/2
+                        # inputarray.range.depth_vek{1}(1:end-1)+(inputarray.range.depth_vek{1}(2:end)-inputarray.range.depth_vek{1}(1:end-1))/2;
+                        csec_middle_depths <- interpolate_depths[2:ndepths] - diff(interpolate_depths)/2
+                        dimnames(data_global_vert)[3] <- list(csec_middle_depths=interpolate_depths)
 
-                    ## for every csection edge
-                    for (i in 1:(length(map_geogr_lim_lon)-1)) {
+                    } else if (!csec_use_middle) {
+                        #data_global_vert <- data_global_vert
+                        csec_middle_depths <- interpolate_depths
+                    }
 
-                        csec_use_middle <- F
+                    # for correct matrix multiplication dimensions
+                    horiz_interp_coef1 <- csec_interp_fac1_vec/csec_interp_d_vec
+                    horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[1]) # nvars
+                    horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[3]) # ndepths
+                    horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[4]) # nrecspf
+                    horiz_interp_coef1 <- aperm(horiz_interp_coef1, c(2, 1, 3, 4))
+                    horiz_interp_coef2 <- csec_interp_fac2_vec/csec_interp_d_vec
+                    horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[1]) # nvars
+                    horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[3]) # ndepths
+                    horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[4]) # nrecspf
+                    horiz_interp_coef2 <- aperm(horiz_interp_coef2, c(2, 1, 3, 4))
+
+                    # function [variable_out]=csection_analyse_interp_point_se(obj,variable_in,csi)
+                    # pos_csec[elem2d[1,csec_elem_inds]] = 80 
+                    data_vert_csec <- data_global_vert[,pos_csec[elem2d[1,csec_interp_index_vec]],,] + 
+                                    ((data_global_vert[,pos_csec[elem2d[2,csec_interp_index_vec]],,] - 
+                                      data_global_vert[,pos_csec[elem2d[1,csec_interp_index_vec]],,])*horiz_interp_coef1) - 
+                                    ((data_global_vert[,pos_csec[elem2d[3,csec_interp_index_vec]],,] -
+                                      data_global_vert[,pos_csec[elem2d[1,csec_interp_index_vec]],,])*horiz_interp_coef2)
+
+                    # repair own stupidness: put time at the end
+                    #data_vert_csec <- aperm(data_vert_csec, c(1, 2, 4, 3))
+                    
+                    # for every csection edge/segment
+                    #for (i in 1:(length(map_geogr_lim_lon)-1)) {
+                    
+                    # check
+                    if (T) {
+                        image.plot(sort(drop(csec_interp_points_vec[1,])), 
+                                   interpolate_depths, 
+                                   drop(data_vert_csec[1,,,1]), 
+                                   ylim=rev(range(interpolate_depths)))
+                        stop("asasda")
+                    }
+                    
+                    # Irregular dx and dz for section mean
+                    if (total_rec == 0) { # only once
                         if (csec_use_middle) {
-                            # average over upper and lower nodes of prism
-                            # from patrick; probably because he lost 1 value by dz = diff(z)
-                            data_global_vert <- (data_global_vert[,,2:ndepths,] +
-                                                 data_global_vert[,,1:(ndepths-1),])/2
-                            # inputarray.range.depth_vek{1}(1:end-1)+(inputarray.range.depth_vek{1}(2:end)-inputarray.range.depth_vek{1}(1:end-1))/2;
-                            csec_middle_depths <- interpolate_depths[2:ndepths] - diff(interpolate_depths)/2
-                            dimnames(data_global_vert)[3] <- list(csec_middle_depths=interpolate_depths)
-
-                        } else if (!csec_use_middle) {
-                            data_global_vert <- data_global_vert
-                            csec_middle_depths <- interpolate_depths
-                        }
-
-                        # for correct matrix multiplication dimensions
-                        horiz_interp_coef1 <- csec_interp_fac1_vec/csec_interp_d_vec
-                        horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[1]) # nvars
-                        horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[3]) # ndepths
-                        horiz_interp_coef1 <- replicate(horiz_interp_coef1, n=dim(data_global_vert)[4]) # nrecspf
-                        horiz_interp_coef1 <- aperm(horiz_interp_coef1, c(2, 1, 3, 4))
-                        horiz_interp_coef2 <- csec_interp_fac2_vec/csec_interp_d_vec
-                        horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[1]) # nvars
-                        horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[3]) # ndepths
-                        horiz_interp_coef2 <- replicate(horiz_interp_coef2, n=dim(data_global_vert)[4]) # nrecspf
-                        horiz_interp_coef2 <- aperm(horiz_interp_coef2, c(2, 1, 3, 4))
-
-                        # function [variable_out]=csection_analyse_interp_point_se(obj,variable_in,csi)
-                        # pos_nodes[elem2d[1,csec_elem_inds]] = 80 
-                        data_vert_csec <- data_global_vert[,pos_nodes[elem2d[1,csec_interp_index_vec]],,] + 
-                                        ((data_global_vert[,pos_nodes[elem2d[2,csec_interp_index_vec]],,] - 
-                                          data_global_vert[,pos_nodes[elem2d[1,csec_interp_index_vec]],,])*horiz_interp_coef1) - 
-                                        ((data_global_vert[,pos_nodes[elem2d[3,csec_interp_index_vec]],,] -
-                                          data_global_vert[,pos_nodes[elem2d[1,csec_interp_index_vec]],,])*horiz_interp_coef2)
-
-                        ## repair own stupidness: put time at the end
-                        #data_vert_csec <- aperm(data_vert_csec, c(1, 2, 4, 3))
-
-                        ## Irregular dx and dz for section mean
-                        if (total_rec == 0) {
-                            
-                            if (csec_use_middle) {
-                                # diff(interpolate_depths) = 
-                                # (inputarray.range.depth_vek{1}(kk)-inputarray.range.depth_vek{1}(kk-1)) =
-                                # inputarray.range.depth_vek{1}(2:end)-inputarray.range.depth_vek{1}(1:end-1);
-                                drdz <- outer(csec_DeltaR_vec, diff(interpolate_depths), "*")
-                            
-                            } else if (!csec_use_middle) {
-                                
-                                if (F) {
-                                    interpolate_depths <- interpolate_depths
-                                    ndepths = length(interpolate_depths)
-                                    deltaz=rep(0, t=ndepths-1)
-                                    deltaz[1]=(interpolate_depths[1]-interpolate_depths[2])/2
-                                    deltaz[ndepths]=(interpolate_depths[ndepths-1]-interpolate_depths[ndepths])/2
-                                    for (n in 2:(ndepths-1)) {
-                                        deltaz[n]=(interpolate_depths[n-1]-interpolate_depths[n])/2 + 
-                                                  (interpolate_depths[n]-interpolate_depths[n+1])/2
-                                    }
-                                    deltaz <- abs(deltaz)
-                                } else {
-                                    # like patrick:
-                                    deltaz <- diff(fesom_depths)[1:ndepths]
-                                    deltaz[length(deltaz)] <- deltaz[length(deltaz) - 1]
-                                }
-                                drdz <- outer(csec_DeltaR_vec, deltaz, "*")
-                            }
-
-                            drdz <- replicate(drdz, n=dim(data_vert_csec)[4]) # add 3rd dim: nrecspf
-                            drdz <- replicate(drdz, n=1) # add 4th dim: nvars 
-                            drdz <- aperm(drdz, c(4, 1, 2, 3)) # nvars,nodslot,ndepths,nrecspf
-                        }
-
-                        ## Cross section calculations here
-                        if (varname == "transport") {
-
-                            # Transport through section s from point A to point B = 
-                            # int_{A}^{B} int_{bottom}^{z=0} (\vec{u}_h \cdot \vec{n}) dz dr
-                            
-                            if (F) { # old
-                                transport <- (data_vert_csec[which(varname_fesom == "u"),,,]*csec_n_vec_edge_vec[1,i] +
-                                              data_vert_csec[which(varname_fesom == "v"),,,]*csec_n_vec_edge_vec[2,i])*drdz
-                                transport <- transport / 1e6 # m3 s-1 --> Sv
-                            } else {
-                                # velocity normal to cross section in m/s
-                                transport <- data_vert_csec[which(varname_fesom == "u"),,,]*csec_n_vec_edge_vec[1,i] +
-                                             data_vert_csec[which(varname_fesom == "v"),,,]*csec_n_vec_edge_vec[2,i]
-                            }
-                            dimnames(transport)[[1]] <- list(var=varname)
-                            success <- load_package("abind")
-                            if (!success) stop(helppage)
-                            data_vert_csec <- abind(data_vert_csec, transport, along=1, use.dnns=T)
-
-                        } else if (varname == "sitransport") {
-
-                            stop("update")
-                            dr <- outer(csec_DeltaR_vec, diff(interpolate_depths), "*")
-                            dr <- replicate(drdz, n=dim(data_vert_csec)[4]) # 3: ntime
-                            dr <- replicate(drdz, n=1) # 4: var 
-                            dr <- aperm(drdz, c(4, 1, 2, 3))
-
-                            # Sea ice volume transport through section s from point A to point B = 
-                            # int_{A}^{B} (\vec{u}_h \cdot \vec{n} * sic * hice) dr
-                            sitransport <- (data_vert_csec[which(varname_fesom == "u"),,,]*csec_n_vec_edge_vec[1,i] +
-                                            data_vert_csec[which(varname_fesom == "v"),,,]*csec_n_vec_edge_vec[2,i]) *
-                                           data_vert_csec[which(varname_fesom == "area"),,,] *
-                                           data_vert_csec[which(varname_fesom == "hice"),,,] * dr
-                            sitransport <- sitransport / 1e6 # Sv = 10^6 m^3 s^-1
-                            dimnames(sitransport)[[1]] <- list(var=varname)
-                            data_vert_csec <- abind(data_vert_csec, sitransport, along=1, use.dnns=T)
-
-                        } # which cross section varname 
-
-                        if (F) {
-                            dev.new()
-                            xx <- 1:length(csec_interp_points_vec[1,])
-                            image.plot(xx, csec_middle_depths, data_vert_csec[3,,,1], ylim=rev(range(csec_middle_depths)))
-                        }
-
-                        ## Apply csec conditions
-                        if (out_mode == "csec_mean" && csec_conds_n > 0) {
-
-                            cond_inds <- vector("list", l=csec_conds_n)
-                            for (j in 1:csec_conds_n) {
-
-                                if (csec_conds[j] == "gt") cond <- ">"
-                                if (csec_conds[j] == "ge") cond <- ">="
-                                if (csec_conds[j] == "lt") cond <- "<"
-                                if (csec_conds[j] == "le") cond <- "<="
-                                message(paste0(indent, "Apply ", varname, " condition: ",
-                                             csec_cond_vars[j], " ", cond, " ",
-                                             csec_cond_vals[j], " ", 
-                                             csec_cond_units[j], " ..."))
-
-                                # condition variable
-                                cond_var_ind <- which(dimnames(data_vert_csec)[[1]] == csec_cond_vars[j])
-                                # condition inds
-                                cond_inds[[j]] <- eval(parse(text=paste0("data_vert_csec[", cond_var_ind, 
-                                                                         ",,,] ", cond, " ", 
-                                                                         csec_cond_vals[j])))
-                                #if (is.na(any(cond_inds[[i]]))) {
-                                #    stop("Error: no elements ", out_mode, varname 
-                                #}
-                            } # for j csec_conds_n
-
-                        } # if csec_mean && csec_conds_n > 0
-
-                        if (total_rec == 0) {
-                            if (out_mode == "csec_mean") {
-                                data_funi <- array(NA, c(dim(data_vert_csec)[1], ntime),
-                                                   dimnames=c(dimnames(data_vert_csec)[1], 
-                                                              list(rec=timechar)))
-                            } else if (out_mode == "csec_depth") {
-                                data_funi <- array(NA, c(dim(data_vert_csec)[1:3], ntime),
-                                                   dimnames=c(dimnames(data_vert_csec)[1:3], 
-                                                              list(rec=timechar)))
-                            }
-                        }
-                        if (rec_tag) {
-                            if (leap_tag && is.leap(year)) {
-                                time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
-                            } else {
-                                time_inds <- (total_rec + 1):(total_rec + nrecspf)
-                            }
-                        } else {
-                            time_inds <- total_rec + 1
-                        }
-
-                        if (verbose > 1) {
-                            message(paste0(indent, "Calc ", area, " area ", out_mode,
-                                         " and save at time inds=",
-                                         paste(time_inds, collapse=",")))
-                        }
-
-                        ## Save csection mean after applying csection conditions
-                        if (out_mode == "csec_mean") {
-
-                            for (j in 1:dim(data_funi)[1]) { # for all vars
-
-                                tmp <- data_vert_csec[j,,,]
-                                drdz_tmp <- drdz
-                                drdz_tmp[is.na(tmp)] <- NA # set land to NA
-
-                                # set all data to NA which do not fulfill csec_conds
-                                if (csec_conds_n > 0) {
-                                    for (k in 1:csec_conds_n) {
-                                        tmp[!cond_inds[[k]]] <- NA
-                                        drdz_tmp[!cond_inds[[k]]] <- NA
-                                    }
-                                }
-
-                                if (F) {
-                                    dev.new()
-                                    xx <- 1:length(csec_interp_points_vec[1,]) # might not all decreasing in irregular index area
-                                    image.plot(xx, csec_middle_depths, tmp[1,,,1], ylim=rev(range(csec_middle_depths)))
-                                }
-
-                                if (dimnames(data_funi)[[1]][j] == "transport") {
-                                    
-                                    if (F) { # old
-                                        # drdz allready multiplied
-                                        data_funi[j,time_inds] <- apply(tmp, 4, sum, na.rm=T) # dim4 = time
-                                    } else {
-                                        # 1: a = n_vec*u_vec*dr*dz --> m3/s
-                                        # 2: sum(a) over cross section
-                                        # 3: /1e6 --> Sv
-                                        data_funi[j,time_inds] <- apply(tmp*drdz_tmp, 4, sum, na.rm=T)/1e6 # m3 s-1 --> Sv = 10^6 m^3 s^-1 
-                                    }
-
-                                } else if (dimnames(data_funi)[[1]][j] == "sitransport") {
-                                    stop("asdasdas")
-
-                                } else { # default
-                                    # irregular dx and dz weighted mean
-                                    tmp <- tmp*drdz_tmp
-                                    LH <- apply(drdz_tmp, 4, sum, na.rm=T) # dim4 = time
-                                    data_funi[j,time_inds] <- apply(tmp, 4, sum, na.rm=T)/LH
-
-                                }
-
-                            } # for j all vars of csection
-
-                            #stop("asd")
-
-                        ## save csec as it is
-                        } else if (out_mode == "csec_depth") {
-                            data_funi[,,,time_inds] <- data_vert_csec
+                            # diff(interpolate_depths) = 
+                            # (inputarray.range.depth_vek{1}(kk)-inputarray.range.depth_vek{1}(kk-1)) =
+                            # inputarray.range.depth_vek{1}(2:end)-inputarray.range.depth_vek{1}(1:end-1);
+                            drdz <- outer(csec_DeltaR_vec, diff(interpolate_depths), "*")
                         
+                        } else if (!csec_use_middle) {
+                            
+                            if (F) {
+                                interpolate_depths <- interpolate_depths
+                                ndepths = length(interpolate_depths)
+                                deltaz=rep(0, t=ndepths-1)
+                                deltaz[1]=(interpolate_depths[1]-interpolate_depths[2])/2
+                                deltaz[ndepths]=(interpolate_depths[ndepths-1]-interpolate_depths[ndepths])/2
+                                for (n in 2:(ndepths-1)) {
+                                    deltaz[n]=(interpolate_depths[n-1]-interpolate_depths[n])/2 + 
+                                              (interpolate_depths[n]-interpolate_depths[n+1])/2
+                                }
+                                deltaz <- abs(deltaz)
+                            } else {
+                                # like patrick:
+                                deltaz <- diff(fesom_depths)[1:ndepths]
+                                deltaz[length(deltaz)] <- deltaz[length(deltaz) - 1]
+                            }
+                            drdz <- outer(csec_DeltaR_vec, deltaz, "*")
                         }
 
-                    } # for i vertices of csection
+                        drdz <- replicate(drdz, n=dim(data_vert_csec)[4]) # add 3rd dim: nrecspf
+                        drdz <- replicate(drdz, n=1) # add 4th dim: nvars 
+                        drdz <- aperm(drdz, c(4, 1, 2, 3)) # nvars,nnod,ndepths,nrecspf
+                    } # if total_rec == 0 only once
 
+                    # Cross section calculations here
+                    if (varname == "transport") {
+
+                        # Transport through section s from point A to point B = 
+                        # int_{A}^{B} int_{bottom}^{z=0} (\vec{u}_h \cdot \vec{n}) dz dr
+                        
+                        # velocity normal to cross section in m/s
+                        if (F) { # old
+                            transport <- (data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                          data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i]))*drdz
+                            transport <- transport / 1e6 # m3 s-1 --> Sv
+                        } else { # drdz is applied later
+                            transport <- data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                         data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])
+                        }
+                        dimnames(transport)[[1]] <- list(var=varname)
+                        success <- load_package("abind")
+                        if (!success) stop(helppage)
+                        data_vert_csec <- abind(data_vert_csec, transport, along=1, use.dnns=T)
+
+                    } else if (varname == "divuvteddy") {
+                        stop("asd")
+
+                    } else if (varname == "sitransport") {
+
+                        stop("update")
+                        dr <- outer(csec_DeltaR_vec, diff(interpolate_depths), "*")
+                        dr <- replicate(drdz, n=dim(data_vert_csec)[4]) # 3: ntime
+                        dr <- replicate(drdz, n=1) # 4: var 
+                        dr <- aperm(drdz, c(4, 1, 2, 3))
+
+                        # Sea ice volume transport through section s from point A to point B = 
+                        # int_{A}^{B} (\vec{u}_h \cdot \vec{n} * sic * hice) dr
+                        sitransport <- (data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                        data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])) *
+                                       data_vert_csec[which(varname_fesom == "area"),,,] *
+                                       data_vert_csec[which(varname_fesom == "hice"),,,] * dr
+                       sitransport <- sitransport / 1e6 # Sv = 10^6 m^3 s^-1
+                        dimnames(sitransport)[[1]] <- list(var=varname)
+                        data_vert_csec <- abind(data_vert_csec, sitransport, along=1, use.dnns=T)
+
+                    } # which cross section varname 
+
+                    if (F) {
+                        dev.new()
+                        xx <- 1:length(csec_interp_points_vec[1,])
+                        image.plot(xx, csec_middle_depths, data_vert_csec[3,,,1], ylim=rev(range(csec_middle_depths)))
+                    }
+
+                    # Apply csec conditions
+                    if (out_mode == "csec_mean" && csec_conds_n > 0) {
+
+                        cond_inds <- vector("list", l=csec_conds_n)
+                        for (j in 1:csec_conds_n) {
+
+                            if (csec_conds[j] == "gt") cond <- ">"
+                            if (csec_conds[j] == "ge") cond <- ">="
+                            if (csec_conds[j] == "lt") cond <- "<"
+                            if (csec_conds[j] == "le") cond <- "<="
+                            message(paste0(indent, "Apply ", varname, " condition: ",
+                                         csec_cond_vars[j], " ", cond, " ",
+                                         csec_cond_vals[j], " ", 
+                                         csec_cond_units[j], " ..."))
+
+                            # condition variable
+                            cond_var_ind <- which(dimnames(data_vert_csec)[[1]] == csec_cond_vars[j])
+                            # condition inds
+                            cond_inds[[j]] <- eval(parse(text=paste0("data_vert_csec[", cond_var_ind, 
+                                                                     ",,,] ", cond, " ", 
+                                                                     csec_cond_vals[j])))
+                            #if (is.na(any(cond_inds[[i]]))) {
+                            #    stop("Error: no elements ", out_mode, varname 
+                            #}
+                        } # for j csec_conds_n
+
+                    } # if csec_mean && csec_conds_n > 0
+
+                    if (total_rec == 0) {
+                        if (out_mode == "csec_mean") {
+                            data_funi <- array(NA, c(dim(data_vert_csec)[1], ntime),
+                                               dimnames=c(dimnames(data_vert_csec)[1], 
+                                                          list(rec=timechar)))
+                        } else if (out_mode == "csec_depth") {
+                            data_funi <- array(NA, c(dim(data_vert_csec)[1:3], ntime),
+                                               dimnames=c(dimnames(data_vert_csec)[1:3], 
+                                                          list(rec=timechar)))
+                        }
+                    }
+                    if (rec_tag) {
+                        if (leap_tag && is.leap(year)) {
+                            time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
+                        } else {
+                            time_inds <- (total_rec + 1):(total_rec + nrecspf)
+                        }
+                    } else {
+                        time_inds <- total_rec + 1
+                    }
+
+                    if (verbose > 1) {
+                        message(paste0(indent, "Calc ", area, " area ", out_mode,
+                                     " and save at time inds=",
+                                     paste(time_inds, collapse=",")))
+                    }
+
+                    # Save csection mean after applying csection conditions
+                    if (out_mode == "csec_mean") {
+
+                        for (j in 1:dim(data_funi)[1]) { # for all vars
+
+                            tmp <- data_vert_csec[j,,,]
+                            drdz_tmp <- drdz
+                            drdz_tmp[is.na(tmp)] <- NA # set land to NA
+
+                            # set all data to NA which do not fulfill csec_conds
+                            if (csec_conds_n > 0) {
+                                for (k in 1:csec_conds_n) {
+                                    tmp[!cond_inds[[k]]] <- NA
+                                    drdz_tmp[!cond_inds[[k]]] <- NA
+                                }
+                            }
+
+                            if (F) {
+                                dev.new()
+                                xx <- 1:length(csec_interp_points_vec[1,]) # might not all decreasing in irregular index area
+                                image.plot(xx, csec_middle_depths, tmp[1,,,1], ylim=rev(range(csec_middle_depths)))
+                            }
+
+                            if (dimnames(data_funi)[[1]][j] == "transport") {
+                                
+                                if (F) { # old
+                                    # drdz allready multiplied
+                                    data_funi[j,time_inds] <- apply(tmp, 4, sum, na.rm=T) # dim4 = time
+                                } else {
+                                    # 1: a = n_vec*u_vec*dr*dz --> m3/s
+                                    # 2: sum(a) over cross section
+                                    # 3: /1e6 --> Sv
+                                    data_funi[j,time_inds] <- apply(tmp*drdz_tmp, 4, sum, na.rm=T)/1e6 
+                                }
+
+                            } else if (dimnames(data_funi)[[1]][j] == "sitransport") {
+                                stop("asdasdas")
+
+                            } else { # default
+                                # irregular dx and dz weighted mean
+                                tmp <- tmp*drdz_tmp
+                                LH <- apply(drdz_tmp, 4, sum, na.rm=T) # dim4 = time
+                                data_funi[j,time_inds] <- apply(tmp, 4, sum, na.rm=T)/LH
+
+                            }
+
+                        } # for j all vars of csection
+
+                        #stop("asd")
+
+                    # save csec as it is
+                    } else if (out_mode == "csec_depth") {
+                        data_funi[,,,time_inds] <- data_vert_csec
+                    
+                    }
 
                 } else if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
@@ -5703,7 +5728,7 @@ if (nfiles == 0) { # read data which are constant in time
         ## Save transient
         } else if (all(out_mode != c("area", "areadepth"))) {
             
-            if (out_mode == "csec_depth") {
+            if (csec_conds_n > 0 && out_mode == "csec_depth") {
                 csec_cond_depth <- csec_cond_vars
                 if (any(csec_cond_depth == "u")) {
                     csec_cond_depth <- csec_cond_depth[csec_cond_depth != "u"]
@@ -5711,7 +5736,7 @@ if (nfiles == 0) { # read data which are constant in time
                 if (any(csec_cond_depth == "v")) {
                     csec_cond_depth <- csec_cond_depth[csec_cond_depth != "v"]
                 }
-            } # if out_mode == "csec_depth"
+            } # if csec_conds_n > 0 && out_mode == "csec_depth"
 
             # nc name
             if (any(varname == c("iceextent", "icevol"))) {
@@ -5735,7 +5760,7 @@ if (nfiles == 0) { # read data which are constant in time
                                          paste0("conds_", paste0(csec_cond_vars, ".", csec_conds, ".", 
                                                                  csec_cond_vals, csec_cond_units, collapse="_"), 
                                                 "_"), ""),
-                                  ifelse(out_mode == "csec_depth" && !is.null(csec_cond_depth),
+                                  ifelse(csec_conds_n > 0&& out_mode == "csec_depth" && !is.null(csec_cond_depth),
                                          paste0("conds_", paste0(unique(csec_cond_depth), collapse="_"), "_"), ""),
                                   projection, ssh_aviso_correct_fname, p_ref_suffix, fname_suffix,
                                   ".nc")
@@ -5803,7 +5828,7 @@ if (nfiles == 0) { # read data which are constant in time
                                   prec="integer")
 
             if (any(out_mode == c("depth", "depthint", "depthmax", 
-                                        "csec_depth", "moc_depth"))) {
+                                  "csec_depth", "moc_depth"))) {
                 depth_var <- ncvar_def(name="depthvec", 
                                        units="m", 
                                        dim=depth_dim,
@@ -5908,28 +5933,23 @@ if (nfiles == 0) { # read data which are constant in time
                             unit <- "m s-1"
                         }
                     } else {
-                        stop(paste0("error: variable ", dimnames(data_funi)[[1]][i], 
-                                    " not implemented yet ..."))
+                        unit <- units_out
                     }
+
                 
                     name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
                     if (out_mode == "csec_mean") {
-                        data_fun_var[[i]] <- ncvar_def(name=name,
-                                                       units=unit,
-                                                       dim=time_dim, 
-                                                       missval=mv,
-                                                       longname=paste0(longname, 
-                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
-                                                       prec=prec)
+                        dim_list <- time_dim
                     } else if (out_mode == "csec_depth") {
-                        data_fun_var[[i]] <- ncvar_def(name=name,
-                                                       units=unit,
-                                                       dim=list(csec_dist_dim, depth_dim, time_dim), 
-                                                       missval=mv,
-                                                       longname=paste0(longname, 
-                                                                       ifelse(subtitle == "", "", paste0(", ", subtitle))),
-                                                       prec=prec)
+                        dim_list <- list(csec_dist_dim, depth_dim, time_dim)
                     }
+                    data_fun_var[[i]] <- ncvar_def(name=name,
+                                                   units=unit,
+                                                   dim=dim_list, 
+                                                   missval=mv,
+                                                   longname=paste0(longname, 
+                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))),
+                                                   prec=prec)
                     
                 } # for i length(data_fun_var)
 
@@ -6362,7 +6382,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (csec_ltm_out) {
             if (verbose > 1) {
-                message(paste0(indent, "For Cross section bring data_node_ltm from (nod3d_n=", nod3d_n,
+                message(paste0(indent, "For cross section bring data_node_ltm from (nod3d_n=", nod3d_n,
                              ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
                 if (verbose > 1) {
                     message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))

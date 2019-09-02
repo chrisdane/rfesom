@@ -528,13 +528,11 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "uvtemp") {
     longname <- "Mean Horizontal Advective Flux Temperature Flux"
-    units_out <- "degC m s-1"
+    units_out <- units_plot <- "degC m s-1"
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(T), "| [°C ", 
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    multfac_out <- 1
     dim_tag <- "3D"
-    horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
     varname_fesom <- c("u", "v", "temp")
