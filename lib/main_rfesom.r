@@ -45,7 +45,7 @@
 #############################################################################
 
 ## show line number in case of errors
-#options(show.error.locations=T)
+options(show.error.locations=T)
 #options(error=recover)
 #options(warn=0) # default
 #options(warn=2)
@@ -1905,10 +1905,9 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
 
 ## 3) for Crossection
-if (transient_out && 
-    (out_mode == "csec_mean" || out_mode == "csec_depth")) {
+if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
     if (verbose > 0) {
-        message(paste0("3) Find coordinates of cross section ", area, " ..."))
+        message("3) Find coordinates of cross section ", area, " ...")
     }
 
     csec_n_vertices <- length(map_geogr_lim_lon) ## csection vertices defined by user
@@ -2566,21 +2565,17 @@ if (transient_out &&
     } # for i csec_n_vertices 
 
     #stop("asd")
-
-    csec_node_inds <- which(csec_crossed_nodes == 1) # in global 2d node space
-    csec_elem_inds <- which(csec_crossed_tri == 1) # in global 2d element space
+    
+    ## reduce from global 2d node space to cross section node space
+    csec_node_inds <- which(csec_crossed_nodes == 1) 
+    csec_elem_inds <- which(csec_crossed_tri == 1) 
     csec_crossed_nodes_n <- length(csec_node_inds)
     csec_crossed_tri_n <- length(csec_elem_inds)
-
-    csec_inds <- rep(0, t=nod2d_n)
-    csec_inds[csec_node_inds] <- 1:csec_crossed_nodes_n
-
-    nod2d_n_save <- nod2d_n
-    nod2d_csec_n <- length(csec_node_inds)
-    #aux3d_save <- aux3d
-    #aux3d <- aux3d[,csec_node_inds]
-    pos_csec <- rep(NA, t=nod2d_n_save)
-    pos_csec[csec_node_inds] <- 1:length(csec_node_inds)
+    nod2d_csec_n <- csec_crossed_nodes_n 
+    pos_csec <- rep(NA, t=nod2d_n) 
+    pos_csec[csec_node_inds] <- 1:csec_crossed_nodes_n
+    aux3d_csec <- aux3d[,csec_node_inds]
+    
     #xcsur_save <- xcsur
     #xcsur <- xcsur[csec_node_inds]
     #ycsur_save <- ycsur
@@ -2611,7 +2606,7 @@ if (transient_out &&
 
     #stop("asd")
 
-    # check csection
+    # plot map of csection
     if (plot_csec) {
         if (!dir.exists(paste0(plotpath, "/csec_locations"))) {
             dir.create(paste0(plotpath, "/csec_locations"), recursive=T, showWarnings=F)
@@ -2625,7 +2620,8 @@ if (transient_out &&
         if (file.exists(plotname)) { # found plot
             if (verbose > 1) {
                 message(indent, "Found ", area, " cross section plot:\n", 
-                        indent, "  ", plotname)
+                        indent, "  ", plotname, ".\n", 
+                        indent, "Remove the plot and rerun the script if wanted")
             }
         
         } else { # create csec plot
@@ -2686,8 +2682,8 @@ if (transient_out &&
                 cols <- colorRampPalette(c("#c5ebdc", "#a0dfda", "#7fd5e8", "#5ecbe6", "#49add9",
                                            "#3d82c9", "#3259af", "#26468b", "#212f5c", "#141c34"))(length(levels) - 1)
                 if (T) {
-                    image(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy,
-                          breaks=levels, col=cols, add=T)
+                    image.plot(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy,
+                               breaks=levels, col=cols, add=T)
                 } else if (F) {
                     contour(bathync$dim$nxi$vals, bathync$dim$nyi$vals, bathy, add=T,
                             levels=c(500, 600, 700))
@@ -2697,7 +2693,7 @@ if (transient_out &&
             if (T) { # ad coastline from maps package
                 success <- load_package("maps")
                 if (success) {
-                    map("world", add=T) 
+                    map("world", add=T, boundary=F) 
                 } else {
                     message("Could not load 'maps' package. ", helppage)
                 }
@@ -2745,7 +2741,7 @@ if (transient_out &&
        
             box()
             if (verbose > 1) {
-                message(paste0(indent, "Save ", plotname, " ..."))
+                message(paste0(indent, "   Save ", plotname, " ..."))
             }
             dev.off()
 
@@ -2872,7 +2868,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
         message("==============================================")
     }
 
-}
+} # if moc
 
 
 ## 4) Vertical Interpolation
@@ -2914,10 +2910,16 @@ if (nfiles > 0) {
                     && (dim_tag != dim_old || depths != depth_old)) 
                    || (!restart && dim_tag == "3D")) {
 
+            if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
+                aux3d_global <- aux3d
+                aux3d <- aux3d_csec
+                nod2d_n <- dim(aux3d)[2]
+            } # if csec
+            
             if (verbose > 0) {
                 message(paste0("4) Calculate coefficients for vertical interpolation in ", 
                              ifelse(length(depths) == 2, paste0(depths[1], "-", depths[2]), depths[1]), 
-                             " m depths globally ..."))
+                             " m depths at ", nod2d_n, " surface nodes ..."))
             }
 
             ## Here, only the case (cycl && rotate_mesh) is implemented.
@@ -3055,7 +3057,6 @@ if (nfiles > 0) {
                         middepths[i] <- (-interpolate_depths[i+1] + -interpolate_depths[i])/2
                     }
                 }
-
             } else if (ndepths == 2) {
                 deltaz <- c(1, 1)
             } else if (ndepths == 1) {
@@ -3154,6 +3155,12 @@ if (nfiles > 0) {
 
             } # if depths == "bottom" or not
 
+            # restore to global
+            if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
+                aux3d <- aux3d_global
+                nod2d_n <- dim(aux3d)[2]
+            } # if csec
+            
             #stop("asd")
 
         } # if restart or not for vertical interpolation coefficients 
@@ -3176,7 +3183,7 @@ if (verbose > 0) {
 
 
 ## 5) Read data through years and months
-if (nfiles == 0) { # read data which are constant in time
+if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
     if (verbose > 0) {
         message(paste0("5) Reading FESOM files not necessary for '", 
                      varname, "' (nfiles=0) ..."))
@@ -3449,7 +3456,7 @@ if (nfiles == 0) { # read data which are constant in time
             if (output == "monthly") { # yyyymm01 -> day must be provided, also if format="%Y%m", dont know why 
                 timedate <- as.POSIXlt(paste0(timechar, 01), format="%Y%m%d", origin=origin, tz="UTC")
             } else if (output == "daily") {
-                timedata <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
+                timedate <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
             } else if (outpt == "5day") {
                 stop("how?")
             }
@@ -4639,7 +4646,6 @@ if (nfiles == 0) { # read data which are constant in time
                                 # Calculate min/max/mean/median/nominal resolution of area as scalars.
                                 # Resolution is defined per 2d-element (check deriv_2d.r).
                                 # In these modes, the deriv_2d_nc was already loaded anyway.
-                                add_res_to_nc <- T
                                 if (add_res_to_nc) {
                                     if (out_mode == "mean" && zave_method == 2) {
                                         stop("not yet") 
@@ -5115,6 +5121,10 @@ if (nfiles == 0) { # read data which are constant in time
 
                 } else if (any(out_mode == c("csec_mean", "csec_depth"))) {
 
+                    # reduce from global to cross section for sub_n3_to_n2xde.r
+                    nod2d_global_n <- nod2d_n
+                    nod2d_n <- nod2d_csec_n 
+                   
                     if (verbose > 1) { 
                         message(paste0(indent, "For cross section bring data_node from (nod3d_n=", nod3d_n,
                                      ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
@@ -5122,11 +5132,12 @@ if (nfiles == 0) { # read data which are constant in time
                             message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
                         }
                     }
-                    indent_save <- indent; indent <- paste0(indent_save, "   ")
+                    
                     sub_n3_to_n2xde(data_node) # produces tmp
-                    indent <- indent_save; rm(indent_save)
                     data_global_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                     rm(tmp)
+
+                    nod2d_n <- nod2d_global_n # back to global
 
                     # change depth and time dimensions of data_global_vert
                     #data_global_vert <- aperm(data_global_vert, c(1, 2, 4, 3))
@@ -5146,7 +5157,6 @@ if (nfiles == 0) { # read data which are constant in time
                         dimnames(data_global_vert)[3] <- list(csec_middle_depths=interpolate_depths)
 
                     } else if (!csec_use_middle) {
-                        #data_global_vert <- data_global_vert
                         csec_middle_depths <- interpolate_depths
                     }
 
@@ -5178,10 +5188,32 @@ if (nfiles == 0) { # read data which are constant in time
                     
                     # check
                     if (T) {
-                        image.plot(sort(drop(csec_interp_points_vec[1,])), 
-                                   interpolate_depths, 
-                                   drop(data_vert_csec[1,,,1]), 
-                                   ylim=rev(range(interpolate_depths)))
+                        z <- drop(data_vert_csec[dim(data_vert_csec)[1],,,1])
+                        source(paste0(subroutinepath, "/functions/image.plot.pre.r"))
+                        if (F) {
+                            ip <- image.plot.pre(zlim=range(z, na.rm=T))
+                        } else if (T) {
+                            mu <- mean(z, na.rm=T)
+                            method <- "exp"
+                            power_min <- -9
+                            #ip <- image.plot.pre(zlim=range(z, na.rm=T), zlevels=c(-mu, mu), axis.zoom=T)
+                            ip <- image.plot.pre(zlim=range(z, na.rm=T), method=method, power_min=power_min, verbose=T)
+                        }
+                        if (F) {
+                            par(mar=c(5.1, 4.1, 4.1, 5.5))
+                            image(sort(drop(csec_interp_points_vec[1,])), 
+                                  interpolate_depths, 
+                                  z, ylim=rev(range(interpolate_depths)), 
+                                  breaks=ip$levels, col=ip$cols)
+                            image.plot(zlim=ip$zlim, legend.only=T,
+                                       breaks=1:ip$nlevels, col=ip$cols,
+                                       axis.args=list(at=ip$axis.at.ind, labels=ip$axis.labels))
+                        } else if (T) {
+                            source("~/scripts/r/functions/image.plot.nxm.r")
+                            image.plot.nxm(sort(drop(csec_interp_points_vec[1,])), interpolate_depths,
+                                           z, ylim=rev(range(interpolate_depths)),
+                                           add_contour=F, ip=ip, verbose=T)
+                        }
                         stop("asasda")
                     }
                     
@@ -5230,7 +5262,7 @@ if (nfiles == 0) { # read data which are constant in time
                             transport <- (data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
                                           data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i]))*drdz
                             transport <- transport / 1e6 # m3 s-1 --> Sv
-                        } else { # drdz is applied later
+                        } else { # drdz is applied later, here still m s-1
                             transport <- data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
                                          data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])
                         }

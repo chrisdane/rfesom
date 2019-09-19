@@ -15,7 +15,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                              dimnames(data_nod3d)[4]))
 
     # if cross section, name all crossed nodes (needs more memory)
-    if (F) {
+    if (F) { # for bedugging
         if (any(out_mode == c("csec_mean", "csec_depth"))) {
             dimnames(tmp)[2] <<- list(node=which(csec_crossed_nodes == 1))
         }
@@ -52,18 +52,16 @@ sub_n3_to_n2xde <- function(data_nod3d) {
             # just rearrange from nod3d_n to ndepths x nod2d_n
             if (any(fesom_depths == z)) {
                 
-                # old
-                #if (any(out_mode == c("csec_mean", "csec_depth"))) {
-                #    tmp[,inds,i,] <<- data_nod3d[,indlevel[i,inds],,]
-                #} else {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
+                    tmp[,inds,i,] <<- data_nod3d[,indlevel[i,inds],,]
+                } else {
                     tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indlevel[i,inds],,]
-                #}
+                }
                 
             # interpolate user level between model levels
             } else {
 
                 if (verbose > 1) {
-                    # message(paste0(indent, "   x[", z, "m] = x[up] + c*(x[low] - x[up]) ..."))
                     message(paste0(indent, "   x[", z, "m] = x[", fesom_depths[i-1], "m] + c*(x[", 
                                  fesom_depths[i], "m] - x[", fesom_depths[i-1], "m]) ..."))
                 }
@@ -74,19 +72,18 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                 indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_node)[4]) # nrecspf
                 indcoef_tmp <<- aperm(indcoef_tmp, c(3, 2, 1, 4))
 
-                # old 
-                #if (any(out_mode == c("csec_mean", "csec_depth"))) {
-                #    tmp[,inds,i,] <<- data_nod3d[,indupper[i,inds],,] +
-                #                                 indcoef[i,inds]*
-                #                                    (data_nod3d[,indlower[i,inds],,] -
-                #                                     data_nod3d[,indupper[i,inds],,])
-                #} else {
+                if (any(out_mode == c("csec_mean", "csec_depth"))) {
+                    tmp[,inds,i,] <<- data_nod3d[,indupper[i,inds],,] +
+                                                 indcoef[i,inds]*
+                                                    (data_nod3d[,indlower[i,inds],,] -
+                                                     data_nod3d[,indupper[i,inds],,])
+                } else {
                     tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indupper[i,inds],,] +
                                                                  #indcoef[i,inds]*
                                                                  indcoef_tmp*
                                                                     (data_nod3d[,indlower[i,inds],,] - 
                                                                      data_nod3d[,indupper[i,inds],,])
-                #}
+                }
                 
             } # if user level needs to be interpolated or just rearranged from nod3d_n to ndepths x nod2d_n
 

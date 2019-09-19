@@ -1570,7 +1570,8 @@ sub_calc <- function(data_node) {
             dxinds <- 1
             dyinds <- 1
         }
-        if (any(varname == c("divuvt", "divuvttot", "divuvteddy",
+        if (any(varname == c("divuv",
+                             "divuvt", "divuvttot", "divuvteddy",
                              "divuvsgst", "divuvsgsttot", "divuvsgsteddy",
                              "divuvs", "divuvstot", "divuvseddy",
                              "divuvsgss", "divuvsgsstot", "divuvsgsseddy",
@@ -1583,6 +1584,10 @@ sub_calc <- function(data_node) {
                              "divuvt2"))) {
             dxinds <- 1
             dyinds <- 2
+        }
+        if (varname == "advh") {
+            dxinds <- c(1, 2)
+            dyinds <- c(1, 2)
         }
         if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
                              "curlwind", "curltau",
@@ -1670,14 +1675,17 @@ sub_calc <- function(data_node) {
             } # if !is.null(dyinds)
 
             if (verbose > 1) {
-                message(indent, "Calc ", appendLF=F)
+                message(indent, "Calc horizontal derivatives ", appendLF=F)
                 if (!is.null(dxinds)) {
                     message(paste0("dx_", dimnames(data_node)[[1]][dxinds], collapse=", "), appendLF=F)
                     if (!is.null(dyinds)) message(", ", appendLF=F)
                 }
                 if (!is.null(dyinds)) {
-                    message(paste0("dy_", dimnames(data_node)[[1]][dyinds], collapse=", "))
+                    message(paste0("dy_", dimnames(data_node)[[1]][dyinds], collapse=", "), appendLF=F)
                 }
+                message(" over ", elem2d_n, " 2D elems", 
+                        ifelse(ndepths > 1, paste0(" and ", ndepths, " depths"), ""),
+                        " ...")
             }
 
             #time1 <- array(NA, c(aux3d_n, elem2d_n))
@@ -2045,7 +2053,9 @@ sub_calc <- function(data_node) {
             message(paste0(indent, varname, " = d(K_h*dbdx)/dx + d(K_h*dbdy)/dy ..."))
         }
 
-        if (any(varname == c("divuvt", "divuvteddy", 
+        # divergence of horizontal flux
+        if (any(varname == c("divuv", 
+                             "divuvt", "divuvteddy", 
                              "divuvsgst", "divuvsgsteddy", "divuvsgsttot",
                              "divuvs", "divuvseddy",
                              "divuvsgss", "divuvsgsseddy", "divuvsgsstot"))) {
@@ -2087,10 +2097,18 @@ sub_calc <- function(data_node) {
                 data_node <- data_node3d
             }
         
-        } # "divuvt", "divuvteddy",
+        } # divergence of horizontal flux
+          # "divuvt", "divuvteddy",
           # "divuvsgst", "divuvsgsteddy", "divuvsgsttot",
           # "divuvs", "divuvseddy",
           # "divuvsgss", "divuvsgsseddy", "divuvsgsstot"
+
+        # horizontal advection
+        if (any(varname == c("advh"))) {
+            # https://en.wikipedia.org/wiki/Derivation_of_the_Navier%E2%80%93Stokes_equations#Momentum_equation
+            stop("asd")
+
+        } # if advh
 
         if (any(varname == c("relvorti", "relvortisq", 
                              "curlwind", "curltau", 

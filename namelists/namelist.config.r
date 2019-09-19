@@ -111,6 +111,7 @@ rms_out               <- F # calc and save root mean square = sqrt( E[x^2] )
 sd_out                <- F # calc and save population standard deviation = sqrt( E[x^2] - (E[x])^2)
 moc_ltm_out           <- F # save moc ltm if out_mode == "moc_depth"
 csec_ltm_out          <- F # save cross section ltm if out_mode == "csec_mean" or "csec_depth" # not yet
+add_res_to_nc         <- F # todo
 
 
 ###############################################################################################
