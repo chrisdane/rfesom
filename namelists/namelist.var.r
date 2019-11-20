@@ -28,7 +28,10 @@ fname_suffix <- ""
 p_ref_suffix <- ""
 diagsuffix <- ""
 typesuffix <- ""
-
+csec_cond_vars <- NULL
+csec_conds <- NULL
+csec_cond_vals <- NULL
+csec_cond_units <- NULL
 
 ## Overwrite defaults with variable-specific info
 if (varname == "tos") { # fesom 1.4
@@ -153,6 +156,8 @@ if (varname == "tos") { # fesom 1.4
     vec <- F
 
 } else if (varname == "potdens") {
+    potdens_tag <- T
+    p_ref <- 0
     longname <- "Potential Density"
     units_out <- "kg m-3"
     var_label_plot <- expression(paste(sigma[theta], " [kg m"^"-3","]"))

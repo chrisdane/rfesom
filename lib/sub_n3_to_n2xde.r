@@ -74,7 +74,8 @@ sub_n3_to_n2xde <- function(data_nod3d) {
 
                 if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     tmp[,inds,i,] <<- data_nod3d[,indupper[i,inds],,] +
-                                                 indcoef[i,inds]*
+                                                 #indcoef[i,inds]*
+                                                 indcoef_tmp*
                                                     (data_nod3d[,indlower[i,inds],,] -
                                                      data_nod3d[,indupper[i,inds],,])
                 } else {

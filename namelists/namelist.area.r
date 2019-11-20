@@ -290,6 +290,9 @@
             } else if (area == " IceSea2") {
                 map_geogr_lim_lon <- c(-30, -20)
                 map_geogr_lim_lat <- c(50, 60)
+            } else if (area == "IceSea3") {
+                map_geogr_lim_lon <- c(-20, -10)
+                map_geogr_lim_lat <- c(55, 60)
             } else if (area == "IrmSea1") {
                 map_geogr_lim_lon <- c(-40, -32.5)
                 map_geogr_lim_lat <- c(60, 63)
@@ -585,7 +588,7 @@
             } else if (area == "csec_N61") {
                 map_geogr_lim_lon <- c(-43.5, -4)
                 map_geogr_lim_lat <- c(61, 60)
-            } else if (areaa == "csec_fram") {
+            } else if (area == "csec_fram") {
                 map_geogr_lim_lon <- c(-12.83, 10.7)
                 map_geogr_lim_lat <- c(81.48, 78.99)
             } else if (area == "csec_bering") {
@@ -605,6 +608,9 @@
             } else if (area == "csec_S30") {
                 map_geogr_lim_lon <- c(-50, 25)
                 map_geogr_lim_lat <- c(-30, -30)
+            } else if (area == "csec_N74") {
+                map_geogr_lim_lon <- c(-81, 93.35)
+                map_geogr_lim_lat <- c(74, 74)
             }
             poly_geogr_lim_lon <- map_geogr_lim_lon
             poly_geogr_lim_lat <- map_geogr_lim_lat

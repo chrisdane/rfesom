@@ -16,10 +16,6 @@ sub_prepare2 <- function(data_node) {
     ## with the wanted type of density if needed.
     if (insitudens_tag || potdens_tag || buoyancy_tag) {
      
-        if (verbose > 0) {
-            message("")
-        }
-
         ## use rho as calculated by fesom
         if ("rho" %in% varname_fesom) { # rho is in situ rho in fesom ocean only
 
@@ -97,6 +93,12 @@ sub_prepare2 <- function(data_node) {
             ##  z           height, zero at surface and positive upwards [ m ]
             ##  latitude    latitude in decimal degrees, positive to the north of the equator.
             if (!exists("p_node")) { # only once
+                if (potdens_tag) {
+                    if (!is.finite(p_ref)) {
+                        stop("cannot calculate potential density referenced to given non-finite \"p_ref\" = ", p_ref, ".")
+                    }
+                    p_ref_node <<- rep(p_ref, t=length(nod_z)) # nod2d or nod3d
+                }
                 if (dim_tag == "3D") {
                     if (verbose > 0) {
                         message(paste0(indent, "Calc pressure p = gsw::gsw_p_from_z(z, latitude) ..."))
@@ -106,10 +108,8 @@ sub_prepare2 <- function(data_node) {
                         }
                     }
                     p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
-                    if (potdens_tag) p_ref_node <<- rep(p_ref, t=nod2d_n)
                 } else if (dim_tag == "2D") {
                     p_node <<- rep(0, t=nod2d_n)
-                    if (potdens_tag) p_ref_node <<- rep(p_ref, t=nod3d_n)
                 }
 
             } # if !exists("p_node")

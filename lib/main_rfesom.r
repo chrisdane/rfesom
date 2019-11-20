@@ -220,17 +220,21 @@ if (transient_out && integrate_depth && dim_tag == "3D" &&
     message(paste0("Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else ..."))
     stop()
 }
+csec_conds_n <- 0
 if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
     regular_transient_out <- F
     regular_ltm_out <- F
-    if (out_mode == "csec_mean") {
-        csec_conds_n <- length(csec_conds) # apply conditions before averaging over section
-    } else if (out_mode == "csec_depth") {
-        csec_conds_n <- 0 # do not apply averaging when saving data of the complete section
+    if (!is.null(csec_conds)) {
+        csec_conds_n <- length(csec_conds)
+    } else {
+        csec_conds_n <- 0
     }
-} else {
-    csec_conds_n <- 0
 }
+#    if (out_mode == "csec_mean") {
+#        csec_conds_n <- length(csec_conds) # apply conditions before averaging over section
+#    } else if (out_mode == "csec_depth") {
+#        csec_conds_n <- 0 # do not apply averaging when saving data of the complete section
+#    }
 if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
     regular_transient_out <- F
     regular_ltm_out <- F
@@ -2611,7 +2615,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
         if (!dir.exists(paste0(plotpath, "/csec_locations"))) {
             dir.create(paste0(plotpath, "/csec_locations"), recursive=T, showWarnings=F)
         }
-        zoomout_fac <- 5
+        zoomout_fac <- 1 # 1=nothing; >1: zoom out; <1: zoom in
         plotname <- paste0(plotpath, "/csec_locations/",
                            runid, "_", setting, 
                            "_csec_location_", area,
@@ -2621,7 +2625,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             if (verbose > 1) {
                 message(indent, "Found ", area, " cross section plot:\n", 
                         indent, "  ", plotname, ".\n", 
-                        indent, "Remove the plot and rerun the script if wanted")
+                        indent, "Remove the plot and rerun the script to produce a new plot of this cross section")
             }
         
         } else { # create csec plot
@@ -2693,7 +2697,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             if (T) { # ad coastline from maps package
                 success <- load_package("maps")
                 if (success) {
-                    map("world", add=T, boundary=F) 
+                    map("world", add=T, interior=F) 
                 } else {
                     message("Could not load 'maps' package. ", helppage)
                 }
@@ -3343,6 +3347,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 fnames[file] <- paste0(datainpath, "/", setting, "_", varname_fesom[file], 
                                                        "_fesom_", year, "0101.nc")
                             }
+                            # or with runid and 'fesom' flipped
+                            if (!file.exists(fnames[file])) {
+                                fnames[file] <- paste0(datainpath, "/", setting, "_fesom_", varname_fesom[file], 
+                                                       "_", year, "0101.nc")
+                            }
+
                         }
 
                     }  else if (!cpl_tag) { # ocean-only
@@ -5186,8 +5196,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     # for every csection edge/segment
                     #for (i in 1:(length(map_geogr_lim_lon)-1)) {
                     
-                    # check
-                    if (T) {
+                    # check csec
+                    if (F) {
                         z <- drop(data_vert_csec[dim(data_vert_csec)[1],,,1])
                         source(paste0(subroutinepath, "/functions/image.plot.pre.r"))
                         if (F) {
@@ -5267,7 +5277,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                          data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])
                         }
                         dimnames(transport)[[1]] <- list(var=varname)
-                        success <- load_package("abind")
+                        success <- load_package("abind", indent=indent)
                         if (!success) stop(helppage)
                         data_vert_csec <- abind(data_vert_csec, transport, along=1, use.dnns=T)
 
@@ -5317,6 +5327,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                             # condition variable
                             cond_var_ind <- which(dimnames(data_vert_csec)[[1]] == csec_cond_vars[j])
+                            if (length(cond_var_ind) != 1) {
+                                stop("this should not happen")
+                            }
+                            
                             # condition inds
                             cond_inds[[j]] <- eval(parse(text=paste0("data_vert_csec[", cond_var_ind, 
                                                                      ",,,] ", cond, " ", 
