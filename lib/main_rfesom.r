@@ -3409,7 +3409,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             } # if fuser_tag
 
             if (!file.exists(fnames[file])) {
-                stop(paste0("file ", fnames[file], " does not exist."))
+                stop("file ", fnames[file], " does not exist.")
             }
 
         } # for file nfiles
