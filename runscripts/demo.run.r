@@ -39,7 +39,7 @@ if (T) {
 
 } else if (F) {
     ## demo2
-    # Saves 1) 1948 mean, 2) standard deviation (sd) and 3) 12 (monthly) records of 
+    # Saves 1) year 2009 mean, 2) standard deviation (sd) and 3) 12 (monthly) records of 
     # ssh on regular coordinates as netcdf and saves a spatial plot of the temporal 
     # mean and sd fields.
     # See post/demo/regular_grid/area/lsea/ssh
@@ -54,7 +54,7 @@ if (T) {
     regular_transient_out <- T 
     out_mode              <- "area"
     sd_out                <- T
-    years                 <- 1948
+    years                 <- 2009
     recs                  <- 1:12
 
 } else if (F) {

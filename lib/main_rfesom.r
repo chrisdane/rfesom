@@ -10,6 +10,8 @@
 ##  Package     Function        Purpose/when needed                         #
 ##  ----------------------------------------------------------------------  #
 ##  data.table  fread()         faster than base::scan()                    #
+##  gsw         gsw_*()         Gibbs Sea Water functions                   #
+##  abind       abind()         concatinating multi-dim arrays              #
 ##  ncdf.tools  readNcdf()      faster than ncdf4::ncvar_get()              #
 ##  fields      image.plot()    colorbar if plot_map==T                     #
 ##  akima       interp()        if plot_type == "interp"                    #
@@ -17,31 +19,10 @@
 ##  splancs     inpip()         if *regular* == T  or  'area' is not        #
 ##                              a box but an irregular polygon              #
 ##  mapproj     mapproject()    if projection != "rectangular"              #
-##  phonR       fillTriangle()  if plot_type == "interp2" # special         #
 ##  pracma      mldivide()      if out_mode == "csec_mean" or "csec_depth"  #
-##  abind       abind()         concatinating multi-dim arrays              #
-##  gsw         gsw_*()         Gibbs Sea Water functions                   #
 ##                                                                          #
-## R-subroutines (.r files):                                                #
-##  Filename                        Purpose                                 #
-##  ------------------------------------------------------------------      #
-##  rfesom.run.r                    load user settings                      #
-##  namelist.var.r                  load user variable properties           # 
-##  namelist.area.r                 load user area properties               #
-##  namelist.plot.r                 load user plot properties               #
-##  sub_*.r                         variable specific calculations          #
-##  grid_rotate_r2g.r               rotate grid                             #
-##  vec_rotate_r2g.r                rotate vector variables                 #
-##  leap_function.r                 check if year is leap year              #
-##  sub_calc_load_regular_IMAT.r    calc and save regular                   #
-##                                  interpolation matrix                    #
-##  sub_calc_regular_2d_interp.r    apply regular interpolation matrix      #
-##                                  to irregular data                       #
-##  deriv_2d.r                      calc and save 2d horizontal derivative  #
-##  deriv_3d.r                      calc and save 3d horizontal derivative  #
-##                                                                          #
-## Coded by C. Danek (cdanek@awi.de)                                        # 
-## Version 0.9, 30 Nov 2018                                                 #
+## C. Danek (cdanek@awi.de)                                                 # 
+## version 0.1                                                              #
 #############################################################################
 
 ## show line number in case of errors
@@ -50,10 +31,10 @@ options(show.error.locations=T)
 #options(warn=0) # default
 #options(warn=2)
 
-## vector/array element-selection as in matlab
+## vector/array element-selection: disable R's automatic squeeze
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
-# use drop() to reduce dimensions
-# restore default: `[` <- fctbackup
+# --> use drop() to reduce dimensions
+# --> restore default: with `[` <- fctbackup
 
 message("********************************************************************")
 message("* Run rfesom for reading, postprocessing and plotting FESOM output *")

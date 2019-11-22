@@ -65,7 +65,7 @@ if (F) { # martin
     out_mode <- "area"
 
 } else { # chris
-    source("~/scripts/r/myrunids.r")
+    source(paste0(rfesompath, "/runscripts/myrunids.r"))
 }
 
 ###################### User input end ######################
