@@ -54,7 +54,7 @@ if (!exists("meshid")) {
          "   meshid <- \"core\"")
 }
 if (!exists("subroutinepath")) {
-    subroutinepath <- paste0(getwd(), "/lib") # path where subroutines are saved
+    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
 }
 subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
 if (file.access(subroutinepath, mode=0) == -1) {
@@ -117,10 +117,10 @@ if (plot_map && plot_type == "interp") {
 }
 
 ## check stuff
-if (is.null(varname_fesom)) {
+if (is.null(varname_nc)) {
     nfiles <- 0
 } else {
-    nfiles <- length(varname_fesom)
+    nfiles <- length(varname_nc)
 }
 if (exists("fnames_user")) {
     fuser_tag <- T
@@ -337,7 +337,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     if (any(regular_transient_out, regular_ltm_out)) {
         
         if (regular_transient_out) {
-            if (!exists("reg_transient_outpath")) {
+            if (!exists("rreg_transient_outpatheg_transient_outpath")) {
                 reg_transient_outpath <- paste0(postpath, "/", runid, "/", setting, 
                                                 "/regular_grid/", out_mode, "/", area, 
                                                 "/", varname)
@@ -790,11 +790,11 @@ if (fuser_tag) {
 
         ## Snapshot only allowed if (1) wanted and (2) none of the fesom data 
         ## is saved in 'diag' file
-        snapshotsuffix <- rep("NA", nfiles)
+        snapshotsuffix <- rep("", nfiles)
         if (snapshot) {
-            snapshotsuffix[] <- ""
             timespan <- paste0(timespan, "_snapshot")
         } else if (!snapshot) {
+            timespan <- paste0(timespan, "_mean")
             for (file in 1:nfiles) {
                 if (diagsuffix[file] == "diag.") {
                     snapshotsuffix[file] <- ""
@@ -802,7 +802,6 @@ if (fuser_tag) {
                     snapshotsuffix[file] <- "mean."
                 }
             }
-            timespan <- paste0(timespan, "_mean")
         }
 
     } else { # nfiles = 0
@@ -3182,12 +3181,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 } else if (nfiles > 0) { # read data which are not constant in time
     if (verbose > 0) {
         message(paste0("5) Read variable", ifelse(nfiles > 1, "s", ""), " '", 
-                       paste0(varname_fesom, collapse="','"), "' (=varname_fesom)"))
+                       paste0(varname_nc, collapse="','"), "' (=varname_nc)"))
         message(paste0("      for output variable '", varname, "' (=varname) aka '", longname, "' (=longname)"))
         if (transient_out || regular_transient_out) {
             message(paste0("      and save '", out_mode, "' (=out_mode) data"))
         }
-        message(paste0("      in region '", area, "' (=area) ..."))
+        message("      in region '", area, "' (=area)\n   Prepare matrices ...")
     }
 
     ## check whether R package "ncdf.tools" is loaded and can be used
@@ -3297,101 +3296,60 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
         ## construct fesom filenames
         for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
-           
+          
+            # filenames are given
             if (fuser_tag) {
                 ## check nc fast: library(raster); b <- brick("akhil.nc", var="hur")
                 #fnames[file] <- paste0(datainpath, fnames_user[year_cnt])
-                fnames[file] <- fnames_user[year_cnt]
+                fname <- fnames_user[year_cnt]
 
+            # filenames are not given: construct file names basedn on fpattern
             } else if (!fuser_tag) {
-
-                if (fesom_version == "1.4") {
-
-                    if (cpl_tag) { # coupled fesom-echam
                         
-                        if ((runid == "bold" && setting == "cpl_output_01") || # tido
-                            (runid == "awicm-CMIP6_hu" && setting == "pi")) { # hu
-                            fnames[file] <- paste0(datainpath, "/fesom.", year, ".",
-                                                   typesuffix[file], diagsuffix[file],
-                                                   snapshotsuffix[file], "nc")
-                       
-                        } else if (setting == "htrans02") {
-                            fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
-                                                   year, "0101_monmean.nc")
-
-                        # coupled default
-                        } else { 
-                            fnames[file] <- paste0(datainpath, "/", varname_fesom[file], "_fesom_", 
-                                                   year, "0101.nc")
-                            # newer esm version: exp name in fesom file names
-                            if (!file.exists(fnames[file])) {
-                                fnames[file] <- paste0(datainpath, "/", setting, "_", varname_fesom[file], 
-                                                       "_fesom_", year, "0101.nc")
-                            }
-                            # or with runid and 'fesom' flipped
-                            if (!file.exists(fnames[file])) {
-                                fnames[file] <- paste0(datainpath, "/", setting, "_fesom_", varname_fesom[file], 
-                                                       "_", year, "0101.nc")
-                            }
-
+                # construct input filename
+                if (verbose > 0 && year == years[1]) {
+                    message(indent, "Construct input filename based on fpattern = \"", fpattern, "\" ...")
+                }
+                fname <- fpattern
+                pattern_inds <- list(from=gregexpr("<", fpattern)[[1]], 
+                                     to=gregexpr(">", fpattern)[[1]])
+                if (length(pattern_inds$from) != length(pattern_inds$to)) {
+                    stop("You provided a different number of \"<\" and \">\" tags in fpattern. stop.")
+                }
+                # replace found patterns
+                for (pati in 1:length(pattern_inds$from)) {
+                    pattern <- substr(fpattern, 
+                                      pattern_inds$from[pati] + 1,
+                                      pattern_inds$to[pati] - 1)
+                    if (pattern == "YYYY") {
+                        replacement <- "year"
+                    } else {
+                        replacement <- pattern
+                    }
+                    # check if variable that should be the replacement exists
+                    cmd <- paste0("replacement_exists <- exists(\"", replacement, "\")")
+                    eval(parse(text=cmd))
+                    if (!replacement_exists) {
+                        stop("Cannot replace pattern \"<", pattern, ">\": variable \"", 
+                             replacement, "\" not defined")
+                    } else {
+                        if (verbose > 0 && year == years[1]) {
+                            message(indent, "   Replace found pattern \"<", pattern, 
+                                    ">\" with variable \"", replacement, "\" ...")
                         }
-
-                    }  else if (!cpl_tag) { # ocean-only
-                   
-                        if (any(runid == c("demo1"))) {
-                            fnames[file] <- paste0(datainpath, "/demo.", year, ".", 
-                                                   typesuffix[file], diagsuffix[file], 
-                                                   snapshotsuffix[file], "nc")
-
-                        # xuezhu wangs 1st CORE2 spinups (w/out GIS)
-                        } else if (runid == "CORE2" || runid == "CORE2_ctl") {
-                            fnames[file] <- paste0(datainpath, "/CORE2.", year, ".", 
-                                                   typesuffix[file], diagsuffix[file], 
-                                                   snapshotsuffix[file], "nc")
-                        
-                        # claudis
-                        } else if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
-                                                      "Arc22_sub", "Arc22_sub_small"))) {
-                            if (runid == "Arc22_sub_daily" && dim_tag == "2D") {
-                                fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
-                                                       typesuffix[file], diagsuffix[file],
-                                                       snapshotsuffix[file], "sub.n2d.nc")
-                            } else {
-                                fnames[file] <- paste0(datainpath, "/Arc22.", year, ".",
-                                                       typesuffix[file], diagsuffix[file],
-                                                       snapshotsuffix[file], "sub.nc")
-                            }
-
-                        # default 
-                        } else {
-                            fnames[file] <- paste0(datainpath, "/", runid, ".", year, ".", 
-                                                   typesuffix[file], diagsuffix[file], 
-                                                   snapshotsuffix[file], "nc")
-                        }
-
-                    } # if cpl_tag
-
-                } else if (fesom_version == "2.0") {
-                    
-                    if (cpl_tag) { # coupled fesom-echam
-
-                    }  else if (!cpl_tag) { # ocean-only
-                        # ssh.MPmes.1955.nc
-                        fnames[file] <- paste0(datainpath, "/", varname_fesom[file], 
-                                               ".", runid, ".", year, ".nc") 
-                    
-                    } # if cpl_tag
-
-                } else {
-                    stop("fesom_version = ", fesom_version, " not defined.")
-                
-                } # which fesom_version
+                    }
+                    cmd <- paste0("fname <- gsub(paste0(\"<", pattern, ">\"), ", replacement, ", fname)")
+                    eval(parse(text=cmd))
+                } # for pati in fpattern
+               
+                fname <- paste0(datainpath, "/", fname)
 
             } # if fuser_tag
 
-            if (!file.exists(fnames[file])) {
-                stop("file ", fnames[file], " does not exist.")
+            if (!file.exists(fname)) {
+                stop("fname = ", fname, " does not exist.")
             }
+            fnames[file] <- fname
 
         } # for file nfiles
 
@@ -3405,85 +3363,82 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 ncids[[file]] <- unique(fnames)[file] 
             }
         }
+        stop("asd")
 
-        # try to obtain the time dimension of user file
-        if (fuser_tag) {
-            time_dim_names <- c("time", "T", "month", "months", "year", "years")
-            dim_names <- names(ncids[[1]]$dim)
-            # success
-            if (any(match(time_dim_names, dim_names))) {
-                time_dim <- which(!is.na(match(time_dim_names, dim_names)))
-                time <- ncids[[1]]$dim[[time_dim]]$vals[recs]
-                timeunit <- ncids[[1]]$dim[[time_dim]]$units
-            # no success
-            } else {
-                message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
-                        " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
-                non_nod_dims <- which(regexpr("nod", dim_names) == -1)
-                if (length(non_nod_dims) > 0) {
-                    non_nod_dims <- non_nod_dims[1]
-                    message(indent, "Use dimension no. ", non_nod_dims, ": \"", dim_names[non_nod_dims], "\" for time ...")
-                    time <- ncids[[1]]$dim[[non_nod_dims]]$vals[recs] 
-                    timeunit <- ncids[[1]]$dim[[non_nod_dims]]$units
-                    if (timeunit == "") timeunit <- "timeunit"
-                } else { # only spatial dim
-                    time <- 1
-                    timeunit <- "timeunit"
-                }
-            } # if time dim found in fuser
-            ntime <- length(time)
-            timechar <- timedate <- timesec <- time
-            timesec_unit <- timeunit
-            timespan <- time[1]
-            if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
-        
-        } else { # fuser_tag = F
-            # time axis for nc output
-            # there are two POSIXt types, POSIXct and POSIXlt
-            # "ct" stands for calendar time
-            # "lt" for local time, keeps the date as a list of time attributes (such as "hour" and "mon")
-            # --> unclass(as.POSIXlt(x))$mon
-            origin <- "1970-01-01" # needs to be this, dont know why
-            if (output == "monthly") { # yyyymm01 -> day must be provided, also if format="%Y%m", dont know why 
-                timedate <- as.POSIXlt(paste0(timechar, 01), format="%Y%m%d", origin=origin, tz="UTC")
-            } else if (output == "daily") {
-                timedate <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
-            } else if (outpt == "5day") {
-                stop("how?")
+        # try to obtain the time dimension 
+        time_dim_names <- c("time", "T", "month", "months", "year", "years")
+        dim_names <- names(ncids[[1]]$dim)
+        # success
+        if (any(match(time_dim_names, dim_names))) {
+            time_dim <- which(!is.na(match(time_dim_names, dim_names)))
+            time <- ncids[[1]]$dim[[time_dim]]$vals[recs]
+            timeunit <- ncids[[1]]$dim[[time_dim]]$units
+        # no success
+        } else {
+            message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
+                    " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
+            non_nod_dims <- which(regexpr("nod", dim_names) == -1)
+            if (length(non_nod_dims) > 0) {
+                non_nod_dims <- non_nod_dims[1]
+                message(indent, "Use dimension no. ", non_nod_dims, ": \"", dim_names[non_nod_dims], "\" for time ...")
+                time <- ncids[[1]]$dim[[non_nod_dims]]$vals[recs] 
+                timeunit <- ncids[[1]]$dim[[non_nod_dims]]$units
+                if (timeunit == "") timeunit <- "timeunit"
+            } else { # only spatial dim
+                time <- 1
+                timeunit <- "timeunit"
             }
-            timesec <- as.numeric(timedate) # date --> seconds
-            timesec_unit <- paste0("seconds since ", origin) 
-        
-        }  # if fuser_tag
+        } # if time dim found in fuser
+        ntime <- length(time)
+        timechar <- timedate <- timesec <- time
+        timesec_unit <- timeunit
+        timespan <- time[1]
+        if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
+    
+        # time axis for nc output
+        # there are two POSIXt types, POSIXct and POSIXlt
+        # "ct" stands for calendar time
+        # "lt" for local time, keeps the date as a list of time attributes (such as "hour" and "mon")
+        # --> unclass(as.POSIXlt(x))$mon
+        origin <- "1970-01-01" # needs to be this, dont know why
+        if (output == "monthly") { # yyyymm01 -> day must be provided, also if format="%Y%m", dont know why 
+            timedate <- as.POSIXlt(paste0(timechar, 01), format="%Y%m%d", origin=origin, tz="UTC")
+        } else if (output == "daily") {
+            timedate <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
+        } else if (outpt == "5day") {
+            stop("how?")
+        }
+        timesec <- as.numeric(timedate) # date --> seconds
+        timesec_unit <- paste0("seconds since ", origin) 
 
+        # try to get information about variables of file
         if (length(ncids) == 1) {
-            var_nc_inds <- rep(1, t=length(varname_fesom))
+            var_nc_inds <- rep(1, t=length(varname_nc))
         
         } else if (length(ncids) > 1) {
 
             if (ncdf.tools_tag == F) {
                 var_nc_names <- lapply(ncids, function(x) names(x$var))
-                var_nc_inds <- sapply(var_nc_names, function(x) varname_fesom %in% x)
+                var_nc_inds <- sapply(var_nc_names, function(x) varname_nc %in% x)
                 var_nc_inds <- apply(var_nc_inds, 1, which)
                 if (typeof(var_nc_inds) == "list") {
                     stop(paste0("could not find '", 
-                                paste(varname_fesom[which(sapply(var_nc_inds, length) == 0)], collapse="','"),
+                                paste(varname_nc[which(sapply(var_nc_inds, length) == 0)], collapse="','"),
                                 "' in ", runid, " fesom data ..."))
                 }
             } else if (ncdf.tools_tag == T) {
-
-                var_nc_inds <- rep(NA, t=length(varname_fesom))
+                var_nc_inds <- rep(NA, t=length(varname_nc))
                 for (nci in 1:length(ncids)) {
                     varsin <- ncdf.tools::infoNcdfVars(ncids[[nci]])
-                    for (vari in 1:length(varname_fesom)) {
-                        if (any(varsin[["name"]] == varname_fesom[vari])) {
+                    for (vari in 1:length(varname_nc)) {
+                        if (any(varsin[["name"]] == varname_nc[vari])) {
                             var_nc_inds[vari] <- nci
                         }
                     }
                 }
                 if (any(is.na(var_nc_inds))) {
-                    stop(paste0("could not find varname_fesom='",
-                                paste(varname_fesom[which(is.na(var_nc_inds))], collapse="','"),
+                    stop(paste0("could not find varname_nc='",
+                                paste(varname_nc[which(is.na(var_nc_inds))], collapse="','"),
                                 "' in ", runid, " fesom data ..."))
                 }
             }
@@ -3570,7 +3525,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         }
                         ncids[[length(ncids) + 1]] <- mld_fname
                         mld_nc_ind <- length(ncids)
-                    } # if mixlay file was already loaded due to varname_fesom
+                    } # if mixlay file was already loaded due to varname_nc
 
                 } else if (!cpl_tag) {
 
@@ -3590,7 +3545,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         ncids[[length(ncids) + 1]] <- mld_fname
                         mld_nc_ind <- length(ncids)
 
-                    } # if oce.diag was already loaded due to varname_fesom
+                    } # if oce.diag was already loaded due to varname_nc
 
                 } # if cpl_tag
             } # if ncdf.tools_tag
@@ -3721,7 +3676,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         if (leap_tag && is.leap(year)) {
                             data_node <- array(0,
                                                dim=c(nfiles, nod2d_n, 1, nrecspf_leap),
-                                               dimnames=list(var=varname_fesom,
+                                               dimnames=list(var=varname_nc,
                                                              node=NULL,
                                                              depth=depths_plot,
                                                              rec=timei))
@@ -3729,7 +3684,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         } else {
                             data_node <- array(0,
                                                dim=c(nfiles, nod2d_n, 1, nrecspf),
-                                               dimnames=list(var=varname_fesom,
+                                               dimnames=list(var=varname_nc,
                                                              node=NULL,
                                                              depth=depths_plot,
                                                              rec=timei))
@@ -3739,7 +3694,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         if (leap_tag && is.leap(year)) {
                             data_node <- array(0,
                                                dim=c(nfiles, nod3d_n, 1, nrecspf_leap),
-                                               dimnames=list(var=varname_fesom,
+                                               dimnames=list(var=varname_nc,
                                                              node=NULL,
                                                              depth=depths_plot,
                                                              rec=timei))
@@ -3747,7 +3702,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         } else {
                             data_node <- array(0,
                                                dim=c(nfiles, nod3d_n, 1, nrecspf),
-                                               dimnames=list(var=varname_fesom,
+                                               dimnames=list(var=varname_nc,
                                                              node=NULL,
                                                              depth=depths_plot,
                                                              rec=timei))
@@ -3758,14 +3713,14 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     if (dim_tag == "2D") {
                         data_node <- array(0,
                                            dim=c(nfiles, nod2d_n, 1, 1),
-                                           dimnames=list(var=varname_fesom,
+                                           dimnames=list(var=varname_nc,
                                                          node=NULL,
                                                          depth=depths_plot,
                                                          rec=1))
                     } else if (dim_tag == "3D") {
                         data_node <- array(0,
                                            dim=c(nfiles, nod3d_n, 1, 1),
-                                           dimnames=list(var=varname_fesom,
+                                           dimnames=list(var=varname_nc,
                                                          node=NULL,
                                                          depth=depths_plot,
                                                          rec=1))
@@ -3816,11 +3771,11 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                  "does not contain a single variable")
                         }
                         
-                        # check if one of the variables in the user file equals varname_fesom
-                        if (any(varname_fuser %in% varname_fesom)) { # use the varname options of the runscript
-                            varname_fesom <- varname_fuser[which(varname_fuser %in% varname_fesom)]
+                        # check if one of the variables in the user file equals varname_nc
+                        if (any(varname_fuser %in% varname_nc)) { # use the varname options of the runscript
+                            varname_nc <- varname_fuser[which(varname_fuser %in% varname_nc)]
                         } else { # use defaults options from namelist.var.r
-                            varname_fesom <- varname_fuser
+                            varname_nc <- varname_fuser
                         }
 
                     } else { # if ncdf.tools_tag == T
@@ -3829,7 +3784,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 }
 
                 if (verbose > 1) {
-                    message(paste0(indent, "Get '", varname_fesom[file],
+                    message(paste0(indent, "Get '", varname_nc[file],
                                  "' from ", fnames[file]))
                 }
                 ## note: using start and count in ncvar_get() is ~4 times faster for not too big files
@@ -3842,14 +3797,14 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 ## workaround if both 2d and 3d data will be read
                 if (ncdf.tools_tag == F) {
                     dimcheck <- eval(parse(text=paste0("ncids[[var_nc_inds[file]]]$var$", 
-                                                       varname_fesom[file], "$size")))
+                                                       varname_nc[file], "$size")))
                 
                 } else if (ncdf.tools_tag == T) {
                     dimsin <- ncdf.tools::infoNcdfDims(ncids[[var_nc_inds[file]]])
                     varsin <- ncdf.tools::infoNcdfVars(ncids[[var_nc_inds[file]]])
-                    varsin <- unlist(varsin[which(varsin[,2] == varname_fesom[file]),])
+                    varsin <- unlist(varsin[which(varsin[,2] == varname_nc[file]),])
                     if (length(varsin) == 0) {
-                        stop("Cannot find needed variable '", varname_fesom[file], "'.")
+                        stop("Cannot find needed variable '", varname_nc[file], "'.")
                     }
                     if (F) { # old
                         dimcheck <- c(dimsin["length"][which(dimsin["id"] == as.numeric(varsin["dim.id.1"])),], # time dim
@@ -3860,9 +3815,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
                 }
 
-                # dimcheck = NULL --> varname_fesom not included in nc file!
+                # dimcheck = NULL --> varname_nc not included in nc file!
                 if (is.null(dimcheck)) {
-                    stop("varname_fesom[", file, "] = '", varname_fesom[file], "' not included in file\n",
+                    stop("varname_nc[", file, "] = '", varname_nc[file], "' not included in file\n",
                          ncids[[var_nc_inds[file]]]$filename)
                 }
                 
@@ -3885,7 +3840,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 # check number of nodes of variable
                 if (dimcheck[1] != icount[1]) { # icount[1] always equals icount_leap[1]
                     if (verbose > 2) {
-                        message(paste0(indent, "   Note: ", varname_fesom[file], " data saved on ",
+                        message(paste0(indent, "   Note: ", varname_nc[file], " data saved on ",
                                      dimcheck[1], " nodes instead of ", icount[1]))
                     }
                     icount[1] <- dimcheck[1]
@@ -3906,20 +3861,20 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 if (ncdf.tools_tag == F) {
                     aa <- system.time({
                         if (rec_tag && leap_tag && is.leap(year)) {
-                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_fesom[file],
+                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_nc[file],
                                                          istart, icount_leap)
                         } else {
-                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_fesom[file], 
+                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_nc[file], 
                                                          istart, icount)
                         }
                     })
-                    units_raw <- ncatt_get(ncids[[var_nc_inds[file]]], varname_fesom[file], "units")$value
+                    units_raw <- ncatt_get(ncids[[var_nc_inds[file]]], varname_nc[file], "units")$value
                     if (units_raw == 0) units_raw <- "not given by nc file"
 
                 } else if (ncdf.tools_tag == T) {
                     bb <- system.time({
                         raw_data <- ncdf.tools::readNcdf(ncids[[var_nc_inds[file]]], 
-                                                         var.name=varname_fesom[file])
+                                                         var.name=varname_nc[file])
                         # just in case some original data are in other dimensons than given by user
                         # for example if accidentally more time steps were appended to the file
                         if (leap_tag && is.leap(year)) {
@@ -4055,13 +4010,13 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                 ## Rotate vector components
                 if (rotate_mesh && all(!!rotate_inds)) { 
-                    # rotate some entries of 'varname_fesom' back to geographic coords
+                    # rotate some entries of 'varname_nc' back to geographic coords
                     for (i in 1:(length(rotate_inds)/2)) {
                         inds <- rotate_inds[c((i-1)*2+1,(i-1)*2+2)]
                         if (verbose > 1) {
                             message(paste0(indent, "Rotate global ", 
-                                         varname_fesom[inds[1]], " and ", 
-                                         varname_fesom[inds[2]], 
+                                         varname_nc[inds[1]], " and ", 
+                                         varname_nc[inds[2]], 
                                          " back to geographic coordinates ... "))
                         }
                         rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y, 
@@ -5250,12 +5205,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         
                         # velocity normal to cross section in m/s
                         if (F) { # old
-                            transport <- (data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
-                                          data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i]))*drdz
+                            transport <- (data_vert_csec[which(varname_nc == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                          data_vert_csec[which(varname_nc == "v"),,,]*drop(csec_n_vec_edge_vec[2,i]))*drdz
                             transport <- transport / 1e6 # m3 s-1 --> Sv
                         } else { # drdz is applied later, here still m s-1
-                            transport <- data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
-                                         data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])
+                            transport <- data_vert_csec[which(varname_nc == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                         data_vert_csec[which(varname_nc == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])
                         }
                         dimnames(transport)[[1]] <- list(var=varname)
                         success <- load_package("abind", indent=indent)
@@ -5275,10 +5230,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                         # Sea ice volume transport through section s from point A to point B = 
                         # int_{A}^{B} (\vec{u}_h \cdot \vec{n} * sic * hice) dr
-                        sitransport <- (data_vert_csec[which(varname_fesom == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
-                                        data_vert_csec[which(varname_fesom == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])) *
-                                       data_vert_csec[which(varname_fesom == "area"),,,] *
-                                       data_vert_csec[which(varname_fesom == "hice"),,,] * dr
+                        sitransport <- (data_vert_csec[which(varname_nc == "u"),,,]*drop(csec_n_vec_edge_vec[1,i]) +
+                                        data_vert_csec[which(varname_nc == "v"),,,]*drop(csec_n_vec_edge_vec[2,i])) *
+                                       data_vert_csec[which(varname_nc == "area"),,,] *
+                                       data_vert_csec[which(varname_nc == "hice"),,,] * dr
                        sitransport <- sitransport / 1e6 # Sv = 10^6 m^3 s^-1
                         dimnames(sitransport)[[1]] <- list(var=varname)
                         data_vert_csec <- abind(data_vert_csec, sitransport, along=1, use.dnns=T)
@@ -6307,13 +6262,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Rotate vector components
-        if (rotate_mesh && all(!!rotate_inds)) { # some of 'varname_fesom' needs to be rotated
+        if (rotate_mesh && all(!!rotate_inds)) { # some of 'varname_nc' needs to be rotated
             for (i in 1:(length(rotate_inds)/2)) {
                 inds <- rotate_inds[c((i-1)*2+1,(i-1)*2+2)]
                 if (verbose > 1) {
                     message(paste0(indent, "Rotate global ",
-                                 varname_fesom[inds[1]], " and ",
-                                 varname_fesom[inds[2]],
+                                 varname_nc[inds[1]], " and ",
+                                 varname_nc[inds[2]],
                                  " back to geographic coordinates ... "))
                 }
                 rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y,
@@ -6558,11 +6513,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             # data_node_ltm = E[u], E[v]; data_sd = E[u^2], E[v^2], E[u*v]
             uvar <- data_sd[1,,,] - udata^2
             if (any(uvar < 0)) {
-                message(paste0("warning: variance(", varname_fesom[1], ") < 0."))
+                message(paste0("warning: variance(", varname_nc[1], ") < 0."))
             }
             vvar <- data_sd[2,,,] - vdata^2
             if (any(uvar < 0)) {
-                message(paste0("warning: variance(", varname_fesom[1], ") < 0."))
+                message(paste0("warning: variance(", varname_nc[1], ") < 0."))
             }
             # sd of speed
             data_sd_s <- 1/data * sqrt( udata^2*uvar + vdata^2*vvar + 2*udata*vdata*data_sd[3,,,] )

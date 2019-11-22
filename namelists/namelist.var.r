@@ -6,7 +6,7 @@
 # Check e.g. lib/sub_calc.r how variable-specific calculations are done.
 
 ## Defaults 
-varname_fesom <- NULL
+varname_nc <- NULL
 longname <- "longname"
 units_out <- "units_out"
 units_plot <- "units_plot"
@@ -39,21 +39,21 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
     dim_tag <- "2D"
-    varname_fesom <- "tos"
+    varname_nc <- "tos"
 
 } else if (varname == "tso") { # fesom 1.4
     longname <- "Sea Surface Temperature snapshot"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST snapshot [", degree, "C]"))
     dim_tag <- "2D"
-    varname_fesom <- "tso"
+    varname_nc <- "tso"
 
 } else if (varname == "sst") { # fesom 2.0 
     longname <- "Sea Surface Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
     dim_tag <- "2D"
-    varname_fesom <- "sst"
+    varname_nc <- "sst"
 
 } else if (any(varname == c("temp", "thetao"))) {
     longname <- "Potential Temperature"
@@ -80,9 +80,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_fesom <- "temp"
+    varname_nc <- "temp"
     if (cpl_tag) {
-        varname_fesom <- "thetao"
+        varname_nc <- "thetao"
     }
 
 } else if (any(varname == c("salt", "so"))) {
@@ -111,9 +111,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_fesom <- "salt"
+    varname_nc <- "salt"
     if (cpl_tag) {
-        varname_fesom <- "so"
+        varname_nc <- "so"
     }
 
 } else if (varname == "tob") { 
@@ -121,14 +121,14 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste(T[bottom], " [", degree, "C]"))
     dim_tag <- "2D"
-    varname_fesom <- "tob"
+    varname_nc <- "tob"
 
 } else if (varname == "sob") { 
     longname <- "sea_water_salinity_at_sea_floor"
     units_out <- units_plot <- "psu"
     var_label_plot <- expression(paste(S[bottom], " [", degree, "C]"))
     dim_tag <- "2D"
-    varname_fesom <- "sob"
+    varname_nc <- "sob"
 
 } else if (varname == "insitudens") {
     longname <- "In Situ Density"
@@ -151,7 +151,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- F
 
@@ -170,7 +170,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
     rotate_inds <- F
     vec <- F
 
@@ -215,7 +215,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- F
 
@@ -260,7 +260,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
     rotate_inds <- F
     vec <- F
 
@@ -269,7 +269,7 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "degC2"
     var_label_plot <- expression(paste("Squared SST [", degree, "C"^"2", "]"))
     dim_tag <- "2D"
-    varname_fesom <- "tossq"
+    varname_nc <- "tossq"
 
 } else if (varname == "u") {
     longname <- "Zonal Velocity"
@@ -279,7 +279,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -291,7 +291,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -304,9 +304,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo")
+        varname_nc <- c("uo", "vo")
     }
     rotate_inds <- c(1, 2)
     vec <- T
@@ -330,7 +330,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "uu"
+    varname_nc <- "uu"
     rotate_inds <- F
     vec <- F
 
@@ -347,7 +347,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -364,7 +364,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "vv"
+    varname_nc <- "vv"
     rotate_inds <- F
     vec <- F
 
@@ -381,7 +381,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -393,7 +393,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
-    varname_fesom <- c("ssh")
+    varname_nc <- c("ssh")
     rotate_inds <- F
     vec <- F
 
@@ -405,7 +405,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
-    varname_fesom <- c("ssh")
+    varname_nc <- c("ssh")
     rotate_inds <- F
     vec <- F
 
@@ -419,7 +419,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
-    varname_fesom <- c("ssh")
+    varname_nc <- c("ssh")
     coriolis_tag <- T
     vec <- T
     hvel_geo_levels <- c(0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 100) # cm s-1
@@ -448,7 +448,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("u", "v", "uv")
+    varname_nc <- c("u", "v", "uv")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -460,7 +460,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_u", "sgs_v")
+    varname_nc <- c("sgs_u", "sgs_v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -472,7 +472,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_u", "sgs_v")
+    varname_nc <- c("sgs_u", "sgs_v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -484,7 +484,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_u", "sgs_v")
+    varname_nc <- c("sgs_u", "sgs_v")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -498,7 +498,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "temp")
+    varname_nc <- c("u", "v", "temp")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -512,7 +512,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "temp")
+    varname_nc <- c("u", "v", "temp")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -525,7 +525,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "temp")
+    varname_nc <- c("u", "v", "temp")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -539,7 +539,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("utemp", "vtemp")
+    varname_nc <- c("utemp", "vtemp")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -553,7 +553,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
+    varname_nc <- c("u", "v", "utemp", "vtemp", "temp")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -567,7 +567,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
+    varname_nc <- c("u", "v", "utemp", "vtemp", "temp")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -589,7 +589,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
+    varname_nc <- c("u", "v", "utemp", "vtemp", "temp")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -602,7 +602,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_ut", "sgs_vt")
+    varname_nc <- c("sgs_ut", "sgs_vt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -615,7 +615,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_ut", "sgs_vt")
+    varname_nc <- c("sgs_ut", "sgs_vt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -655,7 +655,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_ut", "sgs_vt")
+    varname_nc <- c("sgs_ut", "sgs_vt")
     rotate_inds <- F #c(1, 2)
     vec <- T
 
@@ -669,7 +669,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "salt")
+    varname_nc <- c("u", "v", "salt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -683,7 +683,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "salt")
+    varname_nc <- c("u", "v", "salt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -697,7 +697,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "salt")
+    varname_nc <- c("u", "v", "salt")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -711,7 +711,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "usalt", "vsalt", "salt")
+    varname_nc <- c("u", "v", "usalt", "vsalt", "salt")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -725,7 +725,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "usalt", "vsalt", "salt")
+    varname_nc <- c("u", "v", "usalt", "vsalt", "salt")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -749,7 +749,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "usalt", "vsalt", "salt")
+    varname_nc <- c("u", "v", "usalt", "vsalt", "salt")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -762,7 +762,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_us", "sgs_vs")
+    varname_nc <- c("sgs_us", "sgs_vs")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -775,7 +775,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_us", "sgs_vs")
+    varname_nc <- c("sgs_us", "sgs_vs")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -788,7 +788,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("sgs_us", "sgs_vs")
+    varname_nc <- c("sgs_us", "sgs_vs")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -802,7 +802,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -816,7 +816,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -830,7 +830,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -844,7 +844,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -858,7 +858,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -882,7 +882,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -901,7 +901,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -918,7 +918,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -934,7 +934,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
 
 } else if (varname == "strain_normal") {
@@ -949,7 +949,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -965,7 +965,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -981,7 +981,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -997,7 +997,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1013,7 +1013,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1029,7 +1029,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
-    varname_fesom <- c("u", "v", "w", "temp", "salt")
+    varname_nc <- c("u", "v", "w", "temp", "salt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1045,7 +1045,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
-    varname_fesom <- c("u", "v", "w", "temp", "salt")
+    varname_nc <- c("u", "v", "w", "temp", "salt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1061,7 +1061,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
-    varname_fesom <- c("u", "v", "w", "temp", "salt")
+    varname_nc <- c("u", "v", "w", "temp", "salt")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1075,7 +1075,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "")
-    varname_fesom <- c("u", "v", "temp", "salt")
+    varname_nc <- c("u", "v", "temp", "salt")
     rotate_inds <- c(1, 2)
     insitudens_tag <- T
     buoyany_tag <- T
@@ -1118,7 +1118,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -1158,7 +1158,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("uu", "vv")
+    varname_nc <- c("uu", "vv")
     rotate_inds <- F
     vec <- F
 
@@ -1185,7 +1185,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "uu", "vv")
+    varname_nc <- c("u", "v", "uu", "vv")
 
 } else if (varname == "HRS") {
     longname <- "Horizontal Reynolds Stress"
@@ -1223,7 +1223,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "uu", "vv", "uv")
+    varname_nc <- c("u", "v", "uu", "vv", "uv")
     rotate_inds <- F # NOT allowed since uu, vv, uv are irreversibly in rotated model coordinates
     vec <- F
 
@@ -1263,7 +1263,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "w", "uw", "vw")
+    varname_nc <- c("u", "v", "w", "uw", "vw")
     rotate_inds <- F # NOT allowed since uu, vv, uv are in rotaed model coordinates
     vec <- F
 
@@ -1294,7 +1294,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "rot"
     typesuffix <- rep("oce.", t=8)
     diagsuffix <- c("", "", "", rep("diag.", t=5))
-    varname_fesom <- c("u", "v", "w", "uu", "vv", "uv", "uw", "vw")
+    varname_nc <- c("u", "v", "w", "uu", "vv", "uv", "uw", "vw")
     rotate_inds <- F # NOT allowed since uu, vv, uv are in rotaed model coordinates
     vec <- F
 
@@ -1324,7 +1324,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
-    varname_fesom <- c("rho", "w")
+    varname_nc <- c("rho", "w")
     rotate_inds <- F
     vec <- F
 
@@ -1370,7 +1370,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -1398,7 +1398,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "rot"
     typesuffix <- rep("oce.", t=6)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho", "N2")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho", "N2")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -1439,7 +1439,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "diag.", "diag.")
-    varname_fesom <- c("w", "rho", "wrho")
+    varname_nc <- c("w", "rho", "wrho")
 
 } else if (varname == "uvbeddy") {
     longname <- "Norm of Horizontal Eddy Buoyancy Flux"
@@ -1468,7 +1468,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -1506,9 +1506,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_fesom <- "w"
+    varname_nc <- "w"
     if (cpl_tag) {
-        varname_fesom <- "wo"
+        varname_nc <- "wo"
     }
 
 } else if (varname == "gradT") {
@@ -1524,9 +1524,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
-    varname_fesom <- c("temp")
+    varname_nc <- c("temp")
     if (cpl_tag) {
-        varname_fesom <- "thetao"
+        varname_nc <- "thetao"
     }
     rotate_inds <- F
     vec <- F
@@ -1564,7 +1564,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
 
 } else if (varname == "gradmld") {
     longname <- "grad_h MLD"
@@ -1579,7 +1579,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("mixlay")
+    varname_nc <- c("mixlay")
     rotate_inds <- F
     vec <- T
 
@@ -1590,19 +1590,16 @@ if (varname == "tos") { # fesom 1.4
     units_plot <- "cm"
     var_label_plot <- "Sea Surface Height [cm]"
     dim_tag <- "2D"
-    if (cpl_tag) {
-        varname_fesom <- "zos"
-    } else {
-        typesuffix <- "oce."
-        varname_fesom <- "ssh"
-    }
+    fsuffix <- "oce.mean.nc"
+    varname_nc <- "ssh"
+    #varname_nc <- "zos"
 
 } else if (varname == "zossq") { 
     longname <- "Squared Sea Surface Height"
     units_out <- units_plot <- "m2"
     var_label_plot <- expression(paste("Squared SSH [m"^"2", "]"))
     dim_tag <- "2D"
-    varname_fesom <- "zossq"
+    varname_nc <- "zossq"
 
 } else if (varname == "mixlay") {
     longname <- "Mixed Layer Depth"
@@ -1611,9 +1608,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "2D"
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "mixlay"
+    varname_nc <- "mixlay"
     if (cpl_tag) {
-        varname_fesom <- "mlotst"
+        varname_nc <- "mlotst"
     }
 
 } else if (varname == "Nsquared") {
@@ -1651,9 +1648,9 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
     if (cpl_tag) {
-        varname_fesom <- c("thetao", "so")
+        varname_nc <- c("thetao", "so")
     }
 
 } else if (varname == "c_barotrop") {
@@ -1726,7 +1723,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
 
 } else if (varname == "c_long_rossby") {
     longname <- "Mode-m baroclinic long rossby-wave speed"
@@ -1781,7 +1778,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
 
 
 } else if (varname == "wkb_hvel_mode") {
@@ -1837,7 +1834,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
 
 } else if (varname == "wkb_vertvel_mode") {
     longname <- "Vertical velocity baroclinic m-mode"
@@ -1887,7 +1884,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
 
 } else if (varname == "Kv") {
     longname <- "Vertical Diffusivity"
@@ -1913,7 +1910,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("Kv")
+    varname_nc <- c("Kv")
     rotate_inds <- F
     vec <- F
 
@@ -1932,7 +1929,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("Kh")
+    varname_nc <- c("Kh")
     rotate_inds <- F
     vec <- F
 
@@ -1951,7 +1948,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("K_GM")
+    varname_nc <- c("K_GM")
     rotate_inds <- F
     vec <- F
 
@@ -1971,7 +1968,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("")
-    varname_fesom <- c("ptr1")
+    varname_nc <- c("ptr1")
     rotate_inds <- F
     vec <- F
     pal <- colorRampPalette(rev(c("white", "#ccede1", "#99dbc4", "#3ebb75", "#4cbc38",
@@ -1993,7 +1990,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.")
     diagsuffix <- c("", "", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y")
+    varname_nc <- c("u", "v", "stress_x", "stress_y")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -2013,7 +2010,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
+    varname_nc <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
 
 } else if (varname == "advh") {
     longname <- "Horizontal advection"
@@ -2050,9 +2047,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("", t=2)
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo")
+        varname_nc <- c("uo", "vo")
     }
     rotate_inds <- c(1, 2)
     vec <- T
@@ -2090,9 +2087,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("", t=2)
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo")
+        varname_nc <- c("uo", "vo")
     }
     rotate_inds <- c(1, 2)
     vec <- T
@@ -2139,7 +2136,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2185,7 +2182,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2231,7 +2228,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("u", "v", "rho")
+    varname_nc <- c("u", "v", "rho")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2275,7 +2272,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "urho", "vrho", "rho")
+    varname_nc <- c("u", "v", "urho", "vrho", "rho")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2321,7 +2318,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("diag.", t=3)
-    varname_fesom <- c("sgs_u", "sgs_v", "rho")
+    varname_nc <- c("sgs_u", "sgs_v", "rho")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2358,9 +2355,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T 
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
-    varname_fesom <- c("u", "v", "temp")
+    varname_nc <- c("u", "v", "temp")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo", "thetao")
+        varname_nc <- c("uo", "vo", "thetao")
     }
     rotate_inds <- c(1, 2)
     vec <- T
@@ -2398,13 +2395,13 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "utemp", "vtemp", "temp")
+    varname_nc <- c("u", "v", "utemp", "vtemp", "temp")
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
                        "Arc22_sub", "Arc22_sub_small"))) {
-        varname_fesom <- c("u", "v", "ut", "vt", "temp")
+        varname_nc <- c("u", "v", "ut", "vt", "temp")
     }
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo", "uto", "vto", "thetao")
+        varname_nc <- c("uo", "vo", "uto", "vto", "thetao")
     }
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
@@ -2451,7 +2448,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
-    varname_fesom <- c("utemp", "vtemp")
+    varname_nc <- c("utemp", "vtemp")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2488,7 +2485,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
-    varname_fesom <- c("sgs_ut", "sgs_vt")
+    varname_nc <- c("sgs_ut", "sgs_vt")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2526,7 +2523,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c(rep("diag.", t=2), "")
-    varname_fesom <- c("sgs_u", "sgs_v", "temp")
+    varname_nc <- c("sgs_u", "sgs_v", "temp")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2564,7 +2561,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c(rep("diag.", t=4), "")
-    varname_fesom <- c("sgs_u", "sgs_v", "sgs_ut", "sgs_vt", "temp")
+    varname_nc <- c("sgs_u", "sgs_v", "sgs_ut", "sgs_vt", "temp")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2614,7 +2611,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
-    varname_fesom <- c("u", "v", "temp")
+    varname_nc <- c("u", "v", "temp")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2638,7 +2635,7 @@ if (varname == "tos") { # fesom 1.4
     }
     dim_tag <- "2D"
     horiz_deriv_tag <- T
-    varname_fesom <- "dxphi"
+    varname_nc <- "dxphi"
     vec <- T
 
 } else if (varname == "dxphi") {
@@ -2660,7 +2657,7 @@ if (varname == "tos") { # fesom 1.4
                                    list(var1="C", var2="m", var3="s"))
     }
     dim_tag <- "2D"
-    varname_fesom <- "dxphi"
+    varname_nc <- "dxphi"
 
 } else if (varname == "dyphi") {
     longname <- "Meridional divergent part of depth-integrated eddy temperature flux (eq 5 JM02)"
@@ -2681,7 +2678,7 @@ if (varname == "tos") { # fesom 1.4
                                    list(var1="C", var2="m", var3="s"))
     }
     dim_tag <- "2D"
-    varname_fesom <- "dyphi"
+    varname_nc <- "dyphi"
     
 } else if (varname == "gradphi") {
     longname <- "Divergent part of depth-integrated eddy temperature flux (eq 5 JM02)"
@@ -2702,7 +2699,7 @@ if (varname == "tos") { # fesom 1.4
                                    list(var1="C", var2="m", var3="s"))
     }
     dim_tag <- "2D"
-    varname_fesom <- c("dxphi", "dyphi")
+    varname_nc <- c("dxphi", "dyphi")
     vec <- T
 
 } else if (varname == "divuvs") {
@@ -2741,9 +2738,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
-    varname_fesom <- c("u", "v", "salt")
+    varname_nc <- c("u", "v", "salt")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo", "so")
+        varname_nc <- c("uo", "vo", "so")
     }
     rotate_inds <- c(1, 2)
     vec <- T
@@ -2784,13 +2781,13 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
-    varname_fesom <- c("u", "v", "usalt", "vsalt", "salt")
+    varname_nc <- c("u", "v", "usalt", "vsalt", "salt")
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily",
                        "Arc22_sub", "Arc22_sub_small"))) {
-        varname_fesom <- c("u", "v", "us", "vs", "salt")
+        varname_nc <- c("u", "v", "us", "vs", "salt")
     }
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo", "uso", "vso", "so")
+        varname_nc <- c("uo", "vo", "uso", "vso", "so")
     }
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
@@ -2829,7 +2826,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
-    varname_fesom <- c("sgs_us", "sgs_vs")
+    varname_nc <- c("sgs_us", "sgs_vs")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2867,7 +2864,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c(rep("diag.", t=2), "")
-    varname_fesom <- c("sgs_u", "sgs_v", "salt")
+    varname_nc <- c("sgs_u", "sgs_v", "salt")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2905,7 +2902,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c(rep("diag.", t=4), "")
-    varname_fesom <- c("sgs_u", "sgs_v", "sgs_us", "sgs_vs", "salt")
+    varname_nc <- c("sgs_u", "sgs_v", "sgs_us", "sgs_vs", "salt")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2953,7 +2950,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
-    varname_fesom <- c("rho", "w")
+    varname_nc <- c("rho", "w")
     rotate_inds <- F
     vec <- F
 
@@ -3001,7 +2998,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
-    varname_fesom <- c("rho", "w")
+    varname_nc <- c("rho", "w")
     rotate_inds <- F
     vec <- F
 
@@ -3047,7 +3044,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "w")
+    varname_nc <- c("temp", "w")
     rotate_inds <- F
     vec <- F
 
@@ -3093,7 +3090,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
-    varname_fesom <- c("salt", "w")
+    varname_nc <- c("salt", "w")
     rotate_inds <- F
     vec <- F
 
@@ -3144,7 +3141,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "diag.", "diag.")
-    varname_fesom <- c("w", "rho", "wrho")
+    varname_nc <- c("w", "rho", "wrho")
     rotate_inds <- F
     vec <- F
 
@@ -3175,7 +3172,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("rho", "Kh")
+    varname_nc <- c("rho", "Kh")
     rotate_inds <- F
     vec <- F
 
@@ -3207,7 +3204,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("rho", "Kv")
+    varname_nc <- c("rho", "Kv")
     rotate_inds <- F
     vec <- F
 
@@ -3255,7 +3252,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("rho", "Kv")
+    varname_nc <- c("rho", "Kv")
     rotate_inds <- F
     vec <- F
 
@@ -3303,7 +3300,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "diag.")
-    varname_fesom <- c("temp", "Kv")
+    varname_nc <- c("temp", "Kv")
     rotate_inds <- F
     vec <- F
 
@@ -3351,7 +3348,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "diag.")
-    varname_fesom <- c("salt", "Kv")
+    varname_nc <- c("salt", "Kv")
     rotate_inds <- F
     vec <- F
 
@@ -3381,7 +3378,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- F
 
@@ -3411,7 +3408,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- F
 
@@ -3441,7 +3438,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- T
 
@@ -3471,7 +3468,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
-    varname_fesom <- "rho"
+    varname_nc <- "rho"
     rotate_inds <- F
     vec <- T
 
@@ -3479,7 +3476,7 @@ if (varname == "tos") { # fesom 1.4
     longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
     units_out <- units_plot <- "degC kg m-2"
     dim_tag <- "2D"
-    varname_fesom <- "opottempmint"
+    varname_nc <- "opottempmint"
     var_label_plot <- substitute(paste(integral(), " ",
                                        rho, " T dz [°C kg ", var^-2,
                                        "]",
@@ -3492,7 +3489,7 @@ if (varname == "tos") { # fesom 1.4
     longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
     units_out <- units_plot <- "g m-2"
     dim_tag <- "2D"
-    varname_fesom <- "somint"
+    varname_nc <- "somint"
     var_label_plot <- substitute(paste(integral(), " ",
                                        rho, " S dz [g ", var^-2,
                                        "]",
@@ -3518,7 +3515,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3540,7 +3537,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
+    varname_nc <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -3554,9 +3551,9 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- "oce."
     diagsuffix <- ""
     if (cpl_tag) {
-        varname_fesom <- "wo"
+        varname_nc <- "wo"
     } else {
-        varname_fesom <- "w"
+        varname_nc <- "w"
     }
 
 } else if (varname == "MOCv") {
@@ -3568,9 +3565,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_fesom <- "v"
+    varname_nc <- "v"
     if (cpl_tag) {
-        varname_fesom <- "vo"
+        varname_nc <- "vo"
     }
 
 } else if (varname == "Tair") {
@@ -3582,7 +3579,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("tair")
+    varname_nc <- c("tair")
     rotate_inds <- F
     vec <- F
 
@@ -3595,7 +3592,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 86400*365 # m/s --> m/a
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("runoff")
+    varname_nc <- c("runoff")
     rotate_inds <- F
     vec <- F
 
@@ -3609,7 +3606,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 86400*365/1e9 # m^3/s --> km^3/a
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("runoff")
+    varname_nc <- c("runoff")
     rotate_inds <- F
     vec <- F
 
@@ -3622,7 +3619,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1e3 # kg/kg --> g/kg
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("shum")
+    varname_nc <- c("shum")
     rotate_inds <- F
     vec <- F
 
@@ -3636,7 +3633,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("swrd")
+    varname_nc <- c("swrd")
     rotate_inds <- F
     vec <- F
 
@@ -3650,7 +3647,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("lwrd")
+    varname_nc <- c("lwrd")
     rotate_inds <- F
     vec <- F
 
@@ -3664,7 +3661,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("olat")
+    varname_nc <- c("olat")
     rotate_inds <- F
     vec <- F
 
@@ -3678,7 +3675,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("osen")
+    varname_nc <- c("osen")
     rotate_inds <- F
     vec <- F
 
@@ -3690,7 +3687,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "2D"
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("qnet")
+    varname_nc <- c("qnet")
 
 } else if (varname == "wnet") {
     longname <- "Net freshwater flux to ocean"
@@ -3709,7 +3706,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("wnet")
+    varname_nc <- c("wnet")
     rotate_inds <- F
     vec <- F
 
@@ -3721,7 +3718,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "2D"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("uwind", "vwind")
+    varname_nc <- c("uwind", "vwind")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -3734,7 +3731,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("uwind", "vwind")
+    varname_nc <- c("uwind", "vwind")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3747,7 +3744,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("stress_x", "stress_y")
+    varname_nc <- c("stress_x", "stress_y")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3760,7 +3757,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("stress_x", "stress_y")
+    varname_nc <- c("stress_x", "stress_y")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3779,7 +3776,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("stress_x", "stress_y")
+    varname_nc <- c("stress_x", "stress_y")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -3798,7 +3795,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("stress_x", "stress_y")
+    varname_nc <- c("stress_x", "stress_y")
     rotate_inds <- c(1, 2)
     curltau_levels <- seq(-2, 2, l=100)
     curltau_palname <- "ncview_blu_red"
@@ -3820,7 +3817,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("stress_x", "stress_y")
+    varname_nc <- c("stress_x", "stress_y")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3843,7 +3840,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("tauxu", "tauyv")
+    varname_nc <- c("tauxu", "tauyv")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -3866,7 +3863,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.")
     diagsuffix <- c("", "", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y")
+    varname_nc <- c("u", "v", "stress_x", "stress_y")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- F
 
@@ -3890,7 +3887,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_fesom <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv") # in my case, tauxu,tauyv are only surface!
+    varname_nc <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv") # in my case, tauxu,tauyv are only surface!
     rotate_inds <- c(1, 2, 3, 4, 5, 6)
     vec <- F
 
@@ -3914,7 +3911,7 @@ if (varname == "tos") { # fesom 1.4
         units_out <- "Sv psu"
     }
     dim_tag <- "2D"
-    varname_fesom <- c("virtual_salt")
+    varname_nc <- c("virtual_salt")
     if (!cpl_tag) {
         typesuffix <- c("forcing.")
         diagsuffix <- c("diag.")
@@ -3940,7 +3937,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("relax_salt")
+    varname_nc <- c("relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -3956,7 +3953,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("cd")
+    varname_nc <- c("cd")
     rotate_inds <- F
     vec <- F
 
@@ -3978,7 +3975,7 @@ if (varname == "tos") { # fesom 1.4
     dim_tag <- "3D" # because of rho
     typesuffix <- c("oce.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
-    varname_fesom <- c("rho", "qnet")
+    varname_nc <- c("rho", "qnet")
 
 } else if (varname == "Fsalt") {
     longname <- "Salt flux to ocean"
@@ -4001,7 +3998,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", rep("diag.", t=6))
-    varname_fesom <- c("salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4026,7 +4023,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- rep("forcing.", t=2)
     diagsuffix <- rep("diag.", t=2)
-    varname_fesom <- c("virtual_salt", "relax_salt")
+    varname_nc <- c("virtual_salt", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4051,7 +4048,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.")
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("temp", "salt", "qnet")
+    varname_nc <- c("temp", "salt", "qnet")
     rotate_inds <- F
     vec <- F
 
@@ -4071,7 +4068,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=5))
     diagsuffix <- c("", "", rep("diag.", t=5))
-    varname_fesom <- c("temp", "salt", "swrd", "lwrd", "olwout", "osen", "olat")
+    varname_nc <- c("temp", "salt", "swrd", "lwrd", "olwout", "osen", "olat")
     rotate_inds <- F
     vec <- F
 
@@ -4096,7 +4093,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_fesom <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4116,7 +4113,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_fesom <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4136,7 +4133,7 @@ if (varname == "tos") { # fesom 1.4
         units_out <- "kg s-1"
     }
     dim_tag <- "3D"
-    varname_fesom <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
 
@@ -4156,7 +4153,7 @@ if (varname == "tos") { # fesom 1.4
         units_out <- "kg s-1"
     }
     dim_tag <- "3D" # since temp and salt are needed
-    varname_fesom <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt") 
+    varname_nc <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt") 
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "forcing.") 
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
 
@@ -4182,7 +4179,7 @@ if (varname == "tos") { # fesom 1.4
                      rep("forcing.", t=5)) # snow rain evap runoff relax_salt
     diagsuffix <- c("", "", 
                      rep("diag.", t=11))
-    varname_fesom <- c("temp", "salt", 
+    varname_nc <- c("temp", "salt", 
                         "swrd", "lwrd", "olwout", "osen", "olat",
                         "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
 
@@ -4202,7 +4199,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.")
     diagsuffix <- c("", "", "diag.")
-    varname_fesom <- c("temp", "salt", "qnet")
+    varname_nc <- c("temp", "salt", "qnet")
     rotate_inds <- F
     vec <- F
 
@@ -4222,7 +4219,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=5))
     diagsuffix <- c("", "", rep("diag.", t=5))
-    varname_fesom <- c("temp", "salt", "swrd", "lwrd", "olwout", "osen", "olat")
+    varname_nc <- c("temp", "salt", "swrd", "lwrd", "olwout", "osen", "olat")
     rotate_inds <- F
     vec <- F
 
@@ -4242,7 +4239,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_fesom <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4262,7 +4259,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_fesom <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4282,7 +4279,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
-    varname_fesom <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
+    varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4307,7 +4304,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=3))
     diagsuffix <- c("", "", rep("diag.", t=3))
-    varname_fesom <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt")
+    varname_nc <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4336,7 +4333,7 @@ if (varname == "tos") { # fesom 1.4
                      rep("forcing.", t=5))
     diagsuffix <- c("", "",
                      rep("diag.", t=11))
-    varname_fesom <- c("temp", "salt",
+    varname_nc <- c("temp", "salt",
                         "swrd", "lwrd", "olwout", "osen", "olat",
                         "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
@@ -4351,7 +4348,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("uice", "vice")
+    varname_nc <- c("uice", "vice")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -4364,7 +4361,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("uice", "vice")
+    varname_nc <- c("uice", "vice")
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -4377,7 +4374,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("uice", "vice")
+    varname_nc <- c("uice", "vice")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -4400,9 +4397,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
-    varname_fesom <- c("area")
+    varname_nc <- c("area")
     if (cpl_tag) {
-        varname_fesom <- "sic"
+        varname_nc <- "sic"
     }
 
 } else if (varname == "hice") {
@@ -4414,7 +4411,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
-    varname_fesom <- c("hice")
+    varname_nc <- c("hice")
     rotate_inds <- F
     vec <- F
 
@@ -4433,9 +4430,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.")
     diagsuffix <- c("")
-    varname_fesom <- c("area")
+    varname_nc <- c("area")
     if (cpl_tag) {
-        varname_fesom <- "sisnconc"
+        varname_nc <- "sisnconc"
     }
 
 } else if (varname == "icevol") {
@@ -4453,7 +4450,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("area", "hice")
+    varname_nc <- c("area", "hice")
     rotate_inds <- F
     vec <- F
 
@@ -4466,7 +4463,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
-    varname_fesom <- c("hsnow")
+    varname_nc <- c("hsnow")
     rotate_inds <- F
     vec <- F
 
@@ -4484,7 +4481,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("diag.")
-    varname_fesom <- c("thdgr")
+    varname_nc <- c("thdgr")
     rotate_inds <- F
     vec <- F
 
@@ -4494,7 +4491,7 @@ if (varname == "tos") { # fesom 1.4
     ## of  specific water mass if out_mode='csec_mean', e.g.
     ## only water that is denser than 27.8 kg m-3, see examples below.
     # 'csec_cond_vars':
-    #   these follow the same naming convention as for the variable 'varname_fesom'
+    #   these follow the same naming convention as for the variable 'varname_nc'
     # 'csec_conds':
     #   gt = greather than, ge = greater than or equal to
     #   ge = greater than or equal to
@@ -4564,16 +4561,16 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.") # defeault
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     if (!is.null(csec_conds)) { # if there are conditions
         if (any(csec_cond_vars == "rho")) {
             typesuffix <- c("oce.", "oce.", "oce.")
             diagsuffix <- c("", "", "diag.")
-            varname_fesom <- c("u", "v", "rho")
+            varname_nc <- c("u", "v", "rho")
         } else if (any(csec_cond_vars == "potdens")) {
             typesuffix <- c("oce.", "oce.", "oce.", "oce.")
             diagsuffix <- c("", "", "", "")
-            varname_fesom <- c("u", "v", "temp", "salt")
+            varname_nc <- c("u", "v", "temp", "salt")
         }
     }
     rotate_inds <- c(1, 2) # u, v
@@ -4621,9 +4618,9 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("u", "v")
+    varname_nc <- c("u", "v")
     if (cpl_tag) {
-        varname_fesom <- c("uo", "vo")
+        varname_nc <- c("uo", "vo")
     }
     rotate_inds <- c(1, 2)
 
@@ -4693,7 +4690,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_fesom <- c("temp", "salt")
+    varname_nc <- c("temp", "salt")
     insitudens_tag <- T
     buoyancy_tag <- T
     coriolis_tag <- T
@@ -4710,7 +4707,7 @@ if (!exists("dim_tag")) {
 }
 if (!cpl_tag &&
     !exists("fnames_user") &&
-    !is.null(varname_fesom) &&
+    !is.null(varname_nc) &&
     !all(c(exists("typesuffix"), c(exists("diagsuffix"))))) {
     stop(paste0("'cpl_tag'=", cpl_tag, " and you did not provide your own data fname.",
                 " so you must define 'typesuffix' and 'diagsuffix' for the fesom",

@@ -1634,8 +1634,8 @@ sub_calc <- function(data_node) {
         ## do stuff before horizontal derivative
         if (varname == "ekmanP") {
             if (verbose > 1) {
-                message(paste0(indent, varname, " = d(", varname_fesom[2], "/f)",
-                             "dx - d(", varname_fesom[1], "/f)dy ..."))
+                message(paste0(indent, varname, " = d(", varname_nc[2], "/f)",
+                             "dx - d(", varname_nc[1], "/f)dy ..."))
             }
             # divide through f
             stop("nnottttt yettt")
@@ -2165,8 +2165,8 @@ sub_calc <- function(data_node) {
 
         if (any(varname == c("strain_normal", "strain_shear", "strain", "okubo"))) {
             if (any(varname == c("strain_normal", "strain", "okubo"))) {
-            message(paste0(indent, varname, " = (d", varname_fesom[1],
-                         "dx + d", varname_fesom[2], "dy)² ..."))
+            message(paste0(indent, varname, " = (d", varname_nc[1],
+                         "dx + d", varname_nc[2], "dy)² ..."))
 
                 strain_normal <- (dvar1dx + dvar2dy)^2
                 if (varname == "strain_normal") {
@@ -2174,8 +2174,8 @@ sub_calc <- function(data_node) {
                 }
             }
             if (any(varname == c("strain_shear", "strain", "okubo"))) {
-            message(paste0(indent, varname, " = (d", varname_fesom[2],
-                         "dx + d", varname_fesom[1],  "dy)² ..."))
+            message(paste0(indent, varname, " = (d", varname_nc[2],
+                         "dx + d", varname_nc[1],  "dy)² ..."))
 
                 strain_shear <- (dvar2dx + dvar1dy)^2
 
@@ -2185,8 +2185,8 @@ sub_calc <- function(data_node) {
             }
             if (any(varname == c("strain", "okubo"))) {
             message(paste0(indent, varname, " = (d",
-                         varname_fesom[1], "dx + d", varname_fesom[2], "dy)² + (d",
-                         varname_fesom[2], "dx + d", varname_fesom[1], "dy)² ..."))
+                         varname_nc[1], "dx + d", varname_nc[2], "dy)² + (d",
+                         varname_nc[2], "dx + d", varname_nc[1], "dy)² ..."))
 
                 strain <- strain_normal + strain_shear
                 if (varname == "strain") {
@@ -2195,9 +2195,9 @@ sub_calc <- function(data_node) {
             }
             if (varname == "okubo") {
             message(paste0(indent, varname, " = (d",
-                         varname_fesom[1], "dx + d", varname_fesom[2], "dy)² + (d",
-                         varname_fesom[2], "dx + d", varname_fesom[1], "dy)² - (d",
-                         varname_fesom[2], "dx - d", varname_fesom[1], "dy)² ..."))
+                         varname_nc[1], "dx + d", varname_nc[2], "dy)² + (d",
+                         varname_nc[2], "dx + d", varname_nc[1], "dy)² - (d",
+                         varname_nc[2], "dx - d", varname_nc[1], "dy)² ..."))
 
                 okubo <- strain_normal + strain_shear - relvortisq
                 data_node <- okubo
@@ -2215,13 +2215,13 @@ sub_calc <- function(data_node) {
                 ## baroclinic energy conversion (mean potential -> eddy potential)
                 # PmPe = -\vec{i}(u'b' * dbdx * N^-2) -\vec{j}(v'b' * dbdy * N-2)
                 #      = -g/rho0/N2 * (u'rho'*dbdx + v'rho'*dbdy)
-                term1 = (data_global[which(varname_fesom == "urho"),,,] -
-                         data_global[which(varname_fesom == "u"),,,]*
-                         data_global[which(varname_fesom == "rho"),,,])*dvar1dx_node
-                term2 = (data_global[which(varname_fesom == "vrho"),,,] -
-                         data_global[which(varname_fesom == "v"),,,]*
-                         data_global[which(varname_fesom == "rho"),,,])*dvar1dy_node
-                data_node = -g/rho0/data_global[which(varname_fesom == "N2"),,,] * (term1 + term2)
+                term1 = (data_global[which(varname_nc == "urho"),,,] -
+                         data_global[which(varname_nc == "u"),,,]*
+                         data_global[which(varname_nc == "rho"),,,])*dvar1dx_node
+                term2 = (data_global[which(varname_nc == "vrho"),,,] -
+                         data_global[which(varname_nc == "v"),,,]*
+                         data_global[which(varname_nc == "rho"),,,])*dvar1dy_node
+                data_node = -g/rho0/data_global[which(varname_nc == "N2"),,,] * (term1 + term2)
 
         }
 
@@ -2230,13 +2230,13 @@ sub_calc <- function(data_node) {
             message(paste0(indent, varname, " = - u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy"))
 
             ## hrs = -u'u'*dudx - u'v'*dudy - u'v'*dvdx - v'v'*dvdy
-            term1 <- -(data_node[which(varname_fesom == "uu"),,,] -
-                        data_node[which(varname_fesom == "u"),,,]^2)*dvardx_node3d["dx_u",,,]
-            term2 <- -(data_node[which(varname_fesom == "uv"),,,] -
-                        data_node[which(varname_fesom == "u"),,,]*
-                        data_node[which(varname_fesom == "v"),,,])*(dvardy_node3d["dy_u",,,] + dvardx_node3d["dx_v",,,])
-            term3 <- -(data_node[which(varname_fesom == "vv"),,,] -
-                        data_node[which(varname_fesom == "v"),,,]^2)*dvardy_node3d["dy_v",,,] 
+            term1 <- -(data_node[which(varname_nc == "uu"),,,] -
+                        data_node[which(varname_nc == "u"),,,]^2)*dvardx_node3d["dx_u",,,]
+            term2 <- -(data_node[which(varname_nc == "uv"),,,] -
+                        data_node[which(varname_nc == "u"),,,]*
+                        data_node[which(varname_nc == "v"),,,])*(dvardy_node3d["dy_u",,,] + dvardx_node3d["dx_v",,,])
+            term3 <- -(data_node[which(varname_nc == "vv"),,,] -
+                        data_node[which(varname_nc == "v"),,,]^2)*dvardy_node3d["dy_v",,,] 
             hrs <- term1 + term2 + term3
 
             if (varname == "HRS") {
@@ -2586,24 +2586,24 @@ sub_calc <- function(data_node) {
             message(paste0(indent, "Fsalt = SSS/(1-SSS/1000)*(Evap - Snow - Rain - Runoff + ThdGr) + relax_salt_term ..."))
             message(paste0(indent, "   e.g. Josey (2003): doi:10.1029/2003JC001778"))
         }
-        EminusP <- data_node[which(varname_fesom == "snow"),,,]*-1 +
-                   data_node[which(varname_fesom == "rain"),,,]*-1 +
-                   data_node[which(varname_fesom == "evap"),,,] +
-                   data_node[which(varname_fesom == "runoff"),,,]*-1 +
-                   data_node[which(varname_fesom == "thdgr"),,,]
+        EminusP <- data_node[which(varname_nc == "snow"),,,]*-1 +
+                   data_node[which(varname_nc == "rain"),,,]*-1 +
+                   data_node[which(varname_nc == "evap"),,,] +
+                   data_node[which(varname_nc == "runoff"),,,]*-1 +
+                   data_node[which(varname_nc == "thdgr"),,,]
 
-        #denom <- 1 - data_node[which(varname_fesom == "salt"),,,]/1e6 # /1e3 or /1e6 almost no diff
+        #denom <- 1 - data_node[which(varname_nc == "salt"),,,]/1e6 # /1e3 or /1e6 almost no diff
         denom <- 1
-        data_node <- data_node[which(varname_fesom == "salt"),,,]*EminusP/denom +
-                     data_node[which(varname_fesom == "relax_salt"),,,]
+        data_node <- data_node[which(varname_nc == "salt"),,,]*EminusP/denom +
+                     data_node[which(varname_nc == "relax_salt"),,,]
     } # Fsalt
 
     if (varname == "Fsalt2") {
         if (verbose > 0) {
             message(paste0(indent, "Fsalt2 = virtual_salt + relax_salt"))
         }
-        data_node <- data_node[which(varname_fesom == "virtual_salt"),,,] + 
-                     data_node[which(varname_fesom == "relax_salt"),,,]
+        data_node <- data_node[which(varname_nc == "virtual_salt"),,,] + 
+                     data_node[which(varname_nc == "relax_salt"),,,]
     } # Fsalt2
 
     # upper boundary conditions which need sea water functions
@@ -2612,9 +2612,9 @@ sub_calc <- function(data_node) {
             message(paste0(indent, "Ftemp = Qnet/(rho*cp)"))
         }
         if (F) { # to do: non-constant cp
-            data_node <- data_node[which(varname_fesom == "qnet"),,,]/(cp_node*data_node[which(varname_fesom == "rho"),,,])
+            data_node <- data_node[which(varname_nc == "qnet"),,,]/(cp_node*data_node[which(varname_nc == "rho"),,,])
         } else if (T) {
-            data_node <- data_node[which(varname_fesom == "qnet"),,,]/(cp*data_node[which(varname_fesom == "rho"),,,])
+            data_node <- data_node[which(varname_nc == "qnet"),,,]/(cp*data_node[which(varname_nc == "rho"),,,])
         }
     } # Ftemp
 
@@ -2788,8 +2788,8 @@ sub_calc <- function(data_node) {
                     if (verbose > 1) {
                         message(indent, "rho = sw_dens(S,T,p) in kg m-3 ...")
                     }
-                    rho_node <- sw_dens(S=data_node[which(varname_fesom == "salt"),,,],
-                                        T=data_node[which(varname_fesom == "temp"),,,],
+                    rho_node <- sw_dens(S=data_node[which(varname_nc == "salt"),,,],
+                                        T=data_node[which(varname_nc == "temp"),,,],
                                         P=pres_mat)
                 } else if (sea_water == "TEOS10") {
                     if (verbose > 1) {
@@ -2822,7 +2822,7 @@ sub_calc <- function(data_node) {
                                      "FthermalB", "FrhoB",
                                      "Frho2", "FrhoB2"))) {
                    
-                    qnetind <- which(varname_fesom == "qnet")
+                    qnetind <- which(varname_nc == "qnet")
                     if (is.na(qnetind)) stop("could not find variable qnet.")
 
                     Fthermal_node <- -alpha_node/cp_node*data_node[qnetind,,,]
@@ -2841,7 +2841,7 @@ sub_calc <- function(data_node) {
                                      "FthermalBbudget", "FrhoBbudget"))) {
                     
                     inds <- match(c("swrd", "lwrd", "olwout", "osen", "olat"), 
-                                   varname_fesom)
+                                   varname_nc)
                     if (any(is.na(inds))) stop("could not find some variables of swrd lwrd olwout oswn olat.")
 
                     # replicate alpha for all vars
@@ -2852,9 +2852,9 @@ sub_calc <- function(data_node) {
                     alpha_node <- tmp
                     Fthermalbudget_node <- -alpha_node/cp_node * data_node[inds,,,]
                     if (any(varname == c("Fthermalbudget", "Frhobudget"))) {
-                        dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_rho_", varname_fesom[inds]))
+                        dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_rho_", varname_nc[inds]))
                     } else if (any(varname == c("FthermalBbudget", "FrhoBbudget"))) {
-                        dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_b_", varname_fesom[inds]))
+                        dimnames(Fthermalbudget_node)[1] <- list(paste0("Fth_b_", varname_nc[inds]))
                     }
 
                     # add Fthermal as sum of all components
@@ -2899,7 +2899,7 @@ sub_calc <- function(data_node) {
                     FhalineFac_node <- rho_node * beta_node *  data_node[saltind,,,] / (1 - data_node[saltind,,,]/1000) # after Josey et al. 2003
                     dimnames(FhalineFac_node)[1] <- list(var="FhalineFac")
 
-                    relax_salt_ind <- which(varname_fesom == "relax_salt")
+                    relax_salt_ind <- which(varname_nc == "relax_salt")
                     if (is.na(relax_salt_ind)) stop("could not find variable relax_salt.")
 
                     salt_relax_term <- rho_node * beta_node * data_node[relax_salt_ind,,,]
@@ -2910,14 +2910,14 @@ sub_calc <- function(data_node) {
                                          "FhalineB", "FrhoB"))) {
                         
                         inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"), 
-                                       varname_fesom)
+                                       varname_nc)
                         if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
                         
-                        Fhaline_node <- data_node[which(varname_fesom == "snow"),,,]*-1 +
-                                         data_node[which(varname_fesom == "rain"),,,]*-1 +
-                                         data_node[which(varname_fesom == "evap"),,,] +
-                                         data_node[which(varname_fesom == "runoff"),,,]*-1 +
-                                         data_node[which(varname_fesom == "thdgr"),,,]
+                        Fhaline_node <- data_node[which(varname_nc == "snow"),,,]*-1 +
+                                         data_node[which(varname_nc == "rain"),,,]*-1 +
+                                         data_node[which(varname_nc == "evap"),,,] +
+                                         data_node[which(varname_nc == "runoff"),,,]*-1 +
+                                         data_node[which(varname_nc == "thdgr"),,,]
                         Fhaline_node <- FhalineFac_node * Fhaline_node + salt_relax_term
 
                         if (varname == "Fhaline") {
@@ -2936,8 +2936,8 @@ sub_calc <- function(data_node) {
                         message(paste0(indent, "Fhaline = rho * beta * (virtual_salt + relax_salt) ..."))
                     }
                     Fhaline_node <- rho_node * beta_node * 
-                                        (data_node[which(varname_fesom == "virtual_salt"),,,] + 
-                                         data_node[which(varname_fesom == "relax_salt"),,,])
+                                        (data_node[which(varname_nc == "virtual_salt"),,,] + 
+                                         data_node[which(varname_nc == "relax_salt"),,,])
                     assign('Fhaline_node', Fhaline_node, envir=.GlobalEnv)
                 } # Frho2 FrhoB2
 
@@ -2945,7 +2945,7 @@ sub_calc <- function(data_node) {
                                      "FhalineBbudget", "FrhoBbudget"))) {
 
                     inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"),
-                                   varname_fesom)
+                                   varname_nc)
                     if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
                     
                     # apply sign convention
@@ -2974,9 +2974,9 @@ sub_calc <- function(data_node) {
                     
                     Fhalinebudget_node <- FhalineFac_node * data_node[inds,,,]
                     if (any(varname == c("Fhalinebudget", "Frhobudget"))) {
-                        dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_rho_", varname_fesom[inds]))
+                        dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_rho_", varname_nc[inds]))
                     } else if (any(varname == c("FhalineBbudget", "FrhoBbudget"))) {
-                        dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_b_", varname_fesom[inds]))
+                        dimnames(Fhalinebudget_node)[1] <- list(paste0("Fha_b_", varname_nc[inds]))
                     }
 
                     # add salt_relax term without FahlineFac
@@ -3048,7 +3048,7 @@ sub_calc <- function(data_node) {
     if (regexpr("MOC", varname) != -1) {
        
         if (verbose > 0) {
-            message(indent, varname, "(lat,z) = cumsum_{lat}[sum_{nod3d_at_lat}(", varname_fesom[1], "*vol)]", appendLF=F)
+            message(indent, varname, "(lat,z) = cumsum_{lat}[sum_{nod3d_at_lat}(", varname_nc[1], "*vol)]", appendLF=F)
             if (varname == "MOCw") {
                 message("")
                 message(indent, "   like in fpost1.4", appendLF=F)

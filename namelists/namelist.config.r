@@ -48,8 +48,8 @@ fesom_version <- "1.4"
 cpl_tag <- T # F: ocean-only, T: coupled
              # needed for filename convention:
              # if cpl_tag == T
-             #      <varname_fesom>_fesom_YYYY0101.nc (older esm version)
-             #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
+             #      <varname_nc>_fesom_YYYY0101.nc (older esm version)
+             #      <runid>_<varname_nc>_fesom_YYYY0101.nc (newer esm version)
              # if cpl_tag == F
              #      <runid>.YYYY.oce.mean.nc
 
