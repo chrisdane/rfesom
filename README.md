@@ -24,7 +24,7 @@ __Table of Contents__<br/>
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
 
-<!-- Added by: mozi, at: Fri 22 Nov 2019 03:43:53 PM CET -->
+<!-- Added by: mozi, at: Mon 25 Nov 2019 09:26:07 AM CET -->
 
 <!--te-->
 

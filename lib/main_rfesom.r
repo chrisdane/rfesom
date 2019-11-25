@@ -3196,26 +3196,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
     ## e.g. 5 GB fesom file (dim = 3668773 x 365)
     ##      all_recs = T : 2.17 mins (36 GB virtual mem)
     ##      all_recs = F : 3.5 mins
-    if (rec_tag && !fuser_tag) {
-        if (((length(recs) == npy && all(recs == 1:npy)) || # read all records of a file at once
-             (leap_tag && length(recs_leap) == npy_leap && all(recs_leap == 1:npy_leap)))) {
-            success <- load_package("ncdf.tools")
-            if (!success) {
-                ncdf.tools_tag <- F
-                message(paste0(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get() if\n",
-                               indent, "      the whole netcdf file (i.e. all entries of all\n",
-                               indent, "      dimensions) needs to get loaded ..."))
-            } else if (success) {
-                ncdf.tools_tag <- T
-            }
-
-        } else {
-            ncdf.tools_tag <- F
-        } # if ncdf.tools make sense
-
-    # dont need to read the whole file
-    } else {
+    success <- load_package("ncdf.tools")
+    if (!success) {
         ncdf.tools_tag <- F
+        message(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4")
+    } else if (success) {
+        ncdf.tools_tag <- T
     }
 
     ## Data read loop preparation
@@ -3355,6 +3341,21 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
         ## Open annual ncdf files
         # Do not load the same file more than once
+        # (in old fesom, more than 1 variables are saved in one file)
+        # speedtest opening a nc file:
+        if (F) {
+            library(ncdf4)
+            library(RNetCDF)
+            library(microbenchmark) 
+            f <- "/home/mozi/data/livneh/hdd.mon.mean.nc" # 617 MB file
+            microbenchmark(times=100,
+                           RNetCDF=RNetCDF::open.nc(f),
+                           ncdf4=ncdf4::nc_open(f))
+            # Unit: microseconds
+            #    expr      min       lq      mean   median       uq      max neval
+            #  RNetCDF  588.498  680.400  767.8692  748.939  826.214 1252.252   100
+            #    ncdf4 3005.510 3277.918 3621.9731 3519.698 3945.849 5897.440   100
+        } # --> RNectCDF::open.nc much faster opening a nc file
         ncids <- vector("list", l=length(unique(fnames)))
         for (file in 1:length(unique(fnames))) {
             if (ncdf.tools_tag == F) {
@@ -3362,61 +3363,91 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             } else if (ncdf.tools_tag == T) {
                 ncids[[file]] <- unique(fnames)[file] 
             }
-        }
-        stop("asd")
+        } # for all files
 
-        # try to obtain the time dimension 
-        time_dim_names <- c("time", "T", "month", "months", "year", "years")
-        dim_names <- names(ncids[[1]]$dim)
-        # success
-        if (any(match(time_dim_names, dim_names))) {
-            time_dim <- which(!is.na(match(time_dim_names, dim_names)))
-            time <- ncids[[1]]$dim[[time_dim]]$vals[recs]
-            timeunit <- ncids[[1]]$dim[[time_dim]]$units
-        # no success
-        } else {
-            message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
-                    " does not have a dimension named '", paste0(time_dim_names, collapse="','"), "'.")
-            non_nod_dims <- which(regexpr("nod", dim_names) == -1)
-            if (length(non_nod_dims) > 0) {
-                non_nod_dims <- non_nod_dims[1]
-                message(indent, "Use dimension no. ", non_nod_dims, ": \"", dim_names[non_nod_dims], "\" for time ...")
-                time <- ncids[[1]]$dim[[non_nod_dims]]$vals[recs] 
-                timeunit <- ncids[[1]]$dim[[non_nod_dims]]$units
-                if (timeunit == "") timeunit <- "timeunit"
-            } else { # only spatial dim
-                time <- 1
-                timeunit <- "timeunit"
+        ## try to obtain the time dimension 
+        time_dim_or_var_names <- c("time", "T") # add more here if necessary
+
+        # with ncdf4 package
+        if (ncdf.tools_tag == T) {
+            dim_names <- ncdf.tools::infoNcdfDims(ncids[[1]])$name
+            var_names <- ncdf.tools::infoNcdfVars(ncids[[1]])$name
+        } else if (ncdf.tools_tag == F) {
+            dim_names <- names(ncids[[1]]$dim)
+            var_names <- names(ncids[[1]]$var)
+        }
+        time <- NULL # default: no time
+        timeunit <- NULL
+        # check if there is time _dimension_
+        if (any(!is.na(match(time_dim_or_var_names, dim_names)))) { # there is a time dimension
+            time_dim <- time_dim_or_var_names[match(time_dim_or_var_names, dim_names)]
+            if (any(is.na(time_dim))) {
+                time_dim <- time_dim[-which(is.na(time_dim))]
             }
-        } # if time dim found in fuser
+            if (length(time_dim) > 2) {
+                stop("found ", length(time_dim), " time dims: ",
+                     paste(time_dim, collapse=", "), ". not implemented.")
+            }
+            if (ncdf.tools_tag == F) { # use ncdf4 package
+                time <- ncids[[1]]$dim[[time_dim]]$vals
+                timeunit <- ncids[[1]]$dim[[time_dim]]$units
+            } else if (ncdf.tools_tag == T) { # use ncdf.tools package
+                if (F) {
+                    time <- ncdf.tools::readNcdfCoordinates(ncids[[1]])[[time_dim]]
+                } else if (T) { # test RNetCDF
+                    ncin <- RNetCDF::open.nc(ncids[[1]])
+                    time <- RNetCDF::var.get.nc(ncin, time_dim)
+                }
+                stop("asd")
+            }
+        }
+        # check if there is time _variable_
+        if (is.null(time)) {
+            if (any(!is.na(match(time_dim_or_var_names, var_names)))) { # there is a time variable
+                time_var <- time_dim_or_var_names[match(time_dim_or_var_names, var_names)]
+                if (any(is.na(time_var))) {
+                    time_var <- time_var[-which(is.na(time_var))]
+                }
+                if (length(time_var) > 2) {
+                    stop("found ", length(time_var), " time vars: ",
+                         paste(time_var, collapse=", "), ". not implemented.")
+                }
+                # read time variable
+                if (ncdf.tools_tag == T) {
+                    time <- ncdf.tools::readNcdf(ncids[[1]], time_var)
+                    stop("asd")
+                } else if (ncdf.tools_tag == F) {
+                    time <- nvar_get(ncids[[1]], var_names[time_var_ind])
+                    timeunit <- ncatt_get(ncids[[1]], var_names[time_var_ind])
+                    if (any(names(timeunit) == "units")) {
+                        timeunit <- timeunit$timeunit
+                    }
+                } # ncdf4 or ncdf.tools
+            } # if there is time var
+        } # if no time dim was found
+
+        # either time _dimension nor _variable_ found
+        if (is.null(time_dim)) {
+            message(indent, "your provided nc file\n", ncids[[1]]$filename, "\n",
+                    " either have a dimension not a variable named '", 
+                    paste(time_dim_or_var_names, collapse="','"), "'.\n",
+                    "assume that there is no time information.")
+        }
+
+        stop("asd")
         ntime <- length(time)
         timechar <- timedate <- timesec <- time
         timesec_unit <- timeunit
         timespan <- time[1]
         if (ntime > 1) timespan <- paste0(timespan, "-", time[ntime])
-    
-        # time axis for nc output
-        # there are two POSIXt types, POSIXct and POSIXlt
-        # "ct" stands for calendar time
-        # "lt" for local time, keeps the date as a list of time attributes (such as "hour" and "mon")
-        # --> unclass(as.POSIXlt(x))$mon
-        origin <- "1970-01-01" # needs to be this, dont know why
-        if (output == "monthly") { # yyyymm01 -> day must be provided, also if format="%Y%m", dont know why 
-            timedate <- as.POSIXlt(paste0(timechar, 01), format="%Y%m%d", origin=origin, tz="UTC")
-        } else if (output == "daily") {
-            timedate <- as.POSIXlt(timechar, format="%Y%j", origin=origin, tz="UTC") # yyyydoy
-        } else if (outpt == "5day") {
-            stop("how?")
-        }
         timesec <- as.numeric(timedate) # date --> seconds
         timesec_unit <- paste0("seconds since ", origin) 
 
-        # try to get information about variables of file
+
+        ## get information about variables of file
         if (length(ncids) == 1) {
             var_nc_inds <- rep(1, t=length(varname_nc))
-        
         } else if (length(ncids) > 1) {
-
             if (ncdf.tools_tag == F) {
                 var_nc_names <- lapply(ncids, function(x) names(x$var))
                 var_nc_inds <- sapply(var_nc_names, function(x) varname_nc %in% x)
@@ -3442,9 +3473,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 "' in ", runid, " fesom data ..."))
                 }
             }
-        }
+        } # finished getting information about nc variables
 
-        # load mld for integrate over MLD depth
+        ## load mld for integrate over MLD depth
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
 
             if (cpl_tag) {
