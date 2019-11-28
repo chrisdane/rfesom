@@ -25,7 +25,6 @@ meshpath    <- paste0(rfesompath, "/example_data/mesh") # *.out files
 meshid      <- "demomesh" # name of the mesh; used for saving mesh-related things like interp matrix
 rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
 cycl        <- F # demomesh is not global and cyclic elements are not present
-postpath    <- paste0(rfesompath, "/example_data/post")
 if (F) {
     ## demo1
     # Saves fesoms mesh resolution in km on regular coordinates as netcdf and saves a spatial plot.
@@ -46,7 +45,7 @@ if (F) {
     # See post/demo/regular_grid/area/lsea/ssh
     # See post/demo/regular_grid/ltm/area/lsea/ssh
     # See plot/ssh
-    # If in active R session:
+    # Take a look in the result in an active R session:
     #image.plot(xi, yi, drop(datamat_reg_ltm["ssh",,,,]), xlab="Longitude [°]", ylab="Latitude [°]", las=1, main=paste0(area, " ", longname, " [", units_plot, "]"))
     #image.plot(xi, yi, drop(datamat_reg_ltm["ssh_sd",,,,]), xlab="Longitude [°]", ylab="Latitude [°]", las=1, main=paste0(area, " sd(", varname, ") [", units_plot, "]"))
     runid                 <- "demo2"
@@ -57,16 +56,15 @@ if (F) {
     out_mode              <- "area"
     sd_out                <- T
     years                 <- 1948
-    recs                  <- 1:12
+    #season                <- "DJF"
 
 } else if (F) {
     ## demo3 
     # Saves potential temperature field mean in area "lsea" averaged between 0 and 100
     # meters depth as netcdf and saves a spatial plot of the temporal and depth mean.
-    # See post/demo/mean/lsea/temp
-    # See plot/temp
-    # If in active R session:
-    #plot(time, data_funi, t="o", main=paste0(area, " ", longname, " [", units_plot, "]"), ylab=varname, las=1)
+    # See post/demo/mean/lsea/temp and plot/temp
+    # Take a look in the result in an active R session:
+    #plot(time, drop(data_funi), t="o", main=paste0(area, " ", longname, " [", units_plot, "]"), ylab=varname, las=1)
     runid         <- "demo3"
     varname       <- "temp"
     depths        <- c(0, 100)
@@ -87,6 +85,19 @@ if (F) {
     area          <- "lsea"
     transient_out <- T
     out_mode      <- "depth"
+
+} else if (F) {
+    ## demo5
+    runid <- "demo5"
+    varname <- "ssh"
+    transient_out <- T
+    out_mode <- "mean"
+    fpattern <- "demo_fesom_<varname_nc>_<YYYY>0101.nc"
+    years <- 1948:1949
+    #years <- 1948:1952
+    recs <- 47:67
+    #season <- "JFM"
+
 }
 
 ## Load plot options
