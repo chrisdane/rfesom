@@ -3,20 +3,10 @@
 ## https://github.com/chrisdane/rfesom ##
 #########################################
 
-# hints:
-# R counts from 1, not zero
-# index syntax in R is [], not ()
-# T = TRUE, F = FALSE
-# 'not equal' condition is !=
 
-## clear work space and close possibly open plot devices
-rm(list=ls()); graphics.off()
-rfesompath <- system("git rev-parse --show-toplevel", intern=T) # default; change here if necessary
+this_runscript_filename <- "demo.run.r"
+# just basename if saved in directory rfesom/runscripts or absolute path 
 
-## Load default options
-source(paste0(rfesompath, "/namelists/namelist.config.r")) 
-
-## This is the demo configuration
 ## Set the blocks below to T or F to run the different demos
 datainpath  <- paste0(rfesompath, "/example_data/data") # fesom data
 fpattern    <- "demo.<YYYY>.<fsuffix>"
@@ -100,14 +90,13 @@ if (F) {
 
 }
 
-## Load plot options
-source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
 
-## Load variable options
-source(paste0(rfesompath, "/namelists/namelist.var.r"))
+## do not change below this line ##
+# run rfesom
+rfesompath <- system("git rev-parse --show-toplevel", intern=T)
+if (!is.null(attributes(rfesompath))) {
+    stop("`git rev-parse --show-toplevel` @", getwd(), 
+         " returned exit code ", attributes(rfesompath)$status)
+}
+source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 
-## Load area and projection options
-source(paste0(rfesompath, "/namelists/namelist.area.r")) 
-
-## Run rfesom
-source(paste0(rfesompath, "/lib/main_rfesom.r"))
