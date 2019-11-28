@@ -194,10 +194,6 @@ if (!uv_out && sd_method == "ackermann83") {
                  " is not a vector variable. continue with 'sd_method'=default ..."))
     sd_method <- "default"
 }
-if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
-    success <- load_package("abind")
-    if (!success) stop(helppage)
-}
 #if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
 #    varname != "transport") {
 #    out_mode <- "mean"
@@ -436,8 +432,7 @@ if (plot_map || plot_csec) {
     if (!success) stop(helppage)
 } # check paths if plot_mat || plot_csec
 
-
-## load ncdf.tools or ncdf4 package
+## try to load all needed packages alread now
 if (nfiles > 0) {
     success <- load_package("ncdf.tools")
     if (!success) {
@@ -453,6 +448,10 @@ if (nfiles > 0) {
     success <- load_package("lubridate")
     if (!success) stop(helppage)
 } # load ncdf.tools or ncdf4 package
+if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
+    success <- load_package("abind")
+    if (!success) stop(helppage)
+}
 
 
 ## set defaults; do not change

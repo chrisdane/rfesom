@@ -23,9 +23,6 @@ __Table of Contents__<br/>
    * [Contribute](#contribute)
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
-
-<!-- Added by: a270073, at: Thu Nov 28 16:43:27 CET 2019 -->
-
 <!--te-->
 
 # Install
