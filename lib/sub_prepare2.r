@@ -6,7 +6,7 @@ sub_prepare2 <- function(data_node) {
     if (insitudens_tag && potdens_tag) {
         stop("set either 'insitudens_tag' OR 'potdens_tag' to TRUE.")
     }
-    if (insitudens_tag && ("rho" %in% varname_fesom)) {
+    if (insitudens_tag && ("rho" %in% varname_nc)) {
         # in situ density calculation not necessary since it was already loaded from fesom data.
         insitudens_tag <<- F
     }
@@ -17,7 +17,7 @@ sub_prepare2 <- function(data_node) {
     if (insitudens_tag || potdens_tag || buoyancy_tag) {
      
         ## use rho as calculated by fesom
-        if ("rho" %in% varname_fesom) { # rho is in situ rho in fesom ocean only
+        if ("rho" %in% varname_nc) { # rho is in situ rho in fesom ocean only
 
             #dimnames(data_node)[[1]] <<- "insiturho"
 
@@ -36,36 +36,36 @@ sub_prepare2 <- function(data_node) {
             } # if buoyancy_tag
 
         ## density needs to be calculated from temp and salt
-        } else if (!("rho" %in% varname_fesom)) {
+        } else if (!("rho" %in% varname_nc)) {
 
             ## "temp","thetao","thetaoga" are potential temperatures; "tso" is surface
             ## "salt","so","soga" are practical salinities; "sos" is surface
-            if (!any(c("temp", "thetao", "thetaoga", "tso") %in% varname_fesom) &&
-                !any(c("salt", "so", "soga", "sos") %in% varname_fesom)) {
+            if (!any(c("temp", "thetao", "thetaoga", "tso") %in% varname_nc) &&
+                !any(c("salt", "so", "soga", "sos") %in% varname_nc)) {
                 message(paste0("Cannot calculate density."))
                 message(paste0("Provide temperature (i.e. 'temp','thetao','thetaoga' or 'tso') and"))
-                message(paste0("salinity (i.e. 'salt','so','soga' or 'sos') in 'varname_fesom'."))
+                message(paste0("salinity (i.e. 'salt','so','soga' or 'sos') in 'varname_nc'."))
                 stop()
             }
 
             ## which temp and salt to use for density calculation?
             tempnames <- c("temp", "thetao", "thetaoga", "tso")
             saltnames <<- c("salt", "so", "soga", "sos")
-            tempind <<- which(tempnames %in% varname_fesom)
-            saltind <<- which(saltnames %in% varname_fesom)
+            tempind <<- which(tempnames %in% varname_nc)
+            saltind <<- which(saltnames %in% varname_nc)
             if (verbose > 0 && length(tempind) > 1) {
-                    message(paste0(indent, "Note: you provided more than 1 temperature data in 'varname_fesom':",
-                                 paste0(varname_fesom[tempind], collapse=","), "."))
+                    message(paste0(indent, "Note: you provided more than 1 temperature data in 'varname_nc':",
+                                 paste0(varname_nc[tempind], collapse=","), "."))
             }
             if (verbose > 0 && length(saltind) > 1) {
-                    message(paste0(indent, "Note: you provided more than 1 salinity data in 'varname_fesom':",
-                                 paste0(varname_fesom[saltind], collapse=","), "."))
+                    message(paste0(indent, "Note: you provided more than 1 salinity data in 'varname_nc':",
+                                 paste0(varname_nc[saltind], collapse=","), "."))
             }   
-            tempind <<- which(varname_fesom == tempnames[tempind[1]])
-            saltind <<- which(varname_fesom == saltnames[saltind[1]])
+            tempind <<- which(varname_nc == tempnames[tempind[1]])
+            saltind <<- which(varname_nc == saltnames[saltind[1]])
             if (verbose > 0) {
-                message(paste0(indent, "Use '", varname_fesom[tempind], "','", 
-                               varname_fesom[saltind], "' for density calculation ..."))
+                message(paste0(indent, "Use '", varname_nc[tempind], "','", 
+                               varname_nc[saltind], "' for density calculation ..."))
             }
 
             ## check if both temp and salt have same dimensions
@@ -254,7 +254,7 @@ sub_prepare2 <- function(data_node) {
 
             } # which density
 
-        } # if "rho" is not in varname_fesom
+        } # if "rho" is not in varname_nc
 
     } # if (insitudens_tag || potdens_tag)
 

@@ -48,8 +48,8 @@ fesom_version <- "1.4"
 cpl_tag <- T # F: ocean-only, T: coupled
              # needed for filename convention:
              # if cpl_tag == T
-             #      <varname_fesom>_fesom_YYYY0101.nc (older esm version)
-             #      <runid>_<varname_fesom>_fesom_YYYY0101.nc (newer esm version)
+             #      <varname_nc>_fesom_YYYY0101.nc (older esm version)
+             #      <runid>_<varname_nc>_fesom_YYYY0101.nc (newer esm version)
              # if cpl_tag == F
              #      <runid>.YYYY.oce.mean.nc
 
@@ -86,11 +86,9 @@ integrate_depth <- F # if F, average between depths[1] and depths[2]
 # 'fnames_user' (in the runscript), 'years' and 'output' are ignored in the following. 
 # Instead, the 'recs' of the time dimension of 'fnames_user' will be used.
 years         <- 1948 # annual FESOM output files, woa13 overlap 65-04
-recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
-                      # e.g. c(1,2,12) for DJF if output=="monthly"
-output        <- "monthly" # Output timestep of FESOM; ("monthly", "5day" for weekly, "daily")
-                           # according to 'output_length_unit' in namelist.config
-consider_leap <- T # if 'output' == 'daily' and data includes doy 366
+#season        <- "DJF"
+#recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
+#                      # e.g. c(1,2,12) for DJF if output=="monthly"
 snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
                    # if snapshot not available
 all_recs      <- T # read all records of one fesom output file if possible 

@@ -5,11 +5,11 @@
 sub_prepare1 <- function(data_node) {
 
     # vertical derivative of data saved "vertically integrated from bottom"
-    if (!cpl_tag && any(!is.na(match(c("sgs_u", "sgs_v"), varname_fesom)))) {
+    if (!cpl_tag && any(!is.na(match(c("sgs_u", "sgs_v"), varname_nc)))) {
 
         ## sgs_u and sgs_v are saved as vertical integral
         ## --> replace data with vertical derivative
-        sgsinds <<- match(c("sgs_u", "sgs_v"), varname_fesom)
+        sgsinds <<- match(c("sgs_u", "sgs_v"), varname_nc)
         sgsinds <<- sgsinds[!is.na(sgsinds)]
         if (length(sgsinds) == 0 || any(is.na(sgsinds))) {
             stop("something strange here")
@@ -17,7 +17,7 @@ sub_prepare1 <- function(data_node) {
 
         if (verbose > 0) {
             message(paste0(indent, "Calc vertical derivative of '",
-                         paste0(varname_fesom[sgsinds], collapse="','"), 
+                         paste0(varname_nc[sgsinds], collapse="','"), 
                          "' because they are saved 'vertically integrated from bottom' ..."))
         }
 
