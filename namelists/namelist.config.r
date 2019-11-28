@@ -44,14 +44,8 @@ horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
 ## Default experiment options
-fesom_version <- "1.4"
-cpl_tag <- T # F: ocean-only, T: coupled
-             # needed for filename convention:
-             # if cpl_tag == T
-             #      <varname_nc>_fesom_YYYY0101.nc (older esm version)
-             #      <runid>_<varname_nc>_fesom_YYYY0101.nc (newer esm version)
-             # if cpl_tag == F
-             #      <runid>.YYYY.oce.mean.nc
+fesom_version <- "1.4" # deprecated
+cpl_tag <- T # deprecated; F: ocean-only, T: coupled
 
 ## Default mesh options
 rotate_mesh <- F # rotate back to geographic coordinates around Euler angles

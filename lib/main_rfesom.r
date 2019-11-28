@@ -2,30 +2,27 @@
 ## R-script for reading, plotting and saving FESOM output                   #
 ##                                                                          #
 ## Necessary R-packages:                                                    #
-##  Package     Function        Purpose                                     #
-##  ------------------------------------------------------                  #
-##  ncdf.tools  readNcdf()      read nc data (faster than ncdf4 package)    #
-##  or                                                                      #
-##  ncdf4       ncdf4::*        read nc data                                #
-##  lubridate   decimal_date    get decimal time                            # 
+##   ncdf.tools (or ncdf4), lubridate                                       #
 ##                                                                          #
 ## Optional R-packages (depending on user options):                         #
-##  Package     Function        Purpose/when needed                         #
-##  ----------------------------------------------------------------------  #
-##  data.table  fread()         faster than base::scan()                    #
-##  gsw         gsw_*()         Gibbs Sea Water functions                   #
-##  abind       abind()         concatinating multi-dim arrays              #
-##  fields      image.plot()    colorbar if plot_map==T                     #
-##  akima       interp()        if plot_type == "interp"                    #
-##  maps        map()           if plot_type == "interp"                    #
-##  splancs     inpip()         if *regular* == T  or  'area' is not        #
-##                              a box but an irregular polygon              #
-##  mapproj     mapproject()    if projection != "rectangular"              #
-##  pracma      mldivide()      if out_mode == "csec_mean" or "csec_depth"  #
+##   data.table, gsw, abind, fields, akima, maps, splancs, mapproj, pramca  #
 ##                                                                          #
 ## C. Danek (cdanek@awi.de)                                                 # 
 ## version 0.1                                                              #
 #############################################################################
+
+# R hints:
+# 1) R counts from 1, not zero
+# 2) index syntax in R is `[]`, not `()`
+# 3) `T` = `TRUE`, `F` = `FALSE` (booleans)
+# 4) 'not equal' condition is `!=`
+
+## clear work space and close possibly open plot devices
+graphics.off()
+ws <- ls()
+ws <- ws[-which(ws == "this_runscript_filename")]
+ws <- ws[-which(ws == "rfesompath")]
+rm(list=ws)
 
 ## show line number in case of errors
 options(show.error.locations=T)
@@ -34,16 +31,50 @@ options(show.error.locations=T)
 #options(warn=2)
 
 ## vector/array element-selection: disable R's automatic squeeze
+## to keep dimensions of length 1 
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # --> use drop() to reduce dimensions
 # --> restore default: with `[` <- fctbackup
 
-message("********************************************************************")
+message("\n", "********************************************************************")
 message("* Run rfesom for reading, postprocessing and plotting FESOM output *")
 message("* https://github.com/chrisdane/rfesom                              *")
-message("********************************************************************")
-
+message("********************************************************************", "\n")
 helppage <- "https://github.com/chrisdane/rfesom#installing-new-r-packages--libraries"
+
+## Load default options
+source(paste0(rfesompath, "/namelists/namelist.config.r")) 
+
+## Load user options
+if (file.exists(paste0(rfesompath, "/runscripts/", this_runscript_filename))) {
+    user_runscript <- paste0(rfesompath, "/runscripts/", this_runscript_filename)
+} else if (file.exists(this_runscript_filename)) {
+    user_runscript <- this_runscript_filename
+} else {
+    stop("`this_runscript_filename` = ", this_runscript_filename, 
+         " does not exist in ", rfesompath, "/runscripts and at all.")
+}
+user_runscript <- readLines(user_runscript)
+user_runscript_end <- regexpr("\\# do not change below this line", user_runscript)
+if (!any(user_runscript_end != -1)) {
+    stop("you changed the \"do not change below this line\"-line in the runscript. stop.")
+} else {
+    user_runscript_end <- which(user_runscript_end != -1)
+    if (length(user_runscript_end) != 1) {
+        message("this should not happen")
+        user_runscript_end <- user_runscript_end[1]
+    }
+}
+source(textConnection(user_runscript[1:user_runscript_end]))
+
+## Load plot options
+source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
+
+## Load variable options
+source(paste0(rfesompath, "/namelists/namelist.var.r"))
+
+## Load area and projection options
+source(paste0(rfesompath, "/namelists/namelist.area.r"))
 
 ## check user input
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
@@ -52,8 +83,15 @@ if (file.access(meshpath, mode=0) == -1) { # does not exist
 }
 meshpath <- suppressWarnings(normalizePath(meshpath))
 if (!exists("meshid")) {
-    stop("'meshid' not given. You can set a meshid in the runscript with e.g.\n",
-         "   meshid <- \"core\"")
+    meshid <- basename(meshpath)
+    message("'meshid' not given. take last directory of `meshpath` --> ", meshid, "\n",
+            "   --> you can set a meshid in the runscript with e.g. `meshid <- \"core\"`")
+}
+if (!exists("rotate_mesh")) {
+    rotate_mesh <- F
+}
+if (!exists("cylc")) {
+    cycl <- T # treat cyclic mesh elements? always true for global meso
 }
 if (!exists("subroutinepath")) {
     subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
@@ -313,9 +351,9 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        postpath <- paste0(datainpath, "/post")
+        postpath <- paste0(rfesompath, "/post")
         message("No 'postpath' is given for saving postprocessing results.\n",
-                "   Use default: ", postpath, " (= `datainpath`/post).\n",
+                "   Use default: ", postpath, " (= `rfesompath`/post).\n",
                 "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
     } else {
         postpath <- suppressWarnings(normalizePath(postpath))
@@ -332,8 +370,8 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         }
     } else if (file.access(postpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message("You have no writing rights in 'postpath' = ", postpath, " ...")
-        postpath <- paste0(datainpath, "/post")
-        message("   Use default: ", postpath, " (= `datainpath`/post).\n",
+        postpath <- paste0(rfesompath, "/post")
+        message("   Use default: ", postpath, " (= `rfesompath`/post).\n",
                 "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
     }
 
@@ -377,9 +415,9 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         }
         if (!exists("interppath")) {
             # use default
-            interppath <- paste0(meshpath, "/interp")
+            interppath <- paste0(rfesompath, "/mesh/", meshid, "/interp")
             message("No 'interppath' is given for saving/reading regular interpolation matrix.\n",
-                    "   Use default: ", interppath, " (= `meshpath`/interp)\n",
+                    "   Use default: ", interppath, " (= `rfesompath`/mesh/`meshid`/interp)\n",
                     "   You can set `interppath <- \"/path/with/writing/rights\"` in the runscript.")
         } else {
             interppath <- suppressWarnings(normalizePath(interppath))
@@ -403,9 +441,9 @@ if (plot_map || plot_csec) {
     
     if (!exists("plotpath")) {
         # use default
-        plotpath <- paste0(datainpath, "/plot/", varname)
+        plotpath <- paste0(rfesompath, "/plot/", varname)
         message("No 'plotpath' is given for saving plots.\n",
-                "   Use default: ", plotpath, " (= `datainpath`/plot/`varname`)\n",
+                "   Use default: ", plotpath, " (= `rfesompath`/plot/`varname`)\n",
                 "   You can set plotpath <- \"/path/with/writing/rights\" in the runscript.")
     } else {
         plotpath <- suppressWarnings(normalizePath(plotpath))
@@ -424,8 +462,8 @@ if (plot_map || plot_csec) {
     # no writing rights to plot path
     } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
-        plotpath <- paste0(datainpath, "/plot/", varname)
-        message("   Use default: ", plotpath, " (= `datainpath`/plot/`varname`)\n",
+        plotpath <- paste0(rfesompath, "/plot/", varname)
+        message("   Use default: ", plotpath, " (= `rfesompath`/plot/`varname`)\n",
                 "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
     }
     success <- load_package("fields")
@@ -515,15 +553,15 @@ if (F) { # not yet
 
 ## start
 if (verbose > 0) {
-    message("verbose: ", verbose, " (change this in the runscript for more/less info)")
+    message("\n", "verbose: ", verbose, " (change this in the runscript for more/less info)")
     message(paste0("fesom_version: ", fesom_version))
+    message(paste0("datainpath: ", datainpath))
     message(paste0("runid: ", runid))
     if (setting != "") message(paste0("setting: ", setting))
-    message(paste0("mesh: ", meshid))
+    message(paste0("meshpath: ", meshpath))
+    message(paste0("meshid: ", meshid))
     message(paste0("   rotate mesh back to geographic coordinates: ", rotate_mesh))
     message(paste0("   treat cyclic elements: ", cycl))
-    message(paste0("meshpath: ", meshpath))
-    message(paste0("datainpath: ", datainpath))
     if (exists("fnames_user")) {
         message("fnames_user: ", fnames_user)
     }
@@ -1032,9 +1070,9 @@ if (horiz_deriv_tag != F ||
 
     if (!exists("derivpath")) {
         # use default
-        derivpath <- paste0(meshpath, "/derivatives")
-        message(indent, "No 'derivpath' is given for saving/reading horizontal derivative/custer area/resolution matrices.\n",
-                indent, "   Use default: ", derivpath, " (= `meshpath`/derivatives)\n",
+        derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
+        message(indent, "No 'derivpath' is given for saving/reading horizontal derivative/cluster area/resolution matrices.\n",
+                indent, "   Use default: ", derivpath, " (= `rfesompath`/mesh/`meshid`/derivatives)\n",
                 indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
     } else {
         derivpath <- suppressWarnings(normalizePath(derivpath))
@@ -1050,8 +1088,8 @@ if (horiz_deriv_tag != F ||
         }
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
-        derivpath <- paste0(meshpath, "/derivatives")
-        message(indent, "   Use default: ", derivpath, " (= `mespath`/derivatives')\n",
+        derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
+        message(indent, "   Use default: ", derivpath, " (= `rfesompath`/mesh/`meshid`/derivatives')\n",
                 indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
     }
 
@@ -1060,7 +1098,7 @@ if (horiz_deriv_tag != F ||
     
     if (!file.exists(deriv_2d_fname)) {
         if (verbose > 0) {
-            message(indent, "Calc horizontal derivative/custer area/resolution matrices for ", meshid, " mesh\n",
+            message(indent, "Calc horizontal derivative/cluster area/resolution matrices for ", meshid, " mesh\n",
                     indent, "   and save result in\n",
                     indent, "   ", deriv_2d_fname, " (= deriv_2d_fname)")
             message(indent, "Run lib/deriv_2d.r ...")
@@ -1110,7 +1148,7 @@ if (zave_method == 2 &&
             # use default
             message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
                     indent, "No 'derivpath' is given for saving the result. Use default ...")
-            derivpath <- paste0(meshpath, "/derivatives")
+            derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
         } else {
             derivpath <- suppressWarnings(normalizePath(derivpath))
         }
@@ -1126,7 +1164,7 @@ if (zave_method == 2 &&
             }
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
             message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
-            derivpath <- paste0(meshpath, "/derivatives")
+            derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
             message(indent, "   Use default: ", derivpath, " (= `meshpath`/derivatives')\n",
                     indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
         }
@@ -1207,8 +1245,8 @@ if (any(regular_transient_out, regular_ltm_out)) {
         }
         if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
             message("You have no writing rights in 'interppath' = ", interppath, " ...")
-            interppath <- paste0(meshpath, "/interp")
-            message("   Use default: ", interppath, " (= `meshpath`/interp)\n",
+            interppath <- paste0(rfesompath, "/mesh/", meshid, "/interp")
+            message("   Use default: ", interppath, " (= `rfesompath`/mesh/`meshid`/interp)\n",
                     "   You can set `interppath <- \"/path/with/writing/rights\"` in the runscript.")
         }
         dir.create(interppath, recursive=T, showWarnings=F)
@@ -2868,7 +2906,11 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
         message("==============================================")
     }
 
-    total_rec <- 0 
+    total_rec <- 0
+    timespan <- ""
+    timespan_fname <- ""
+    output <- ""
+    output_fname <- ""
 
 } else if (nfiles > 0) { # read data which are not constant in time
     if (verbose > 0) {
@@ -3196,10 +3238,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         # specified records do not cover complete months
                         month_inds_out_of_recs <- which(!(wanted_months_in_data %in% recs))
                         if (verbose > 0) {
-                            message(indent, "   however, the wanted `recs` cover only a subset of these months.\n", 
+                            message(indent, "   however, the wanted `recs` cover only a subset of these months\n", 
                                     indent, "   --> ", length(month_inds_out_of_recs), 
-                                    " records from these months are not wanted based on the given `recs`. ",
-                                    "set season to \"\"")
+                                    " records from these months are not wanted based on the given `recs`\n",
+                                    indent, "   --> set season to \"\"")
                         }
                         season <- ""
                     }
@@ -3259,10 +3301,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
             ## determine temporal frequency of data
             if (length(recs) == 1) {
-                if (!exists("frequency")) {
-                    stop("not defined yet")
-                } else {
+                if (exists("frequency") && class(frequency) == "character") {
                     timeobj$frequency <- frequency
+                } else {
+                    stop("not defined yet")
                 }
             } else if (length(recs) != 1) { # more than 1 rec per file
                 # decide based on duration between one pair of consecutive time points
@@ -3288,7 +3330,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 }
             }
             output <- timeobj$frequency
-            
+            output_fname <- paste0("_", output)
+
             ## consider leap years
             # up to know, the assumption was made that all input files have 
             # the same number of time points. but if the output interval is daily
@@ -4975,10 +5018,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                     transient_count <- c(3, dim(datamat)[3], 1)
                                 }
 
-                                outname <- paste0(transientpath, "/", runid, setting_fname, "_", output, "_",
-                                                  varname, "_transient_", out_mode, "_", timespan, 
-                                                  depths_fname, "_", area, "_", 
-                                                  projection, 
+                                outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, 
+                                                  "_", varname, "_transient_", out_mode, timespan_fname, 
+                                                  depths_fname, "_", area, "_", projection, 
                                                   ssh_aviso_correct_fname, 
                                                   p_ref_suffix, fname_suffix, ".nc")
 
@@ -5126,10 +5168,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 }
 
                                 outname_reg <- paste0(reg_transient_outpath, "/", runid, 
-                                                      setting_fname, "_", output, "_",
-                                                      varname, "_transient_", out_mode, "_", timespan,
-                                                      depths_fname, "_", area, "_",
-                                                      projection, "_regular_dx",
+                                                      setting_fname, output_fname, "_",
+                                                      varname, "_transient_", out_mode, 
+                                                      timespan_fname, depths_fname, "_", 
+                                                      area, "_", projection, "_regular_dx",
                                                       sprintf("%.3f", regular_dx), "_dy",
                                                       sprintf("%.3f", regular_dy), 
                                                       ssh_aviso_correct_fname, 
@@ -5930,20 +5972,20 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             # nc name
             if (any(varname == c("iceextent", "icevol"))) {
                 if (is.null(sic_cond_fname)) {
-                    outname <- paste0(transientpath, "/", runid, setting_fname, "_", output, "_",
-                                      varname, "_sic_transient_", out_mode, "_", 
-                                      timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
+                    outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_",
+                                      varname, "_sic_transient_", out_mode, timespan_fname, "_", 
+                                      area, "_", projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 } else {
-                    outname <- paste0(transientpath, "/", runid, setting_fname, "_", output, "_",
+                    outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_",
                                       varname, "_sic.", sic_cond_fname, ".", sic_thr*100, 
-                                      "_transient_", out_mode, "_",
-                                      timespan, "_", area, "_", projection, p_ref_suffix, fname_suffix,
+                                      "_transient_", out_mode, timespan_fname, "_", area, "_", 
+                                      projection, p_ref_suffix, fname_suffix,
                                       ".nc")
                 }
             } else {
-                outname <- paste0(transientpath, "/", runid, setting_fname, "_", output, "_", 
-                                  varname, "_transient_", out_mode, "_", timespan,
+                outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_", 
+                                  varname, "_transient_", out_mode, timespan_fname,
                                   depths_fname, "_", area, "_", 
                                   ifelse(out_mode == "csec_mean" && csec_conds_n > 0, 
                                          paste0("conds_", paste0(csec_cond_vars, ".", csec_conds, ".", 
@@ -6247,7 +6289,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 ncatt_put(outnc, 0, "setting", setting)
             }
             ncatt_put(outnc, 0, "meshid", meshid)
-            ncatt_put(outnc, 0, "time", timespan)
+            if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
             ncatt_put(outnc, 0, "area", area)
             ncatt_put(outnc, 0, "projection", projection)
             ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
@@ -6503,7 +6545,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         if (nfiles == 0) {
             if (!exists("data_node_ltm")) {
-                message(indent, "Prepare matrix ...")
+                #message(indent, "Prepare matrix ...")
                 data_node_ltm <- array(NA, 
                                        dim=c(1, 
                                              ifelse(dim_tag == "2D", nod2d_n, nod3d_n), 
@@ -7016,19 +7058,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## ltm output start
     if (ltm_out) { # irregular
 
-        if (nfiles > 0) {
-            outname <- paste0(ltmpath, "/", runid, setting_fname, "_", output, "_",
-                              varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, "_", 
-                              projection, "_", output_type,
-                              ssh_aviso_correct_fname, 
-                              p_ref_suffix, fname_suffix, ".nc")
-        } else if (nfiles == 0) {
-            outname <- paste0(ltmpath, "/", runid, setting_fname, "_",
-                              varname, "_ltm_", out_mode, depths_fname, "_", area, "_",
-                              projection, "_", output_type,
-                              ssh_aviso_correct_fname, 
-                              p_ref_suffix, fname_suffix, ".nc")
-        } # if nfiles > 0
+        outname <- paste0(ltmpath, "/", runid, setting_fname, output_fname, "_",
+                          varname, "_ltm_", out_mode, timespan_fname, depths_fname, "_", area, "_", 
+                          projection, "_", output_type,
+                          ssh_aviso_correct_fname, 
+                          p_ref_suffix, fname_suffix, ".nc")
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -7117,7 +7151,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ncatt_put(outnc, 0, "setting", setting)
         }
         ncatt_put(outnc, 0, "meshid", meshid)
-        ncatt_put(outnc, 0, "time", timespan)
+        if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
         ncatt_put(outnc, 0, "area", area)
         ncatt_put(outnc, 0, "projection", projection)
         ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec=prec)
@@ -7134,25 +7168,14 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if ltm_out
 
     if (regular_ltm_out) {
-        if (nfiles > 0) {
-            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, "_", output, "_",
-                                  varname, "_ltm_", out_mode, "_", timespan, depths_fname, "_", area, 
-                                  "_", projection, "_regular_dx", 
-                                  sprintf("%.3f", regular_dx), "_dy",
-                                  sprintf("%.3f", regular_dy), 
-                                  ssh_aviso_correct_fname, 
-                                  p_ref_suffix, fname_suffix, 
-                                  ".nc")
-        } else if (nfiles == 0) {
-            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, "_",
-                                  varname, "_ltm_", out_mode, depths_fname, "_", area,
-                                  "_", projection, "_regular_dx",
-                                  sprintf("%.3f", regular_dx), "_dy",
-                                  sprintf("%.3f", regular_dy), 
-                                  ssh_aviso_correct_fname, 
-                                  p_ref_suffix, fname_suffix,
-                                  ".nc")
-        } # if nfiles > 0
+        outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, output_fname, "_",
+                              varname, "_ltm_", out_mode, timespan_fname, depths_fname, "_", area, 
+                              "_", projection, "_regular_dx", 
+                              sprintf("%.3f", regular_dx), "_dy",
+                              sprintf("%.3f", regular_dy), 
+                              ssh_aviso_correct_fname, 
+                              p_ref_suffix, fname_suffix, 
+                              ".nc")
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -7221,7 +7244,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ncatt_put(regular_nc, 0, "setting", setting)
         }
         ncatt_put(regular_nc, 0, "meshid", meshid)
-        ncatt_put(regular_nc, 0, "time", timespan)
+        if (timespan != "") ncatt_put(regular_nc, 0, "time", timespan)
         ncatt_put(regular_nc, 0, "area", area)
         if (dim_tag == "3D") {
             ncatt_put(regular_nc, 0, "depths_m", depths_plot, prec="double")
@@ -7239,8 +7262,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     # ltm moc output
     if (moc_ltm_out) {
 
-        moc_outname <- paste0(ltmpath, "/", runid, setting_fname, "_", output, "_",
-                              varname, "_ltm_", timespan, depths_fname, "_", area,
+        moc_outname <- paste0(ltmpath, "/", runid, setting_fname, output_fname, "_",
+                              varname, "_ltm", timespan_fname, depths_fname, "_", area,
                               p_ref_suffix, fname_suffix, ".nc")
 
         ## remove already existing data to avoid ncdf error:
@@ -7327,7 +7350,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ncatt_put(outnc, 0, "setting", setting)
         }
         ncatt_put(outnc, 0, "meshid", meshid)
-        ncatt_put(outnc, 0, "time", timespan)
+        if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
         ncatt_put(outnc, 0, "area", area)
         ncatt_put(outnc, 0, "longitude_lims_deg", range(map_geogr_lim_lon), prec="double")
         ncatt_put(outnc, 0, "latitude_lims_deg", range(map_geogr_lim_lat), prec="double")
