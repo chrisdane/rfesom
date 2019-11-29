@@ -29,8 +29,9 @@ if (T) {
 # run rfesom
 rfesompath <- system("git rev-parse --show-toplevel", intern=T)
 if (!is.null(attributes(rfesompath))) {
-    stop("`git rev-parse --show-toplevel` @", getwd(), 
-         " returned exit code ", attributes(rfesompath)$status)
+    stop("running `git rev-parse --show-toplevel` on\n", 
+         system("whoami", intern=T), "@", system("hostname -f", intern=T), ":", getwd(), "\n",
+         "returned exit code ", attributes(rfesompath)$status)
 }
 source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 

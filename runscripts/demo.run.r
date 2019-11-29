@@ -8,11 +8,10 @@ this_runscript_filename <- "demo.run.r"
 # just basename if saved in directory rfesom/runscripts or absolute path 
 
 ## Set the blocks below to T or F to run the different demos
-datainpath  <- paste0(rfesompath, "/example_data/data") # fesom data
+datainpath  <- paste0(rfesompath, "/example_data/data/demo") # fesom data
 fpattern    <- "demo.<YYYY>.<fsuffix>"
 cpl_tag     <- F # demodata is from ocean-only experiment
-meshpath    <- paste0(rfesompath, "/example_data/mesh") # *.out files
-meshid      <- "demomesh" # name of the mesh; used for saving mesh-related things like interp matrix
+meshpath    <- paste0(rfesompath, "/example_data/meshes/demo") # *.out files
 rotate_mesh <- T # demomesh needs to get rotated back to geograhic coords
 cycl        <- F # demomesh is not global and cyclic elements are not present
 if (F) {
@@ -76,16 +75,18 @@ if (F) {
     transient_out <- T
     out_mode      <- "depth"
 
-} else if (F) {
+} else if (T) {
     ## demo5
-    runid <- "demo5"
-    varname <- "ssh"
+    datainpath  <- paste0(rfesompath, "/example_data/data/PI-CTRL")
+    runid <- "PI-CTRL"
+    #varname <- "ssh"
+    varname <- "thetao"
     transient_out <- T
     out_mode <- "mean"
-    fpattern <- "demo_fesom_<varname_nc>_<YYYY>0101.nc"
-    years <- 1948:1949
-    #years <- 1948:1952
-    recs <- 47:67
+    fpattern <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"
+    years <- 1948
+    #years <- 1948:1949
+    #recs <- 47:67
     #season <- "JFM"
 
 }

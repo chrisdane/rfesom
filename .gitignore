@@ -5,6 +5,6 @@
 !runscripts/
 !namelists/
 !lib/
-!example_data/mesh/
-!example_data/data/
+!example_data/meshes/demo/
+!example_data/data/demo/
 !README.md

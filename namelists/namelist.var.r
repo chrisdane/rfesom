@@ -81,9 +81,7 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- "temp"
-    if (cpl_tag) {
-        varname_nc <- "thetao"
-    }
+    varname_nc <- "thetao"
 
 } else if (any(varname == c("salt", "so"))) {
     longname <- "Salinity"
