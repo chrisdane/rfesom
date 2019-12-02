@@ -26,7 +26,7 @@ sub_vertical_average <- function(data_vert) {
 
             tmp <<- array(0, dim=c(dim(data_vert)[1:2], 1, dim(data_vert)[4]))
             dimnames(tmp)[c(1, 2, 4)] <<- dimnames(data_vert)[c(1, 2, 4)]
-            dimnames(tmp)[[3]] <<- depths_plot
+            dimnames(tmp)[[3]] <<- paste0(depths_plot, "m")
             dep_total <<- tmp
            
             # vertical average
@@ -34,13 +34,9 @@ sub_vertical_average <- function(data_vert) {
 
                 if (verbose > 1) {
                     z <- interpolate_depths[i]
-                    if (i == 1) {
-                        message(indent, "   ", appendLF=F)
-                    } 
+                    if (i == 1) message(indent, "   ", appendLF=F)
                     message(z, "m ", appendLF=F)
-                    if (i == ndepths) {
-                        message("") 
-                    }
+                    if (i == ndepths) message("") 
                 }
 
                 aux <<- data_vert[,,i,] # c(nvars,nod2d_n,ndepths,nrecspf)

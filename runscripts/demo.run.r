@@ -26,7 +26,7 @@ if (F) {
     varname         <- "resolutionkm" # see namelist.var.r
     area            <- "lsea" # see namelist.area.r
 
-} else if (T) {
+} else if (F) {
     ## demo2
     # Saves 1) year 1948 mean, 2) standard deviation (sd) and 3) 12 (monthly) records of 
     # ssh on regular coordinates as netcdf and saves a spatial plot of the temporal 
@@ -79,8 +79,11 @@ if (F) {
     ## demo5
     datainpath  <- paste0(rfesompath, "/example_data/data/PI-CTRL")
     runid <- "PI-CTRL"
+    meshpath <- paste0(rfesompath, "/example_data/meshes/core")
+    rotate_mesh <- F
     #varname <- "ssh"
     varname <- "thetao"
+    depths <- c(0, 133.7)
     transient_out <- T
     out_mode <- "mean"
     fpattern <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"

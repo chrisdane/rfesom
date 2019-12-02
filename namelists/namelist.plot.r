@@ -76,7 +76,7 @@ power_min <- NULL
 axis.labels <- NULL
 axis.round <- NULL
 axis.zoom <- F
-axis.addzlims <- F
+axis.addzlims <- T
 anom_colorbar <- NULL
 center_col <- "white"
 center_include <- T

@@ -9,9 +9,8 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                   dim=c(dim(data_nod3d)[1], # nfiles 
                         nod2d_n, ndepths, # nod2d_n (was overwritten in case of cross section), ndepths
                         dim(data_nod3d)[4]), # nrecspf
-                  dimnames=c(dimnames(data_nod3d)[1],
-                             list(node=NULL, # dont name node dim, saves memory
-                                  depth=interpolate_depths), 
+                  dimnames=c(dimnames(data_nod3d)[1:2],
+                             list(depth=paste0(interpolate_depths, "m")), 
                              dimnames(data_nod3d)[4]))
 
     # if cross section, name all crossed nodes (needs more memory)
@@ -47,7 +46,7 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                 }
             }
 
-            inds <<- !is.na(indsurf[i,]) # only where are values
+            inds <<- !is.na(indsurf[i,]) # only where are values (i.e. where aux3d is not -999)
          
             # just rearrange from nod3d_n to ndepths x nod2d_n
             if (any(fesom_depths == z)) {
@@ -55,10 +54,14 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                 if (any(out_mode == c("csec_mean", "csec_depth"))) {
                     tmp[,inds,i,] <<- data_nod3d[,indlevel[i,inds],,]
                 } else {
-                    tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indlevel[i,inds],,]
+                    if (levelwise == F) {
+                        tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indlevel[i,inds],,]
+                    } else if (levelwise == T) {
+                        tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indsurf[i,inds],i,]
+                    }
                 }
                 
-            # interpolate user level between model levels
+            # interpolation between user and model levels necessary
             } else {
 
                 if (verbose > 1) {
@@ -79,11 +82,19 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                                                     (data_nod3d[,indlower[i,inds],,] -
                                                      data_nod3d[,indupper[i,inds],,])
                 } else {
-                    tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indupper[i,inds],,] +
-                                                                 #indcoef[i,inds]*
-                                                                 indcoef_tmp*
-                                                                    (data_nod3d[,indlower[i,inds],,] - 
-                                                                     data_nod3d[,indupper[i,inds],,])
+                    if (levelwise == F) {
+                        tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,indupper[i,inds],,] +
+                                                                     #indcoef[i,inds]*
+                                                                     indcoef_tmp*
+                                                                        (data_nod3d[,indlower[i,inds],,] - 
+                                                                         data_nod3d[,indupper[i,inds],,])
+                    } else if (levelwise == T) {
+                        tmp[,pos[indsurf[i,inds]],i,] <<- data_nod3d[,inds,i,] +
+                                                                     #indcoef[i,inds]*
+                                                                     indcoef_tmp*
+                                                                        (data_nod3d[,inds,i-1,] - 
+                                                                         data_nod3d[,inds,i,])
+                    } # if levelwise or not
                 }
                 
             } # if user level needs to be interpolated or just rearranged from nod3d_n to ndepths x nod2d_n
