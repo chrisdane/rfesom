@@ -622,15 +622,8 @@
             projection <- "rectangular"
             
             # default
-            moc_mask_file <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".dat")
-            moc_mask_plotname <- paste0(meshpath, "moc_mask_", area, "_", meshid, ".png")
-
-            if (meshid == "core" || meshid == "CORE2_final") {
-                if (area == "moc_NA") {
-                    moc_mask_file <- "/work/ba0941/a270073/mesh/core/mask_NA_CORE2.dat"
-                    moc_mask_plotname <- "/work/ba0941/a270073/mesh/core/mask_NA_CORE2.png"
-                }
-            }
+            moc_mask_file <- paste0(meshpath, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
+            moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
         
         } # which non-default area selection
         

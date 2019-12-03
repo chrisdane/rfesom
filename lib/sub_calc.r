@@ -3048,10 +3048,10 @@ sub_calc <- function(data_node) {
     if (regexpr("MOC", varname) != -1) {
        
         if (verbose > 0) {
-            message(indent, varname, "(lat,z) = cumsum_{lat}[sum_{nod3d_at_lat}(", varname_nc[1], "*vol)]", appendLF=F)
+            message(indent, varname, "(lat,z) = cumsum_{lat}[sum_{nod3d_at_lat}(", 
+                    varname_nc[1], "*vol)]", appendLF=F)
             if (varname == "MOCw") {
-                message("")
-                message(indent, "   like in fpost1.4", appendLF=F)
+                message(" (like in fpost1.4)", appendLF=F)
             }
             message("")
         }
@@ -3070,66 +3070,121 @@ sub_calc <- function(data_node) {
                                      ))
         } # only once
 
-        # create progress bar
-        pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
-                                char=pb_char, width=pb_width,
-                                indent=paste0("   ", indent)) 
-
-        for (i in 1:elem2d_n) {
-        #for (i in c(1, elem2d_n)) {
-            elnodes <- elem2d[,i]
-            m <- moc_mask[elnodes] # 1=inside, 0=outside
+        # if MOC calculation based on vertical velocity as in fpost
+        if (varname == "MOCw") {
             
-            if (!all(m == 0)) { # element is in area for moc calculation
-                #x <- mean(xcsur[elnodes]) # not needed
-                y <- mean(ycsur[elnodes])
-                vol <- voltriangle[i] # element area in m2
-                yind <- which(moc_reg_lat_global > y)[1] # first index within latitude bin from south
-                if (is.na(yind)) {
-                    # find closest
-                    yind <- which(abs(moc_reg_lat_global - y)==min(abs(moc_reg_lat_global - y)))
+            if (F) {
+                success <- load_package("Rcpp", indent=indent)
+                if (!success) {
+                    Rcpp_tag <- F
+                    message(indent, "note: a much faster C version of the following task is available via the Rcpp package.\n",
+                            indent, "      Consider installing it with install.packages(\"Rcpp\").\n",
+                            indent, "      ", helppage)
+                } else if (success) {
+                    Rcpp_tag <- T
                 }
-                #for (di in 1:aux3d_n) { # calculate in aux3d space
-                for (di in 1:ndepths) {
-                    elnode3 <- aux3d[di,elnodes]
-                    if (all(elnode3 > 0)) { # no boundary nodes
-                        vel <- data_node[,elnode3,,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
-                        m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
-                        moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # mean over 3 3d-nodes; keep time dim4
-                        if (total_rec == 0) moc_topo[yind,di] <- NA # =1 at land and =NA at water
-                    } # if no boundary
-                } # for di aux3d_n/ndepths
-            } # if elem2d is in area for moc calculation
-        
-            # update progress bar
-            setTxtProgressBar(pb, i)
-        
-        } # for i elem2d_n
+            }
+            
+            # Rcpp routine not yet finished!
+            Rcpp_tag <- F
+            if (Rcpp_tag == T) {
+                #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
+                if (levelwise == T) {
+                    tmp <- dyn.load(paste0(subroutinepath, "/sourceCpp/sub_calc_MOCw_levelwise.so"))
+                    sub_calc_MOCw_levelwise <- Rcpp:::sourceCppFunction(function(elem2d, # 3 x elem2d_n
+                                                                                 voltriangle, # elem2d_n
+                                                                                 ycsur, # nod2_n
+                                                                                 moc_reg_lat_global, # ny_reg
+                                                                                 moc_mask, # nod2d_n
+                                                                                 moc_topo, # ny_reg x ndepths 
+                                                                                 data_node, # nvars x nod2d_n x ndepth x nrecspf
+                                                                                 total_rec # integer
+                                                                                 ) {}, 
+                                                              isVoid=F, dll=tmp, symbol='sourceCpp_1_sub_e2_to_n2')
+                    tmp <- sub_e2_to_n2(elem2d, resolution, nod2d_n) 
+                } else if (levelwise == F) {
+                    stop("noasdaossdhaodh")
+                }
 
-        # close progress bar
-        close(pb)
+            } else if (Rcpp_tag == F) { # not Rcpp
+
+                # create progress bar
+                pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
+                                        char=pb_char, width=pb_width,
+                                        indent=paste0("   ", indent)) 
+
+                for (i in 1:elem2d_n) {
+                #for (i in c(1, elem2d_n)) {
+                    elnodes <- elem2d[,i]
+                    m <- moc_mask[elnodes] # 1=inside, 0=outside
+                    
+                    if (!all(m == 0)) { # element is in area for moc calculation
+                        #stop("asd")
+                        #x <- mean(xcsur[elnodes]) # not needed
+                        y <- mean(ycsur[elnodes])
+                        vol <- voltriangle[i] # area of i-th 2d-element in `mesh_dist_unit`^2 (default: m^2)
+                        yind <- which(moc_reg_lat_global > y)[1] # first index within latitude bin from south
+                        if (is.na(yind)) {
+                            # find closest
+                            yind <- which(abs(moc_reg_lat_global - y)==min(abs(moc_reg_lat_global - y)))
+                        }
+                        #for (di in 1:aux3d_n) { # calculate in aux3d space
+                        for (di in 1:ndepths) {
+                            if (levelwise == F) {
+                                elnode3 <- aux3d[di,elnodes]
+                                if (all(elnode3 > 0)) { 
+                                    # if no -999 entries --> element is completely within polygon
+                                    vel <- data_node[,elnode3,,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
+                                    m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
+                                    # mean over 3 3d-nodes; keep time dim4
+                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3 --> Sv
+                                    if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
+                                } # if element has no -999 entries in aux3d
+                            } else if (levelwise == T) {
+                                if (all(!is.na(data_node[,elnodes,di,]))) { 
+                                    # if no -999 entries --> element is completely within polygon 
+                                    vel <- data_node[,elnodes,di,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
+                                    m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
+                                    # mean over 3 3d-nodes; keep time dim4
+                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3 --> Sv 
+                                    if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
+                                }
+                            }
+                        } # for di aux3d_n/ndepths
+                    } # if elem2d is in area for moc calculation
+                
+                    # update progress bar
+                    setTxtProgressBar(pb, i)
+                
+                } # for i elem2d_n
+                
+                # close progress bar
+                close(pb)
+            
+            } # if Rcpp or not
+
+        } # if MOCw or different MOC variable
     
         # cumsum meridionally: from north-south / south-north
         # dim(moc) = c(1,nregy,ndepths,nrecspf)
         moc_save <- moc
-        if (area != "moc_global") {
+        if (area != "global") {
             #moc <- apply(moc, 2, cumsum)
             for (i in (length(moc_reg_lat_global) - 1):1) {
                 if (varname == "MOCw") moc[1,i,,] <- -moc[1,i,,] + moc[1,i+1,,]
                 if (varname == "MOCv") moc[1,i,,] <- moc[1,i,,] + moc[1,i+1,,]
             }
-        } else if (area == "moc_global") { # global moc
+        } else if (area == "global") { # global moc
             for (i in 2:length(moc_reg_lat_global)) { 
                 moc[1,i,,] <- moc[1,i,,] + moc[1,i-1,,]
             }
         } # if use_mask
         
-        if (F) {
-            image.plot(moc_reg_lat_global,1:dim(moc)[3],drop(moc[1,,,1]),ylim=c(dim(moc)[3], 1))
-        }
-
         data_node <- moc
-        #dimnames(data_node)[1] <- list(var=varname)
+        dimnames(data_node)[2:4] <- list(lat=moc_reg_lat_global, 
+                                         depth=paste0(interpolate_depths, "m"),
+                                         rec=timei)
+        assign('moc_topo', moc_topo, envir=.GlobalEnv)
 
     } # "MOCw"
 

@@ -38,21 +38,18 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Sea Surface Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
-    dim_tag <- "2D"
     varname_nc <- "tos"
 
 } else if (varname == "tso") { # fesom 1.4
     longname <- "Sea Surface Temperature snapshot"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST snapshot [", degree, "C]"))
-    dim_tag <- "2D"
     varname_nc <- "tso"
 
 } else if (varname == "sst") { # fesom 2.0 
     longname <- "Sea Surface Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
-    dim_tag <- "2D"
     varname_nc <- "sst"
 
 } else if (any(varname == c("temp", "thetao"))) {
@@ -77,7 +74,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m2"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- "temp"
@@ -106,26 +102,21 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m2"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- "salt"
-    if (cpl_tag) {
-        varname_nc <- "so"
-    }
+    varname_nc <- "so"
 
 } else if (varname == "tob") { 
     longname <- "sea_water_potential_temperature_at_sea_floor"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste(T[bottom], " [", degree, "C]"))
-    dim_tag <- "2D"
     varname_nc <- "tob"
 
 } else if (varname == "sob") { 
     longname <- "sea_water_salinity_at_sea_floor"
     units_out <- units_plot <- "psu"
     var_label_plot <- expression(paste(S[bottom], " [", degree, "C]"))
-    dim_tag <- "2D"
     varname_nc <- "sob"
 
 } else if (varname == "insitudens") {
@@ -145,7 +136,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m2"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -164,7 +154,6 @@ if (varname == "tos") { # fesom 1.4
         var_label_plot <- expression(paste(sigma[theta], " [kg m"^"-2","]"))
     }
 
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -209,7 +198,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m4 s-2")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -254,7 +242,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m4 s-2")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -266,14 +253,12 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Squared Sea Surface Temperature"
     units_out <- units_plot <- "degC2"
     var_label_plot <- expression(paste("Squared SST [", degree, "C"^"2", "]"))
-    dim_tag <- "2D"
     varname_nc <- "tossq"
 
 } else if (varname == "u") {
     longname <- "Zonal Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Zonal Velocity u [m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -285,7 +270,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Meridional Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Meridional Velocity v [m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -299,13 +283,10 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- 100 # m s-1 --> cm s-1
     units_plot <- "cm s-1"
     var_label_plot <- expression(paste("|", bold("u")[h],"| [cm s"^"-1","]"))
-    dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
     varname_nc <- c("u", "v")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo")
-    }
+    varname_nc <- c("uo", "vo")
     rotate_inds <- c(1, 2)
     vec <- T
     if (F) {
@@ -324,7 +305,6 @@ if (varname == "tos") { # fesom 1.4
     #    units_out <- "km h^-1"
     #    var_label_plot <- expression(paste("|",bold("u")[h],"| [km h"^"-1","]"))
     #}
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -341,7 +321,6 @@ if (varname == "tos") { # fesom 1.4
     #    units_out <- "km h^-1"
     #    var_label_plot <- expression(paste("|",bold("u")[h],"| [km h"^"-1","]"))
     #}
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -358,7 +337,6 @@ if (varname == "tos") { # fesom 1.4
     #    units_out <- "km h^-1"
     #    var_label_plot <- expression(paste("|",bold("u")[h],"| [km h"^"-1","]"))
     #}
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -375,7 +353,6 @@ if (varname == "tos") { # fesom 1.4
     #    units_out <- "km h^-1"
     #    var_label_plot <- expression(paste("|",bold("u")[h],"| [km h"^"-1","]"))
     #}
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -387,7 +364,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Zonal Geostrophic Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Zonal Geostrophic Velocity u", ""[geo], " [m s"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
@@ -399,7 +375,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Meridional Geostrophic Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Meridional Geostrophic Velocity v", ""[geo], " [m s"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
@@ -413,7 +388,6 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- 100 # m s-1 -->  cm s-1
     units_plot <- "cm s-1"
     var_label_plot <- expression(paste("|", bold("u")[h], ""[","], ""[geo], "| [cm s"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
@@ -442,7 +416,6 @@ if (varname == "tos") { # fesom 1.4
         stop("not implemented")    
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.")
@@ -454,7 +427,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "SGS Zonal Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Zonal Velocity [m"," s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -466,7 +438,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "SGS Meridional Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Meridional Velocity [m"," s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -478,7 +449,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Horizontal SGS Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("SGS Horizontal Velocity [m"," s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -492,7 +462,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(u), " ", bar(T), " [°C ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D" # because uT is calculated from u and T, which are 3D variables in FESOM
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -506,7 +475,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(v), " ", bar(T), " [°C ", 
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -520,7 +488,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(T), "| [°C ", 
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
     varname_nc <- c("u", "v", "temp")
@@ -533,7 +500,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bar(paste(bold(u)[h], "T")), "| [°C ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -547,7 +513,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("u'T'")), " [°C ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -561,7 +526,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("v'T'")), " [°C ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -583,7 +547,6 @@ if (varname == "tos") { # fesom 1.4
     } else if (integrate_depth) {
         stop("not implemented")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -596,7 +559,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Total SGS Zonal Temperature Flux"
     units_out <- "degC m s-1"
     var_label_plot <- expression(paste("Total SGS Zonal Temperature Flux [", degree, "C m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -609,7 +571,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Total SGS Meridional Temperature Flux"
     units_out <- "degC m s-1"
     var_label_plot <- expression(paste("Total SGS Meridional Temperature Flux [", degree, "C m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -649,7 +610,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("°C m4 s-1")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -663,7 +623,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(u), " ", bar(S), " [psu ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -677,7 +636,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(v), " ", bar(S), " [psu ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -691,7 +649,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(S), "| [psu ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -705,7 +662,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("u'S'")), " [psu ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -719,7 +675,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("v'S'")), " [psu ",
                                      var1, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -743,7 +698,6 @@ if (varname == "tos") { # fesom 1.4
         stop("not implemented")
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -756,7 +710,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "SGS Zonal Salinity Flux"
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Zonal Salinity Flux [psu m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -769,7 +722,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "SGS Meridional Salinity Flux"
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Meridional Salinity Flux [psu m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -782,7 +734,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Total Horizontal SGS Salinity Flux"
     units_out <- "psu m s-1"
     var_label_plot <- expression(paste("SGS Horizontal Salinity Flux [psu m s"^"-1","]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -796,7 +747,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(u), " ", bar(rho), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -810,7 +760,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(v), " ", bar(rho), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "")
@@ -824,7 +773,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bar(bold(u)[h]), " ", bar(rho), "|  [kg ",
                                      var1^-2, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.")
@@ -838,7 +786,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("u'", rho, "'")), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -852,7 +799,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste(bar(paste("v'", rho, "'")), " [kg ",
                                      var1^-2, " ", var2^-1, "]"),
                                list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -876,7 +822,6 @@ if (varname == "tos") { # fesom 1.4
         stop("not implemented")
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -894,7 +839,6 @@ if (varname == "tos") { # fesom 1.4
                                      partialdiff[y], "", bar(u), " [", 
                                      var^-1, "] " %*% " ", base^power_out), 
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D" # because vorticity is calculated from u and v, which are 3D variables
                     # in FESOM
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
@@ -912,7 +856,6 @@ if (varname == "tos") { # fesom 1.4
                                      partialdiff[x], "", bar(v), " - ", 
                                      partialdiff[y], "", bar(u), ")  [#]"),                                
                                list(f="f"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -928,7 +871,6 @@ if (varname == "tos") { # fesom 1.4
                                        #" = |", f^-1, "| ", partialdiff[x], " ", bar(v), " - ",  partialdiff[y], " ", bar(u), 
                                        " [unitless]"),                                
                                  list(f="f"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -943,7 +885,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Horizontal Strain (normal part) [", 
                                      units_out^-2, "] " %*% " ", base^power_out),
                                list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -959,7 +900,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Horizontal Strain (shear part) [", 
                                      units_out^-2, "] " %*% " ", base^power_out),
                                list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -975,7 +915,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Horizontal Strain [", units_out^-2, 
                                      "] " %*% " ", base^power_out),
                                list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -991,7 +930,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Squared Relative Vorticity [", 
                                      units_out^-2, "] " %*% " ", base^power_out),
                                list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -1007,7 +945,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Okubo-Weiss Parameter [", units_out^-2, 
                                      "] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -1023,7 +960,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Ertel Potential Vorticity PV [", units_out^-3, 
                                      "] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
@@ -1039,7 +975,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("PV_bc [", units_out^-3,
                                      "] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
@@ -1055,7 +990,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("PV_vert [", units_out^-3,
                                      "] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "", "")
@@ -1069,7 +1003,6 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- base^power_out
     units_out <- paste0("#")# x ", multfac_out)
     var_label_plot <- "Gradient Richardson Number Ri [#]"
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "")
@@ -1112,7 +1045,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m5 s-2")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -1152,7 +1084,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m5 s-2")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -1180,7 +1111,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m4 s-2"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.")
     varname_nc <- c("u", "v", "uu", "vv")
@@ -1217,7 +1147,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m5 s-3"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
@@ -1257,7 +1186,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m5 s-3"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "diag.", "diag.")
@@ -1288,7 +1216,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "rot"
     typesuffix <- rep("oce.", t=8)
     diagsuffix <- c("", "", "", rep("diag.", t=5))
@@ -1318,7 +1245,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
@@ -1364,7 +1290,6 @@ if (varname == "tos") { # fesom 1.4
         }
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
@@ -1392,7 +1317,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "rot"
     typesuffix <- rep("oce.", t=6)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
@@ -1434,7 +1358,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m4 s-2"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "diag.", "diag.")
     varname_nc <- c("w", "rho", "wrho")
@@ -1462,7 +1385,6 @@ if (varname == "tos") { # fesom 1.4
                                         base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
@@ -1501,13 +1423,10 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m3 s-1"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- "w"
-    if (cpl_tag) {
-        varname_nc <- "wo"
-    }
+    varname_nc <- "wo"
 
 } else if (varname == "gradT") {
     longname <- "grad_h T"
@@ -1518,14 +1437,11 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bold(nabla)[h], "T|   [K ", units_out^-1, 
                                      "] " %*% " ", base^power_out), 
                               list(var="km", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("")
     varname_nc <- c("temp")
-    if (cpl_tag) {
-        varname_nc <- "thetao"
-    }
+    varname_nc <- "thetao"
     rotate_inds <- F
     vec <- F
 
@@ -1558,7 +1474,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m2 s-2"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -1573,7 +1488,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("|", bold(nabla)[h], " MLD|   [m ", units_out^-1,
                                      "]"),
                               list(var="km"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
@@ -1587,7 +1501,6 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- 100 # m --> cm
     units_plot <- "cm"
     var_label_plot <- "Sea Surface Height [cm]"
-    dim_tag <- "2D"
     fsuffix <- "oce.mean.nc"
     varname_nc <- "ssh"
     #varname_nc <- "zos"
@@ -1596,20 +1509,16 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Squared Sea Surface Height"
     units_out <- units_plot <- "m2"
     var_label_plot <- expression(paste("Squared SSH [m"^"2", "]"))
-    dim_tag <- "2D"
     varname_nc <- "zossq"
 
 } else if (varname == "mixlay") {
     longname <- "Mixed Layer Depth"
     units_out <- units_plot <- "m"
     var_label_plot <- "MLD [m]"
-    dim_tag <- "2D"
     typesuffix <- "oce."
     diagsuffix <- "diag."
     varname_nc <- "mixlay"
-    if (cpl_tag) {
-        varname_nc <- "mlotst"
-    }
+    varname_nc <- "mlotst"
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
@@ -1643,13 +1552,10 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m3 s-2"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
-    if (cpl_tag) {
-        varname_nc <- c("thetao", "so")
-    }
+    varname_nc <- c("thetao", "so")
 
 } else if (varname == "c_barotrop") {
     longname <- "Barotropic wavespeed"
@@ -1669,7 +1575,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- 1
         units_out <- "m3 s-1"
     }
-    dim_tag <- "2D"
 
 } else if (varname == "c_barocline") {
     longname <- "Mode-m baroclinic gravity-wave speed"
@@ -1718,7 +1623,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m4 s-1"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
@@ -1773,7 +1677,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m4 s-1"
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
@@ -1829,7 +1732,6 @@ if (varname == "tos") { # fesom 1.4
             #units_out <- c("m3 s-1", "m4 s-1", "m3")
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
@@ -1879,7 +1781,6 @@ if (varname == "tos") { # fesom 1.4
             #units_out <- c("m3 s-1", "m4 s-1", "m3")
         }
     }
-    dim_tag <- "3D"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
@@ -1904,7 +1805,6 @@ if (varname == "tos") { # fesom 1.4
                                   list(var1="m", var2="s",
                                        base=base, power_out=-power_out))
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
@@ -1923,7 +1823,6 @@ if (varname == "tos") { # fesom 1.4
     #                          list(var1="m", var2="s", base=base, power_out=-power_out))
     var_label_plot <- substitute(paste("Horizontal Diffusivity ", K[h], " [", var1^2, " ", var2^-1, "]"),
                               list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
@@ -1942,7 +1841,6 @@ if (varname == "tos") { # fesom 1.4
     #                          list(var1="m", var2="s", base=base, power_out=-power_out))
     var_label_plot <- substitute(paste("GM Thickness Diffusivity ", K[GM], " [", var1^2, " ", var2^-1, "]"),
                               list(var1="m", var2="s"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("diag.")
@@ -1962,7 +1860,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- "psu m"
         var_label_plot <- paste("Passive Tracer [psu m]")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.")
     diagsuffix <- c("")
@@ -1984,7 +1881,6 @@ if (varname == "tos") { # fesom 1.4
                                      "] " %*% " ", base^power_out),
                           list(var1="m", var2="s", 
                                base=base, power_out=-power_out))    
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.")
     diagsuffix <- c("", "", "diag.", "diag.")
@@ -2005,7 +1901,6 @@ if (varname == "tos") { # fesom 1.4
                                        "] " %*% " ", base^power_plot),
                                  list(var1="m", var2="s", 
                                       base=base, power_plot=-power_plot))
-    dim_tag <- "3D"
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
     varname_nc <- c("u", "v", "stress_x", "stress_y", "tauxu", "tauyv")
@@ -2041,14 +1936,11 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("", t=2)
     varname_nc <- c("u", "v")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo")
-    }
+    varname_nc <- c("uo", "vo")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2081,14 +1973,11 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("", t=2)
     varname_nc <- c("u", "v")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo")
-    }
+    varname_nc <- c("uo", "vo")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2130,7 +2019,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
@@ -2176,7 +2064,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
@@ -2222,7 +2109,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "", "diag.")
@@ -2266,7 +2152,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
@@ -2312,7 +2197,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("diag.", t=3)
@@ -2349,14 +2233,11 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T 
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
     varname_nc <- c("u", "v", "temp")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo", "thetao")
-    }
+    varname_nc <- c("uo", "vo", "thetao")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2389,7 +2270,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -2398,9 +2278,7 @@ if (varname == "tos") { # fesom 1.4
                        "Arc22_sub", "Arc22_sub_small"))) {
         varname_nc <- c("u", "v", "ut", "vt", "temp")
     }
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo", "uto", "vto", "thetao")
-    }
+    varname_nc <- c("uo", "vo", "uto", "vto", "thetao")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2442,7 +2320,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
@@ -2479,7 +2356,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
@@ -2517,7 +2393,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m2 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c(rep("diag.", t=2), "")
@@ -2555,7 +2430,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "degC m2 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c(rep("diag.", t=4), "")
@@ -2605,7 +2479,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
@@ -2631,7 +2504,6 @@ if (varname == "tos") { # fesom 1.4
                                          "]"),
                                    list(var1="C", var2="m", var3="s"))
     }
-    dim_tag <- "2D"
     horiz_deriv_tag <- T
     varname_nc <- "dxphi"
     vec <- T
@@ -2654,7 +2526,6 @@ if (varname == "tos") { # fesom 1.4
                                          "]"),
                                    list(var1="C", var2="m", var3="s"))
     }
-    dim_tag <- "2D"
     varname_nc <- "dxphi"
 
 } else if (varname == "dyphi") {
@@ -2675,7 +2546,6 @@ if (varname == "tos") { # fesom 1.4
                                          "]"),
                                    list(var1="C", var2="m", var3="s"))
     }
-    dim_tag <- "2D"
     varname_nc <- "dyphi"
     
 } else if (varname == "gradphi") {
@@ -2696,7 +2566,6 @@ if (varname == "tos") { # fesom 1.4
                                          "]"),
                                    list(var1="C", var2="m", var3="s"))
     }
-    dim_tag <- "2D"
     varname_nc <- c("dxphi", "dyphi")
     vec <- T
 
@@ -2732,14 +2601,11 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- rep("", t=3)
     varname_nc <- c("u", "v", "salt")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo", "so")
-    }
+    varname_nc <- c("uo", "vo", "so")
     rotate_inds <- c(1, 2)
     vec <- T
 
@@ -2775,7 +2641,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m3 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c("", "", "diag.", "diag.", "")
@@ -2784,9 +2649,7 @@ if (varname == "tos") { # fesom 1.4
                        "Arc22_sub", "Arc22_sub_small"))) {
         varname_nc <- c("u", "v", "us", "vs", "salt")
     }
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo", "uso", "vso", "so")
-    }
+    varname_nc <- c("uo", "vo", "uso", "vso", "so")
     rotate_inds <- c(1, 2, 3, 4)
     vec <- T
 
@@ -2820,7 +2683,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m2 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- rep("diag.", t=2)
@@ -2858,7 +2720,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m2 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c(rep("diag.", t=2), "")
@@ -2896,7 +2757,6 @@ if (varname == "tos") { # fesom 1.4
             units_out <- "psu m2 s-1"
         }
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- T
     typesuffix <- rep("oce.", t=5)
     diagsuffix <- c(rep("diag.", t=4), "")
@@ -2944,7 +2804,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("kg s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
@@ -2992,7 +2851,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
@@ -3038,7 +2896,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
@@ -3084,7 +2941,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("psu m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "")
@@ -3135,7 +2991,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- rep("oce.", t=3)
     diagsuffix <- c("", "diag.", "diag.")
@@ -3166,7 +3021,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
@@ -3198,7 +3052,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
@@ -3246,7 +3099,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("m4 s-3")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "diag.")
@@ -3294,7 +3146,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("degC m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "diag.")
@@ -3342,7 +3193,6 @@ if (varname == "tos") { # fesom 1.4
         units_out <- paste0("psu m3 s-1")
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- F # not necessary "geo"
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("", "diag.")
@@ -3372,7 +3222,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -3402,7 +3251,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -3432,7 +3280,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -3462,7 +3309,6 @@ if (varname == "tos") { # fesom 1.4
                                        base=base, power_out=-power_out))
     }
     var_label_plot_roundfac <- 2
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo" # not necessary "geo"
     typesuffix <- "oce."
     diagsuffix <- "diag."
@@ -3473,7 +3319,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "opottempmint") {
     longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
     units_out <- units_plot <- "degC kg m-2"
-    dim_tag <- "2D"
     varname_nc <- "opottempmint"
     var_label_plot <- substitute(paste(integral(), " ",
                                        rho, " T dz [°C kg ", var^-2,
@@ -3486,7 +3331,6 @@ if (varname == "tos") { # fesom 1.4
 } else if (varname == "somint") {
     longname <- "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
     units_out <- units_plot <- "g m-2"
-    dim_tag <- "2D"
     varname_nc <- "somint"
     var_label_plot <- substitute(paste(integral(), " ",
                                        rho, " S dz [g ", var^-2,
@@ -3509,7 +3353,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                           list(var="s", base=base, power_out=-power_out))
     var_label_plot_roundfac <- 3
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -3531,7 +3374,6 @@ if (varname == "tos") { # fesom 1.4
                                      bold(tau)[-h], "'|   [N m ", units_out^-3, "] " %*% " ",
                                      base^power_out),
                           list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
@@ -3541,38 +3383,30 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "MOCw") {
     longname <- "MOCw"
-    regular_dy_moc <- 1/2
+    regular_dy_moc <- 1/2 # degree
     units_out <- "Sv" 
     var_label_plot <- "MOC [Sv]"
-    dim_tag <- "3D"
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
-    if (cpl_tag) {
-        varname_nc <- "wo"
-    } else {
-        varname_nc <- "w"
-    }
+    varname_nc <- "w"
+    varname_nc <- "wo"
 
 } else if (varname == "MOCv") {
     longname <- "MOCv"
     regular_dy_moc <- 1/2
     units_out <- "Sv" 
     var_label_plot <- "MOC [Sv]"
-    dim_tag <- "3D"
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- "v"
-    if (cpl_tag) {
-        varname_nc <- "vo"
-    }
+    varname_nc <- "vo"
 
 } else if (varname == "Tair") {
     longname <- "Air Temperature 2m"
     units_out <- "degC"
     var_label_plot <- expression(paste("Air Temperature [", degree, "C]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.")
@@ -3585,7 +3419,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Runoff"
     units_out <- "m a-1"
     var_label_plot <- expression(paste("Runoff [m a"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 86400*365 # m/s --> m/a
     typesuffix <- c("forcing.")
@@ -3599,7 +3432,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "km3 a-1"
     var_label_plot <- expression(paste("FW Flux [km"^"3"," a"^"-1","]"))
     var_label_plot_roundfac <- 4
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     multfac_out <- 86400*365/1e9 # m^3/s --> km^3/a
     typesuffix <- c("forcing.")
@@ -3612,7 +3444,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Air Specific Humidity"
     units_out <- "g kg-1"
     var_label_plot <- expression(paste("Air Specific Humidity [g kg"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1e3 # kg/kg --> g/kg
     typesuffix <- c("forcing.")
@@ -3626,7 +3457,6 @@ if (varname == "tos") { # fesom 1.4
     subtitle <- "<0 out of the ocean"
     units_out <- "W m-2"
     var_label_plot <- expression(paste("Atmosphere Shortwave Radiation [W m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.")
@@ -3640,7 +3470,6 @@ if (varname == "tos") { # fesom 1.4
     subtitle <- "<0 out of the ocean"
     units_out <- "W m-2"
     var_label_plot <- expression(paste("Atmosphere Longwave Radiation [W m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.")
@@ -3654,7 +3483,6 @@ if (varname == "tos") { # fesom 1.4
     subtitle <- "<0 out of the ocean"
     units_out <- "W m-2"
     var_label_plot <- expression(paste("Latent Heat Flux To Ocean [W m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.")
@@ -3668,7 +3496,6 @@ if (varname == "tos") { # fesom 1.4
     subtitle <- "<0 out of the ocean"
     units_out <- "W m-2"
     var_label_plot <- expression(paste("Sensible Heat Flux To Ocean [W m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.")
@@ -3682,7 +3509,6 @@ if (varname == "tos") { # fesom 1.4
     subtitle <- "<0 ocean heat loss"
     units_out <- "W m-2"
     var_label_plot <- expression(paste("Q"[net], " [W m"^"-2","]"))
-    dim_tag <- "2D"
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("qnet")
@@ -3700,7 +3526,6 @@ if (varname == "tos") { # fesom 1.4
         #units_out <- paste0("m3 s-1 x ", multfac_out)
         units_out <- "Sv"
     }
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
@@ -3713,7 +3538,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m s-1"
     units_plot <- units_out
     var_label_plot <- expression(paste("Wind [m s"^"-1","]"))
-    dim_tag <- "2D"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
     varname_nc <- c("uwind", "vwind")
@@ -3724,7 +3548,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Curl of Wind Speed"
     units_out <- "s-1"
     var_label_plot <- expression(paste("Curl of Wind Speed [s"^"-1","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
@@ -3737,7 +3560,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Meridional Wind Stress"
     units_out <- "N m-2"
     var_label_plot <- expression(paste("Meridional Wind Stress [N m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
@@ -3750,7 +3572,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Zonal Wind Stress"
     units_out <- "N m-2"
     var_label_plot <- expression(paste("Zonal Wind Stress [N m"^"-2","]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     multfac_out <- 1
     typesuffix <- c("forcing.", "forcing.")
@@ -3770,7 +3591,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^-power_out
         units_out <- paste0("N x 1e", power_out)
     }
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
@@ -3789,7 +3609,6 @@ if (varname == "tos") { # fesom 1.4
                                  "[N ", var^-3, "] " %*% " ", base^-power_plot),
                                  list(var="m", base=base, 
                                       power_plot=power_plot))
-    dim_tag <- "2D" 
     horiz_deriv_tag <- "geo"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
@@ -3811,7 +3630,6 @@ if (varname == "tos") { # fesom 1.4
                                      "] " %*% " ", base^power_out),
                                list(var1="s", var2="m", 
                                     base=base, power_out=-power_out))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("forcing.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
@@ -3834,7 +3652,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^-power_out
         units_out <- paste0("TW")
     }
-    dim_tag <- "2D" 
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
@@ -3857,7 +3674,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^-power_out      
         units_out <- paste0("TW")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.")
     diagsuffix <- c("", "", "diag.", "diag.")
@@ -3881,7 +3697,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^-power_out
         units_out <- paste0("TW")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
@@ -3908,12 +3723,9 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- "Sv psu"
     }
-    dim_tag <- "2D"
+    typesuffix <- c("forcing.")
+    diagsuffix <- c("diag.")
     varname_nc <- c("virtual_salt")
-    if (!cpl_tag) {
-        typesuffix <- c("forcing.")
-        diagsuffix <- c("diag.")
-    }
 
 } else if (varname == "relax_salt") {
     longname <- "Saltinity Relaxation"
@@ -3931,7 +3743,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m3 s-1 psu")
     }
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
@@ -3947,7 +3758,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- paste0("# x ", multfac_out_plot)
     var_label_plot <- substitute(paste("C"[D], " [#] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
@@ -3970,7 +3780,6 @@ if (varname == "tos") { # fesom 1.4
     if (out_mode == "meanint") {
         units_out <- "m3 s-1 degC"
     }
-    dim_tag <- "3D" # because of rho
     typesuffix <- c("oce.", "forcing.")
     diagsuffix <- c("diag.", "diag.")
     varname_nc <- c("rho", "qnet")
@@ -3992,7 +3801,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m3 s-1 psu")
     }
-    dim_tag <- "3D" # because of salt
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", rep("diag.", t=6))
@@ -4017,7 +3825,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m3 s-1 psu")
     }
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- rep("forcing.", t=2)
     diagsuffix <- rep("diag.", t=2)
@@ -4042,7 +3849,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("kg s-1")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.")
     diagsuffix <- c("", "", "diag.")
@@ -4062,7 +3868,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=5))
     diagsuffix <- c("", "", rep("diag.", t=5))
@@ -4087,7 +3892,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("kg s-1")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
@@ -4107,7 +3911,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
@@ -4130,7 +3933,6 @@ if (varname == "tos") { # fesom 1.4
     if (any(out_mode == c("meanint", "depthint"))) {
         units_out <- "kg s-1"
     }
-    dim_tag <- "3D"
     varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
@@ -4150,7 +3952,6 @@ if (varname == "tos") { # fesom 1.4
     if (any(out_mode == c("meanint", "depthint"))) {
         units_out <- "kg s-1"
     }
-    dim_tag <- "3D" # since temp and salt are needed
     varname_nc <- c("temp", "salt", "qnet", "virtual_salt", "relax_salt") 
     typesuffix <- c("oce.", "oce.", "forcing.", "forcing.", "forcing.") 
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
@@ -4170,7 +3971,6 @@ if (varname == "tos") { # fesom 1.4
     if (any(out_mode == c("meanint", "depthint"))) {
         units_out <- "kg s-1"
     }
-    dim_tag <- "3D" # since temp and salt are needed
     typesuffix <- c("oce.", "oce.", # temp salt 
                      rep("forcing.", t=5), # swrd lwrd olwout osen olat
                      "ice.", # thdgr
@@ -4193,7 +3993,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "forcing.")
     diagsuffix <- c("", "", "diag.")
@@ -4213,7 +4012,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=5))
     diagsuffix <- c("", "", rep("diag.", t=5))
@@ -4233,7 +4031,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
@@ -4253,7 +4050,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=6))
@@ -4273,7 +4069,6 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
@@ -4298,7 +4093,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m4 s-3")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.", rep("forcing.", t=3))
     diagsuffix <- c("", "", rep("diag.", t=3))
@@ -4323,7 +4117,6 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m4 s-3")
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.",
                      rep("forcing.", t=5),
@@ -4342,7 +4135,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Sea Ice Zonal Velocity [m s"^"-1","]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
@@ -4355,7 +4147,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Sea Ice Meridional Velocity [m s"^"-1","]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
@@ -4368,7 +4159,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Horizontal Ice Velocity [m s"^"-1","]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
@@ -4391,21 +4181,17 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- base^power_out # # [0,1] --> [0,100]
     units_out <- "%"
     var_label_plot <- expression(paste("Sea Ice concentration [%]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
     varname_nc <- c("area")
-    if (cpl_tag) {
-        varname_nc <- "sic"
-    }
+    varname_nc <- "sic"
 
 } else if (varname == "hice") {
     longname <- "Sea Ice Thickness"
     units_out <- "m"
     var_label_plot <- expression(paste("Effective Sea Ice Thickness [m]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
@@ -4424,14 +4210,11 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "km2"
     var_label_plot <- substitute(paste("Sea Ice Extend [", units_out^2, "]"),
                                  list(units_out="km"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.")
     diagsuffix <- c("")
     varname_nc <- c("area")
-    if (cpl_tag) {
-        varname_nc <- "sisnconc"
-    }
+    varname_nc <- "sisnconc"
 
 } else if (varname == "icevol") {
     longname <- "Sea Ice Volume"
@@ -4444,7 +4227,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- paste0("km3")
     var_label_plot <- substitute(paste("Sea Ice Volume [", units_out^3, "]"),
                               list(var="km"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.", "ice.")
     diagsuffix <- c("", "")
@@ -4457,7 +4239,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m"
     var_label_plot <- expression(paste("Effective Snow Thickness [m]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("")
@@ -4475,7 +4256,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Thermodynamic Growth Rate of eff. Ice Thickness [m ", 
                                     units_out^-1, "] " %*% " ", base^power_out),
                               list(var="s", base=base, power_out=-power_out))
-    dim_tag <- "2D"
     horiz_deriv_tag <- F
     typesuffix <- c("ice.")
     diagsuffix <- c("diag.")
@@ -4555,7 +4335,6 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- expression(paste("Transport [Sv]"))
     units_out <- "Sv"
     multfac_out <- 1
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.") # defeault
     diagsuffix <- c("", "")
@@ -4579,7 +4358,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "m"
     units_plot <- "m"
     var_label_plot <- "Bathymetry [m]"
-    dim_tag <- "2D"
     # GEBCO (General Bathymetric Chart of the Oceans) colors:
     bathy_cols <- c("#c5ebdc", "#a0dfda", "#7fd5e8", "#5ecbe6", "#49add9",
                     "#3d82c9", "#3259af", "#26468b", "#212f5c", "#141c34")
@@ -4592,7 +4370,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "#"
     units_plot <- units_out
     var_label_plot <- substitute(paste("|", bold(nabla)[h], " H| [#]"))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
 
 } else if (varname == "hvel_dot_gradbathy") {
@@ -4612,14 +4389,11 @@ if (varname == "tos") { # fesom 1.4
                                            " [", var1, " ", var2^-1, "]"),
                                      list(var1="cm", var2="day"))
     }
-    dim_tag <- "3D"
     horiz_deriv_tag <- "geo"
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
     varname_nc <- c("u", "v")
-    if (cpl_tag) {
-        varname_nc <- c("uo", "vo")
-    }
+    varname_nc <- c("uo", "vo")
     rotate_inds <- c(1, 2)
 
 } else if (varname == "foverh") {
@@ -4632,7 +4406,6 @@ if (varname == "tos") { # fesom 1.4
                                        var2^-1, "] " %*% " ", base^-power_plot),
                                  list(H="H", var1="m", var2="s", 
                                       base=base, power_plot=power_plot))
-    dim_tag <- "2D"
     coriolis_tag <- T
 
 } else if (varname == "resolutionkm") {
@@ -4642,7 +4415,6 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- base^power_out
     var_label_plot <- "Mesh Resolution [km]"
     units_plot <- "km"
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     axis.addzlims <- T # show min and max resolution in colorbar 
     #resolutionkm_cols <- colorRampPalette(c("plum1", "plum", "orchid4", "slateblue", "royalblue1", "cyan", "aquamarine",
@@ -4656,7 +4428,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- "deg"
     var_label_plot <- expression(paste("Mesh Resolution [", degree, "]"))
     multfac_out <- 1
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     rotate_inds <- F
     vec <- F
@@ -4671,7 +4442,6 @@ if (varname == "tos") { # fesom 1.4
     units_out <- paste0("km2 x ", multfac_out_plot)
     var_label_plot <- substitute(paste("Mesh Area [k", units_out^2, "] " %*% " ", base^power_out),
                               list(var="m", base=base, power_out=power_out))
-    dim_tag <- "2D"
     horiz_deriv_tag <- "geo"
     rotate_inds <- F
     vec <- F
@@ -4684,7 +4454,6 @@ if (varname == "tos") { # fesom 1.4
     multfac_out <- base^-power_out
     units_out <- "km"
     var_label_plot <- expression(paste("Rossby Radius of Deformation [km]"))
-    dim_tag <- "3D"
     horiz_deriv_tag <- F
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
@@ -4697,20 +4466,6 @@ if (varname == "tos") { # fesom 1.4
 
 } else {
     stop(paste0("varname '", varname, "' is not defined in namelist.var.r"))
-}
-
-## check user input
-if (!exists("dim_tag")) {
-    stop("You must define 'dim_tag' in namelist.var.r (either '2D' or '3D').")
-}
-if (!cpl_tag &&
-    !exists("fnames_user") &&
-    !is.null(varname_nc) &&
-    !all(c(exists("typesuffix"), c(exists("diagsuffix"))))) {
-    stop(paste0("'cpl_tag'=", cpl_tag, " and you did not provide your own data fname.",
-                " so you must define 'typesuffix' and 'diagsuffix' for the fesom",
-                " ocean-only file naming convention '<runid>.<year>.<typesuffix>.<diagsuffix>.nc'",
-                " to obtain e.g. 'demoid.2009.oce.mean.nc'."))
 }
 
 ## update units_out

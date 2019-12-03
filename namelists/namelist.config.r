@@ -44,7 +44,6 @@ horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
 ## Default experiment options
-fesom_version <- "1.4" # deprecated
 cpl_tag <- T # deprecated; F: ocean-only, T: coupled
 
 ## Default mesh options

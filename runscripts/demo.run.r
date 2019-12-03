@@ -3,11 +3,11 @@
 ## https://github.com/chrisdane/rfesom ##
 #########################################
 
-
-this_runscript_filename <- "demo.run.r"
-# just basename if saved in directory rfesom/runscripts or absolute path 
+this_runscript_filename <- "demo.run.r" # just basename if saved in directory 
+# rfesom/runscripts or absolute path if saved somehwhere else
 
 ## Set the blocks below to T or F to run the different demos
+rfesompath  <- normalizePath("../") # assume this demo runscript was not moved 
 datainpath  <- paste0(rfesompath, "/example_data/data/demo") # fesom data
 fpattern    <- "demo.<YYYY>.<fsuffix>"
 cpl_tag     <- F # demodata is from ocean-only experiment
@@ -82,10 +82,14 @@ if (F) {
     meshpath <- paste0(rfesompath, "/example_data/meshes/core")
     rotate_mesh <- F
     #varname <- "ssh"
-    varname <- "thetao"
-    depths <- c(0, 133.7)
+    #varname <- "thetao"
+    varname <- "MOCw"
+    area <- "NA"
+    #depths <- c(0, 133.7)
+    depths <- c(0, "max")
     transient_out <- T
-    out_mode <- "mean"
+    #out_mode <- "mean"
+    out_mode <- "moc_depth"
     fpattern <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"
     years <- 1948
     #years <- 1948:1949
@@ -97,10 +101,5 @@ if (F) {
 
 ## do not change below this line ##
 # run rfesom
-rfesompath <- system("git rev-parse --show-toplevel", intern=T)
-if (!is.null(attributes(rfesompath))) {
-    stop("`git rev-parse --show-toplevel` @", getwd(), 
-         " returned exit code ", attributes(rfesompath)$status)
-}
 source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 

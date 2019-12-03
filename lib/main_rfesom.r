@@ -20,8 +20,8 @@
 ## clear work space and close possibly open plot devices
 graphics.off()
 ws <- ls()
-ws <- ws[-which(ws == "this_runscript_filename")]
-ws <- ws[-which(ws == "rfesompath")]
+ws <- ws[-which(ws == "this_runscript_filename" | 
+                ws == "rfesompath")]
 rm(list=ws)
 
 ## show line number in case of errors
@@ -69,11 +69,66 @@ message("Load user options from \"", user_runscript_filename, "\" ...")
 source(textConnection(user_runscript[1:user_runscript_end]))
 message()
 
+# checks
+if (!exists("meshid")) {
+    meshid <- basename(meshpath)
+    message("'meshid' not given. take last directory of `meshpath` --> \"", meshid, "\"\n",
+            "   You can set a meshid in the runscript with e.g. `meshid <- \"core\"`")
+}
+
 ## Load plot options
 source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
 
 ## Load variable options
 source(paste0(rfesompath, "/namelists/namelist.var.r"))
+
+# load function subroutines
+if (!exists("subroutinepath")) {
+    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
+}
+subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
+if (file.access(subroutinepath, mode=0) == -1) {
+    stop("subroutinepath = ", subroutinepath, " does not exist.")
+}
+for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
+            "image.plot.pre.r", "gcd.r", "myls.r")) {
+    source(paste0(subroutinepath, "/functions/", i))
+}
+
+# check paths
+if (plot_map || plot_csec
+    || any(out_mode == c("moc_mean", "moc_depth"))) {
+    
+    if (!exists("plotpath")) {
+        # use default
+        plotpath <- paste0(rfesompath, "/example_data/plot/", varname)
+        message("No 'plotpath' is given for saving plots.\n",
+                "   Use default: ", plotpath, " (= `rfesompath`/example_data/plot/`varname`)\n",
+                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
+    } else {
+        plotpath <- suppressWarnings(normalizePath(plotpath))
+    }
+    # plotpath does not exist
+    if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
+        #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
+        message(paste0("Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
+        dir.create(plotpath, recursive=T, showWarnings=F)
+        if (file.access(plotpath, mode=0) == -1) {
+            message("")
+            stop(" Could not create 'plotpath' = ", plotpath)
+        } else {
+            message("done.")
+        }   
+    # no writing rights to plot path
+    } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
+        message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
+        plotpath <- paste0(rfesompath, "/example_data/plot/", varname)
+        message("   Use default: ", plotpath, " (= `rfesompath`/example_data/plot/`varname`)\n",
+                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
+    }
+    success <- load_package("fields")
+    if (!success) stop(helppage)
+} # check paths if plot_mat || plot_csec
 
 ## Load area and projection options
 source(paste0(rfesompath, "/namelists/namelist.area.r"))
@@ -84,23 +139,11 @@ if (file.access(meshpath, mode=0) == -1) { # does not exist
     stop("meshpath = ", meshpath, " does not exist.")
 }
 meshpath <- suppressWarnings(normalizePath(meshpath))
-if (!exists("meshid")) {
-    meshid <- basename(meshpath)
-    message("'meshid' not given. take last directory of `meshpath` --> \"", meshid, "\"\n",
-            "   You can set a meshid in the runscript with e.g. `meshid <- \"core\"`")
-}
 if (!exists("rotate_mesh")) {
     rotate_mesh <- F
 }
 if (!exists("cylc")) {
     cycl <- T # treat cyclic mesh elements? always true for global meso
-}
-if (!exists("subroutinepath")) {
-    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
-}
-subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
-if (file.access(subroutinepath, mode=0) == -1) {
-    stop("subroutinepath = ", subroutinepath, " does not exist.")
 }
 if (!exists("setting")) {
     setting <- ""
@@ -144,11 +187,6 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
     source(paste0(subroutinepath, "/", i))
 }
 
-## load misc subroutines
-for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "gcd.r", "myls.r")) {
-    source(paste0(subroutinepath, "/functions/", i))
-}
 
 # TODO: check all needed packages at the beginning!!! e.g. gsw
 
@@ -260,11 +298,6 @@ if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
 if (regexpr("MOC", varname) != -1) plot_map <- F 
 if (moc_ltm_out && regexpr("MOC", varname) == -1) {
     moc_ltm_out <- F # calc MOC only when varname is MOCx
-}
-## If there are data loaded from diag file, then snapshot is not possible
-if (cpl_tag ||
-    (!cpl_tag && nfiles > 0 && any(diagsuffix == "diag."))) {
-    snapshot <- F
 }
 #if (transient_out && any(out_mode == c("csec_mean", "csec_depth")) &&
 #    varname != "transport") {
@@ -404,38 +437,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
 
 } # check post paths if output wanted
 
-if (plot_map || plot_csec) {
-    
-    if (!exists("plotpath")) {
-        # use default
-        plotpath <- paste0(rfesompath, "/example_data/plot/", varname)
-        message("No 'plotpath' is given for saving plots.\n",
-                "   Use default: ", plotpath, " (= `rfesompath`/example_data/plot/`varname`)\n",
-                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
-    } else {
-        plotpath <- suppressWarnings(normalizePath(plotpath))
-    }
-    # plotpath does not exist
-    if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
-        message(paste0("Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
-        dir.create(plotpath, recursive=T, showWarnings=F)
-        if (file.access(plotpath, mode=0) == -1) {
-            message("")
-            stop(" Could not create 'plotpath' = ", plotpath)
-        } else {
-            message("done.")
-        }   
-    # no writing rights to plot path
-    } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
-        plotpath <- paste0(rfesompath, "/example_data/plot/", varname)
-        message("   Use default: ", plotpath, " (= `rfesompath`/example_data/plot/`varname`)\n",
-                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
-    }
-    success <- load_package("fields")
-    if (!success) stop(helppage)
-} # check paths if plot_mat || plot_csec
 
 ## try to load all needed packages alread now
 if (nfiles > 0) {
@@ -521,7 +522,6 @@ if (F) { # not yet
 ## start
 if (verbose > 0) {
     message("\n", "verbose: ", verbose, " (change this in the runscript for more/less info)")
-    message(paste0("fesom_version: ", fesom_version))
     message(paste0("datainpath: ", datainpath))
     message(paste0("runid: ", runid))
     if (setting != "") message(paste0("setting: ", setting))
@@ -1302,6 +1302,7 @@ if (nfiles > 0) {
         timeobj$time <- time_all
         timeobj$posix <- posix_all 
         time <- time_all
+        ntime <- length(time) # complete time
         rm(time_all, posix_all)
 
         if (F) { # dont need decimal at all ...
@@ -2123,9 +2124,9 @@ if (horiz_deriv_tag != F ||
     } # if deriv_2d_fname does not exist
 
     if (verbose > 0) {
-        message(paste0(indent, "Load ", meshid,
-                     " mesh bafuxy_2d/cluster_area_2d/resolution file"))
-        message(paste0(indent, indent, "'deriv_2d_fname' = ", deriv_2d_fname, " ..."))
+        message(indent, "Load \"", meshid,
+                "\" mesh bafux_2d/bafuy_2d/cluster_area_2d/resolution from file", "\n",
+                indent, indent, "`deriv_2d_fname` = ", deriv_2d_fname, " ...")
     }
     deriv_2d_nc <- nc_open(deriv_2d_fname)
     bafux_2d <- ncvar_get(deriv_2d_nc, "bafux_2d")
@@ -3486,35 +3487,55 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
 
 
 ## 3) for moc
-if (out_mode == "moc_mean" || out_mode == "moc_depth") {
+if (any(out_mode == c("moc_mean", "moc_depth"))) {
     if (verbose > 0) {
-        message(paste0("3) Find coordinates of area '", area, "' for MOC calculation: ..."))
+        message(paste0("3) Find indices of `area` = \"", area, "\" for MOC calculation ..."))
     }
 
     # regular lats for binning
     moc_reg_lat_global <- seq(-90+regular_dy_moc/2, 90-regular_dy_moc/2, b=regular_dy_moc)
     
-    # mask
+    ## mask for MOC calculation
     # moc_mask must be 0 (outside) or 1 (inside). NOT T or F
-    if (exists("moc_mask_file") && file.exists(moc_mask_file)) {
-        message(paste0(indent, "use maskfile ", moc_mask_file, " ..."))
+    if (exists("moc_mask_file")
+        && file.access(moc_mask_file, mode=4) == 0) {
+        # if moc file was provided
+        if (verbose > 0) {
+            message(indent, "read provided `moc_mask_file` = ", moc_mask_file, " ...")
+        }
         moc_mask_inds <- fread(moc_mask_file)$V1
         moc_mask_inds <- moc_mask_inds[2:moc_mask_inds[1]] # remove first line of dimas mask file
         moc_mask <- rep(0, t=nod2d_n)
         moc_mask[moc_mask_inds] <- 1
+   
+    # moc file was not proivided
     } else {
-        if (area == "moc_global") { # global moc
+        if (exists("moc_mask_file") 
+            && file.access(moc_mask_file, mode=4) == -1) {
+            message(indent, "warn: provided", "\n",
+                    indent, "   `moc_mask_file` = ", moc_mask_file, "\n",
+                    indent, " is not readable!")
+        }
+        
+        if (area == "global") { # global moc
+            if (verbose > 0) {
+                message(indent, "`area` = ", area, " --> use all nodes for MOC calculation ...")
+            }
             moc_mask <- rep(1, t=nod2d_n)
-        } else {
-            # make new moc mask 
-            moc_mask_file <- paste0(meshpath, "/moc_mask_", area, "_", meshid, ".dat")
-            message(indent, "MOC mask area is not 'moc_global' AND no moc mask file is given for meshid = '", meshid, 
-                    "'. Determine moc mask now in an interactive session.")
-            if (!interactive()) stop("run this script in an interactive session.")
+        
+        } else { # make new moc mask 
+            moc_mask_file <- paste0(meshpath, "/moc_mask_", area, "_area_", meshid, "_mesh.txt")
+            message(indent, "`area` = \"", area, "\" is not \"global\" AND no readable moc mask file ",
+                    "`moc_mask_file` is given", "\n",
+                    indent, "--> find moc mask now in an interactive plot", "\n",
+                    indent, "--> the last point does not need to close the polygon ",
+                    "(the first and last points will be connected automatically)")
+            if (!interactive()) stop("run this script in an interactive session")
             
             # select MOC area in interactive session
             if (!capabilities("X11")) {
-                stop("capabilities(\"X11\") = ", capabilities("X11"), " --> cannot open plot device")
+                stop("capabilities(\"X11\") = ", capabilities("X11"), 
+                     " --> cannot open plot device")
             }
             X11(width=14, height=14) # inch
             plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]",
@@ -3524,9 +3545,8 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
             abline(v=pretty(xcsur, n=20), lwd=0.5)
             abline(h=pretty(ycsur, n=20), lwd=0.5)
             title(paste0("Select MOC mask area '", area, "' for mesh '", meshid, "'"))
+            mtext("(Wait for the next click until coursor is a cross symbol)")
             source(paste0(subroutinepath, "/functions/mylocator.r"))
-            message(indent, "The polygon is closed automatically in the end. If you want to change the coordinates for MOC area '", 
-                    area, "', remove ", moc_mask_file, " and rerun the script.")
             moc_mask_coords <- mylocator()
             
             # check user coords
@@ -3554,8 +3574,11 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
             }
 
             # save mask file in Dimas format
-            if (verbose > 0) message("Save surface indices of MOC area '", area, "' for mesh '", 
-                                     meshid, "' to ", moc_mask_file, " ...")
+            if (verbose > 0) {
+                message(indent, "Save surface indices of `area` = \"", area, 
+                        "\" for MOC calculation to file", "\n",
+                        indent, "   `moc_mask_file` = \"", moc_mask_file, "\" ...")
+            }
             write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
         
             # close selection plot
@@ -3567,7 +3590,10 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
 
     # save moc area if wanted
     if (plot_moc_mask) {
-        message(indent, "Plot ", moc_mask_plotname, " ...")
+        if (verbose > 0) {
+            message(indent, "`plot_moc_mask` = T --> save", "\n",
+                    indent, "   `moc_mask_plotname` = ", moc_mask_plotname, " ...")
+        }
         png(moc_mask_plotname, width=2666, height=2666, res=dpi)
         plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]", 
              xaxt="n", yaxt="n", pch=".")
@@ -3576,7 +3602,7 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
         abline(v=pretty(xcsur, n=20), lwd=0.5)
         abline(h=pretty(ycsur, n=20), lwd=0.5)
         points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
-        title(paste0("MOC mask area '", area, "' for mesh '", meshid, "'"))
+        title(paste0("MOC mask area \"", area, "\" for mesh \"", meshid, "\""))
         dev.off()
     } # if plot_moc_mask
 
@@ -3585,8 +3611,10 @@ if (out_mode == "moc_mean" || out_mode == "moc_depth") {
     poly_geogr_lim_lon <- map_geogr_lim_lon
     poly_geogr_lim_lat <- map_geogr_lim_lat
     if (verbose > 1) {
-        message(indent, "   min/max longitude = ", min(map_geogr_lim_lon), "/", max(map_geogr_lim_lon))
-        message(indent, "   min/max latitude = ", min(map_geogr_lim_lat), "/", max(map_geogr_lim_lat))
+        message(indent, "   min/max lon for MOC calc = ", 
+                min(map_geogr_lim_lon), "/", max(map_geogr_lim_lon))
+        message(indent, "   min/max lat for MOC calc = ", 
+                min(map_geogr_lim_lat), "/", max(map_geogr_lim_lat))
     }
 
     if (verbose > 0) {
@@ -3748,7 +3776,8 @@ if (nfiles > 0) {
                 deltaz[1] <- (interpolate_depths[1] - interpolate_depths[2])/2
                 deltaz[ndepths] <- (interpolate_depths[ndepths - 1]- interpolate_depths[ndepths])/2
                 for (n in 2:(ndepths - 1)) {
-                    deltaz[n] <- (interpolate_depths[n-1] - interpolate_depths[n])/2 + (interpolate_depths[n] - interpolate_depths[n+1])/2
+                    deltaz[n] <- (interpolate_depths[n-1] - interpolate_depths[n])/2 + 
+                                 (interpolate_depths[n] - interpolate_depths[n+1])/2
                 }
                 deltaz <- deltaz*-1 # to get positive dz values
 
@@ -3888,6 +3917,7 @@ if (nfiles > 0) {
     for (vari in 1:nfiles) {
         if (dims_of_vars[[vari]][[dimids[dims_of_vars[[vari]]$depthdim_ind]]]$len != ndepths) {
             icount[[vari]][depthdim_ind] <- ndepths
+            if (leap_tag) icount_leap[[vari]][depthdim_ind] <- ndepths
         }
     }
 
@@ -5868,6 +5898,13 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 } else if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
                     ## dim(data_node) = # c(nvars,nreg_lat,ndepths,ntime)
+                    if (F) {
+                        image(moc_reg_lat_global, interpolate_depths,
+                              moc_topo, col="gray", ylim=rev(range(interpolate_depths)))
+                        image.plot(moc_reg_lat_global, interpolate_depths,
+                                   drop(data_node[1,,,1]),
+                                   ylim=rev(range(interpolate_depths)))
+                    }
 
                     ## remove possible redundant latitudes and bottom depths with no values
                     if (total_rec == 0) {
@@ -5892,19 +5929,20 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         # improve this: only use depths where MOC has data
                         interpolate_depths <- interpolate_depths[1:dim(data_node)[3]]
                     }
+                    if (F) {
+                        image(moc_reg_lat, interpolate_depths,
+                              moc_topo, col="gray", ylim=rev(range(interpolate_depths)))
+                        image.plot(moc_reg_lat, interpolate_depths,
+                                   drop(data_node[1,,,1]),
+                                   ylim=rev(range(interpolate_depths)))
+                    }
 
                     if (total_rec == 0) {
                         if (out_mode == "moc_mean") {
                             stop("not yet")
-                            data_funi <- array(NA, c(dim(data_node), ntime),
-                                               dimnames=c(dimnames(data)[1],
-                                                          list(rec=timestamp)))
                         } else if (out_mode == "moc_depth") {
-                            data_funi <- array(NA, c(dim(data_node)[1:3], ntime),
-                                               dimnames=c(var=dimnames(data_node)[1],
-                                                          list(lat=moc_reg_lat, 
-                                                               depth=interpolate_depths,
-                                                               rec=timestamp)))
+                            data_funi <- array(NA, dim=c(dim(data_node)[1:3], ntime),
+                                               dimnames=c(dimnames(data_node)[1:3], list(rec=timestamp)))
                         }
                     }
                     if (rec_tag) {
@@ -5918,9 +5956,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
 
                     if (verbose > 1) {
-                        message(paste0(indent, "Calc ", area, " area ", out_mode,
-                                     " and save at time inds=",
-                                     paste(time_inds, collapse=",")))
+                        message(indent, "Calc ", area, " area ", out_mode,
+                                " and save at time inds=",
+                                paste(time_inds, collapse=","), " ...")
                     }
 
                     if (out_mode == "moc_mean") {
