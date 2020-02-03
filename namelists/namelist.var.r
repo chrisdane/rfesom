@@ -158,8 +158,7 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
     varname_nc <- c("temp", "salt")
-    rotate_inds <- F
-    vec <- F
+    varname_nc <- c("thetao", "so")
 
 } else if (varname == "insitub") {
     longname <- "In situ Buoyancy"
@@ -1511,7 +1510,7 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- expression(paste("Squared SSH [m"^"2", "]"))
     varname_nc <- "zossq"
 
-} else if (varname == "mixlay") {
+} else if (any(varname == c("mixlay", "mlotst"))) {
     longname <- "Mixed Layer Depth"
     units_out <- units_plot <- "m"
     var_label_plot <- "MLD [m]"
@@ -4208,13 +4207,18 @@ if (varname == "tos") { # fesom 1.4
     power_out <- 6 # [m^2] --> [km^2]
     multfac_out <- base^-power_out
     units_out <- "km2"
-    var_label_plot <- substitute(paste("Sea Ice Extend [", units_out^2, "]"),
+    var_label_plot <- substitute(paste("Sea Ice Extent [", units_out^2, "]"),
                                  list(units_out="km"))
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.")
     diagsuffix <- c("")
     varname_nc <- c("area")
     varname_nc <- "sisnconc"
+
+} else if (varname == "siarean") {
+    var_label_plot <- substitute(paste("Arctic sea ice extent [Mio ", units_out^2, "]"),
+                                 list(units_out="km"))
+    varname_nc <- "siarean"
 
 } else if (varname == "icevol") {
     longname <- "Sea Ice Volume"

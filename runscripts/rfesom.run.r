@@ -3,9 +3,10 @@
 ## https://github.com/chrisdane/rfesom ##
 #########################################
 
-
-this_runscript_filename <- "rfesom.run.r"
-# just basename if saved in directory rfesom/runscripts or absolute path 
+this_runscript_filename <- "rfesom.run.r" # just basename if saved in directory 
+# rfesom/runscripts or absolute path if saved somehwhere else
+#rfesompath  <- normalizePath("../") # assume this runscript was not moved 
+rfesompath <- system("git rev-parse --show-toplevel", intern=T)
 
 # any variable already defined in rfesom/namelists/namelist.config.r can be overwritten here
 if (T) {
@@ -19,19 +20,9 @@ if (T) {
     years <- 1935
     recs <- 1:2
     regular_ltm_out <- T
-
-} else { # chris
-    source("~/scripts/r/myrunids.r")
 }
-
 
 ## do not change below this line ##
 # run rfesom
-rfesompath <- system("git rev-parse --show-toplevel", intern=T)
-if (!is.null(attributes(rfesompath))) {
-    stop("running `git rev-parse --show-toplevel` on\n", 
-         system("whoami", intern=T), "@", system("hostname -f", intern=T), ":", getwd(), "\n",
-         "returned exit code ", attributes(rfesompath)$status)
-}
 source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 

@@ -19,11 +19,11 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, l=y_len/regular_dy)
     #xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, b=regular_dx)
     #yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, b=regular_dy)
-    nxi     = length(xi)
-    nyi     = length(yi)
-    XI      = array(rep(xi, e=nyi), c(nyi,nxi))
-    YI      = array(rep(yi, t=nxi), c(nyi,nxi))
-    IMAT   = array(0, c(nyi, nxi))
+    nxi <- length(xi)
+    nyi <- length(yi)
+    XI <- array(rep(xi, e=nyi), c(nyi,nxi))
+    YI <- array(rep(yi, t=nxi), c(nyi,nxi))
+    IMAT <- array(0, c(nyi, nxi))
     
     pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
                            char=pb_char, width=pb_width,

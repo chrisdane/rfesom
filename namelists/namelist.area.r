@@ -52,6 +52,9 @@
             } else if (area == "northernNA") {
                 map_geogr_lim_lon <- c(-80, 30)
                 map_geogr_lim_lat <- c(30, 85)
+            } else if (area == "northernNA2") {
+                map_geogr_lim_lon <- c(-70, 50)
+                map_geogr_lim_lat <- c(50, 80)
             } else if (area == "easternNA") {
                 map_geogr_lim_lon <- c(-45, 30)
                 map_geogr_lim_lat <- c(60, 75)
@@ -133,6 +136,9 @@
             } else if (area == "LSboening3") { # irm sea at Boening et al. 2016 supplementary both regions
                 map_geogr_lim_lon <- c(-65, -30)
                 map_geogr_lim_lat <- c(50, 65)
+            } else if (area == "LSstolpe18") {
+                map_geogr_lim_lon <- c(-56.5, -50.5)
+                map_geogr_lim_lat <- c(57, 64)
             } else if (area == "LSmldl") {
                 map_geogr_lim_lon <- c(-58, -47)
                 map_geogr_lim_lat <- c(55.5, 62)
@@ -622,7 +628,7 @@
             projection <- "rectangular"
             
             # default
-            moc_mask_file <- paste0(meshpath, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
+            moc_mask_file <- paste0(postmeshpath, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
             moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
         
         } # which non-default area selection

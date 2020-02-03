@@ -5,9 +5,9 @@
 
 this_runscript_filename <- "demo.run.r" # just basename if saved in directory 
 # rfesom/runscripts or absolute path if saved somehwhere else
+rfesompath  <- normalizePath("../") # assume this demo runscript was not moved 
 
 ## Set the blocks below to T or F to run the different demos
-rfesompath  <- normalizePath("../") # assume this demo runscript was not moved 
 datainpath  <- paste0(rfesompath, "/example_data/data/demo") # fesom data
 fpattern    <- "demo.<YYYY>.<fsuffix>"
 cpl_tag     <- F # demodata is from ocean-only experiment

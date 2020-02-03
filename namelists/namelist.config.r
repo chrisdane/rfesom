@@ -43,9 +43,6 @@ horiz_deriv_node3d <- T # method for calculating horizontal derivative of 3D var
 horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
-## Default experiment options
-cpl_tag <- T # deprecated; F: ocean-only, T: coupled
-
 ## Default mesh options
 rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
                  # If you dont know whether the coordinates in your *.out files are
@@ -80,7 +77,7 @@ integrate_depth <- F # if F, average between depths[1] and depths[2]
 # Instead, the 'recs' of the time dimension of 'fnames_user' will be used.
 years         <- 1948 # annual FESOM output files, woa13 overlap 65-04
 #season        <- "DJF"
-#recs          <- 1:12 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
+#recs          <- 1:2 #c(1,2,3) # records of FESOM file time dimension (e.g. months, days, hours)
 #                      # e.g. c(1,2,12) for DJF if output=="monthly"
 snapshot      <- F # true for snapshot if available or false for mean data (.mean.nc) or
                    # if snapshot not available
@@ -91,7 +88,7 @@ all_recs      <- T # read all records of one fesom output file if possible
 # ltm (long term mean) -> output has no time dimension)
 # transient -> output has time dimension
 ltm_out               <- F # irregular time-average output
-regular_ltm_out       <- F # regular (i.e. interpolated) time-average output
+regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
 regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "area" # what kind of ouptut (see table at the bottom) 

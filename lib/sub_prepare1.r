@@ -5,7 +5,7 @@
 sub_prepare1 <- function(data_node) {
 
     # vertical derivative of data saved "vertically integrated from bottom"
-    if (!cpl_tag && any(!is.na(match(c("sgs_u", "sgs_v"), varname_nc)))) {
+    if (any(!is.na(match(c("sgs_u", "sgs_v"), varname_nc)))) {
 
         ## sgs_u and sgs_v are saved as vertical integral
         ## --> replace data with vertical derivative

@@ -72,7 +72,7 @@ sub_prepare2 <- function(data_node) {
             if (length(data_node[tempind,,,]) != length(data_node[saltind,,,])) {
                 message(paste0("Error: provide temperature and salinity with same dimensions, i.e."))
                 message(paste0("either both 1D ('thetaoga' and 'soga') or both 2D ('tso' and 'sos')"))
-                message(paste0("or both 3D ('temp' and 'salt' if cpl_tag=F or 'thetao' and 'so' if cpl_tag=T)."))
+                message(paste0("or both 3D ('temp' and 'salt' (old naming convention) or 'thetao' and 'so' (new nameing convention))."))
                 stop()
             }
               
