@@ -6,15 +6,11 @@
 verbose <- 2 # [0,1,2,3] give some information while the script is running; 0 = silent
 sea_water <- "TEOS10" # "EOS80": sw_* (deprecated) or 
                       # "TEOS10": gsw_* (Gibbs Sea Water; http://www.teos-10.org/) 
-p_ref <- "in-situ" # 1) "in-situ" for obtaining pressure from the
-                   #    depth of each 3d-node using gsw::gsw_p_from_z().
-                   #    rho = gsw_rho(SA,CT,p) --> in-situ density
-                   #    or
-                   # 2) Positive number such as 0, 42, 1338, 4000 [dbar]
-                   #    as reference pressure for potential density calculation.
-                   #    rho = gsw_rho(SA,CT,p=p_ref) --> potential density
-                   # You can overwrite this default value also in namelist.var.r
-                   # in the respective variable specifications.
+p_ref <- 0 # positive number such as 0, 42, 1338, 4000 [dbar]
+           # as reference pressure for potential density calculation.
+           # rho = gsw_rho(SA,CT,p=p_ref) --> potential density
+           # You can overwrite this default value also in namelist.var.r
+           # in the respective variable specifications.
 cp <- 3991.86795711963 # [m2 s-2 K-1] specific heat capacity of water 
                        # 1) finite numeric, e.g. 3991.86795711963 for standard ocean with 
                        #    reference salinity 35.16504 g kg-1 = 35 u_PS 

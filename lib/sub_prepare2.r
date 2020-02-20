@@ -1,216 +1,314 @@
 ## R
 
-sub_prepare2 <- function(data_node) {
+sub_prepare2 <<- function(data_node) {
 
-    ## check user input
-    if (insitudens_tag && potdens_tag) {
-        stop("set either 'insitudens_tag' OR 'potdens_tag' to TRUE.")
-    }
-    if (insitudens_tag && ("rho" %in% varname_nc)) {
-        # in situ density calculation not necessary since it was already loaded from fesom data.
-        insitudens_tag <<- F
-    }
-
-    ## load or calculate in situ or potential density if needed
-    ## at the end of this block your data_node has a further entry
-    ## with the wanted type of density if needed.
-    if (insitudens_tag || potdens_tag || buoyancy_tag) {
-     
-        ## use rho as calculated by fesom
-        if ("rho" %in% varname_nc) { # rho is in situ rho in fesom ocean only
-
-            #dimnames(data_node)[[1]] <<- "insiturho"
-
-            if (potdens_tag) {
-                if (verbose > 0) {
-                    message("Warning: dont know how to transfer fesoms insitu density to potential density. use in situ instead ...")
-                }
-            } # if potdens_tag
-
-            if (buoyancy_tag) {
-                if (verbose > 1) {
-                    message(indent, "bouyancy b = -g/rho0*rho")
-                }
-                data_node["rho",,,] <<- -g/rho0*data_node["rho",,,]
-                dimnames(data_node)[[1]][which(dimnames(data_node)[[1]] == "rho")] <<- "insitub"
-            } # if buoyancy_tag
-
-        ## density needs to be calculated from temp and salt
-        } else if (!("rho" %in% varname_nc)) {
-
-            ## "temp","thetao","thetaoga" are potential temperatures; "tso" is surface
-            ## "salt","so","soga" are practical salinities; "sos" is surface
-            if (!any(c("temp", "thetao", "thetaoga", "tso") %in% varname_nc) &&
-                !any(c("salt", "so", "soga", "sos") %in% varname_nc)) {
-                message(paste0("Cannot calculate density."))
-                message(paste0("Provide temperature (i.e. 'temp','thetao','thetaoga' or 'tso') and"))
-                message(paste0("salinity (i.e. 'salt','so','soga' or 'sos') in 'varname_nc'."))
-                stop()
-            }
-
-            ## which temp and salt to use for density calculation?
-            tempnames <- c("temp", "thetao", "thetaoga", "tso")
-            saltnames <<- c("salt", "so", "soga", "sos")
-            tempind <<- which(tempnames %in% varname_nc)
-            saltind <<- which(saltnames %in% varname_nc)
-            if (verbose > 0 && length(tempind) > 1) {
-                    message(paste0(indent, "Note: you provided more than 1 temperature data in 'varname_nc':",
-                                 paste0(varname_nc[tempind], collapse=","), "."))
-            }
-            if (verbose > 0 && length(saltind) > 1) {
-                    message(paste0(indent, "Note: you provided more than 1 salinity data in 'varname_nc':",
-                                 paste0(varname_nc[saltind], collapse=","), "."))
-            }   
-            tempind <<- which(varname_nc == tempnames[tempind[1]])
-            saltind <<- which(varname_nc == saltnames[saltind[1]])
-            if (verbose > 0) {
-                message(paste0(indent, "Use '", varname_nc[tempind], "','", 
-                               varname_nc[saltind], "' for density calculation ..."))
-            }
-
-            ## check if both temp and salt have same dimensions
-            if (length(data_node[tempind,,,]) != length(data_node[saltind,,,])) {
-                message(paste0("Error: provide temperature and salinity with same dimensions, i.e."))
-                message(paste0("either both 1D ('thetaoga' and 'soga') or both 2D ('tso' and 'sos')"))
-                message(paste0("or both 3D ('temp' and 'salt' (old naming convention) or 'thetao' and 'so' (new nameing convention))."))
-                stop()
-            }
-              
-            ## which sea water routine?
-            if (sea_water != "TEOS10") {
-                stop(paste0("set 'sea_water' to 'TEOS10' ('EOS80' is outdated)."))
-            } else if (sea_water == "TEOS10") {
-                success <<- load_package("gsw")
-                if (!success) stop()
-            }
-
-            ## load abind package
-            success <<- load_package("abind")
+    ## gsw calculation  
+    if (insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag ||
+        potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag) {
+   
+        # which sea water routine?
+        if (sea_water != "TEOS10") {
+            stop("set 'sea_water' to 'TEOS10' ('EOS80' is outdated).")
+        } else if (sea_water == "TEOS10") {
+            success <<- load_package("gsw")
             if (!success) stop()
+        }
 
-            ## If 3d, calculate pressure from height (75-term equation)
-            ## gsw_p_from_z(z, latitude)
-            ##  z           height, zero at surface and positive upwards [ m ]
-            ##  latitude    latitude in decimal degrees, positive to the north of the equator.
-            if (!exists("p_node")) { # only once
-                if (potdens_tag) {
-                    if (!is.finite(p_ref)) {
-                        stop("cannot calculate potential density referenced to given non-finite \"p_ref\" = ", p_ref, ".")
-                    }
-                    p_ref_node <<- rep(p_ref, t=length(nod_z)) # nod2d or nod3d
-                }
-                if (dim_tag == "3D") {
-                    if (verbose > 0) {
-                        message(paste0(indent, "Calc pressure p = gsw::gsw_p_from_z(z, latitude) ..."))
-                        if (verbose > 1) {
-                            message(paste0(indent, "   with z        height, zero at surface and positive upwards [ m ]"))
-                            message(paste0(indent, "        latitude latitude in decimal degrees, positive to the north of the equator."))
-                        }
-                    }
-                    p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
-                } else if (dim_tag == "2D") {
-                    p_node <<- rep(0, t=nod2d_n)
-                }
+        # load abind package
+        success <<- load_package("abind")
+        if (!success) stop()
+        
+        # load or calculate in situ or potential density if needed
+        tempnames <<- c("temp", "thetao", "tso") # "temp", "thetao", are potential temperatures; "tso" is surface
+        saltnames <<- c("salt", "so", "sos") # "salt", "so", are practical salinities; "sos" is surface
+        insitudensnames <<- c("rho") # so far only "rho" to my knowledge
+        potdensnames <<- NA # so far not available fesom output to my knowledge
 
-            } # if !exists("p_node")
+        tempind <<- saltind <<- insitudensind <<- potdensind <<- NULL # default
 
-            ## Calculate Absolute Salinity from Practical Salinity, pressure, longitude, and latitude.
-            ## gsw_SA_from_SP(SP, p, longitude, latitude)
-            ##  SP          Practical Salinity (PSS-78) [ unitless ]
-            ##  p           sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
-            ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
-            ##  latitude    latitude in decimal degrees, positive to the north of the equator.
+        # find temp, salt, (in-situ density) indices in data if in-situ density is needed 
+        if (insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag) {
+
             if (verbose > 0) {
-                message(paste0(indent, "Calc absolute salinity SA = gsw::gsw_SA_from_SP(SP, p, longitude, latitude) ..."))
-                if (verbose > 1) {
-                    message(paste0(indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]"))
-                    message(paste0(indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                    message(paste0(indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich."))
-                    message(paste0(indent, "        latitude  latitude in decimal degrees, positive to the north of the equator."))
-                }
-            }
-            # note: gsw::* functions do not keep the matrix dimensions!!!
-            SA_node <<- array(NA, dim=dim(data_node[saltind,,,]),
-                              dimnames=dimnames(data_node[saltind,,,]))
-            dimnames(SA_node)[[1]] <<- "SA"
-            for (i in 1:dim(data_node)[4]) { # for nrecspf
-                SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), 
-                                                      p=p_node,
-                                                      longitude=nod_x, latitude=nod_y)
+                message(indent, appendLF=F)
+                if (insitudens_tag) message(" `insitudens_tag`", appendLF=F)
+                if (buoyancy_insitudens_tag) message(" `buoyancy_insitudens_tag`", appendLF=F)
+                if (buoyancy_frequency_insitudens_tag) message(" `buoyancy_frequency_insitudens_tag`", appendLF=F)
+                message(" = T")
             }
             
-            ## Calculate Conservative Temperature from Potential Temperature
-            ## gsw_CT_from_pt(SA, pt)
-            ##  SA  Absolute Salinity [ g/kg ]
-            ##  pt  potential temperature (ITS-90) [ degC ]
-            if (verbose > 0) {
-                message(paste0(indent, "Calc Conservative Temperature CT = gsw::gsw_CT_from_pt(SA, pt) ..."))
-                if (verbose > 1) {
-                    message(paste0(indent, "   with SA Absolute Salinity [ g/kg ]"))
-                    message(paste0(indent, "        pt potential temperature (ITS-90) [ degC ]"))
+            # use in-situ density already loaded from fesom data
+            if (any(insitudensnames %in% varname_nc)) { 
+
+                # fesoms in-situ `rho` can be used 
+                insitudensind <<- which(insitudensnames %in% varname_nc)
+                if (verbose > 0 && length(insitudensind) > 1) {
+                    message(indent, "Note: you provided more than 1 in-situ density data in 'varname_nc':",
+                            paste0(varname_nc[insitudensind], collapse=","), ".")
+                }   
+                insitudensind <<- which(varname_nc == insitudensnames[insitudensind[1]])
+                if (verbose > 0) {
+                    message(indent, "   --> use nc variable '", varname_nc[insitudensind], "' for calculation ...")
                 }
-            }
-            # note: gsw::* functions do not keep the matrix dimensions!!!
-            CT_node <<- array(NA, dim=dim(data_node[tempind,,,]),
-                              dimnames=dimnames(data_node[tempind,,,]))
-            dimnames(CT_node)[[1]] <<- "CT"
-            for (i in 1:dim(data_node)[4]) { # for nrecspf
-                CT_node[,,,i] <<- gsw::gsw_CT_from_pt(SA=drop(SA_node[,,,i]), 
-                                                      pt=drop(data_node[tempind,,,i]))
+
+            # need to calculate in-situ density from temp and salt 
+            } else { 
+
+                if (verbose > 0) {
+                    message(indent, "   --> did not find in-situ density in `varname_nc` ",
+                            "based on known in-situ density variable names\n",
+                            indent, "      `potdensnames` = \"", paste(potdensnames, collapse="\",\""), "\"\n",
+                            indent, "   --> find temperature and salinity variables ...")
+                }
+                if (!any(tempnames %in% varname_nc) &&
+                    !any(saltnames %in% varname_nc)) {
+                    stop("Provide temperature (i.e. \"", paste(tempnames, collapse="\",\""), "\" and ",
+                         "salinity (i.e. \"", paste(saltnames, collapse="\",\""), "\" in 'varname_nc' ",
+                         "to calculate andy kind of density.")
+                }
+                tempind <<- which(tempnames %in% varname_nc)
+                saltind <<- which(saltnames %in% varname_nc)
+                if (verbose > 0 && length(tempind) > 1) {
+                    message(indent, "Note: you provided more than 1 temperature data in 'varname_nc':",
+                            paste0(varname_nc[tempind], collapse=","), ".")
+                }
+                if (verbose > 0 && length(saltind) > 1) {
+                    message(indent, "Note: you provided more than 1 salinity data in 'varname_nc':",
+                            paste0(varname_nc[saltind], collapse=","), ".")
+                }   
+                tempind <<- which(varname_nc == tempnames[tempind[1]])
+                saltind <<- which(varname_nc == saltnames[saltind[1]])
+                if (verbose > 0) {
+                    message(indent, "   --> use nc variables '", varname_nc[tempind], "','", 
+                            varname_nc[saltind], "' for in-situ density calculation ...")
+                }
+
+            } # if in-situ density variable is directly available in fesom output or not
+
+        } # if insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag
+
+        # find temp, salt, (potential density) indices in data if potential density is needed 
+        if (potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag) {
+
+            if (verbose > 0) {
+                message(indent, appendLF=F)
+                if (potdens_tag) message(" `potdens_tag`", appendLF=F)
+                if (buoyancy_potdens_tag) message(" `buoyancy_potdens_tag`", appendLF=F)
+                if (buoyancy_frequency_potdens_tag) message(" `buoyancy_frequency_potdens_tag`", appendLF=F)
+                message(" = T")
             }
 
-            ## calc density
-            ## gsw_rho(SA, CT, p)
-            ##  SA  Absolute Salinity [ g/kg ]
-            ##  CT  Conservative Temperature [ degC ]
-            ##  p   sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
-            if (verbose > 0) {
-                message(indent, "Calc ", appendLF=F)
-                if (insitudens_tag) {
-                    message("in-situ ", appendLF=F)
-                } else if (potdens_tag) {
-                    message("potential ", appendLF=F) 
-                }
-                message("density = gsw::gsw_rho(SA, CT, p=", appendLF=F)
-                if (insitudens_tag) {
-                    message("p", appendLF=F)
-                } else if (potdens_tag) {
-                    message(p_ref, " (='p_ref')", appendLF=F) 
-                }
-                message(") ...")
-                message(indent, "   with SA Absolute Salinity [g/kg]")
-                message(indent, "        CT Conservative Temperature [degC]")
-                if (insitudens_tag) {
-                    message(indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar")
-                } else if (potdens_tag) {
-                    message(indent, "        p  ", p_ref, " dbar (='p_ref')")
-                }
-            }
+            # use potential density already loaded from fesom data
+            if (any(potdensnames %in% varname_nc)) { 
 
-            if (insitudens_tag) {
+                # fesoms potential density can be used
+                if (verbose > 0) {
+                    message(indent, "   --> check `varname_nc` for known potential density variable names\n",
+                            indent, "      `potdensnames` = \"", paste(potdensnames, collapse="\",\""), "\"")
+                }
+                potdensind <<- which(potdensnames %in% varname_nc)
+                if (verbose > 0 && length(potdensind) > 1) {
+                    message(indent, "Note: you provided more than 1 potential density data in 'varname_nc':",
+                            paste0(varname_nc[potdensind], collapse=","), ".")
+                }   
+                potdensind <<- which(varname_nc == potdensnames[potdensind[1]])
+                if (verbose > 0) {
+                    message(indent, "   --> use nc variable '", varname_nc[potdensind], "' for calculation ...")
+                }
+
+            # need to calculate potential density from temp and salt 
+            } else { 
+
+                if (verbose > 0) {
+                    message(indent, "   --> did not find potential density in `varname_nc` ",
+                            "based on known potential density variable names\n",
+                            indent, "      `potdensnames` = \"", paste(potdensnames, collapse="\",\""), "\"\n",
+                            indent, "   --> find temperature and salinity variables ...")
+                }
+                
+                # temp and salt indices were not already found in first case above
+                if (is.null(tempind) && is.null(saltind)) { 
+                    if (!any(c("temp", "thetao", "tso") %in% varname_nc) &&
+                        !any(c("salt", "so", "sos") %in% varname_nc)) {
+                        stop("Provide temperature (i.e. 'temp', 'thetao', or 'tso') and ",
+                             "salinity (i.e. 'salt','so' or 'sos') in 'varname_nc' ",
+                             "to calculate andy kind of density.")
+                    }
+                    tempind <<- which(tempnames %in% varname_nc)
+                    saltind <<- which(saltnames %in% varname_nc)
+                    if (verbose > 0 && length(tempind) > 1) {
+                        message(indent, "Note: you provided more than 1 temperature data in 'varname_nc':",
+                                paste0(varname_nc[tempind], collapse=","), ".")
+                    }
+                    if (verbose > 0 && length(saltind) > 1) {
+                        message(indent, "Note: you provided more than 1 salinity data in 'varname_nc':",
+                                paste0(varname_nc[saltind], collapse=","), ".")
+                    }   
+                    tempind <<- which(varname_nc == tempnames[tempind[1]])
+                    saltind <<- which(varname_nc == saltnames[saltind[1]])
+                    if (verbose > 0) {
+                        message(indent, "   --> use nc variables '", varname_nc[tempind], "','", 
+                                varname_nc[saltind], "' for potential density calculation ...")
+                    }
+                } # if temp and salt indices were not already found in first case above
+
+            } # if potential density variable is directly available in fesom output or not
+
+        } # if potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag
+
+        # check if both temp and salt have same dimensions
+        if (length(data_node[tempind,,,]) != length(data_node[saltind,,,])) {
+            stop("provide temperature and salinity with same dimensions, i.e.\n",
+                 "either both 2D ('tso' and 'sos') or both 3D ('temp' and 'salt')\n",
+                 "(old naming convention) or 'thetao' and 'so' (new nameing convention).")
+        }
+
+        ## If 3d, calculate pressure from height (75-term equation)
+        ## gsw_p_from_z(z, latitude)
+        ##  z           height, zero at surface and positive upwards [ m ]
+        ##  latitude    latitude in decimal degrees, positive to the north of the equator.
+        if (!exists("p_node")) { # only once
+            if (potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag) {
+                if (!is.finite(p_ref)) {
+                    stop("cannot calculate potential density referenced to given non-finite \"p_ref\" = ", p_ref, ".")
+                }
+                p_ref_node <<- array(p_ref, dim=c(1, dim(data_node)[2:3], 1)) # nvar=1, nnode, ndepth, nrec=1
+                p_ref_suffix <<- paste0("_p_ref_", p_ref, "_dbar") # put this to output file name
+            }
+            if (dim_tag == "3D") {
+                if (verbose > 0) {
+                    message(paste0(indent, "Calc pressure p = gsw::gsw_p_from_z(z, latitude) ..."))
+                    if (verbose > 1) {
+                        message(indent, "   with z        height, zero at surface and positive upwards [ m ]\n",
+                                indent, "        latitude latitude in decimal degrees, positive to the north of the equator.\n",
+                                indent, "   http://www.teos-10.org/pubs/gsw/html/gsw_p_from_z.html")
+                    }
+                }
+                p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
+            } else if (dim_tag == "2D") {
+                p_node <<- rep(0, t=nod2d_n)
+            }
+            p_node <- array(p_node, dim=c(1, dim(data_node)[2:3], 1)) # nvar=1, nnode, ndepth, nrec=1
+        
+            if (verbose > 2) {
+                message(indent, "   min / max 'p_node' = ", 
+                        paste(range(p_node), collapse=" / "))
+            }
+        
+        } # if !exists("p_node")
+
+        ## Calculate Absolute Salinity from Practical Salinity, pressure, longitude, and latitude.
+        ## gsw_SA_from_SP(SP, p, longitude, latitude)
+        ##  SP          Practical Salinity (PSS-78) [ unitless ]
+        ##  p           sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
+        ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
+        ##  latitude    latitude in decimal degrees, positive to the north of the equator.
+        if (verbose > 0) {
+            message(indent, "Calc absolute salinity SA = gsw::gsw_SA_from_SP(SP, p, longitude, latitude)\n",
+                    indent, "   with SP        Practical Salinity (PSS-78) [ unitless ]\n",
+                    indent, "        p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar\n",
+                    indent, "        longitude longitude in decimal degrees, positive to the east of Greenwich.\n",
+                    indent, "        latitude  latitude in decimal degrees, positive to the north of the equator.\n",
+                    indent, "        http://www.teos-10.org/pubs/gsw/html/gsw_SA_from_SP.html")
+        }
+        # note: gsw::* functions do not keep the matrix dimensions!!!
+        SA_node <<- array(NA, dim=dim(data_node[saltind,,,]),
+                          dimnames=dimnames(data_node[saltind,,,]))
+        dimnames(SA_node)[[1]] <<- "SA"
+        for (i in 1:dim(data_node)[4]) { # for nrecspf
+            SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=data_node[saltind,,,i], 
+                                                 p=p_node,
+                                                 longitude=nod_x, latitude=nod_y)
+        }
+        
+        if (verbose > 2) {
+            message(indent, "   min / max 'SA_node' = ", 
+                    paste(range(SA_node), collapse=" / "))
+        }
+        
+        ## Calculate Conservative Temperature from Potential Temperature
+        ## gsw_CT_from_pt(SA, pt)
+        ##  SA  Absolute Salinity [ g/kg ]
+        ##  pt  potential temperature (ITS-90) [ degC ]
+        if (verbose > 0) {
+            message(indent, "Calc Conservative Temperature CT = gsw::gsw_CT_from_pt(SA, pt)\n",
+                    indent, "   with SA Absolute Salinity [ g/kg ]\n",
+                    indent, "        pt potential temperature (ITS-90) [ degC ]\n",
+                    indent, "        http://www.teos-10.org/pubs/gsw/html/gsw_CT_from_pt.html")
+        }
+        # note: gsw::* functions do not keep the matrix dimensions!!!
+        CT_node <<- array(NA, dim=dim(data_node[tempind,,,]),
+                          dimnames=dimnames(data_node[tempind,,,]))
+        dimnames(CT_node)[[1]] <<- "CT"
+        for (i in 1:dim(data_node)[4]) { # for nrecspf
+            CT_node[,,,i] <<- gsw::gsw_CT_from_pt(SA=SA_node[,,,i], 
+                                                 pt=data_node[tempind,,,i])
+        }
+
+        if (verbose > 2) {
+            message(indent, "   min / max 'CT_node' = ", 
+                    paste(range(CT_node), collapse=" / "))
+        }
+        
+        ## calc density
+        ## gsw_rho(SA, CT, p)
+        ##  SA  Absolute Salinity [ g/kg ]
+        ##  CT  Conservative Temperature [ degC ]
+        ##  p   sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
+
+        # calc in-situ density if needed and not directly available in fesom output
+        if (insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag) {
+            
+            if (is.null(insitudensind)) {
+
+                if (verbose > 0) {
+                    message(indent, "Calc in-situ density = gsw::gsw_rho(SA, CT, p)\n",
+                            indent, "   with SA Absolute Salinity [ g/kg ]\n",
+                            indent, "        CT Conservative Temperature [degC]\n",
+                            indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar\n",
+                            indent, "        http://www.teos-10.org/pubs/gsw/html/gsw_rho.html")
+                }
                 # note: gsw::* functions do not keep the matrix dimensions!!!
                 insitudens_node <<- array(NA, dim=dim(data_node[1,,,]),
                                           dimnames=dimnames(data_node[tempind,,,]))
                 dimnames(insitudens_node)[[1]] <<- "insitudens"
                 for (i in 1:dim(data_node)[4]) { # for nrecspf
                     insitudens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i],
-                                                           CT=CT_node[,,,i],
-                                                           p=p_node)
+                                                          CT=CT_node[,,,i],
+                                                          p=p_node)
                 }
-                if (buoyancy_tag) {
-                    if (verbose > 0) {
-                        message(indent, "insitub = -g/rho0*insitudens (from namelist.config.r: g=", g, ", rho0=", rho0, ")")
-                    }
-                    insitudens_node <<- -g/rho0*insitudens_node
-                    dimnames(insitudens_node)[[1]] <<- "insitub"
+                
+                if (verbose > 2) {
+                    message(indent, "   min / max 'insitudens_node' = ", 
+                            paste(range(insitudens_node), collapse=" / "))
                 }
+                
+                # add insitudens to data
+                if (insitudens_tag) { 
+                    data_node <<- abind(data_node, insitudens_node, along=1, use.dnns=T)
+                }
+            
+            } else if (!is.null(insitudensind)) {
+            
+                insitudens_node <- data_node[insitudensind,,,]
+            
+            } # if insitudens was already loaded or not
 
-                # add dens to data
-                data_node <<- abind(data_node, insitudens_node,
-                                    along=1, use.dnns=T)
-                rm(insitudens_node, envir=.GlobalEnv)
+        } # if (insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag) && is.null(insitudensind) 
 
-            } else if (potdens_tag) {
+        # calc potential density if needed and not directly available in fesom output
+        if (potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag) {
+
+            if (is.null(potdensind)) {
+
+                if (verbose > 0) {
+                    message(indent, "Calc potential density = gsw::gsw_rho(SA, CT, p)\n",
+                            indent, "   with SA Absolute Salinity [ g/kg ]\n",
+                            indent, "        CT Conservative Temperature [degC]\n",
+                            indent, "        p = ", p_ref, " dbar (='p_ref')\n",
+                            indent, "        http://www.teos-10.org/pubs/gsw/html/gsw_rho.html")
+                }
+                
                 ## note to teos10 functions: 
                 # gsw_rho:
                 #   potential density with respect to reference pressure, p_ref
@@ -232,31 +330,193 @@ sub_prepare2 <- function(data_node) {
                     gsw_rho(sa, ct, p=4000)     # 1046.96
                     gsw_sigma4(sa, ct) + 1000   # 1046.96
                 } # same!
+
                 # note: gsw::* functions do not keep the matrix dimensions!!!
                 potdens_node <<- array(NA, dim=dim(data_node[1,,,]),
                                        dimnames=dimnames(data_node[tempind,,,]))
                 dimnames(potdens_node)[[1]] <<- "potdens"
                 for (i in 1:dim(data_node)[4]) { # for nrecspf
                     potdens_node[,,,i] <<- gsw::gsw_rho(SA=SA_node[,,,i],
-                                                        CT=CT_node[,,,i],
-                                                        p=p_ref_node)
+                                                       CT=CT_node[,,,i],
+                                                       p=p_ref_node)
                 }
-                if (buoyancy_tag) {
-                    if (verbose > 0) message(indent, "potb = -g/rho0*potdens (g=", g, ",rho0=", rho0, ")")
-                    potdens_node <<- -g/rho0*potdens_node
-                    dimnames(potdens_node)[[1]] <<- "potb"
-                } # if buoyancy_tag
+                    
+                if (verbose > 2) {
+                    message(indent, "   min / max 'potdens_node' = ", 
+                            paste(range(potdens_node), collapse=" / "))
+                }
 
-                # add dens to data
-                data_node <<- abind(data_node, potdens_node,
-                                    along=1, use.dnns=T)
-                rm(potdens_node, envir=.GlobalEnv)
+                # add potdens to data
+                if (potdens_tag) { 
+                    data_node <<- abind(data_node, potdens_node, along=1, use.dnns=T)
+                }
 
-            } # which density
+            } else if (!is.null(potdensind)) {
 
-        } # if "rho" is not in varname_nc
+                potdens_node <- data_node[potdensind,,,]
 
-    } # if (insitudens_tag || potdens_tag)
+            } # if potdens was already loaded or not
+
+        } # if (potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag) && is.null(potdensind)
+
+        ## from here, in-situ (`insitudens_node`) and/or potential (`potdens_node`) density are available
+        
+        # use buoyancy instead of density
+        if (buoyancy_insitudens_tag) { 
+            if (verbose > 0) {
+                message(indent, "`buoyancy_insitudens_tag`=T --> buoyancy_insitu = -g/rho0*insitudens = -", g, "/", rho0, "*insitudens")
+            }
+            buoyancy_insitudens_node <<- -g/rho0*insitudens_node
+            dimnames(buoyancy_insitudens_node)[[1]] <<- "buoyancy_insitudens"
+        
+            # add buoyancy_insitudens to data
+            data_node <<- abind(data_node, buoyancy_insitudens_node, along=1, use.dnns=T)
+        }
+        
+        if (buoyancy_potdens_tag) { 
+            if (verbose > 0) {
+                message(indent, "`buoyancy_potdens_tag`=T --> buoyancy_potdens = -g/rho0*potdens = -", g, "/", rho0, "*potdens")
+            }
+            buoyancy_potdens_node <<- -g/rho0*potdens_node
+            dimnames(buoyancy_potdens_node)[[1]] <<- "buoyancy_potdens"
+            
+            # add buoyancy_potdens to data
+            data_node <<- abind(data_node, buoyancy_potdens_node, along=1, use.dnns=T)
+        }
+
+        if (buoyancy_frequency_insitudens_tag) {
+
+            if (F) {
+                # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
+                ## The result is computed based on first-differencing a computed density with respect pressure, and
+                ## this can yield noisy results with CTD data_node that have not been smoothed and decimated. It also yields
+                ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
+                ## in the oce package)
+                # www.teos-10.org/pubs/gsw/html/gsw_Nsquared.html
+                if (verbose > 1) {
+                    message(indent, "N2 =  gsw_Nsquared(SA, CT, p, latitude)\n",
+                            indent, "   with SA       Absolute Salinity [g/kg]\n",
+                            indent, "        CT       Conservative Temperature [degC]\n",
+                            indent, "        p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar\n",
+                            indent, "        latitude latitude in decimal degrees, positive to the north of the equator\n",
+                            indent, "        www.teos-10.org/pubs/gsw/html/gsw_Nsquared.html")
+                }
+                # note: gsw::* functions do not keep the matrix dimensions!!!
+                N2_node <<- array(NA, dim=dim(data_node[1,,,]),
+                                  dimnames=dimnames(data_node[tempind,,,]))
+                dimnames(N2_node)[[1]] <<- "N2"
+                for (i in 1:dim(data_node)[4]) { # for nrecspf
+                    tmp <<- gsw::gsw_Nsquared(SA=SA_node[,,,i],
+                                             CT=CT_node[,,,i],
+                                             p=p_node, latitude=nod_y)
+                    # how to treat Inf and -Inf values?
+                    tmp$N2[tmp$N2 == Inf] <<- NA
+                    tmp$N2[tmp$N2 == -Inf] <<- NA
+                    # replace 1st depth value
+                    tmp$N2 <<- c(NA, tmp$N2)
+                    N2_node[,,,i] <<- tmp$N2 # $p_mid
+                }
+            } # gsw_Nsquared
+            
+            # vertical derivative
+            if (verbose > 0) {
+                message(indent, "`buoyancy_frequency_insitudens_tag`=T --> calc vertical derivative of insitudens ...")
+            }
+            pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                                   char=pb_char, width=pb_width,
+                                   indent=paste0(indent, "   ")) 
+            drhodz_insitu <<- insitudens_node
+            drhodz_insitu[] <<- 0
+            for (i in 1:(aux3d_n-1)) {
+                nodes_up <<- aux3d[i,]
+                nodes_low <<- aux3d[i+1,]
+                inds <<- nodes_up > 0 & nodes_low > 0
+                if (any(!is.na(inds))) {
+                    dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
+                    drhodz_insitu[,nodes_up[inds],,] <<- (insitudens_node[,nodes_up[inds],,] -
+                                                         insitudens_node[,nodes_low[inds],,])/dz
+                }
+                # update progress bar
+                setTxtProgressBar(pb, i)
+            } # for i aux3d_n-1
+            # close progress bar
+            close(pb)
+
+            if (verbose > 2) {
+                message(indent, "   min / max 'drhodz_insitu' = ", 
+                        paste(range(drhodz_insitu), collapse=" / "))
+            }
+
+            if (verbose > 0) {
+                message(indent, "N2_insitu = -g/rho0*dz(insitudens) = -", g, "/", rho0, "*dz(insitudens)")
+            }
+            #N2_insitudens_node <<- -g/insitudens_node*drhodz_insitu
+            N2_insitudens_node <<- -g/rho0*drhodz_insitu
+            dimnames(N2_insitudens_node)[[1]] <<- "N2_insitudens"
+            
+            if (verbose > 2) {
+                message(indent, "   min / max 'N2_insitudens_node' = ", 
+                        paste(range(N2_insitudens_node), collapse=" / "))
+            }
+            
+            # add N2_insitudens to data
+            data_node <<- abind(data_node, N2_insitudens_node, along=1, use.dnns=T)
+        
+        } # buoyancy_frequency_insitu
+        
+        if (buoyancy_frequency_potdens_tag) {
+            
+            # vertical derivative
+            if (verbose > 0) {
+                message(indent, "`buoyancy_frequency_potdens_tag`=T --> calc vertical derivative of potdens ...")
+            }
+            pb <<- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
+                                   char=pb_char, width=pb_width,
+                                   indent=paste0(indent, "   "))
+            drhodz_potdens <<- potdens_node
+            drhodz_potdens[] <<- 0
+            for (i in 1:(aux3d_n-1)) {
+                nodes_up <<- aux3d[i,]
+                nodes_low <<- aux3d[i+1,]
+                inds <<- nodes_up > 0 & nodes_low > 0
+                if (any(!is.na(inds))) {
+                    dz <<- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
+                    drhodz_potdens[,nodes_up[inds],,] <<- (potdens_node[,nodes_up[inds],,] -
+                                                          potdens_node[,nodes_low[inds],,])/dz
+                }
+                # update progress bar
+                setTxtProgressBar(pb, i)
+            } # for i aux3d_n-1
+            # close progress bar
+            close(pb)
+            
+            if (verbose > 2) {
+                message(indent, "   min / max 'drhodz_potdens' = ", 
+                        paste(range(drhodz_potdens), collapse=" / "))
+            }
+
+            if (verbose > 0) {
+                message(indent, "N2_potdens = -g/rho0*dz(potdens) = -", g, "/", rho0, "*dz(potdens)")
+            }
+            #N2_potdens_node <<- -g/potdens_node*drhodz_potdens
+            N2_potdens_node <<- -g/rho0*drhodz_potdens
+            dimnames(N2_potdens_node)[[1]] <<- "N2_potdens"
+            
+            if (verbose > 2) {
+                message(indent, "   min / max 'N2_potdens_node' = ", 
+                        paste(range(N2_potdens_node), collapse=" / "))
+            }
+            
+            # add N2_potdens to data
+            data_node <<- abind(data_node, N2_potdens_node, along=1, use.dnns=T)
+            
+        } # if buoyancy_frequency_potdens_tag
+                    
+        #rm(insitudens_node, envir=.GlobalEnv)
+
+    } # if insitudens_tag || buoyancy_insitudens_tag || buoyancy_frequency_insitudens_tag ||
+      #    potdens_tag || buoyancy_potdens_tag || buoyancy_frequency_potdens_tag 
+       
 
     ## calculate coriolis if needed
     if (coriolis_tag) {

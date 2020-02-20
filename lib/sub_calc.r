@@ -415,628 +415,430 @@ sub_calc <- function(data_node) {
 
     } # "wbeddy"
 
-    if (any(varname == c("Nsquared", "richardson", "rossbyrad", 
-                         "PmPe", 
-                         "c_barocline", "c_long_rossby", 
+    if (varname == "N2_insitudens") {
+        
+        data_node <- N2_insitudens_node
+
+    } # N2_insitudens
+    
+    if (varname == "N2_potdens") {
+
+        data_node <- N2_potdens_node
+
+    } # N2_potdens
+    
+    if (varname == "richardson") {
+
+        if (verbose > 1) {
+            message(paste0(indent, varname, " = N^2/[sqrt(dudz^2 + dvdz^2)]^2 ... (Thomas et al. 2008)"))
+        }
+
+        # vertical derivative needs 'data_node'
+        if (verbose > 1) {
+            message(paste0(indent, "Calc global vertical derivative for all depths ..."))
+        }
+
+        varinds <- c(which(vars == "u" | vars == "uo"),
+                      which(vars == "v" | vars == "vo"))
+        if (any(is.na(varinds))) stop("Could not find data.")
+
+        dvardz_node <- array(0, 
+                              dim=c(length(varinds), dim(data_node)[3:4]))
+        dimnames(dvardz_node)[[1]] <- dimnames(data_node)[[1]][varinds]
+        dimnames(dvardz_node)[2:4] <- dimnames(data_node)[2:4]
+        
+        # vertical derivative
+        for (ii in 1:nod2d_n) {
+            for (k in 1:(aux3d_n-1)) {
+                if (aux3d[k,ii] > 0 && aux3d[k+1,ii] > 0) {
+                    node_up <- aux3d[k,ii]
+                    node_low <- aux3d[k+1,ii]
+                    dz <- nod3d_z[node_up] - nod3d_z[node_low]
+
+                    dvardz_node[,aux3d[k,ii],,] <- (data_node[varinds,node_up,,] -
+                                                     data_node[varinds,node_low,,])/dz
+                }
+            }
+        }
+
+        data_node <- N2_node/(sqrt(dvardz_node[1,,,]^2 + dvardz_node[2,,,]^2))^2 
+        dimnames(data_node)[[1]] <- varname
+
+    } # richardson
+    
+    if (varname == "rossbyrad") {
+
+        if (verbose > 1) {
+            message(paste0(indent, varname, "_{m=1} = 1/(m*|f|*pi) * int_{z=-H}^{z=0} N dz ..."))
+        }
+
+        data_node <- sqrt(N2_node)
+
+        if (verbose > 1) {
+            message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integral.r ..."))
+        }
+        sub_vertical_integral(data_node) # produces tmp
+        data_node <- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+
+        data_node <- 1/(abs(coriolis_nod2d)*pi) * data_node # 1st bc rossby rad of def.
+        dimnames(data_node)[[1]] <- varname
+    
+    } # rossbyrad
+
+    if (any(varname == c("c_barocline", "c_long_rossby", 
                          "wkb_hvel_mode", "wkb_vertvel_mode"))) {
 
-        success <- load_package("gsw")
-        if (!success) stop()
-        success <- load_package("abind")
-        if (!success) stop()
+        if (!exists("mmodes") || any(mmodes == 0)) {
+            stop("Set 'mmodes' to non-zero (e.g. 1 or c(1,2,3)) for variable ", varname, " in namelist.var.r.")
+        }
 
-        ## Calculate Absolute Salinity from Practical Salinity, pressure, longitude, and latitude.
-        ## gsw_SA_from_SP(SP, p, longitude, latitude)
-        ##  SP          Practical Salinity (PSS-78) [ unitless ]
-        ##  p           sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar
-        ##  longitude   longitude in decimal degrees, positive to the east of Greenwich.
-        ##  latitude    latitude in decimal degrees, positive to the north of the equator.
-        if (verbose > 0) {
-            message(paste0(indent, "Calc absolute salinity ..."))
-            if (verbose > 1) {
-                message(paste0(indent, "   SA = gsw_SA_from_SP(SP, p, longitude, latitude)"))
-                message(paste0(indent, "      with SP        Practical Salinity (PSS-78) [unitless]"))
-                message(paste0(indent, "           p         sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                message(paste0(indent, "                     = gsw_p_from_z(z, latitude)"))
-                message(paste0(indent, "           longitude longitude in decimal degrees, positive to the east of Greenwich."))
-                message(paste0(indent, "           latitude  latitude in decimal degrees, positive to the north of the equator."))
+        ## N = sqrt(N2)
+        N_node <- N2_node # R does not use more memory here
+        N_node[N_node < 0] <- 0 #NA # claudi uses 0 here
+        N_node <- sqrt(N_node)
+        if (verbose > 2) {
+            finite_inds <- is.finite(N_node)
+            if (any(finite_inds) && any(N_node > 0)) {
+                message(paste0(indent, "   min/max N_node = ", 
+                             paste0(range(N_node[finite_inds], na.rm=T), collapse="/"), " s-1"))
+            } else {
+                stop(paste0(indent, "   Error: all values of N_node = sqrt(N_node) are < 0 and/or infinite.",
+                            " Change to another location/time."))
             }
         }
-        saltind <- which(vars == "salt" | vars == "so")
+        dimnames(N_node)[[1]] <- "N"
+        if (!keep_gsw) rm(N2_node,  envir=.GlobalEnv)
 
-        # note: gsw::* functions do not keep the matrix dimensions!!!
-        p_node <- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
-        SA_node <- array(NA, dim=dim(data_node[1,,,]),
-                          dimnames=dimnames(data_node[saltind,,,]))
-        dimnames(SA_node)[[1]] <- "SA"
-        for (i in 1:dim(data_node)[4]) { # for nrecspf
-            SA_node[,,,i] <- gsw::gsw_SA_from_SP(SP=drop(data_node[saltind,,,i]), 
-                                                  p=p_node,
-                                                  longitude=nod_x, latitude=nod_y)
+        if (F) {
+            N_node_rho0 <- N2_node_rh0
+            N_node_rho0[N_node_rho0 < 0] <- 0
+            N_node_rho0 <- sqrt(N_node_rho0)
         }
 
-        ## Calculate Conservative Temperature from Potential Temperature
-        ## gsw_CT_from_pt(SA, pt)
-        ##  SA  Absolute Salinity [ g/kg ]
-        ##  pt  potential temperature (ITS-90) [ degC ]
-        if (verbose > 0) {
-            message(paste0(indent, "Calc Conservative Temperature ..."))
-            if (verbose > 1) {
-                message(paste0(indent, "   CT = gsw_CT_from_pt(SA, pt)"))
-                message(paste0(indent, "      with SA Absolute Salinity [g/kg]"))
-                message(paste0(indent, "           pt potential temperature (ITS-90) [degC]"))
-            }
-        }
-        tempind <- which(vars == "temp" | vars == "thetao")
-        # note: gsw::* functions do not keep the matrix dimensions!!!
-        CT_node <- array(NA, dim=dim(data_node[1,,,]),
-                          dimnames=dimnames(data_node[tempind,,,]))
-        dimnames(CT_node)[[1]] <- "CT"
-        for (i in 1:dim(data_node)[4]) { # for nrecspf
-            CT_node[,,,i] <- gsw::gsw_CT_from_pt(SA=drop(SA_node[,,,i]), 
-                                                  pt=drop(data_node[tempind,,,i]))
-        }   
-
-        ## Calc N2
+        ## rearrange N
         if (verbose > 1) {
-            message(paste0(indent, "Calc buoyancy (Brunt-Vaisala) frequency squared N2 = -g/rho * drho/dz ..."))
-        }
-
-        ## reference pressure on nodes
-        if (p_ref == "in-situ") {
-            if (verbose > 0) {
-                message(paste0(indent, "   'p_ref' = ", p_ref, ":"))
-                message(paste0(indent, "      p = gsw_p_from_z(z, latitude, ",
-                             "geo_strf_dyn_height=0 [m2 s-2], sea_surface_geopotential=0 [m2 s-2])"))
-                message(paste0(indent, "          with z = zero at surface and positive upwards [m]"))
-                message(paste0(indent, "      --> in-situ density"))
-            }
-            p_node <- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
-        } else {
-            if (!is.finite(p_ref) || p_ref < 0) {
-                stop("p_ref (reference pressure) must be a positive number (in dbar).")
-            }
-            if (verbose > 0) {
-                message(paste0(indent, "   'p_ref' = ", p_ref, ":"))
-                message(paste0(indent, "      p = ", p_ref, " [dbar] --> potential density"))
-            }
-            p_node <- rep(p_ref, t=nod3d_n) # this should always nod3d_n and not nod2d_n
-        }
-        p_ref_suffix <- paste0("_p_ref_", p_ref, ifelse(p_ref != "in-situ", "dbar", "")) # put this to output file name
-
-        ## use gsw::gsw_Nsquared()
-        if (F) { 
-            # use gsw::gsw_Nsquared --> seems not to work maybe due to irregular dz?
-            ## The result is computed based on first-differencing a computed density with respect pressure, and
-            ## this can yield noisy results with CTD data_node that have not been smoothed and decimated. It also yields
-            ## infinite values, for repeated adjacent pressure (e.g. this occurs twice with the ctd dataset provided
-            ## in the oce package)
-            if (verbose > 1) {
-                message(paste0(indent, "   N2 =  gsw_Nsquared(SA, CT, p, latitude)"))
-                message(paste0(indent, "      with SA       Absolute Salinity [g/kg]"))
-                message(paste0(indent, "           CT       Conservative Temperature [degC]"))
-                message(paste0(indent, "           p        sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                message(paste0(indent, "           latitude latitude in decimal degrees, positive to the north of the equator"))
-            }
-            # note: gsw::* functions do not keep the matrix dimensions!!!
-            N2_node <- array(NA, dim=dim(data_node[1,,,]),
-                              dimnames=dimnames(data_node[tempind,,,]))
-            dimnames(N2_node)[[1]] <- "N2"
-            for (i in 1:dim(data_node)[4]) { # for nrecspf
-                tmp <- gsw::gsw_Nsquared(SA=drop(SA_node[,,,i]),
-                                          CT=drop(CT_node[,,,i]),
-                                          p=p_node, latitude=nod_y)
-                # how to treat Inf and -Inf values?
-                tmp$N2[tmp$N2 == Inf] <- NA
-                tmp$N2[tmp$N2 == -Inf] <- NA
-                # replace 1st depth value
-                tmp$N2 <- c(NA, tmp$N2)
-                N2_node[,,,i] <- tmp$N2 # $p_mid
-            }
-
-        # use own vertical derivative of potential density
-        # --> gsw::gsw_Nsquared fails maybe due to irregular grid?
-        } else if (T) { 
-         
-            if (verbose > 0) {
-                message(paste0(indent, "Calc ", 
-                               ifelse(p_ref == "in-situ", "in-situ", "potential"), 
-                               " density rho = gsw::gsw_rho(SA, CT, p) ..."))
-                message(paste0(indent, "   with SA Absolute Salinity [g/kg]"))
-                message(paste0(indent, "        CT Conservative Temperature [degC]"))
-                message(paste0(indent, "        p  sea pressure [dbar], i.e. absolute pressure [dbar] minus 10.1325 dbar"))
-                message(paste0(indent, "           --> p = ", p_ref, 
-                               ifelse(p_ref != "in-situ", " dbar", ""), 
-                               " (='p_ref')"))
-            }
- 
-            # note: gsw::* functions do not keep the matrix dimensions!!!
-            potdens_node <- array(NA, dim=dim(data_node[1,,,]),
-                                   dimnames=dimnames(data_node[tempind,,,]))
-            dimnames(potdens_node)[[1]] <- "potdens"
-
-            # gsw_rho:
-            # potential density with respect to reference pressure, p_ref
-
-            # gsw_sigma1:   
-            # potential density anomaly with reference pressure
-            # of 1000 dbar, this being this particular potential
-            # density minus 1000 kg/m^3 (75-term equation)
-
-            # comparison:
-            if (F) {
-                sa=37; ct=4
-                gsw_rho(sa, ct, p=0)        # 1029.237
-                gsw_sigma0(sa, ct) + 1000   # 1029.237
-                gsw_rho(sa, ct, p=1000)     # 1033.819
-                gsw_sigma1(sa, ct) + 1000   # 1033.819
-                gsw_rho(sa, ct, p=2000)     # 1038.299
-                gsw_sigma2(sa, ct) + 1000   # 1038.299
-                gsw_rho(sa, ct, p=3000)     # 1042.679
-                gsw_sigma3(sa, ct) + 1000   # 1042.679
-                gsw_rho(sa, ct, p=4000)     # 1046.96
-                gsw_sigma4(sa, ct) + 1000   # 1046.96
-            }
-
-            for (i in 1:dim(data_node)[4]) { # for nrecspf
-                potdens_node[,,,i] <- gsw::gsw_rho(SA=SA_node[,,,i],
-                                                    CT=CT_node[,,,i],
-                                                    p=p_node)
-            }
-
-            if (!keep_gsw) {
-                rm(SA_node, CT_node, p_node, envir=.GlobalEnv)
-            }
-
-            # vertical derivative
-            if (verbose > 0) {
-                message(paste0(indent, "Calc vertical derivative ..."))
-            }
-            pb <- mytxtProgressBar(min=0, max=aux3d_n-1, style=pb_style,
-                                    char=pb_char, width=pb_width,
-                                    indent=paste0(indent, "  ")) # 5 " " for default message()
-            tmp <- potdens_node
-            tmp[] <- 0
-            for (i in 1:(aux3d_n-1)) {
-                nodes_up <- aux3d[i,]
-                nodes_low <- aux3d[i+1,]
-                inds <- nodes_up > 0 & nodes_low > 0
-                if (any(!is.na(inds))) {
-                    dz <- nod3d_z[nodes_up[inds]] - nod3d_z[nodes_low[inds]]
-                    tmp[,nodes_up[inds],,] <- (potdens_node[,nodes_up[inds],,] -
-                                                potdens_node[,nodes_low[inds],,])/dz
-                }
-                # update progress bar
-                setTxtProgressBar(pb, i)
-            } # for i aux3d_n-1
-            # close progress bar
-            close(pb)
-
-            if (!keep_gsw) rm(potdens_node, envir=.GlobalEnv)
-
-            N2_node <- -g/potdens_node*tmp
-            dimnames(N2_node)[[1]] <- "N2"
-            
-            if (F) {
-                N2_node_rh0 <- -g/rho0*tmp
-            }
-
-        } # use gsw::gsw_Nsquared or own vertical derivative of potential density
-
-        if (varname == "Nsquared") {
-            data_node <- N2_node
-            dimnames(data_node)[[1]] <- varname
-
-        } else if (varname == "richardson") {
-
-            if (verbose > 1) {
-                message(paste0(indent, varname, " = N^2/[sqrt(dudz^2 + dvdz^2)]^2 ... (Thomas et al. 2008)"))
-            }
-
-            # vertical derivative needs 'data_node'
-            if (verbose > 1) {
-                message(paste0(indent, "Calc global vertical derivative for all depths ..."))
-            }
-
-            varinds <- c(which(vars == "u" | vars == "uo"),
-                          which(vars == "v" | vars == "vo"))
-            if (any(is.na(varinds))) stop("Could not find data.")
-
-            dvardz_node <- array(0, 
-                                  dim=c(length(varinds), dim(data_node)[3:4]))
-            dimnames(dvardz_node)[[1]] <- dimnames(data_node)[[1]][varinds]
-            dimnames(dvardz_node)[2:4] <- dimnames(data_node)[2:4]
-            
-            # vertical derivative
-            for (ii in 1:nod2d_n) {
-                for (k in 1:(aux3d_n-1)) {
-                    if (aux3d[k,ii] > 0 && aux3d[k+1,ii] > 0) {
-                        node_up <- aux3d[k,ii]
-                        node_low <- aux3d[k+1,ii]
-                        dz <- nod3d_z[node_up] - nod3d_z[node_low]
-
-                        dvardz_node[,aux3d[k,ii],,] <- (data_node[varinds,node_up,,] -
-                                                         data_node[varinds,node_low,,])/dz
-                    }
-                }
-            }
-
-            data_node <- N2_node/(sqrt(dvardz_node[1,,,]^2 + dvardz_node[2,,,]^2))^2 
-            dimnames(data_node)[[1]] <- varname
-
-        } else if (varname == "rossbyrad") {
-
-            if (verbose > 1) {
-                message(paste0(indent, varname, "_{m=1} = 1/(m*|f|*pi) * int_{z=-H}^{z=0} N dz ..."))
-            }
-
-            data_node <- sqrt(N2_node)
-
-            if (verbose > 1) {
-                message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integral.r ..."))
-            }
-            sub_vertical_integral(data_node) # produces tmp
-            data_node <- tmp # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-
-            data_node <- 1/(abs(coriolis_nod2d)*pi) * data_node # 1st bc rossby rad of def.
-            dimnames(data_node)[[1]] <- varname
-
-        } else if (any(varname == c("c_barocline", "c_long_rossby", 
-                                    "wkb_hvel_mode", "wkb_vertvel_mode"))) {
-
-            if (!exists("mmodes") || any(mmodes == 0)) {
-                stop("Set 'mmodes' to non-zero (e.g. 1 or c(1,2,3)) for variable ", varname, " in namelist.var.r.")
-            }
-
-            ## N = sqrt(N2)
-            N_node <- N2_node # R does not use more memory here
-            N_node[N_node < 0] <- 0 #NA # claudi uses 0 here
-            N_node <- sqrt(N_node)
+            message(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
+                         ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
             if (verbose > 2) {
-                finite_inds <- is.finite(N_node)
-                if (any(finite_inds) && any(N_node > 0)) {
-                    message(paste0(indent, "   min/max N_node = ", 
-                                 paste0(range(N_node[finite_inds], na.rm=T), collapse="/"), " s-1"))
+                message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
+            }
+        }
+        sub_n3_to_n2xde(N_node) # produces tmp
+        N_vert <- tmp
+
+        if (F) {
+            sub_n3_to_n2xde(N_node_rho0)
+            N_vert_rho0 <- tmp
+        }
+
+        ## vertical integral of N
+        if (F) { # not needed since N is also integrated from depth one step later
+            if (verbose > 1) {
+                message(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
+                if (verbose > 2) {
+                    message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate.r ..."))
+                }
+            }
+            sub_vertical_integral(N_node) # produces tmp
+            N_intz_const <- tmp
+            if (verbose > 2) {
+                finite_inds <- is.finite(N_intz_const)
+                message(paste0(indent, "   min/max N_intz_const = ",
+                             paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
+            }
+            dimnames(N_intz_const)[[1]] <- "int_N_dz_const"
+        } # F
+
+        ## vertical integral of N from bottom: keep z dim
+        if (verbose > 1) {
+            message(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
+                         "-", interpolate_depths[1], " m and keep z dim ..."))
+            if (verbose > 2) {
+                message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate_keepz.r ..."))
+            }
+        }
+        sub_vertical_integral_keepz(N_node)
+        N_intz_z <- tmp
+        if (!keep_gsw) rm(N_node, envir=.GlobalEnv)
+        if (verbose > 2) {
+            finite_inds <- is.finite(N_intz_z)
+            message(paste0(indent, "   min/max N_intz_z = ",
+                         paste0(range(N_intz_z[finite_inds], na.rm=T), collapse="/"), " m s-1"))
+        }
+
+        if (F) {
+            sub_vertical_integral_keepz(N_node_rho0)
+            N_intz_z_rho0 <- tmp
+        }
+        
+        ## rearrange N_intz_z
+        if (verbose > 1) {
+            message(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
+                         ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
+            if (verbose > 2) {
+                message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
+            }
+        }
+        sub_n3_to_n2xde(N_intz_z) # produces tmp
+        N_intz_z_vert <- tmp
+        if (!keep_gsw) rm(N_intz_z, envir=.GlobalEnv)
+        dimnames(N_intz_z_vert)[[1]] <- "int_N_dz_z"
+
+        if (F) {
+            sub_n3_to_n2xde(N_intz_z_rho0)
+            N_intz_z_vert_rho0 <- tmp
+        }
+        
+        # for testing
+        if (F) {
+            N_vert_mean <- N_vert[,poly_node_inds_geogr,,]
+            N_intz_const_mean <- N_intz_const[,poly_node_inds_geogr,,]
+            N_intz_z_vert_mean <- N_intz_z_vert[,poly_node_inds_geogr,,]
+            patch_area <- cluster_area_2d[poly_node_inds_geogr]
+            patch_area <- replicate(patch_area, n=dim(N_vert_mean)[3]) # ndepths
+            patch_area <- replicate(patch_area, n=dim(N_vert_mean)[4]) # nrecspf
+            patch_area <- replicate(patch_area, n=dim(N_vert_mean)[1]) # nvars
+            patch_area <- aperm(patch_area, c(4, 1, 2, 3))
+            
+            # var * area
+            N_vert_mean <- N_vert_mean*patch_area
+            N_intz_const_mean <- N_intz_const_mean*patch_area[,,1,] # 1 depth
+            N_intz_z_vert_mean <- N_intz_z_vert_mean*patch_area
+            
+            # sum over nodes (var * area)
+            N_vert_mean <- apply(N_vert_mean, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
+            N_intz_const_mean <- apply(N_intz_const_mean, c(1, 3, 4), sum, na.rm=T)
+            N_intz_z_vert_mean <- apply(N_intz_z_vert_mean, c(1, 3, 4), sum, na.rm=T)
+            
+            # where there are no values at depth
+            N_vert_mean[N_vert_mean == 0] <- NA
+            N_intz_const_mean[N_intz_const_mean == 0] <- NA
+            N_intz_z_vert_mean[N_intz_z_vert_mean == 0] <- NA
+           
+            # divide through area for all depths
+            for (i in 1:dim(N_vert_mean)[2]) { # for all depths
+                if (rec_tag && leap_tag && is.leap(year)) {
+                    tmp_area <- sum(patch_area_leap[1,,i,1]) # NA positions do not change in time
                 } else {
-                    stop(paste0(indent, "   Error: all values of N_node = sqrt(N_node) are < 0 and/or infinite.",
-                                " Change to another location/time."))
+                    tmp_area <- sum(patch_area[1,,i,1])
                 }
-            }
-            dimnames(N_node)[[1]] <- "N"
-            if (!keep_gsw) rm(N2_node,  envir=.GlobalEnv)
-
-            if (F) {
-                N_node_rho0 <- N2_node_rh0
-                N_node_rho0[N_node_rho0 < 0] <- 0
-                N_node_rho0 <- sqrt(N_node_rho0)
-            }
-
-            ## rearrange N
-            if (verbose > 1) {
-                message(paste0(indent, "Bring N_node from (nod3d_n=", nod3d_n,
-                             ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                if (verbose > 2) {
-                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
+                if (T && verbose > 2) {
+                    message(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
                 }
-            }
-            sub_n3_to_n2xde(N_node) # produces tmp
-            N_vert <- tmp
 
-            if (F) {
-                sub_n3_to_n2xde(N_node_rho0)
-                N_vert_rho0 <- tmp
-            }
+                N_vert_mean[,i,] <- N_vert_mean[,i,]/tmp_area
+                if (i == 1) N_intz_const_mean[,i,] <- N_intz_const_mean[,i,]/tmp_area
+                N_intz_z_vert_mean[,i,] <- N_intz_z_vert_mean[,i,]/tmp_area
+            } # for i ndepths
 
-            ## vertical integral of N
-            if (F) { # not needed since N is also integrated from depth one step later
-                if (verbose > 1) {
-                    message(paste0(indent, "Integrate N_node between ", depths_plot, " m ..."))
-                    if (verbose > 2) {
-                        message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate.r ..."))
-                    }
-                }
-                sub_vertical_integral(N_node) # produces tmp
-                N_intz_const <- tmp
-                if (verbose > 2) {
-                    finite_inds <- is.finite(N_intz_const)
-                    message(paste0(indent, "   min/max N_intz_const = ",
-                                 paste0(range(N_intz_const[finite_inds], na.rm=T), collapse="/"), " m s-1"))
-                }
-                dimnames(N_intz_const)[[1]] <- "int_N_dz_const"
-            } # F
+            # average over time
+            N_vert_mean <- apply(N_vert_mean, c(1, 2), mean, na.rm=T)
+            N_intz_const_mean <- apply(N_intz_const_mean, c(1, 2), mean, na.rm=T) # single number
+            N_intz_z_vert_mean <- apply(N_intz_z_vert_mean, c(1, 2), mean, na.rm=T)
 
-            ## vertical integral of N from bottom: keep z dim
-            if (verbose > 1) {
-                message(paste0(indent, "Integrate N_node from ", interpolate_depths[ndepths], 
-                             "-", interpolate_depths[1], " m and keep z dim ..."))
-                if (verbose > 2) {
-                    message(paste0(indent, "Run ", subroutinepath, "/sub_vertical_integrate_keepz.r ..."))
-                }
-            }
-            sub_vertical_integral_keepz(N_node)
-            N_intz_z <- tmp
-            if (!keep_gsw) rm(N_node, envir=.GlobalEnv)
-            if (verbose > 2) {
-                finite_inds <- is.finite(N_intz_z)
-                message(paste0(indent, "   min/max N_intz_z = ",
-                             paste0(range(N_intz_z[finite_inds], na.rm=T), collapse="/"), " m s-1"))
-            }
+            xlim <- range(N_vert_mean,
+                           N_intz_const_mean,
+                           N_intz_z_vert_mean,
+                           na.rm=T)
+            ylim <- rev(range(interpolate_depths))
+            dev.new()
+            plot(N_vert_mean[1,], interpolate_depths, t="l",
+                 xlim=xlim, ylim=ylim)
+            lines(N_intz_z_vert_mean[1,], interpolate_depths, col="red")
+            abline(v=N_intz_const_mean[1,1], col="blue")
+            legend("top", c("N_vert", "N_intz_z_vert", "N_intz_const"),
+                   col=c("black", "red", "blue"), lty=1, bty="n", cex=1.5)
+        } # F for testing
+        #stop("asd")
 
-            if (F) {
-                sub_vertical_integral_keepz(N_node_rho0)
-                N_intz_z_rho0 <- tmp
-            }
-            
-            ## rearrange N_intz_z
-            if (verbose > 1) {
-                message(paste0(indent, "Bring N_intz_z from (nod3d_n=", nod3d_n,
-                             ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                if (verbose > 2) {
-                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
-                }
-            }
-            sub_n3_to_n2xde(N_intz_z) # produces tmp
-            N_intz_z_vert <- tmp
-            if (!keep_gsw) rm(N_intz_z, envir=.GlobalEnv)
-            dimnames(N_intz_z_vert)[[1]] <- "int_N_dz_z"
-  
-            if (F) {
-                sub_n3_to_n2xde(N_intz_z_rho0)
-                N_intz_z_vert_rho0 <- tmp
-            }
-            
-            # for testing
-            if (F) {
-                N_vert_mean <- N_vert[,poly_node_inds_geogr,,]
-                N_intz_const_mean <- N_intz_const[,poly_node_inds_geogr,,]
-                N_intz_z_vert_mean <- N_intz_z_vert[,poly_node_inds_geogr,,]
-                patch_area <- cluster_area_2d[poly_node_inds_geogr]
-                patch_area <- replicate(patch_area, n=dim(N_vert_mean)[3]) # ndepths
-                patch_area <- replicate(patch_area, n=dim(N_vert_mean)[4]) # nrecspf
-                patch_area <- replicate(patch_area, n=dim(N_vert_mean)[1]) # nvars
-                patch_area <- aperm(patch_area, c(4, 1, 2, 3))
-                
-                # var * area
-                N_vert_mean <- N_vert_mean*patch_area
-                N_intz_const_mean <- N_intz_const_mean*patch_area[,,1,] # 1 depth
-                N_intz_z_vert_mean <- N_intz_z_vert_mean*patch_area
-                
-                # sum over nodes (var * area)
-                N_vert_mean <- apply(N_vert_mean, c(1, 3, 4), sum, na.rm=T) # c(var, recs, depth)
-                N_intz_const_mean <- apply(N_intz_const_mean, c(1, 3, 4), sum, na.rm=T)
-                N_intz_z_vert_mean <- apply(N_intz_z_vert_mean, c(1, 3, 4), sum, na.rm=T)
-                
-                # where there are no values at depth
-                N_vert_mean[N_vert_mean == 0] <- NA
-                N_intz_const_mean[N_intz_const_mean == 0] <- NA
-                N_intz_z_vert_mean[N_intz_z_vert_mean == 0] <- NA
-               
-                # divide through area for all depths
-                for (i in 1:dim(N_vert_mean)[2]) { # for all depths
-                    if (rec_tag && leap_tag && is.leap(year)) {
-                        tmp_area <- sum(patch_area_leap[1,,i,1]) # NA positions do not change in time
-                    } else {
-                        tmp_area <- sum(patch_area[1,,i,1])
-                    }
-                    if (T && verbose > 2) {
-                        message(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
-                    }
+        # mode-m baroclinic gravity-wave speed
+        if (verbose > 0) {
+            message(paste0(indent, "Calc mode-m baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+        }
+        c_vert <- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
+                         dimnames=c(list(paste0("c_", mmodes)),
+                                    dimnames(N_intz_z_vert)[2],
+                                    list(depths=paste0("int", depths_fname)),
+                                    dimnames(N_intz_z_vert)[4]))
+        if (F) {
+            c_vert_rho0 <- c_vert
+        }
 
-                    N_vert_mean[,i,] <- N_vert_mean[,i,]/tmp_area
-                    if (i == 1) N_intz_const_mean[,i,] <- N_intz_const_mean[,i,]/tmp_area
-                    N_intz_z_vert_mean[,i,] <- N_intz_z_vert_mean[,i,]/tmp_area
-                } # for i ndepths
-
-                # average over time
-                N_vert_mean <- apply(N_vert_mean, c(1, 2), mean, na.rm=T)
-                N_intz_const_mean <- apply(N_intz_const_mean, c(1, 2), mean, na.rm=T) # single number
-                N_intz_z_vert_mean <- apply(N_intz_z_vert_mean, c(1, 2), mean, na.rm=T)
-
-                xlim <- range(N_vert_mean,
-                               N_intz_const_mean,
-                               N_intz_z_vert_mean,
-                               na.rm=T)
-                ylim <- rev(range(interpolate_depths))
-                dev.new()
-                plot(N_vert_mean[1,], interpolate_depths, t="l",
-                     xlim=xlim, ylim=ylim)
-                lines(N_intz_z_vert_mean[1,], interpolate_depths, col="red")
-                abline(v=N_intz_const_mean[1,1], col="blue")
-                legend("top", c("N_vert", "N_intz_z_vert", "N_intz_const"),
-                       col=c("black", "red", "blue"), lty=1, bty="n", cex=1.5)
-            } # F for testing
-            #stop("asd")
-
-            # mode-m baroclinic gravity-wave speed
+        for (i in 1:length(mmodes)) {
             if (verbose > 0) {
-                message(paste0(indent, "Calc mode-m baroclinic gravity-wave speed (Killworth et al. 1997; Chelton et al. 1998; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                message(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
             }
-            c_vert <- array(NA, dim=c(length(mmodes), dim(N_intz_z_vert)[2], 1, dim(N_intz_z_vert)[4]),
-                             dimnames=c(list(paste0("c_", mmodes)),
-                                        dimnames(N_intz_z_vert)[2],
-                                        list(depths=paste0("int", depths_fname)),
-                                        dimnames(N_intz_z_vert)[4]))
+            #c_vert[i,,,] <- 1/(mmodes[i]*pi) * N_intz_const
+            c_vert[i,,,] <- 1/(mmodes[i]*pi) * N_intz_z_vert[,,1,] # same at the surface
+            if (verbose > 2) {
+                message(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
+                             paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
+            }
             if (F) {
-                c_vert_rho0 <- c_vert
+                c_vert_rho0[i,,,] <- 1/(mmodes[i]*pi) * N_intz_z_vert_rho0[,,1,]
+            }
+        } # for i mmodes
+
+        if (varname == "c_barocline") {
+            data_node <- c_vert
+
+        } else if (any(varname == c("c_long_rossby", "internal_rossbyrad"))) {
+
+            f_vert <- 2*2*pi/86400*sin(ycsur*pi/180)
+            beta_vert <- 2*2*pi/86400*cos(ycsur*pi/180)/Rearth
+            f_vert <- replicate(f_vert, n=dim(c_vert)[1]) # nvars
+            f_vert <- replicate(f_vert, n=dim(c_vert)[3]) # ndepths = 1
+            f_vert <- replicate(f_vert, n=dim(c_vert)[4]) # nrecspf
+            f_vert <- aperm(f_vert, c(2, 1, 3, 4))
+            beta_vert <- replicate(beta_vert, n=dim(c_vert)[1]) # nvars
+            beta_vert <- replicate(beta_vert, n=dim(c_vert)[3]) # ndepths = 1
+            beta_vert <- replicate(beta_vert, n=dim(c_vert)[4]) # nrecspf
+            beta_vert <- aperm(beta_vert, c(2, 1, 3, 4))
+
+            if (verbose > 0) {
+                message(paste0(indent, "internal_rossbyrad = c_barocline/|f|               for  |phi| >= 5° latitude"))
+                message(paste0(indent, "                   = sqrt( c_barocline/(2*beta) )  for  |phi| <= 5° latitude (Chelton et al. 1998) ..."))
+            }
+            int_rossbyrad_node <- c_vert/abs(f_vert)
+            eq_inds <- which(abs(ycsur) <= 5)
+            if (length(eq_inds) > 0) {
+                int_rossbyrad_node[,eq_inds,,] <- sqrt( c_vert[,eq_inds,,]/(2*beta_vert[,eq_inds,,]) )
+            }
+            #rm(eq_inds, envir=.GlobalEnv)
+
+            if (F) {
+                int_rossbyrad_node_rho0 <- c_vert_rho0/abs(f_vert)
             }
 
-            for (i in 1:length(mmodes)) {
+            if (varname == "internal_rossbyrad") {
+                data_node <- int_rossbyrad_node
+                dimnames(data_node)[[1]] <- paste0(varname, "_", mmodes)
+            
+            } else if (varname == "c_long_rossby") {
                 if (verbose > 0) {
-                    message(paste0(indent, "   c_", mmodes[i], " = 1/(", mmodes[i], " * pi) * int_z N dz"))
+                    message(paste0(indent, varname, " = -beta * internal_rossbyrad^2 = -beta/f^2 * c_barocline^2 (Killworth et al. 1997; Chelton et al. 1998) ..."))
                 }
-                #c_vert[i,,,] <- 1/(mmodes[i]*pi) * N_intz_const
-                c_vert[i,,,] <- 1/(mmodes[i]*pi) * N_intz_z_vert[,,1,] # same at the surface
-                if (verbose > 2) {
-                    message(paste0(indent, "   min/max c_vert[", i, ",,,] = ",
-                                 paste0(range(c_vert[i,,,], na.rm=T), collapse="/"), " m s-1"))
-                }
-                if (F) {
-                    c_vert_rho0[i,,,] <- 1/(mmodes[i]*pi) * N_intz_z_vert_rho0[,,1,]
-                }
-            } # for i mmodes
-
-            if (varname == "c_barocline") {
-                data_node <- c_vert
-
-            } else if (any(varname == c("c_long_rossby", "internal_rossbyrad"))) {
-
-                f_vert <- 2*2*pi/86400*sin(ycsur*pi/180)
-                beta_vert <- 2*2*pi/86400*cos(ycsur*pi/180)/Rearth
-                f_vert <- replicate(f_vert, n=dim(c_vert)[1]) # nvars
-                f_vert <- replicate(f_vert, n=dim(c_vert)[3]) # ndepths = 1
-                f_vert <- replicate(f_vert, n=dim(c_vert)[4]) # nrecspf
-                f_vert <- aperm(f_vert, c(2, 1, 3, 4))
-                beta_vert <- replicate(beta_vert, n=dim(c_vert)[1]) # nvars
-                beta_vert <- replicate(beta_vert, n=dim(c_vert)[3]) # ndepths = 1
-                beta_vert <- replicate(beta_vert, n=dim(c_vert)[4]) # nrecspf
-                beta_vert <- aperm(beta_vert, c(2, 1, 3, 4))
-
-                if (verbose > 0) {
-                    message(paste0(indent, "internal_rossbyrad = c_barocline/|f|               for  |phi| >= 5° latitude"))
-                    message(paste0(indent, "                   = sqrt( c_barocline/(2*beta) )  for  |phi| <= 5° latitude (Chelton et al. 1998) ..."))
-                }
-                int_rossbyrad_node <- c_vert/abs(f_vert)
-                eq_inds <- which(abs(ycsur) <= 5)
-                if (length(eq_inds) > 0) {
-                    int_rossbyrad_node[,eq_inds,,] <- sqrt( c_vert[,eq_inds,,]/(2*beta_vert[,eq_inds,,]) )
-                }
-                #rm(eq_inds, envir=.GlobalEnv)
+                data_node <- -beta_vert * int_rossbyrad_node^2
+                dimnames(data_node)[[1]] <- paste0(varname, "_", mmodes)
 
                 if (F) {
-                    int_rossbyrad_node_rho0 <- c_vert_rho0/abs(f_vert)
+                    data_node_rho0 <- -beta_vert * int_rossbyrad_node_rho0^2
+                    data_node <- data_node_rho0 # differences between /rho0 and /rho are very small
                 }
 
-                if (varname == "internal_rossbyrad") {
-                    data_node <- int_rossbyrad_node
-                    dimnames(data_node)[[1]] <- paste0(varname, "_", mmodes)
+            } # "c_long_rossby" "internal_rossbyrad"
+
+            rm(f_vert, beta_vert, envir=.GlobalEnv)
+
+        } else if (any(varname == c("wkb_hvel_mode", "wkb_vertvel_mode"))) {
+
+            ## repeat c_vert for matrix multiplication
+            c_vert <- adrop(c_vert, drop=3) # drop depth placeholder dim
+            c_vert <- replicate(c_vert, n=dim(N_vert)[3]) # ndepths
+            c_vert <- aperm(c_vert, c(1, 2, 4, 3)) # c(mmodes,nod2d_n,ndepths,nrecspf)
+
+            ## S0
+            # Chelton et al. 1998: S0_C98 = (N/c)^(-1/2)
+            # Ferrari et al. 2010: "S0 must have an inverse relation to the buoyancy frequency"
+            # Vallis 2017 (p. 117): S0_V17 = (c/N)^(1/2) 
+            # --> S0_C98 = S0_V17 !!!
+           
+            if (varname == "wkb_hvel_mode") {
+
+                # mode-m baroclinic horizontal velocity
+                if (verbose > 0) {
+                    message(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                }
+                R_vert <- array(NA, dim=dim(c_vert),
+                                 dimnames=dimnames(c_vert))
+                dimnames(R_vert)[[1]] <- paste0("R_", mmodes)
+                for (i in 1:length(mmodes)) {
+                    if (verbose > 0) {
+                        message(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
+                                     mmodes[i], " * N(z) * S_", mmodes[i], "^0 / g] * cos(int_z N(z) dz / c_", 
+                                     mmodes[i], ")"))
+                        message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
+                    }
+                    S0 <- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
+                    R_vert[i,,,] <- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
+                    if (verbose > 2) {
+                        message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                                     paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
+                    }
+                } # for i mmodes
+                dimnames(R_vert)[[1]] <- paste0(varname, mmodes)
+
+                # cat everything together
+                #data_node <- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
+                data_node <- R_vert
                 
-                } else if (varname == "c_long_rossby") {
+                if (!keep_gsw) rm(R_vert, envir=.GlobalEnv)
+
+            } else if (varname == "wkb_vertvel_mode") {
+
+                # mode-m baroclinic vertical velocity
+                if (verbose > 0) {
+                    message(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998 Appendix; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
+                }
+                S_vert <- array(NA, dim=dim(c_vert),
+                                 dimnames=dimnames(c_vert))
+                dimnames(S_vert)[[1]] <- paste0("S_", mmodes)
+                for (i in 1:length(mmodes)) {
                     if (verbose > 0) {
-                        message(paste0(indent, varname, " = -beta * internal_rossbyrad^2 = -beta/f^2 * c_barocline^2 (Killworth et al. 1997; Chelton et al. 1998) ..."))
-                    }
-                    data_node <- -beta_vert * int_rossbyrad_node^2
-                    dimnames(data_node)[[1]] <- paste0(varname, "_", mmodes)
-
-                    if (F) {
-                        data_node_rho0 <- -beta_vert * int_rossbyrad_node_rho0^2
-                        data_node <- data_node_rho0 # differences between /rho0 and /rho are very small
-                    }
-
-                } # "c_long_rossby" "internal_rossbyrad"
-
-                rm(f_vert, beta_vert, envir=.GlobalEnv)
-
-            } else if (any(varname == c("wkb_hvel_mode", "wkb_vertvel_mode"))) {
-
-                ## repeat c_vert for matrix multiplication
-                c_vert <- adrop(c_vert, drop=3) # drop depth placeholder dim
-                c_vert <- replicate(c_vert, n=dim(N_vert)[3]) # ndepths
-                c_vert <- aperm(c_vert, c(1, 2, 4, 3)) # c(mmodes,nod2d_n,ndepths,nrecspf)
-
-                ## S0
-                # Chelton et al. 1998: S0_C98 = (N/c)^(-1/2)
-                # Ferrari et al. 2010: "S0 must have an inverse relation to the buoyancy frequency"
-                # Vallis 2017 (p. 117): S0_V17 = (c/N)^(1/2) 
-                # --> S0_C98 = S0_V17 !!!
-               
-                if (varname == "wkb_hvel_mode") {
-
-                    # mode-m baroclinic horizontal velocity
-                    if (verbose > 0) {
-                        message(paste0(indent, "Calc baroclinic horizontal velocity modes (Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
-                    }
-                    R_vert <- array(NA, dim=dim(c_vert),
-                                     dimnames=dimnames(c_vert))
-                    dimnames(R_vert)[[1]] <- paste0("R_", mmodes)
-                    for (i in 1:length(mmodes)) {
-                        if (verbose > 0) {
-                            message(paste0(indent, "   R_", mmodes[i], "(z) = -[c_", 
-                                         mmodes[i], " * N(z) * S_", mmodes[i], "^0 / g] * cos(int_z N(z) dz / c_", 
-                                         mmodes[i], ")"))
-                            message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
-                        }
-                        S0 <- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
-                        R_vert[i,,,] <- -(c_vert[i,,,] * N_vert[1,,,] / g * S0) * cos(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
-                        if (verbose > 2) {
-                            message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
-                                         paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
-                        }
-                    } # for i mmodes
-                    dimnames(R_vert)[[1]] <- paste0(varname, mmodes)
-
-                    # cat everything together
-                    #data_node <- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
-                    data_node <- R_vert
-                    
-                    if (!keep_gsw) rm(R_vert, envir=.GlobalEnv)
-
-                } else if (varname == "wkb_vertvel_mode") {
-
-                    # mode-m baroclinic vertical velocity
-                    if (verbose > 0) {
-                        message(paste0(indent, "Calc baroclinic vertical velocity modes (Chelton et al. 1998 Appendix; Ferrari et al. 2010 Appendix; Vallis 2017 p. 117) ..."))
-                    }
-                    S_vert <- array(NA, dim=dim(c_vert),
-                                     dimnames=dimnames(c_vert))
-                    dimnames(S_vert)[[1]] <- paste0("S_", mmodes)
-                    for (i in 1:length(mmodes)) {
-                        if (verbose > 0) {
-                            # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
-                            if (T) { # ferrari
-                                message(paste0(indent, "   S_", mmodes[i], "(z) = S_", mmodes[i], 
-                                             "^0 sin(int_z N(z) dz / c_", mmodes[i], ")"))
-                            } else if (F) { # chelton
-                                message(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
-                                             " sin(int_z N(z) dz / c_", mmodes[i], ")"))
-                            }
-                            message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
-                        }
-                        S0 <- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
                         # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
                         if (T) { # ferrari
-                            S_vert[i,,,] <- S0 * sin(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
-                        } else if (F) { # chelton (B = 1)
-                            S_vert[i,,,] <- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
+                            message(paste0(indent, "   S_", mmodes[i], "(z) = S_", mmodes[i], 
+                                         "^0 sin(int_z N(z) dz / c_", mmodes[i], ")"))
+                        } else if (F) { # chelton
+                            message(paste0(indent, "   S_", mmodes[i], "(z) = [N(z)/c_", mmodes[i], "]^(-1/2) ",
+                                         " sin(int_z N(z) dz / c_", mmodes[i], ")"))
                         }
-                        if (verbose > 2) {
-                            message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
-                                         paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
-                        }
-                    } # for i mmodes
-                    dimnames(S_vert)[[1]] <- paste0(varname, mmodes)
-
-                    if (F) {
-                        S_vert_mean <- apply(S_vert[,poly_node_inds_geogr,,], c(1, 3, 4), mean, na.rm=T)
-                        S_vert_mean <- apply(S_vert_mean, c(1, 2), mean, na.rm=T)
-                        dev.new()
-                        plot(S_vert_mean[1,], interpolate_depths, t="n", 
-                             xlim=range(S_vert_mean, na.rm=T), ylim=rev(range(interpolate_depths)))
-                        abline(v=0, col="gray")
-                        for (i in 1:dim(S_vert_mean)[1]) lines(S_vert_mean[i,], interpolate_depths, col=i)
-                        legend("bottomleft", paste0("S", mmodes),
-                               lty=1, col=mmodes, bty="n", cex=1.5)
-                        stop("asd")
+                        message(paste0(indent, "      with S_", mmodes[i], "^0 = (c_", mmodes[i], "/N)^(1/2)"))
                     }
+                    S0 <- (c_vert[i,,,]/N_vert)^(1/2) # from Vallis 2017
+                    # ferrari = chelton since (a/b)^(1/2) = (b/a)^(-1/2)
+                    if (T) { # ferrari
+                        S_vert[i,,,] <- S0 * sin(N_intz_z_vert[1,,,] / c_vert[i,,,]) # [#]
+                    } else if (F) { # chelton (B = 1)
+                        S_vert[i,,,] <- (N_vert[1,,,]/c_vert[i,,,])^(-1/2) * sin(N_intz_z_vert[1,,,] / c_vert[i,,,])
+                    }
+                    if (verbose > 2) {
+                        message(paste0(indent, "   min/max R_vert[", i, ",,,] = ",
+                                     paste0(range(R_vert[i,,,], na.rm=T), collapse="/"), " [#]"))
+                    }
+                } # for i mmodes
+                dimnames(S_vert)[[1]] <- paste0(varname, mmodes)
 
-                    #stop("asd")
+                if (F) {
+                    S_vert_mean <- apply(S_vert[,poly_node_inds_geogr,,], c(1, 3, 4), mean, na.rm=T)
+                    S_vert_mean <- apply(S_vert_mean, c(1, 2), mean, na.rm=T)
+                    dev.new()
+                    plot(S_vert_mean[1,], interpolate_depths, t="n", 
+                         xlim=range(S_vert_mean, na.rm=T), ylim=rev(range(interpolate_depths)))
+                    abline(v=0, col="gray")
+                    for (i in 1:dim(S_vert_mean)[1]) lines(S_vert_mean[i,], interpolate_depths, col=i)
+                    legend("bottomleft", paste0("S", mmodes),
+                           lty=1, col=mmodes, bty="n", cex=1.5)
+                    stop("asd")
+                }
 
-                    # cat everything together
-                    #data_node <- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
-                    data_node <- S_vert
+                #stop("asd")
 
-                    if (!keep_gsw) rm(S_vert, envir=.GlobalEnv)
+                # cat everything together
+                #data_node <- abind(N_vert, c_vert, R_vert, along=1, use.dnns=T)
+                data_node <- S_vert
 
-                } # wkb_hvel_mode or wkb_vertvel_mode
+                if (!keep_gsw) rm(S_vert, envir=.GlobalEnv)
 
-                if (!keep_gsw) rm(S0, envir=.GlobalEnv)
+            } # wkb_hvel_mode or wkb_vertvel_mode
 
-            } # "wkb_hvel_mode", "wkb_vertvel_mode"
+            if (!keep_gsw) rm(S0, envir=.GlobalEnv)
 
-            if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, envir=.GlobalEnv)
+        } # "wkb_hvel_mode", "wkb_vertvel_mode"
 
-        } # "c_barocline", "c_long_rossby", "wkb_hvel_mode", "wkb_vertvel_mode"
+        if (!keep_gsw) rm(c_vert, N_intz_z_vert, N_vert, envir=.GlobalEnv)
 
-    } # "Nsquared", "richardson", "rossbyrad", "PmPe", "c_barocline", "c_long_rossby", "wkb_hvel_mode", "wkb_vertvel_mode"
+    } # "c_barocline", "c_long_rossby", "wkb_hvel_mode", "wkb_vertvel_mode"
 
     if (varname == "mke") {
 
@@ -1553,11 +1355,113 @@ sub_calc <- function(data_node) {
     # with the variables in the first dim: c(var,node,depth,rec)
     if (horiz_deriv_tag != F) {
 
-        ## x,y-derivatives of which variables?
-        dxinds <- NULL
-        dyinds <- NULL
+        message(indent, "`horiz_deriv_tag` = ", horiz_deriv_tag)
+        vars_avail <- dimnames(data_node)[[1]] # not equal `varname_nc` through additional sub_prepare() steps...
 
-        # do not use else if in the following!
+        ## x,y-derivatives of which variables?
+        # user provided which ihorizontal derivatives of which variables should be calculated
+        if (!exists("dxinds") && !exists("dyinds") &&
+            !exists("dxvars") && !exists("dyvars")) {
+                
+            stop("neither `dxinds` and/or `dxvars` nor `dyinds` and/or `dyvars` are defined.")
+            
+        } else { # user provided any dx/dy information
+
+            ## dx
+            # inds missing but names given 
+            if (!exists("dxinds") && exists("dxvars")) {
+                message(indent, "   `dxinds` is not given")
+                if (!is.character(dxvars)) stop("given `dxvars` is not of type character")
+                message(indent, "   `dxvars` = \"", paste(dxvars, collapse="\",\""), "\"")
+                if (any(vars_avail %in% dxvars)) {
+                    dxinds <- which(vars_avail %in% dxvars)
+                    message(indent, "      --> found ", length(dxinds), 
+                            " ", ifelse(length(dxinds) == 1, "index", "indices"), 
+                            " for dx calculation: ", paste(dxinds, collapse=","))
+                } else {
+                    message("data_node:")
+                    stop("did not any such variable in available data array\n",
+                         cat(capture.output(str(data_node, vec.len=dim(data_node)[1])), sep="\n"))
+                }
+
+            # inds given but names missing
+            } else if (exists("dxinds") && !exists("dxvars")) {
+                message(indent, "   `dxvars` is not given")
+                if (!is.finite(dxinds)) stop("given `dxinds` is not finite")
+                message(indent, "   `dxinds` = ", paste(dxinds, collapse=","), "")
+                if (any(seq(vars_avail) %in% dxinds)) {
+                    dxvars <- vars_avail[dxinds]
+                    message(indent, "      --> found ", length(dxvars), 
+                            " varnames for dx calculation: \"", paste(dxvars, collapse="\",\""), "\"")
+                } else {
+                    message("data_node:")
+                    stop("did not any such variable index in available data array\n",
+                         cat(capture.output(str(data_node, vec.len=dim(data_node)[1])), sep="\n"))
+                }
+
+            # both inds and names given
+            } else if (exists("dxinds") && exists("dxvars")) {
+                if (length(dxinds) != length(dxvars)) {
+                    stop("given `dxinds` = ", paste(dxinds, collapse=","), 
+                         " and given `dxvars` = \"", paste(dxvars, collapse="\",\""), 
+                         "\" are of different lengths: ", length(dxinds), " != ", length(dxvars), ".")
+                }
+            # neither inds or names are given
+            } else if (!exists("dxinds") && !exists("dxvars")) {
+                dxinds <- NULL
+                dxvars <- NULL
+            }
+
+            ## dy
+            # inds missing but names given 
+            if (!exists("dyinds") && exists("dyvars")) {
+                message(indent, "   `dyinds` is not given")
+                if (!is.character(dyvars)) stop("given `dyvars` is not of type character")
+                message(indent, "   `dyvars` = \"", paste(dyvars, collapse="\",\""), "\"")
+                if (any(vars_avail %in% dyvars)) {
+                    dyinds <- which(vars_avail %in% dyvars)
+                    message(indent, "      --> found ", length(dyinds), 
+                            " ", ifelse(length(dyinds) == 1, "index", "indices"),
+                            " for dy calculation: ", paste(dyinds, collapse=","))
+                } else {
+                    message("data_node:")
+                    stop("did not any such variable in available data array\n",
+                         cat(capture.output(str(data_node, vec.len=dim(data_node)[1])), sep="\n"))
+                }
+
+            # inds given but names missing
+            } else if (exists("dyinds") && !exists("dyvars")) {
+                message(indent, "   `dyvars` is not given")
+                if (!is.finite(dyinds)) stop("given `dyinds` is not finite")
+                message(indent, "   `dyinds` = ", paste(dyinds, collapse=","), "")
+                if (any(seq(vars_avail) %in% dyinds)) {
+                    dyvars <- vars_avail[dyinds]
+                    message(indent, "      --> found ", length(dyvars), 
+                            " varnames for dy calculation: \"", paste(dyvars, collapse="\",\""), "\"")
+                } else {
+                    message("data_node:")
+                    stop("did not any such variable index in available data array\n",
+                         cat(capture.output(str(data_node, vec.len=dim(data_node)[1])), sep="\n"))
+                }
+
+            # both inds and names given
+            } else if (exists("dyinds") && exists("dyvars")) {
+                if (length(dyinds) != length(dyvars)) {
+                    stop("given `dyinds` = ", paste(dyinds, collapse=","), 
+                         " and given `dyvars` = \"", paste(dyvars, collapse="\",\""), 
+                         "\" are of different lengths: ", length(dyinds), " != ", length(dyvars), ".")
+                }
+            # neither inds or names are given
+            } else if (!exists("dyinds") && !exists("dyvars")) {
+                dyinds <- NULL
+                dyvars <- NULL
+            }
+            
+        } # dxinds dxvars dyinds dyvars checked
+
+        ## from here, dxinds dxvars dyinds dyvars can be used
+
+        # my phd stuff for backwards compatibility
         if (any(varname == c("u_geo", "slopeSy"))) {
             dyinds <- 1 # = dy of variable 1 in data_node array
         }
@@ -1605,11 +1509,6 @@ sub_calc <- function(data_node) {
                 dyinds <- 1
             }
         }
-        if (varname == "PmPe") {
-            stop("asd")
-            dxinds <- which("rho") 
-            dyinds <- which("rho")
-        }
         if (varname == "intz_uvteddy_div") {
             dxinds <- 1
             dyinds <- 1
@@ -1618,6 +1517,7 @@ sub_calc <- function(data_node) {
             dxinds <- 1
             dyinds <- 1
         }
+        
         ndxy <- length(dxinds) + length(dyinds)
 
     } # if (horiz_deriv_tag != F) {
@@ -1642,7 +1542,7 @@ sub_calc <- function(data_node) {
         }
 
         ## horizontal derivative in node-space (the correct way...)
-        if (horiz_deriv_node3d) {
+        if (horiz_deriv_node3d) { # which method?
 
             if (!is.null(dxinds)) {
                 # dim(bafux_2d) = c(3,elem2d_n)
@@ -1686,6 +1586,22 @@ sub_calc <- function(data_node) {
                 message(" over ", elem2d_n, " 2D elems", 
                         ifelse(ndepths > 1, paste0(" and ", ndepths, " depths"), ""),
                         " ...")
+                if (verbose > 3) {
+                    message("data_node:")
+                    cat(capture.output(str(data_node)), sep="\n")
+                    if (!is.null(dxinds)) {
+                        message("dvardx_node3d:")
+                        cat(capture.output(str(dvardx_node3d)), sep="\n")
+                        message("bafux_2d_time_depth:")
+                        cat(capture.output(str(bafux_2d_time_depth)), sep="\n")
+                    }
+                    if (!is.null(dyinds)) {
+                        message("dvardy_node3d:")
+                        cat(capture.output(str(dvardy_node3d)), sep="\n")
+                        message("bafuy_2d_time_depth:")
+                        cat(capture.output(str(bafuy_2d_time_depth)), sep="\n")
+                    }
+                }
             }
 
             #time1 <- array(NA, c(aux3d_n, elem2d_n))
@@ -1826,6 +1742,19 @@ sub_calc <- function(data_node) {
                     dvardx_node3d[k,,,] <- dvardx_node3d[k,,,]/dvardx_node3d_cnt
                 }
                 dvardx_node3d[is.na(dvardx_node3d)] <- 0
+                
+                if (verbose > 2) {
+                    for (k in 1:length(dxinds)) {
+                        message(indent, "   min / max 'dvardx_node3d[", k, ",,,]' = ", 
+                                paste(range(dvardx_node3d[k,,,]), collapse=" / "))
+                    }
+                }
+                
+                if (verbose > 3) {
+                    message("dvardx_node3d:")
+                    cat(capture.output(str(dvardx_node3d)), sep="\n")
+                }
+            
             } # if !is.null(dxinds)
 
             if (!is.null(dyinds)) {
@@ -1833,10 +1762,22 @@ sub_calc <- function(data_node) {
                     dvardy_node3d[k,,,] <- dvardy_node3d[k,,,]/dvardy_node3d_cnt
                 }
                 dvardy_node3d[is.na(dvardy_node3d)] <- 0
+                
+                if (verbose > 2) {
+                    for (k in 1:length(dyinds)) {
+                        message(indent, "   min / max 'dvardy_node3d[", k, ",,,]' = ", 
+                                paste(range(dvardy_node3d[k,,,]), collapse=" / "))
+                    }
+                }
+
+                if (verbose > 3) {
+                    message("dvardy_node3d:")
+                    cat(capture.output(str(dvardy_node3d)), sep="\n")
+                }
+            
             }
 
-        } # if horiz_deriv_node3d
-
+        } # if horiz_deriv_node3d # which method
 
         ## horizontal derivative in level space which is much faster than in node-space
         ## but somehow it doesnt work yet ...
@@ -2209,21 +2150,30 @@ sub_calc <- function(data_node) {
 
         } # if "strain_normal", "strain_shear", "strain", "okubo"
 
-        if (varname == "PmPe") {
-            message(paste0(indent, varname, " = - g/rho0/N^2  * [ u'rho' * (d rho)/(d x) +  v'rho' * (d rho)/(d y) ] ..."))
-            stop("not yet")
-                ## baroclinic energy conversion (mean potential -> eddy potential)
-                # PmPe = -\vec{i}(u'b' * dbdx * N^-2) -\vec{j}(v'b' * dbdy * N-2)
-                #      = -g/rho0/N2 * (u'rho'*dbdx + v'rho'*dbdy)
-                term1 = (data_global[which(varname_nc == "urho"),,,] -
-                         data_global[which(varname_nc == "u"),,,]*
-                         data_global[which(varname_nc == "rho"),,,])*dvar1dx_node
-                term2 = (data_global[which(varname_nc == "vrho"),,,] -
-                         data_global[which(varname_nc == "v"),,,]*
-                         data_global[which(varname_nc == "rho"),,,])*dvar1dy_node
-                data_node = -g/rho0/data_global[which(varname_nc == "N2"),,,] * (term1 + term2)
+        # baroclinic energy conversion (mean potential -> eddy potential)
+        if (any(varname == c("PmPe", "PmPe_wN2"))) {
+            
+            message(indent, varname, " = -1/N2 [ u'b' * dx_b + v'b' * dy_b ] (Olbers et al. 2012, p. 379)\n",
+                    indent, rep(" ", t=nchar(varname)), 
+                    " = -1/N2 * (g/rho0)^2 * [ u'rho' * dx_rho + v'rho' * dy_rho ]\n",
+                    indent, "   with g = ", g, ", rho0 = ", rho0, " ...")
+            term1 <<- (data_node[which(varname_nc == "urho"),,,] -
+                      data_node[which(varname_nc == "u"),,,]*
+                      data_node[which(varname_nc == "rho"),,,])*dvardx_node3d["dx_rho",,,]
+            term2 <<- (data_node[which(varname_nc == "vrho"),,,] -
+                      data_node[which(varname_nc == "v"),,,]*
+                      data_node[which(varname_nc == "rho"),,,])*dvardy_node3d["dy_rho",,,]
+            if (any(data_node == Inf)) message("jaaa")
+            if (any(data_node == -Inf)) message("-jaaa")
+            if (varname == "PmPe") {
+                data_node <- -1/N2_potdens_node * (g/rho0)^2 * (term1 + term2)
+            } else if (varname == "PmPe_wN2") {
+                data_node <- -1/data_node[which(varname_nc == "N2"),,,] * (g/rho0)^2 * (term1 + term2)
+            }
+            if (any(data_node == Inf)) message("jaaa2")
+            if (any(data_node == -Inf)) message("-jaaa2")
 
-        }
+        } # PmPe
 
         if (varname == "HRS" || varname == "KmKe") {
 

@@ -78,6 +78,11 @@ source(textConnection(user_runscript[1:user_runscript_end]))
 message()
 
 # checks
+if (!exists("meshpath")) stop("No 'meshpath' provided.")
+if (file.access(meshpath, mode=0) == -1) { # does not exist
+    stop("meshpath = ", meshpath, " does not exist.")
+}
+meshpath <- suppressWarnings(normalizePath(meshpath))
 if (!exists("meshid")) {
     meshid <- basename(meshpath)
     message("'meshid' not given. Take last directory of `meshpath` = \"", meshpath, "\"\n",
@@ -142,16 +147,11 @@ if (plot_map || plot_csec
 source(paste0(rfesompath, "/namelists/namelist.area.r"))
 
 ## check user input
-if (!exists("meshpath")) stop("No 'meshpath' provided.")
-if (file.access(meshpath, mode=0) == -1) { # does not exist
-    stop("meshpath = ", meshpath, " does not exist.")
-}
-meshpath <- suppressWarnings(normalizePath(meshpath))
 if (!exists("rotate_mesh")) {
     rotate_mesh <- F
 }
-if (!exists("cylc")) {
-    cycl <- T # treat cyclic mesh elements? always true for global meso
+if (!exists("cycl")) {
+    cycl <- T # treat cyclic mesh elements? always true for global mesh
 }
 if (!exists("setting")) {
     setting <- ""
@@ -195,7 +195,6 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
     source(paste0(subroutinepath, "/", i))
 }
 
-
 # TODO: check all needed packages at the beginning!!! e.g. gsw
 
 ## load akima package and functions needed if
@@ -223,23 +222,35 @@ if (exists("fnames_user")) {
 } else {
     fuser_tag <- F
 }
+if (!exists("runid")) {
+    runid <- "runid"
+    message("'runid' not given. Use default: runid\n",
+            "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
+            "   runid <- \"myexp\"")
+}
 if (fuser_tag) {
-    if (!exists("runid")) {
-        runid <- "runid"
-        message("'runid' not given. Use default: runid\n",
-                "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
-                "   runid <- \"myexp\"")
-        runid <- "runid"
-    }
     if (!exists("datainpath")) {
         datainpath <- dirname(fnames_user[1])
     }
 } else if (!fuser_tag) {
-    if (!exists("runid")) stop("Set 'runid'.")
     if (!exists("datainpath")) {
         stop("No 'datainpath' provided.")
     } else {
         datainpath <- suppressWarnings(normalizePath(datainpath))
+    }
+    if (nfiles > 0 && !exists("fpatterns")) {
+        stop("according to the \"namelist.var.r\" entry of your `varname` choice \"", varname, 
+             "\" the variable", ifelse(nfiles > 1, "s", ""), "\n",
+             "   `varname_nc` = \"", paste0(varname_nc, collapse="\", \""), "\"\n",
+             "are needed. so you must provide `fpatterns` as e.g.\n", 
+             "   `fpatterns <- \"<setting>_fesom_<varname_nc>_<YYYY>0101.nc\"`\n",
+             "or e.g.\n",
+             "   `fpatterns <- ", ifelse(nfiles > 1, "c(", ""), "\"", 
+             paste0("<runid>.<YYYY>.file", 1:nfiles, ".nc", collapse="\", \""), "\"", 
+             ifelse(nfiles > 1, ")", ""), "\n",
+             "for ", ifelse(nfiles > 1, "each of", ""), " the above variable", 
+             ifelse(nfiles > 1, "s", ""), " in namelist.config.r or namelist.var.r ",
+             "(the latter overwrites entries from the first).")
     }
 }
 if (nfiles == 0) {
@@ -322,7 +333,9 @@ if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
                                              "areadepth"))) {
     if (length(depths) == 1) {
         stop("You specificed 'out_mode'=", out_mode, 
-                " but 'depths'=", depths, ". change depths to e.g. c(0, 100) or c(0, \"max\")")
+                " but 'depths'=", depths, ". change depths to e.g. `c(0, 100)` ",
+                "(from 0 to 100 m) or `c(1338, \"max\")` (from 1338 m to maximum ",
+                "depth) or `c(42, \"MLD\")` (from 42 m to depth of mixed layer)")
     }
 }
 if (regular_ltm_out && !any(out_mode == c("area", "areadepth"))) {
@@ -387,37 +400,88 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     if (transient_out) {
         if (!exists("transientpath")) {
             transientpath <- paste0(postpath, "/", out_mode, "/", varname)
-            dir.create(transientpath, recursive=T, showWarnings=F)
+            message("No 'transientpath' is given for saving output of this script.\n",
+                    "   Use default: ", transientpath, " (= `postpath`/`out_mode`/`varname`)\n",
+                    "   You can set `transientpath <- \"/path/with/writing/rights\"` in the runscript.")
+        } else {
             transientpath <- suppressWarnings(normalizePath(transientpath))
+        }
+        if (file.access(transientpath, mode=0) == -1) { # mode=0: existing, -1: no success
+            message(paste0("Try to create 'transientpath' = ", transientpath, " ... "), appendLF=F)
+            dir.create(transientpath, recursive=T, showWarnings=F)
+            if (file.access(transientpath, mode=0) == -1) {
+                message("")
+                stop("Could not create 'transientpath' = ", transientpath)
+            } else {
+                message("done.")
+            }
         }
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (!exists("ltmpath")) {
-            ltmpath <- paste0(postpath, "/ltm/", varname)
-            dir.create(ltmpath, recursive=T, showWarnings=F)
+            ltmpath <- paste0(postpath, "/timmean/", varname)
+            message("No 'ltmpath' is given for saving output of this script.\n",
+                    "   Use default: ", ltmpath, " (= `postpath`/timmean/`varname`)\n",
+                    "   You can set `ltmpath <- \"/path/with/writing/rights\"` in the runscript.")
+        } else {
             ltmpath <- suppressWarnings(normalizePath(ltmpath))
         }
+        if (file.access(ltmpath, mode=0) == -1) { # mode=0: existing, -1: no success
+            message(paste0("Try to create 'ltmpath' = ", ltmpath, " ... "), appendLF=F)
+            dir.create(ltmpath, recursive=T, showWarnings=F)
+            if (file.access(ltmpath, mode=0) == -1) {
+                message("")
+                stop("Could not create 'ltmpath' = ", ltmpath)
+            } else {
+                message("done.")
+            }
+        }            
     }
 
     if (any(regular_transient_out, regular_ltm_out)) {
         if (regular_transient_out) {
             if (!exists("reg_transient_outpath")) {
                 reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", varname)
-                dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+                message("No 'reg_transient_outpath' is given for saving output of this script.\n",
+                        "   Use default: ", reg_transient_outpath, " (= `postpath`/regular_grid/`out_mode`/`varname`)\n",
+                        "   You can set `reg_transient_outpath <- \"/path/with/writing/rights\"` in the runscript.")
+            } else {
                 reg_transient_outpath <- suppressWarnings(normalizePath(reg_transient_outpath))
             }
-        }
+            if (file.access(reg_transient_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
+                message(paste0("Try to create 'reg_transient_outpath' = ", reg_transient_outpath, " ... "), appendLF=F)
+                dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
+                if (file.access(reg_transient_outpath, mode=0) == -1) {
+                    message("")
+                    stop("Could not create 'reg_transient_outpath' = ", reg_transient_outpath)
+                } else {
+                    message("done.")
+                }
+            }
+        } # regular_transient_out
         if (regular_ltm_out) {
             if (!exists("reg_ltm_outpath")) {
-                reg_ltm_outpath <- paste0(postpath, "/regular_grid/ltm/", out_mode, "/", varname)
-                dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+                reg_ltm_outpath <- paste0(postpath, "/regular_grid/timmean/", out_mode, "/", varname)
+                message("No 'reg_ltm_outpath' is given for saving output of this script.\n",
+                        "   Use default: ", reg_ltm_outpath, " (= `postpath`/regular_grid/timmean/`out_mode`/`varname`)\n",
+                        "   You can set `reg_ltm_outpath <- \"/path/with/writing/rights\"` in the runscript.")
+            } else {
                 reg_ltm_outpath <- suppressWarnings(normalizePath(reg_ltm_outpath))
             }
-        }
+            if (file.access(reg_ltm_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
+                message(paste0("Try to create 'reg_ltm_outpath' = ", reg_ltm_outpath, " ... "), appendLF=F)
+                dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
+                if (file.access(reg_ltm_outpath, mode=0) == -1) {
+                    message("")
+                    stop("Could not create 'reg_ltm_outpath' = ", reg_ltm_outpath)
+                } else {
+                    message("done.")
+                }
+            }
+        } # regular_ltm_out
         if (!exists("interppath")) {
-            # use default
-            interppath <- paste0(postpath, "/meshes/", meshid, "/interp")
+            interppath <- paste0(postpath, "/meshes/", meshid, "/interp") # use default
             message("No 'interppath' is given for saving/reading regular interpolation matrix.\n",
                     "   Use default: ", interppath, " (= `postpath`/meshes/`meshid`/interp)\n",
                     "   You can set `interppath <- \"/path/with/writing/rights\"` in the runscript.")
@@ -463,9 +527,9 @@ if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
 
 
 ## set defaults; do not change
-restart <- F # for rfesom
-var_coords <- "geo" # "rot" or "geo" # only geo for rfesom
-out_coords <- "geo" # "geo" or "rot", only "geo" implemented
+restart <- F # keep F; does not work anymore
+var_coords <- "geo" # fesom output in which coords? "geo" or "rot"; only geo allowed for rfesom
+out_coords <- "geo" # output of this script in which coords? "geo" or "rot"; only "geo" implemented
 #nisobaths <- length(isobaths)
 nisobaths <- 0
 zave_method <- 1 # default = 1
@@ -570,27 +634,23 @@ if (verbose > 0) {
     }
     
     if (transient_out) {
-        message(paste0("save transient ", out_mode, " data in ", area, " area to:"))
-        message(paste0("   ", transientpath))
-        message("   (you can change this by defining 'postpath' and/or 'transientpath' in the runscript)")
+        message("save transient ", out_mode, " data in ", area, " area to\n",
+                "   `transientpath` = ", transientpath)
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
-        message(paste0("Save ltm data in ", area, " area to:"))
-        message(paste0("   ", ltmpath))
-        message("   (you can change this by defining 'postpath' and/or 'ltmpath' in the runscript)")
+        message("Save ltm data in ", area, " area to\n",
+                "   `ltmpath` = ", ltmpath)
     }
     
     if (regular_transient_out) {
-        message(paste0("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to:"))
-        message(paste0("   ", reg_transient_outpath))
-        message("   (you can change this by defining 'postpath' and/or 'reg_transient_outpath' in the runscript)")
+        message("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to\n",
+                "   `reg_transient_outpath` = ", reg_transient_outpath)
     }
     
     if (regular_ltm_out) {
-        message(paste0("Save ltm data in ", area, " area on regular (lon,lat) grid to:")) 
-        message(paste0("   ", reg_ltm_outpath))
-        message("   (you can change this by defining 'postpath' and/or 'reg_ltm_outpath' in the runscript)")
+        message("Save ltm data in ", area, " area on regular (lon,lat) grid to\n",
+                "   `reg_ltm_outpath` = ", reg_ltm_outpath)
     }
 
     message("==============================================")
@@ -606,41 +666,57 @@ if (verbose > 0) {
 indent <- "   "
 
 ## 1) Get fesom data header information
-message("Read first line of ", meshpath)
+if (verbose > 0) {
+    message("Get fesom data header infos ...")
+    message(indent, "Read first line of")
+}
 nod2d_n <- as.integer(readLines(paste0(meshpath, "/nod2d.out"), n=1))
-message("   /nod2d.out --> nod2d_n = ", nod2d_n)
+message(indent, "   ", meshpath, "/nod2d.out --> nod2d_n = ", nod2d_n)
 if (file.access(paste0(meshpath, "/nod3d.out"), mode=4) == 0) { # readable
     nod3d_n <- as.integer(readLines(paste0(meshpath, "/nod3d.out"), n=1))
-    message("   /nod3d.out --> nod3d_n = ", nod3d_n)
+    message(indent, "   ", meshpath, "/nod3d.out --> nod3d_n = ", nod3d_n)
 }
 
 # construct fesom filenames
 if (nfiles > 0) {
-    if (verbose > 0) message("Get fesom data header infos once ...")
     if (!fuser_tag) {
         year <- years[1]
+        if (verbose > 0) {
+            message(indent, "Construct input file names for given `varname_nc` = \"", 
+                    paste(varname_nc, collapse="\", \""), "\" ...")
+        }
     } else if (fuser_tag) {
         year <- length(fnames_user)
-        message("is this correct?")
+        stop("is this correct?")
     }
     year_cnt <- 1
     fnames <- rep(NA, nfiles) # overwritten in every year
+    indent <- "      "
     for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
       
         # filenames are given
         if (fuser_tag) {
             if (verbose > 0) {
-                message(indent, "Read user provided file ...")
+                message(indent, "Read user provided file `fnames_user` ...")
             }
+            stop("not tested")
             fname <- fnames_user[year_cnt]
 
-        # filenames are not given: construct file names basedn on fpattern
+        # filenames are not given: construct file names based on fpatterns
         } else if (!fuser_tag) {
                     
-            # construct input filename
+            ## construct input filename(s) based on given `fpatterns`
             if (verbose > 0) {
-                message(indent, "Construct input filename based on fpattern = \"", fpattern, "\" ...")
+                message(indent, "file ", file, "/", nfiles, " based on ", appendLF=F)
             }
+            if (length(fpatterns) != nfiles) {
+                stop("adassdasda")
+                fpattern 
+            } else {
+                fpattern <- fpatterns[file]
+                message("`fpatterns[", file, "]` = \"", fpattern, "\"")
+            }
+
             fname <- fpattern
             pattern_inds <- list(from=gregexpr("<", fpattern)[[1]], 
                                  to=gregexpr(">", fpattern)[[1]])
@@ -691,20 +767,27 @@ if (nfiles > 0) {
 
         } # if fuser_tag or not
 
-        if (!file.exists(fname)) {
-            stop("fname = ", fname, " does not exist.")
-        }
         if (verbose > 0 && year_cnt == 1) {
-            message(indent, "   --> fname = ", fname)
+            message(indent, "   --> fname = \"", fname, "\" ... ", appendLF=F)
+        }
+        if (!file.exists(fname)) {
+            message("does not exist.")
+            stop("fname = \"", fname, "\" does not exist.")
+        } else {
+            message("exists.")
         }
         fnames[file] <- fname
 
     } # for file nfiles
                 
     ## Open annual ncdf files (do not load the same file more than once)
+    indent <- "   "
     ncids <- vector("list", l=length(unique(fnames)))
     fnames_unique <- unique(fnames)
+    message(indent, "Get variable dimension values from ", 
+            length(fnames_unique), " unique files ...")
     for (file in 1:length(fnames_unique)) {
+        message(indent, "   \"", fnames_unique[file], "\"")
         if (ncdf.tools_tag == F) {
             ncids[[file]] <- ncdf4::nc_open(fnames_unique[file])
         } else if (ncdf.tools_tag == T) {
@@ -773,9 +856,12 @@ if (nfiles > 0) {
                 tmplist[[di]]$len <- tmp$length
             }
         }
+        # dimension ids in netcdf language e.g. 0,1,2 or 1,2,0 or 0,2 or 0 ...  
+        # in this order the written data will be:
+        dimids <- names(tmplist) 
+        tmplist$filename <- attributes(ncids[[var_nc_inds[vari]]])$filename
+        tmplist$dimids <- dimids
         dims_of_vars[[vari]] <- tmplist
-        dimids <- names(dims_of_vars[[vari]]) # e.g. 0,1,2 or 1,2,0 or 0,2 or 0 ...  
-        dims_of_vars[[vari]]$dimids <- dimids # in this order the written data will be 
     } # for vari nfiles
     rm(tmp, tmplist)
     # finised get all dimensions of all wanted variables of provided files
@@ -884,7 +970,8 @@ if (nfiles > 0) {
         }
     } else {
         if (verbose > 0) {
-            message(indent, "Get time information for variable \"", varname_nc[nc_with_time_ind], "\" ...")
+            message(indent, "Get time information of first found variable with a time dimension: \"", 
+                    varname_nc[nc_with_time_ind], "\" ...")
         }
         timeobj <- list(time=NULL, units="") # default: no time
         if (ncdf.tools_tag == T) {
@@ -1012,69 +1099,96 @@ if (nfiles > 0) {
         }
        
         ## determine temporal frequency of data
-        if (ntime == 1) {
-            if (exists("frequency") && class(frequency) == "character") {
-                timeobj$frequency <- frequency
-            } else {
+        if (exists("frequency_in")) { # given my user
+            timeobj$frequency <- frequency_in
+        } else {
+            known_frequencies <- c("daily"=1, 
+                                   "5day"=2,
+                                   "monthly"=3,
+                                   "annual"=4)
+            if (ntime == 1) {
                 stop("not defined yet")
+            } else if (ntime > 1) { # more than 1 rec per file
+                timediff <- lubridate::as.duration(diff(timeobj$posix))
+                timediff <- lubridate::as.duration(unique(timediff))
+                if (all(timediff %in% lubridate::dyears(1))) {
+                    timeobj$frequency <- "annual" 
+                } else if (all(timediff %in% lubridate::ddays(28:31))) {
+                    timeobj$frequency <- "monthly" 
+                } else if (all(timediff %in% lubridate::dseconds(438000))) {
+                    timeobj$frequency <- "5day" 
+                } else if (all(timediff %in% lubridate::ddays(1))) {
+                    timeobj$frequency <- "daily" 
+                } else {
+                    print(summary(timediff))
+                    stop("--> these time intervals are not known yet")
+                }
+                if (verbose > 0) {
+                    message(indent, "   determined time frequency = ", timeobj$frequency)
+                }
             }
-        } else if (ntime > 1) { # more than 1 rec per file
-            timediff <- lubridate::as.duration(diff(timeobj$posix))
-            timediff <- lubridate::as.duration(unique(timediff))
-            if (all(timediff %in% lubridate::dyears(1))) {
-                timeobj$frequency <- "annual" 
-            } else if (all(timediff %in% lubridate::ddays(28:31))) {
-                timeobj$frequency <- "monthly" 
-            } else if (all(timediff %in% lubridate::dseconds(438000))) {
-                timeobj$frequency <- "5day" 
-            } else if (all(timediff %in% lubridate::ddays(1))) {
-                timeobj$frequency <- "daily" 
-            } else {
-                print(summary(timediff))
-                stop("--> these time intervals are not known yet")
-            }
-            if (verbose > 0) {
-                message(indent, "   determined time frequency = ", timeobj$frequency)
-            }
+        } # if `frequency_in` is not given by user
+        output <- timeobj$frequency # e.g. "monthly"
+        if (verbose > 2) {
+            message(indent, "timeobj:")
+            cat(capture.output(str(timeobj)), sep="\n")
         }
-        output <- timeobj$frequency
-        if (verbose > 0) message(indent, "timeobj:"); message(str(timeobj))
         
         ## check if any temporal reduction of original data is wanted via cdo 
         cdo_temporalmean <- ""
-        if (output != frequency_post) {
-            message(indent, "The determined output frequency is \"", output, "\" but `frequency_post` = \"", 
-                    frequency_post, "\"")
-            if (frequency_post == "monthly") {
-                #cdo_temporalmean <- "cdo -s -monmean"
-                cdo_temporalmean <- "cdo -monmean"
-                if (exists("recs")) {
-                    if (any(diff(recs) != 1)) {
-                        stop("no gaps in `recs` are allowed if a new output frequency shall be set. ",
-                             "rerun without setting `recs` or without defining `frequency_post` ",
-                             "(i.e. keeping the original \"", output, "\" frequency.")
+        if (!exists("frequency_post")) {
+            freq_ind <- which(names(known_frequencies) == output)
+            message(indent, "`frequency_post` is not defined. if you want to calculate a ",
+                    "temporal mean before any other analysis, set e.g.\n",
+                    paste0(indent, "   `frequency_post <- \"", 
+                           names(known_frequencies)[(freq_ind+1):length(known_frequencies)], "\"`\n"),
+                    indent, "in the runscript (known frequencies are \"", 
+                    paste(names(known_frequencies), collapse="\",\""), "\").")
+        
+        } else { # `frequency_post` is given by user
+            if (output != frequency_post) {
+                message(indent, "The determined output frequency is \"", output, "\" but `frequency_post` = \"", 
+                        frequency_post, "\"")
+                if (frequency_post == "monthly") {
+                    #cdo_temporalmean <- "cdo -s -monmean"
+                    cdo_temporalmean <- "cdo -monmean"
+                    if (exists("recs")) {
+                        if (any(diff(recs) != 1)) {
+                            stop("no gaps in `recs` are allowed if a new output frequency shall be set. ",
+                                 "rerun without setting `recs` or without defining `frequency_post` ",
+                                 "(i.e. keeping the original \"", output, "\" frequency.")
+                        }
                     }
-                }
-                lt <- unclass(timeobj$posix)
-                timeobj$posix <- seq(as.POSIXct(paste0(lt$year[1] + 1900, "-", lt$mon[1] + 1, "-15"), tz="UTC"),
-                                     as.POSIXct(paste0(lt$year[ntime] + 1900, "-", lt$mon[ntime] + 1, "-15"), tz="UTC"),
-                                     l=12)
-            } else {
-                stop("not yet")
-            } # which output frequency is wanted?
+                    lt <- unclass(timeobj$posix)
+                    timeobj$posix <- seq(as.POSIXct(paste0(lt$year[1] + 1900, "-", lt$mon[1] + 1, "-15"), tz="UTC"),
+                                         as.POSIXct(paste0(lt$year[ntime] + 1900, "-", lt$mon[ntime] + 1, "-15"), tz="UTC"),
+                                         l=12)
+                } else {
+                    stop("not yet")
+                } # which output frequency is wanted?
 
-            # update timeobj
-            timeobj$posix <- as.POSIXlt(timeobj$posix) # posixct -> posixlt
-            ntime <- length(timeobj$posix)
-            timeobj$time <- as.numeric(timeobj$posix, units="secs") # always uses 1970-01-01 as origin
-            timeobj$origin <- as.POSIXct("1970-01-01", tz="UTC")
-            timeobj$units <- "seconds since 1970-01-01"
-            timeobj$frequency <- frequency_post
-            cdo_temporalmean <- paste0(cdo_temporalmean, " ", cdo_shifttime)
-            message(indent, "--> run `", cdo_temporalmean, "` for every file ...")
-            output <- frequency_post
-            if (verbose > 0) message(indent, "updated timeobj:"); message(str(timeobj))
-        } # if cdo temporal reduction of original input data
+                # update timeobj
+                timeobj$posix <- as.POSIXlt(timeobj$posix) # posixct -> posixlt
+                ntime <- length(timeobj$posix)
+                timeobj$time <- as.numeric(timeobj$posix, units="secs") # always uses 1970-01-01 as origin
+                timeobj$origin <- as.POSIXct("1970-01-01", tz="UTC")
+                timeobj$units <- "seconds since 1970-01-01"
+                timeobj$frequency <- frequency_post
+                cdo_temporalmean <- paste0(cdo_temporalmean, " ", cdo_shifttime)
+                message(indent, "--> run `", cdo_temporalmean, "` for every file ...")
+                output <- frequency_post
+                if (verbose > 2) {
+                    message(indent, "updated timeobj:")
+                    cat(capture.output(str(timeobj)), sep="\n")
+                } 
+            
+            } else { # output == frequency_post; e.g. "monthly" == "monthly"
+                message("the given `frequency_post` = \"", frequency_post, "\" is the same as the ",
+                        "input frequency --> calculating temporal mean does not make sense.")
+            } # if cdo temporal reduction of original input data
+        
+        } # if `frequency_post` is given by user or not
+        
         output_fname <- paste0("_", output)
         if (snapshot) {
             output_fname <- paste0(output_fname, "_snapshot")
@@ -1120,10 +1234,6 @@ if (nfiles > 0) {
             if (!exists("season")) {
                 months_wanted_inds <- unique(lt$mon[recs]) + 1
                 season <- paste(months[months_wanted_inds], collapse="")
-                if (verbose > 0) {
-                    message(indent, "Based on wanted `recs` = ", recs[1], ":", recs[length(recs)], 
-                            " (n=", length(recs), "), `season` = \"", season, "\"")
-                }
                 wanted_months_in_data <- which(!is.na(match(lt$mon+1, months_wanted_inds)))
                 if (!all(wanted_months_in_data %in% recs)) {
                     # specified records do not cover complete months
@@ -1136,6 +1246,12 @@ if (nfiles > 0) {
                                 indent, "   --> set season to \"\"")
                     }
                     season <- ""
+                }
+                # special case: Jan-Dec; change "JFMAMJJASOND" to "Jan-Dec"
+                if (season == "JFMAMJJASOND") season <- "Jan-Dec"
+                if (verbose > 0) {
+                    message(indent, "Based on wanted `recs` = ", recs[1], ":", recs[length(recs)], 
+                            " (n=", length(recs), "), `season` = \"", season, "\"")
                 }
             } else if (exists("season")) {
                 # check if wanted recs and wanted season fit to each other
@@ -1389,7 +1505,10 @@ if (nfiles > 0) {
         } else {
             timespan_fname <- paste0("_", timespan)
         }
-        if (verbose > 0) message(indent, "final timeobj:"); message(str(timeobj))
+        if (verbose > 2) {
+            message(indent, "timeobj:")
+            cat(capture.output(str(timeobj)), sep="\n")
+        }
     } # if !is.null(nc_with_time_ind)    
     # finished time stuff
 
@@ -1605,7 +1724,8 @@ if (nfiles > 0) {
             dim_tag <- "3D"
             levelwise <- T
         } else if (any(sapply(dims_of_vars, "[[", "dim_tag") == "3D") &&
-                   !any(sapply(dims_of_vars, "[[", "levelwise"))) {
+                   !all(sapply(dims_of_vars, "[[", "levelwise"))) {
+            # todo: do not mix old non-levelwise and new levelwise fesom output
             dim_tag <- "3D"
             levelwise <- F
         } else if (all(sapply(dims_of_vars, "[[", "dim_tag") == "2D") &&
@@ -4018,7 +4138,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
         ## construct fesom filenames
         fnames <- rep(NA, nfiles) # overwritten in every year
 
-        for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
+        for (file in 1:nfiles) { 
           
             # filenames are given
             if (fuser_tag) {
@@ -4030,10 +4150,18 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             # filenames are not given: construct file names basedn on fpattern
             } else if (!fuser_tag) {
                         
-                # construct input filename
+                ## construct input filename(s) based on given `fpatterns`
                 if (verbose > 2) {
-                    message(indent, "Construct input filename based on fpattern = \"", fpattern, "\" ...")
+                    message(indent, "Construct input filename ", file, "/", nfiles, " based on ")
                 }
+                if (length(fpatterns) != nfiles) {
+                    stop("adassdasda")
+                    fpattern 
+                } else {
+                    fpattern <- fpatterns[file]
+                    if (verbose > 2) message(indent, "   `fpatterns[", file, "]` = \"", fpattern, "\"")
+                }
+                
                 fname <- fpattern
                 pattern_inds <- list(from=gregexpr("<", fpattern)[[1]], 
                                      to=gregexpr(">", fpattern)[[1]])
@@ -4066,12 +4194,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         if (eval(parse(text=paste0("length(", replacement_var, ")"))) == nfiles && nfiles > 1) {
                             replacement <- eval(parse(text=paste0(replacement_var, "[file]")))
                             if (verbose > 2) {
-                                message("[", file, "]` = ", eval(parse(text=replacement)), " ...")
+                                message("[", file, "]` = \"", replacement, "\" ...")
                             }
                         } else {
                             replacement <- eval(parse(text=paste0(replacement_var)))
                             if (verbose > 2) {
-                                message("` = ", eval(parse(text=replacement)), " ...")
+                                message("` = \"", replacement, "\" ...")
                             }
                         }
                     }
@@ -4083,9 +4211,16 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
             } # if fuser_tag or not
 
-            if (!file.exists(fname)) {
-                stop("fname = ", fname, " does not exist.")
+            if (verbose > 2) {
+                message(indent, "   --> fname = \"", fname, "\" ... ", appendLF=F)
             }
+            if (!file.exists(fname)) {
+                message("does not exist.")
+                stop("fname = \"", fname, "\" does not exist.")
+            } else {
+                if (verbose > 2) message("exists.")
+            }
+            fnames[file] <- fname
             
             # check if any temporal reduction of original data is wanted via cdo 
             if (cdo_temporalmean != "") {
@@ -4096,11 +4231,6 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 system(cmd)
                 fname <- tmpfile
             } # calc temporal mean if wanted
-
-            if (verbose > 2) {
-                message(indent, "   --> fname = ", fname)
-            }
-            fnames[file] <- fname
 
         } # for file nfiles
 
@@ -4335,23 +4465,31 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             declare_time <- system.time({
                 # dimensions of data vector
                 dims <- rep(NA, t=4) # max(sapply(lapply(dims_of_vars, "[[", "dimids"), length)) + 1)
-                dimnames <- list(var=varname_nc, node=NULL)
+                dimnames <- list(var=varname_nc)
                 # 1st dim: variable
                 dims[1] <- nfiles
                 # 2nd dim: nodes (use maximum of nodes of variables)
-                dims[2] <- nod2d_n
-                if (any(sapply(dims_of_vars, "[[", "dim_tag") == "3D") &&
-                    !any(sapply(dims_of_vars, "[[", "levelwise"))) {
-                    dim[2] <- nod3d_n
+                #dims[2] <- nod2d_n
+                #if (any(sapply(dims_of_vars, "[[", "dim_tag") == "3D") &&
+                #    !all(sapply(dims_of_vars, "[[", "levelwise"))) {
+                if (dim_tag == "2D") {
+                    dims[2] <- nod2d_n
+                } else if (dim_tag == "3D") {
+                    dims[2] <- nod3d_n
                 } 
+                dimnames <- c(dimnames, list(node=NULL))
                 # 3rd dim: depth
-                dims[3] <- ndepths
-                if (ndepths == 0) {
+                if (dim_tag == "3D" && !levelwise) {
+                    dims[3] <- 1  # old non-levelwise 3D data is saved on one long vector
                     dimnames <- c(dimnames, list(depth=NULL))
-                } else if (ndepths == 1) {
-                    dimnames <- c(dimnames, list(depth=depths_plot))
-                } else if (ndepths > 1) {
-                    dimnames <- c(dimnames, list(depth=paste0(interpolate_depths, "m")))
+                } else {
+                    if (ndepths == 0) {
+                        dimnames <- c(dimnames, list(depth=NULL))
+                    } else if (ndepths == 1) {
+                        dimnames <- c(dimnames, list(depth=depths_plot))
+                    } else if (ndepths > 1) {
+                        dimnames <- c(dimnames, list(depth=paste0(interpolate_depths, "m")))
+                    }
                 }
                 # 4th dim: time
                 dims[4] <- nrecspf
@@ -4403,17 +4541,17 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             
                 if (verbose > 1) {
                     message(indent, "get \"", varname_nc[file], "\" from ", fnames[file])
-                    message(paste0(indent, "start = ", 
-                                   paste0(paste0(names(istart[[var_nc_inds[file]]]), ": ", 
-                                                 istart[[var_nc_inds[file]]]), collapse=", ")))
+                    message(indent, "   start = ", 
+                            paste0(paste0(names(istart[[var_nc_inds[file]]]), ": ", 
+                                          istart[[var_nc_inds[file]]]), collapse=", "))
                     if (rec_tag && leap_tag && is.leap(year)) {
-                        message(paste0(indent, "count = ", 
-                                       paste0(paste0(names(icount_leap[[var_nc_inds[file]]]), ": ", 
-                                                     icount_leap[[var_nc_inds[file]]]), collapse=", ")))
+                        message(indent, "   count = ", 
+                                paste0(paste0(names(icount_leap[[var_nc_inds[file]]]), ": ", 
+                                              icount_leap[[var_nc_inds[file]]]), collapse=", "))
                     } else {
-                        message(paste0(indent, "count = ", 
-                                       paste0(paste0(names(icount[[var_nc_inds[file]]]), ": ", 
-                                                     icount[[var_nc_inds[file]]]), collapse=", ")))
+                        message(indent, "   count = ", 
+                                paste0(paste0(names(icount[[var_nc_inds[file]]]), ": ", 
+                                              icount[[var_nc_inds[file]]]), collapse=", "))
                     }
                 } # verbose
 
@@ -4704,7 +4842,6 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 indent_save <- indent; indent <- paste0(indent_save, "   ")
                 sub_prepare2(data_node) # overwrites data_node with the result of sub_prepare2()
                 indent <- indent_save; rm(indent_save)
-
 
                 ## At this point,
                 ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf) if 
@@ -5071,7 +5208,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                    
                     #stop("asd")
 
-                    ## Calc transient mean
+                    ## Calc transient mean, depth, etc.
                     if (transient_out) { # the non-regular part
                         if (out_mode != "area") {
                             if (rec_tag) {
@@ -5102,7 +5239,6 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                                 ## arrange to level-space for calculations
                                 if (dim(data_node)[2] != nod2d_n) {
-                                    stop("check for levelwise")
                                     if (verbose > 1) {
                                         message(paste0(indent, "Bring data_node from (nod3d_n=", nod3d_n,
                                                      ") on (nod2d_n=", nod2d_n, " x ndepths=", 
@@ -5124,6 +5260,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 datavec <- datavec[,poly_node_inds_geogr,,] # inds in nod2d-space
                             
                             } # if out_mode == "mean" && zave_method == 2
+                            
+                            if (any(datavec == Inf)) message("jaaa3")
+                            if (any(datavec == -Inf)) message("-jaaa3")
 
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
@@ -8246,14 +8385,15 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1) {
                 if (!user_levels_exist) {
                     message(indent, "   You can define your own color levels with e.g.:\n",
-                            indent, "      ", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")\n",
-                            indent, "      in namelist.var.r.")
+                            indent, "      `", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), "`)\n",
+                            indent, "   in e.g. \"namelist.var.r\".")
                 }
                 if (!user_palname_exist && !user_cols_exist) {
                     message(indent, "   You can define your own colors with e.g.:\n",
-                            indent, "      ", varnamei, "_palname <- \"plasma\" (run color_function() for a demo of available color palettes) or\n", 
-                            indent, "      ", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")\n",
-                            indent, "      in namelist.var.r.")
+                            indent, "      `", varnamei, "_palname <- \"plasma\"` (run color_function() for a demo of available color palettes)\n", 
+                            indent, "   or\n",
+                            indent, "      `", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")`\n",
+                            indent, "   in e.g. \"namelist.var.r\".")
                 }
             }
 

@@ -71,8 +71,8 @@ sub_n3_to_n2xde <- function(data_nod3d) {
                 
                 # replicate interpolation coefficients
                 indcoef_tmp <<- indcoef[i,inds] # c(1,ninds)
-                indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_node)[1]) # nvars
-                indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_node)[4]) # nrecspf
+                indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_nod3d)[1]) # nvars
+                indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_nod3d)[4]) # nrecspf
                 indcoef_tmp <<- aperm(indcoef_tmp, c(3, 2, 1, 4))
 
                 if (any(out_mode == c("csec_mean", "csec_depth"))) {

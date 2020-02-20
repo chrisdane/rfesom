@@ -12,7 +12,6 @@ if (regexpr("ollie", machine) != -1 ||
     machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
     machine_tag <- "mistral"
     homepath <- "~/scripts/r"
-    #workpath <- "/work/ba0941/a270073"
     workpath <- "/work/ab0246/a270073"
 } else {
     stop("   machine ", machine, " is unknown")
@@ -27,7 +26,7 @@ rfesompath <- system("git rev-parse --show-toplevel", intern=T)
 
 ############################################################
 
-if (T) { # awi-esm-1-1-lr deck
+if (F) { # awi-esm-1-1-lr deck
     runid <- "awi-esm-1-1-lr"
     #datainpath <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom")
     if (F) {
@@ -150,7 +149,7 @@ if (T) { # awi-esm-1-1-lr deck
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/opottempmint_fesom_18500101.nc"
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/somint_fesom_18500101.nc"
     
-} else if (F) { # my phd stuff
+} else if (T) { # my phd stuff
     #runid <- "CbSCL"
     #meshid <- "CbSCL"
     #setting <- "spinup5"
@@ -170,14 +169,14 @@ if (T) { # awi-esm-1-1-lr deck
     #setting <- "s52" # where is ice.diag ?!
     #setting <- "s6"
 
-    #runid <- "Low01_sub_lsea"
-    #meshid <- "CbSCL_sub_lsea"
+    runid <- "Low01_sub_lsea"
+    meshid <- "CbSCL_sub_lsea"
     #setting <- "s1"
     #setting <- "s2"
     #setting <- "s3"
     #setting <- "s4"
     #setting <- "s5"
-    #setting <- "s52"
+    setting <- "s52"
 
     #runid <- "Low01_sub_lseawNA"
     #meshid <- "CbSCL_sub_lseawNA"
@@ -401,27 +400,28 @@ if (T) { # awi-esm-1-1-lr deck
     if (regexpr("sub", meshid) != -1) { # my subsets from e.g. LabSea
         cycl <- F
     }
-
-    datainpath <- paste0("/work/ba0941/a270073/out/", runid, "/", setting, "/")    
-    datainpath <- paste0("/work/ab0246/a270073/out/", runid, "/", setting, "/")
-    meshpath   <- paste0(workpath, "mesh/", meshid, "/") # path of fesom mesh
-    postpath   <- paste0(workpath, "post/") # path where to save output if wanted (see below)
-    derivpath  <- paste0(workpath, "mesh/", meshid, "/derivatives/") # path where to save derivative file if wanted
-    interppath <- paste0(workpath, "mesh/", meshid, "/interp/") # path where to save regular interpolateion matrix if needed
-    plotpath   <- paste0(homepath, "plots/fesom/map/") # path where to save plots if wanted
+    
+    workpath <- "/work/ba0941/a270073"
+    datainpath <- paste0(workpath, "/out/", runid, "/", setting)
+    meshpath   <- paste0(workpath, "/mesh/", meshid) # path of fesom mesh
+    #postpath   <- paste0(workpath, "/post") # --> new 
+    postpath <- paste0(workpath, "/post/", runid, "/", setting) # my old phd folder structure
+    derivpath  <- paste0(workpath, "/mesh/", meshid, "/derivatives") # path where to save derivative file if wanted
+    interppath <- paste0(workpath, "/mesh/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
+    plotpath   <- paste0(homepath, "/plots/fesom") # path where to save plots if wanted
     if (meshid == "core") {
         rotate_mesh <- F
         if (machine_tag == "ollie") {
-            meshpath <- "/work/ollie/pool/FESOM/meshes_default/core/"
+            meshpath <- "/work/ollie/pool/FESOM/meshes_default/core"
         } else if (machine_tag == "mistral") {
-            meshpath <- "/work/ab0995/a270046/meshes_default/core/"
+            meshpath <- "/work/ab0995/a270046/meshes_default/core"
         }
     }
     if (runid == "bold" && setting == "cpl_output_01") {
-        datainpath <- paste0("/work/ab0995/a270067/fesom_echam/bold/", setting, "/")
+        datainpath <- paste0("/work/ab0995/a270067/fesom_echam/bold/", setting)
     }
     if (runid == "bold" && setting == "cpl_output_470") {
-        datainpath <- paste0("/work/bm0944/a270062/fesom_echam/bold/", setting, "/")
+        datainpath <- paste0("/work/bm0944/a270062/fesom_echam/bold/", setting)
         #meshpath <- "/work/bm0944/a270111/mesh_Agulhas/" ==
         #            "/work/ba0941/a270073/mesh/agulhas"
     }
@@ -435,20 +435,20 @@ if (T) { # awi-esm-1-1-lr deck
     }
     if ((runid == "CORE2" && setting == "s1") || 
         (runid == "CORE2_ctl" && setting == "s1")) { ## 1st CORE2 spinups in xuezhus directory
-            datainpath <- paste0("/work/ab0246/a270055/output_fesom_alone/", runid, "/")
+            datainpath <- paste0("/work/ab0246/a270055/output_fesom_alone/", runid)
     }
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily", 
                            "Arc22_sub", "Arc22_sub_small"))) {
         if (machine_tag == "ollie") {
-            datainpath <- paste0("/work/ollie/cwekerle/result/", runid, "/")
-            meshpath <- paste0("/work/ollie/cwekerle/mesh/", meshid, "/")
+            datainpath <- paste0("/work/ollie/cwekerle/result/", runid)
+            meshpath <- paste0("/work/ollie/cwekerle/mesh/", meshid)
         }
     }
 
     #varname <- "Ftemp"
     #varname <- "tos"
     #varname <- "tossq"
-    varname <- "temp"
+    #varname <- "temp"
     #varname <- "potdens"
     #varname <- "zossq"
     #varname <- "hvel"
@@ -460,6 +460,8 @@ if (T) { # awi-esm-1-1-lr deck
     #varname <- "FeKe"
     #varname <- "HRS"
     #varname <- "VRS"
+    varname <- "PmPe"
+    #varname <- "PmPe_wN2"
     #varname <- "wbeddy"
     #varname <- "divuv"
     #varname <- "divuvt"
@@ -471,8 +473,8 @@ if (T) { # awi-esm-1-1-lr deck
     #varname <- "transport"
 
     #area <- "global"
-    #area <- "lsea"
-    area <- "LS30l2"
+    area <- "lsea"
+    #area <- "LS30l2"
     #area <- "LS30l"
     #area <- "LS20to30l"
     #area <- "LS20to30h"
@@ -483,6 +485,7 @@ if (T) { # awi-esm-1-1-lr deck
     #area <- "csec_N74"
 
     #depths <- 0
+    #depths <- 113
     #depths <- c(0, 100)
     #depths <- c(0, 1400)
     #depths <- c(0, "MLD")
@@ -504,17 +507,28 @@ if (T) { # awi-esm-1-1-lr deck
     #recs <- 1:365
     #recs <- 1
 
-    regular_ltm_out <- T
+    regular_ltm_out <- F
+    #regular_ltm_out <- T
     #rms_out <- T
     #sd_out <- T
     #regular_dx <- regular_dy <- 1/10
 
     transient_out <- T
-    out_mode <- "mean"
+    #out_mode <- "mean"
     #out_mode <- "meanint"
-    #out_mode <- "depth"
+    out_mode <- "depth"
     #out_mode <- "csec_depth"
     #out_mode <- "csec_mean"
+    #out_mode <- "area"
+   
+    verbose <- 3
+
+    # my old directory structure /mode/area/var/ instead of new /mode/var/
+    # for backwards compatibility
+    transientpath <- paste0(postpath, "/", out_mode, "/", area, "/", varname)
+    ltmpath <- paste0(postpath, "/ltm/", area, "/", varname)
+    reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", area, "/", varname)
+    reg_ltm_outpath <- paste0(postpath, "/regular_grid/ltm/", out_mode, "/", area, "/", varname)
 
 } # my phd stuff
 

@@ -20,9 +20,8 @@ subtitle <- "" # plotted and attached as nc description if not ""
 horiz_deriv_tag <- F
 rotate_inds <- F
 vec <- F
-insitudens_tag <- F
-potdens_tag <- F
-buoyancy_tag <- F
+insitudens_tag <- buoyancy_insitudens_tag <- buoyancy_frequency_insitudens_tag <- F
+potdens_tag <- buoyancy_potdens_tag <- buoyancy_frequency_potdens_tag <- F
 coriolis_tag <- F
 fname_suffix <- ""
 p_ref_suffix <- ""
@@ -1087,8 +1086,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("diag.", "diag.")
     varname_nc <- c("uu", "vv")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "eke") {
     longname <- "Eddy Kinetic Energy"
@@ -1149,9 +1146,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "diag.", "diag.", "diag.")
-    varname_nc <- c("u", "v", "uu", "vv", "uv")
-    rotate_inds <- F # NOT allowed since uu, vv, uv are irreversibly in rotated model coordinates
-    vec <- F
+    varname_nc <- c("u", "v", "uu", "vv", "uv") # rotation NOT allowed since uu, vv, uv are in rotated model coordinates
 
 } else if (varname == "VRS") {
     longname <- "Vertical Reynolds Stress"
@@ -1188,9 +1183,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- T #"rot"
     typesuffix <- c("oce.", "oce.", "oce.", "oce.", "oce.")
     diagsuffix <- c("", "", "", "diag.", "diag.")
-    varname_nc <- c("u", "v", "w", "uw", "vw")
-    rotate_inds <- F # NOT allowed since uu, vv, uv are in rotaed model coordinates
-    vec <- F
+    varname_nc <- c("u", "v", "w", "uw", "vw") # rotation NOT allowed since uu, vv, uv are in rotated model coordinates
 
 } else if (varname == "KmKe") {
     longname <- "Kinetic Mean -> Kinetic Eddy Conversion"
@@ -1218,9 +1211,7 @@ if (varname == "tos") { # fesom 1.4
     horiz_deriv_tag <- "rot"
     typesuffix <- rep("oce.", t=8)
     diagsuffix <- c("", "", "", rep("diag.", t=5))
-    varname_nc <- c("u", "v", "w", "uu", "vv", "uv", "uw", "vw")
-    rotate_inds <- F # NOT allowed since uu, vv, uv are in rotaed model coordinates
-    vec <- F
+    varname_nc <- c("u", "v", "w", "uu", "vv", "uv", "uw", "vw") # rotation NOT allowed since uu, vv, uv are in rotated model coordinates
 
 } else if (varname == "wb") {
     longname <- "wb (Potential Mean -> Kinetic Mean Conversion)"
@@ -1248,8 +1239,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- rep("oce.", t=2)
     diagsuffix <- c("diag.", "")
     varname_nc <- c("rho", "w")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "uvb") {
     longname <- "Norm of horizontal mean buoyancy flux"
@@ -1298,30 +1287,85 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "PmPe") {
     longname <- "Potential Mean -> Potential Eddy Conversion"
-    power_out <- 4
-    multfac_out <- base^power_out
-    units_out <- paste0("m2 s-3 x ", multfac_out)
-    var_label_plot <- substitute(paste("P"[m], "P"[e], 
-                                     " [", var1^2, " ", var2^-3, 
-                                     "] " %*% " ", base^power_out),
-                               list(var1="m", var2="s", 
-                                    base=base, power_out=-power_out))
+    subtitle <- ">0 eddy growth due to baroclinic instability"
+    units_out <- "m2 s-3"
+    units_plot <- units_out
     if (integrate_depth) {
-        units_out <- paste0("m3 s-3 x ", multfac_out)
+        units_out <- "m3 s-3"
+        power_plot <- 6
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m3 s-3 x ", multfac_plot)
         var_label_plot <- substitute(paste(integral(), 
-                                         "P"[m], "P"[e], 
+                                         #"P"[m], "P"[e],
                                          " dz [", var1^3, " ", var2^-3, 
-                                         "] " %*% " ", base^power_out),
-                                  list(var1="m", var2="s", 
-                                       base=base, power_out=-power_out))
+                                         "] " %*% " ", base^-power_plot),
+                                   list(var1="m", var2="s", 
+                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m5 s-2"
+        }
+    } else {
+        power_plot <- 5
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
+        var_label_plot <- substitute(#paste(#"P"[e], "K"[e], 
+                                     paste(-bar(bold(u)[h], "'b'") %.% bold(nabla)[h], bar(b), " ", N^-2,
+                                     " [", var1^2, " ", var2^-3, 
+                                     "] " %*% " ", base^-power_plot),
+                                     list(var1="m", var2="s", N="N",
+                                          base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m4 s-2"
+        }
     }
-    var_label_plot_roundfac <- 2
-    horiz_deriv_tag <- "rot"
-    typesuffix <- rep("oce.", t=6)
-    diagsuffix <- c("", "", "diag.", "diag.", "diag.", "diag.")
-    varname_nc <- c("u", "v", "urho", "vrho", "rho", "N2")
+    horiz_deriv_tag <- T
+    varname_nc <- c("u", "v", "urho", "vrho", "rho", "temp", "salt")
+    fpatterns <- c("<runid>.<YYYY>.oce.mean.nc", "<runid>.<YYYY>.oce.mean.nc", 
+                   "<runid>.<YYYY>.oce.diag.nc", "<runid>.<YYYY>.oce.diag.nc", "<runid>.<YYYY>.oce.diag.nc",
+                   "<runid>.<YYYY>.oce.mean.nc", "<runid>.<YYYY>.oce.mean.nc")
     rotate_inds <- c(1, 2, 3, 4)
-    vec <- F
+    dxvars <- dyvars <- "rho"
+    buoyancy_frequency_potdens_tag <- T
+
+} else if (varname == "PmPe_wN2") {
+    longname <- "Potential Mean -> Potential Eddy Conversion"
+    subtitle <- ">0 eddy growth due to baroclinic instability"
+    units_out <- "m2 s-3"
+    units_plot <- units_out
+    if (integrate_depth) {
+        units_out <- "m3 s-3"
+        power_plot <- 6
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m3 s-3 x ", multfac_plot)
+        var_label_plot <- substitute(paste(integral(), 
+                                         #"P"[m], "P"[e],
+                                         " dz [", var1^3, " ", var2^-3, 
+                                         "] " %*% " ", base^-power_plot),
+                                   list(var1="m", var2="s", 
+                                        base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m5 s-2"
+        }
+    } else {
+        power_plot <- 2
+        multfac_plot <- base^power_plot
+        units_plot <- paste0("m2 s-3 x ", multfac_plot)
+        var_label_plot <- substitute(#paste(#"P"[e], "K"[e], 
+                                     paste(-bar(bold(u)[h], "'b'") %.% bold(nabla)[h], bar(b), " ", N^-2,
+                                     " [", var1^2, " ", var2^-3, 
+                                     "] " %*% " ", base^-power_plot),
+                                     list(var1="m", var2="s", N="N",
+                                          base=base, power_plot=power_plot))
+        if (any(out_mode == c("meanint", "depthint"))) {
+            units_out <- "m4 s-2"
+        }
+    }
+    horiz_deriv_tag <- "rot"
+    varname_nc <- c("u", "v", "urho", "vrho", "rho", "N2")
+    fpatterns <- c("<runid>.<YYYY>.oce.mean.nc", "<runid>.<YYYY>.oce.mean.nc", 
+                   "<runid>.<YYYY>.oce.diag.nc", "<runid>.<YYYY>.oce.diag.nc",
+                   "<runid>.<YYYY>.oce.diag.nc", "<runid>.<YYYY>.oce.diag.nc")
+    rotate_inds <- c(1, 2, 3, 4)
 
 } else if (varname == "wbeddy") {
     longname <- "w'b' (Potential Eddy -> Kinetic Eddy Conversion)"
