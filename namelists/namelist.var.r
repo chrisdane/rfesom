@@ -283,8 +283,12 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- expression(paste("|", bold("u")[h],"| [cm s"^"-1","]"))
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_nc <- c("u", "v")
-    varname_nc <- c("uo", "vo")
+    if (F) {
+        varname_nc <- c("uo", "vo")
+    } else if (T) { 
+        varname_nc <- c("u", "v")
+        fpatterns <- c("<runid>.<YYYY>.oce.mean.nc", "<runid>.<YYYY>.oce.mean.nc")
+    }
     rotate_inds <- c(1, 2)
     vec <- T
     if (F) {

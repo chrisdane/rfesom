@@ -53,7 +53,7 @@ if (F) { # awi-esm-1-1-lr deck
         years <- 1850:2099
         #years <- 2070:2099
     }
-    fpattern <- "<setting>_fesom_<varname_nc>_<YYYY>0101.nc"
+    fpatterns <- "<setting>_fesom_<varname_nc>_<YYYY>0101.nc"
     meshid <- "core"
     meshpath <- paste0("/work/ab0995/a270046/meshes_default/", meshid)
     postpath <- "/work/ab0246/a270073/post/fesom"
@@ -111,6 +111,15 @@ if (F) { # awi-esm-1-1-lr deck
         }
     }
 
+} else if (T) { # xiaoxu
+    runid <- "mh_cmip"
+    datainpath <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/fesom"
+    fpatterns <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"
+    meshpath <- "/work/ab0995/a270046/meshes_default/core"
+    rotate_mesh <- T
+    varname <- "tos"
+    years <- 2105
+
 } else if (F) {
     runid <- "awicm-CMIP6" 
     meshid <- "core"
@@ -149,7 +158,7 @@ if (F) { # awi-esm-1-1-lr deck
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/opottempmint_fesom_18500101.nc"
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/somint_fesom_18500101.nc"
     
-} else if (T) { # my phd stuff
+} else if (F) { # my phd stuff
     #runid <- "CbSCL"
     #meshid <- "CbSCL"
     #setting <- "spinup5"
@@ -159,24 +168,24 @@ if (F) { # awi-esm-1-1-lr deck
     #meshid <- "swang"
     #setting <- ""
 
-    #runid <- "Low01"
-    #meshid <- "CbSCL"
+    runid <- "Low01"
+    meshid <- "CbSCL"
     #setting <- "s1"
     #setting <- "s2"
     #setting <- "s3"
     #setting <- "s4"
     #setting <- "s5"
-    #setting <- "s52" # where is ice.diag ?!
+    setting <- "s52" # where is ice.diag ?!
     #setting <- "s6"
 
-    runid <- "Low01_sub_lsea"
-    meshid <- "CbSCL_sub_lsea"
+    #runid <- "Low01_sub_lsea"
+    #meshid <- "CbSCL_sub_lsea"
     #setting <- "s1"
     #setting <- "s2"
     #setting <- "s3"
     #setting <- "s4"
     #setting <- "s5"
-    setting <- "s52"
+    #setting <- "s52"
 
     #runid <- "Low01_sub_lseawNA"
     #meshid <- "CbSCL_sub_lseawNA"
@@ -451,7 +460,7 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "temp"
     #varname <- "potdens"
     #varname <- "zossq"
-    #varname <- "hvel"
+    varname <- "hvel"
     #varname <- "vertvel"
     #varname <- "eke"
     #varname <- "mixlay"
@@ -460,7 +469,7 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "FeKe"
     #varname <- "HRS"
     #varname <- "VRS"
-    varname <- "PmPe"
+    #varname <- "PmPe"
     #varname <- "PmPe_wN2"
     #varname <- "wbeddy"
     #varname <- "divuv"
@@ -472,8 +481,8 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "somint"
     #varname <- "transport"
 
-    #area <- "global"
-    area <- "lsea"
+    area <- "global"
+    #area <- "lsea"
     #area <- "LS30l2"
     #area <- "LS30l"
     #area <- "LS20to30l"
@@ -484,19 +493,20 @@ if (F) { # awi-esm-1-1-lr deck
     #area <- "csec_S30"
     #area <- "csec_N74"
 
-    #depths <- 0
+    depths <- 0
     #depths <- 113
     #depths <- c(0, 100)
     #depths <- c(0, 1400)
     #depths <- c(0, "MLD")
-    depths <- c(0, "max")
+    #depths <- c(0, "max")
 
     integrate_depth <- F
     #integrate_depth <- T
 
-    years <- 1948
+    #years <- 1948
     #years <- 1948:2009
     #years <- 1961:2009
+    years <- 1993:2009
 
     recs <- 1:12
     #recs <- 3
@@ -507,21 +517,22 @@ if (F) { # awi-esm-1-1-lr deck
     #recs <- 1:365
     #recs <- 1
 
-    regular_ltm_out <- F
-    #regular_ltm_out <- T
+    #regular_ltm_out <- F
+    regular_ltm_out <- T
     #rms_out <- T
     #sd_out <- T
-    #regular_dx <- regular_dy <- 1/10
+    regular_dx <- regular_dy <- 1/10
 
-    transient_out <- T
+    #transient_out <- T
     #out_mode <- "mean"
     #out_mode <- "meanint"
-    out_mode <- "depth"
+    #out_mode <- "depth"
     #out_mode <- "csec_depth"
     #out_mode <- "csec_mean"
-    #out_mode <- "area"
+    out_mode <- "area"
    
-    verbose <- 3
+    verbose <- 2
+    #verbose <- 3
 
     # my old directory structure /mode/area/var/ instead of new /mode/var/
     # for backwards compatibility

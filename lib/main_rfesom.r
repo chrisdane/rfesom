@@ -73,8 +73,8 @@ if (!any(user_runscript_end != -1)) {
         user_runscript_end <- user_runscript_end[1]
     }
 }
-message("Load user options from \"", user_runscript_filename, "\" ...")
-source(textConnection(user_runscript[1:user_runscript_end]))
+message("Load user options from \"", user_runscript_filename, "\" ...\n")
+source(textConnection(user_runscript[1:user_runscript_end])) # here the runscript of the user is finally loaded
 message()
 
 # checks
@@ -114,9 +114,9 @@ if (plot_map || plot_csec
     
     if (!exists("plotpath")) {
         # use default
-        plotpath <- paste0(rfesompath, "/example_data/plots/", varname)
+        plotpath <- paste0(workpath, "/plots/", model)
         message("No 'plotpath' is given for saving plots.\n",
-                "   Use default: ", plotpath, " (= `rfesompath`/example_data/plots/`varname`)\n",
+                "   Use default: ", plotpath, " (= `workpath`/plots/`model`)\n",
                 "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
     } else {
         plotpath <- suppressWarnings(normalizePath(plotpath))
@@ -135,8 +135,8 @@ if (plot_map || plot_csec
     # no writing rights to plot path
     } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
-        plotpath <- paste0(rfesompath, "/example_data/plots/", varname)
-        message("   Use default: ", plotpath, " (= `rfesompath`/example_data/plots/`varname`)\n",
+        plotpath <- paste0(workpath, "/plots/", model)
+        message("   Use default: ", plotpath, " (= `workpath`/plots/`model`)\n",
                 "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
     }
     success <- load_package("fields")
@@ -206,6 +206,12 @@ if (plot_map && plot_type == "interp") {
 }
 
 ## check stuff
+if (!exists("runid")) {
+    runid <- "runid"
+    message("'runid' not given. Use default: runid\n",
+            "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
+            "   runid <- \"myexp\"")
+}
 if (is.null(varname_nc)) {
     nfiles <- 0
 } else {
@@ -221,12 +227,6 @@ if (exists("fnames_user")) {
     }
 } else {
     fuser_tag <- F
-}
-if (!exists("runid")) {
-    runid <- "runid"
-    message("'runid' not given. Use default: runid\n",
-            "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
-            "   runid <- \"myexp\"")
 }
 if (fuser_tag) {
     if (!exists("datainpath")) {
@@ -249,8 +249,8 @@ if (fuser_tag) {
              paste0("<runid>.<YYYY>.file", 1:nfiles, ".nc", collapse="\", \""), "\"", 
              ifelse(nfiles > 1, ")", ""), "\n",
              "for ", ifelse(nfiles > 1, "each of", ""), " the above variable", 
-             ifelse(nfiles > 1, "s", ""), " in namelist.config.r or namelist.var.r ",
-             "(the latter overwrites entries from the first).")
+             ifelse(nfiles > 1, "s", ""), " in namelist.config.r or namelist.var.r or in this runscript \"",
+             basename(user_runscript_filename), "\" (entries in the latter overwrite entries in ones before).")
     }
 }
 if (nfiles == 0) {
@@ -372,9 +372,9 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        postpath <- paste0(rfesompath, "/example_data/post")
+        postpath <- paste0(workpath, "/post/", model)
         message("No 'postpath' is given for saving postprocessing results.\n",
-                "   Use default: ", postpath, " (= `rfesompath`/example_data/post).\n",
+                "   Use default: ", postpath, " (= `workpath`/post/`model`).\n",
                 "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
     } else {
         postpath <- suppressWarnings(normalizePath(postpath))
@@ -391,8 +391,8 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         }
     } else if (file.access(postpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message("You have no writing rights in 'postpath' = ", postpath, " ...")
-        postpath <- paste0(rfesompath, "/example_data/post")
-        message("   Use default: ", postpath, " (= `rfesompath`/example_data/post).\n",
+        postpath <- paste0(workpath, "/post/", model)
+        message("   Use default: ", postpath, " (= `workpath`/post/`model`).\n",
                 "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
     }
 
@@ -505,6 +505,7 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
 
 
 ## try to load all needed packages alread now
+message("\nLoad necessary R packages ...")
 if (nfiles > 0) {
     success <- load_package("ncdf.tools")
     if (!success) {
@@ -587,46 +588,47 @@ if (F) { # not yet
 
 ## start
 if (verbose > 0) {
-    message("\n", "verbose: ", verbose, " (change this in the runscript for more/less info)")
-    message(paste0("datainpath: ", datainpath))
-    message(paste0("runid: ", runid))
-    if (setting != "") message(paste0("setting: ", setting))
-    message(paste0("meshpath: ", meshpath))
-    message(paste0("meshid: ", meshid))
-    message(paste0("   rotate mesh back to geographic coordinates: ", rotate_mesh))
-    message(paste0("   treat cyclic elements: ", cycl))
+    message("\nAll runscript & namelist checks passed")
+    message("verbose: ", verbose, " (change this in the runscript for more/less info)")
+    message("datainpath: ", datainpath)
+    message("runid: ", runid)
+    if (setting != "") message("setting: ", setting)
+    message("meshpath: ", meshpath)
+    message("meshid: ", meshid)
+    message("   rotate mesh back to geographic coordinates: ", rotate_mesh)
+    message("   treat cyclic elements: ", cycl)
     if (exists("fnames_user")) {
         message("fnames_user: ", fnames_user)
     }
-    message(paste0("varname: ", varname))
+    message("varname: ", varname)
     if (nfiles > 0) {
         message("depths: ", paste(depths, collapse="-"))
-        message(paste0("snapshot: ", snapshot))
+        message("snapshot: ", snapshot)
         if (exists("nyears")) {
-            message(paste0("years: ", ifelse(nyears == 1, years, 
-                               paste0(years[1], "-", years[nyears]))))
+            message("years: ", ifelse(nyears == 1, years, 
+                                      paste0(years[1], "-", years[nyears])))
         }
     }
     message(paste0("area: ", area))
     if (plot_map) {
         message(paste0("projection: ", projection))
         if (exists("map_geogr_lim_lon")) {
-            message(paste0("plot map from longitude: ", round(range(map_geogr_lim_lon)[1], 2), 
-                         " to ", round(range(map_geogr_lim_lon)[2], 2)))
-            message(paste0("plot map from latitude: ", round(range(map_geogr_lim_lat)[1], 2),
-                         " to ", round(range(map_geogr_lim_lat)[2], 2)))
-            message(paste0("draw polygons from longitude: ", round(range(poly_geogr_lim_lon)[1], 2), 
-                      " to ", round(range(poly_geogr_lim_lon)[2], 2)))
-            message(paste0("draw polygons from latitude: ", round(range(poly_geogr_lim_lat)[1], 2),  
-                      " to ", round(range(poly_geogr_lim_lat)[2], 2)))
+            message("plot map from longitude: ", round(range(map_geogr_lim_lon)[1], 2), 
+                    " to ", round(range(map_geogr_lim_lon)[2], 2))
+            message("plot map from latitude: ", round(range(map_geogr_lim_lat)[1], 2),
+                    " to ", round(range(map_geogr_lim_lat)[2], 2))
+            message("draw polygons from longitude: ", round(range(poly_geogr_lim_lon)[1], 2), 
+                    " to ", round(range(poly_geogr_lim_lon)[2], 2))
+            message("draw polygons from latitude: ", round(range(poly_geogr_lim_lat)[1], 2),  
+                    " to ", round(range(poly_geogr_lim_lat)[2], 2))
         }
         if (projection != "rectangular") {
-            message(paste0("orientation: c(lat=", orient[1], ",lon=", orient[2], 
-                ",rot=", orient[3], ")"))
+            message("orientation: c(lat=", orient[1], ",lon=", orient[2], 
+                    ",rot=", orient[3], ")")
         }
         if (vec && quiver_tag) {
             if (quiver_thr != 0) {
-                message(paste0("plot u- and v- quivers above ", quiver_thr, " m s^(-1)"))
+                message("plot u- and v- quivers above ", quiver_thr, " m s-1")
             } else if (quiver_thr == 0) {
                 message("plot u- and v- quivers")
             }
@@ -654,7 +656,7 @@ if (verbose > 0) {
     }
 
     message("==============================================")
-    message("Start clock ...")
+    message("\nStart clock ...")
 } # if (verbose > 0)
 
 ptm <- proc.time()
@@ -667,7 +669,7 @@ indent <- "   "
 
 ## 1) Get fesom data header information
 if (verbose > 0) {
-    message("Get fesom data header infos ...")
+    message("\nGet fesom data meta infos ...")
     message(indent, "Read first line of")
 }
 nod2d_n <- as.integer(readLines(paste0(meshpath, "/nod2d.out"), n=1))
@@ -943,8 +945,7 @@ if (nfiles > 0) {
             } # for di dimids
         }
     } # for vari all varname_nc
-    message(indent, "If something is wrong with these variable dimensions, adjust the known dimension/variable",
-            "\n", indent, "names to correctly identify the time/node/depth/etc. dimensions by setting e.g.:\n",
+    message(indent, "--> if something is wrong with these variable dimensions, adjust the known dimension/variable names to correctly identify the time/node/depth/etc. dimensions by setting e.g.:\n",
             indent, "   `time_dim_or_var_names <- c(\"", paste(time_dim_or_var_names, collapse="\", \""), 
             "\", \"my_special_time_dimension_name\")`\n",
             indent, "   `node_dim_or_var_names <- c(\"", paste(node_dim_or_var_names, collapse="\", \""), 
@@ -1142,7 +1143,7 @@ if (nfiles > 0) {
                     "temporal mean before any other analysis, set e.g.\n",
                     paste0(indent, "   `frequency_post <- \"", 
                            names(known_frequencies)[(freq_ind+1):length(known_frequencies)], "\"`\n"),
-                    indent, "in the runscript (known frequencies are \"", 
+                    indent, "in the runscript (possible frequencies are \"", 
                     paste(names(known_frequencies), collapse="\",\""), "\").")
         
         } else { # `frequency_post` is given by user
@@ -4482,10 +4483,13 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 if (dim_tag == "3D" && !levelwise) {
                     dims[3] <- 1  # old non-levelwise 3D data is saved on one long vector
                     dimnames <- c(dimnames, list(depth=NULL))
+                } else if (dim_tag == "3D" && levelwise) {
+                    stop("woot")
                 } else {
+                    dims[3] <- 1
                     if (ndepths == 0) {
                         dimnames <- c(dimnames, list(depth=NULL))
-                    } else if (ndepths == 1) {
+                    } else if (ndepths == 1) { # includes also 2D vars
                         dimnames <- c(dimnames, list(depth=depths_plot))
                     } else if (ndepths > 1) {
                         dimnames <- c(dimnames, list(depth=paste0(interpolate_depths, "m")))
@@ -5022,8 +5026,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 message(indent, "Interpolate on regular grid ('regular_dx'=",
                                         sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                                         sprintf("%.3f", regular_dy),
-                                        " deg) and\n",
-                                        indent, "select regular data in '", area, "' area: ",
+                                        " deg) and select regular data in '", area, "' area: ",
                                         round(range(map_geogr_lim_lon)[1], 2), " to ",
                                         round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
                                         round(range(map_geogr_lim_lat)[1], 2), " to ",
@@ -7361,8 +7364,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             message(indent, "Interpolate on regular grid ('regular_dx'=",
                     sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
                     sprintf("%.3f", regular_dy),
-                    " deg) and ",
-                    indent, "select regular data in '", area, "' area: ",
+                    " deg) and select regular data in '", area, "' area: ",
                     round(range(map_geogr_lim_lon)[1], 2), " to ",
                     round(range(map_geogr_lim_lon)[2], 2) , " deg longitude and ",
                     round(range(map_geogr_lim_lat)[1], 2), " to ",
@@ -7695,14 +7697,27 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if ltm_out
 
     if (regular_ltm_out) {
-        outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, output_fname, "_",
-                                  out_mode, "_", varname, "_", area, timespan_fname, depths_fname, 
-                                  "_regular_dx", 
-                                  sprintf("%.3f", regular_dx), "_dy",
-                                  sprintf("%.3f", regular_dy), 
-                                  ssh_aviso_correct_fname, 
-                                  p_ref_suffix, fname_suffix, 
-                                  ".nc")
+        if (T) { # old nameing
+            message("old nameing convenction!!!")
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, "_", output, "_",  
+                                      varname, "_ltm_", out_mode, timespan_fname, "_mean", depths_fname, "_",
+                                      area, "_regular_dx", 
+                                      sprintf("%.3f", regular_dx), "_dy",
+                                      sprintf("%.3f", regular_dy), 
+                                      ssh_aviso_correct_fname, 
+                                      p_ref_suffix, fname_suffix, 
+                                      ".nc")
+        } else if (T) { # new nameing
+            message("new nameing convenction!!!")
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, output_fname, "_",
+                                      out_mode, "_", varname, "_", area, timespan_fname, depths_fname, 
+                                      "_regular_dx", 
+                                      sprintf("%.3f", regular_dx), "_dy",
+                                      sprintf("%.3f", regular_dy), 
+                                      ssh_aviso_correct_fname, 
+                                      p_ref_suffix, fname_suffix, 
+                                      ".nc")
+        }
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -8274,13 +8289,13 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 xo <- seq(min(xpsur), max(xpsur), b=interp_dlon_plot)
                 yo <- seq(min(ypsur), max(ypsur), b=interp_dlat_plot)
                 if (verbose > 0) {
-                    message(paste0(indent, "   'plot_type'='interp':"))
-                    message(paste0(indent, "      ", interp_method_plot, " (='interp_method') interpolation of ",
-                                 length(z), " 2D nodes on (nx,ny) = (", length(xo), ",", length(yo), ") regular"))
-                    message(paste0(indent, "      ('interp_dlon_plot','interp_dlat_plot') = (",
+                    message(indent, "   `plot_type` = \"interp\":\n",
+                            indent, "      ", interp_method_plot, " (= `interp_method`) interpolation of ",
+                            length(z), " 2D nodes on (nx,ny) = (", length(xo), ",", length(yo), ") regular\n",
+                            indent, "      (`interp_dlon_plot`,`interp_dlat_plot`) = (",
                                  sprintf("%.3f", interp_dlon_plot), ",",
                                  sprintf("%.3f", interp_dlat_plot),
-                                 ") deg grid using akima::interp() ..."))
+                                 ") deg grid using akima::interp() ...")
                 }
                 interp <- akima::interp(x=xpsur, y=ypsur, z=z,
                                         xo=xo, yo=yo,
@@ -8450,7 +8465,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     success <- load_package("maps")
                     if (!success) {
                         if (verbose > 0) {
-                            message(paste0("Cannot add continents from 'maps' package for 'plot_type=interp' ..."))
+                            message(paste0("Cannot add continents from \"maps\" package for `plot_type` = \"interp\" ..."))
                         }
                     } else if (success) {
                         map("world", add=T, fill=T, col=land_col, border=landborder_col)
@@ -8544,7 +8559,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
                 if (verbose > 1) {
                     message(paste0(indent, "   Add ", dim(z)[2],
-                                 " constant data polygons to plot (plot_type='const') ..."))
+                                 " constant data polygons to plot (`plot_type` = \"const\") ..."))
                 }
                     
                 if (plot_file == "png") {

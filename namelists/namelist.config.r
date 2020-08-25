@@ -39,6 +39,9 @@ horiz_deriv_node3d <- T # method for calculating horizontal derivative of 3D var
 horiz_deriv_elem2d <- F # special
 ssh_aviso_correct <- F # special
 
+## Which fesom
+model <- "fesom" # "fesom" or "fesom2"
+
 ## Default mesh options
 rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
                  # If you dont know whether the coordinates in your *.out files are
