@@ -1,55 +1,33 @@
 ## Host options
-message("*** myrunids start ***")
-machine <- system("hostname -f", intern=T)
-message("Run on ", machine, ":")
-if (regexpr("ollie", machine) != -1 || 
-    regexpr("prod-", machine) != -1 ||
-    regexpr("fat-", machine) != -1) {
-    machine_tag <- "ollie"
-    homepath <- "~/scripts/r"
-    workpath <- "/work/ollie/cdanek"
-} else if (regexpr("hpc.dkrz", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
-    machine_tag <- "mistral"
-    homepath <- "~/scripts/r"
-    workpath <- "/work/ab0246/a270073"
-} else {
-    stop("   machine ", machine, " is unknown")
-}
-message("   homepath = ", homepath)
-message("   workpath = ", workpath)
 
-this_runscript_filename <- "myrunscript.r" # just basename if saved in directory 
-# rfesom/runscripts or absolute path if saved somehwhere else
-#rfesompath  <- normalizePath("../") # assume this runscript was not moved 
-rfesompath <- system("git rev-parse --show-toplevel", intern=T)
+this_runscript_filename <- "myrunscript.r" # just basename 
 
 ############################################################
 
 if (F) { # awi-esm-1-1-lr deck
     runid <- "awi-esm-1-1-lr"
-    #datainpath <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom")
+    #datainpaths <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom")
     if (F) {
         setting <- "piControl"
-        datainpath <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/fesom"
+        datainpaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/fesom"
         #years <- 1842:1941
         #years <- (1941-29):1941
         #years <- 1940:1941
         years <- 1941
     } else if (F) {
         setting <- "hist"
-        datainpath <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/fesom"
+        datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/fesom"
         years <- 1850:2014
         #years <- 1985:2014
     } else if (F) {
         setting <- "1percCO2"
-        datainpath <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/fesom"
+        datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/fesom"
         #years <- 1850:1851
         years <- 1850:2099
         #years <- 2070:2099
-    } else if (T) {
+    } else if (F) {
         setting <- "4CO2"
-        datainpath <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/fesom"
+        datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/fesom"
         years <- 1850:2099
         #years <- 2070:2099
     }
@@ -65,7 +43,7 @@ if (F) { # awi-esm-1-1-lr deck
         depths <- c(0, "max")
         area <- "NA"
         out_mode <- "moc_depth"
-    } else if (T) {
+    } else if (F) {
         #varname <- "mlotst"
         #varname <- "tos"
         #varname <- "thetao"
@@ -99,24 +77,24 @@ if (F) { # awi-esm-1-1-lr deck
     #setting <- "pi" # 2020:2700 (model years 862:1542)
     if (setting == "hu_svn471_ollie") {
         if (machine_tag == "ollie") {
-            datainpath <- "/work/ollie/cdanek/awicm-CMIP6/hu_svn471_ollie/" # 2000:2363 (model years 1:364), 2803:2859 (model years 804:860) 
+            datainpaths <- "/work/ollie/cdanek/awicm-CMIP6/hu_svn471_ollie/" # 2000:2363 (model years 1:364), 2803:2859 (model years 804:860) 
         } else if (machine_tag == "mistral") {
             stop("not")
         }
     } else if (setting == "hu_svn477_ollie") {
         if (machine_tag == "ollie") {
-            datainpath <- "/work/ollie/ukrebska/AWI_CM/pi477_u/cpl_output/" # 2020:2700 (model years 862:1542)
+            datainpaths <- "/work/ollie/ukrebska/AWI_CM/pi477_u/cpl_output/" # 2020:2700 (model years 862:1542)
         } else if (machine_tag == "mistral") {
-            datainpath <- "/work/ab0246/a270073/awicm-CMIP6_hu/hu_svn477_ollie/" # 2700 only
+            datainpaths <- "/work/ab0246/a270073/awicm-CMIP6_hu/hu_svn477_ollie/" # 2700 only
         }
     }
 
-} else if (T) { # xiaoxu
-    runid <- "mh_cmip"
-    datainpath <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/fesom"
-    fpatterns <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"
+} else if (F) { # xiaoxu
+    datainpaths <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/fesom"
+    fpatterns <- "mh_cmip_fesom_<varname>_<YYYY>0101.nc"
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     rotate_mesh <- T
+    postprefix <- "awi-esm-1-1-lr_mh_cmip"
     varname <- "tos"
     years <- 2105
 
@@ -139,16 +117,16 @@ if (F) { # awi-esm-1-1-lr deck
     meshid <- "core"
     setting <- "htrans02"
     if (machine_tag == "ollie") {
-        datainpath <- paste0("/work/ollie/cdanek/", runid, "/", setting, "/")
+        datainpaths <- paste0("/work/ollie/cdanek/", runid, "/", setting, "/")
     } else {
-        datainpath <- "/work/ollie/lackerma/awicm_tests/htrans02/outdata/fesom/"
+        datainpaths <- "/work/ollie/lackerma/awicm_tests/htrans02/outdata/fesom/"
     }
 
 } else if (F) {
     runid <- "awicm-test" 
     meshid <- "core"
     setting <- "hist"
-    datainpath <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom/")
+    datainpaths <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom/")
     postpath <- paste0("/work/ab0246/a270073/post/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/")
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/tos_fesom_18500101.nc"
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/tossq_fesom_18500101.nc"
@@ -411,13 +389,13 @@ if (F) { # awi-esm-1-1-lr deck
     }
     
     workpath <- "/work/ba0941/a270073"
-    datainpath <- paste0(workpath, "/out/", runid, "/", setting)
+    datainpaths <- paste0(workpath, "/out/", runid, "/", setting)
     meshpath   <- paste0(workpath, "/mesh/", meshid) # path of fesom mesh
     #postpath   <- paste0(workpath, "/post") # --> new 
     postpath <- paste0(workpath, "/post/", runid, "/", setting) # my old phd folder structure
     derivpath  <- paste0(workpath, "/mesh/", meshid, "/derivatives") # path where to save derivative file if wanted
     interppath <- paste0(workpath, "/mesh/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
-    plotpath   <- paste0(homepath, "/plots/fesom") # path where to save plots if wanted
+    plotpath   <- paste0(workpath, "/plots/fesom") # path where to save plots if wanted
     if (meshid == "core") {
         rotate_mesh <- F
         if (machine_tag == "ollie") {
@@ -427,29 +405,29 @@ if (F) { # awi-esm-1-1-lr deck
         }
     }
     if (runid == "bold" && setting == "cpl_output_01") {
-        datainpath <- paste0("/work/ab0995/a270067/fesom_echam/bold/", setting)
+        datainpaths <- paste0("/work/ab0995/a270067/fesom_echam/bold/", setting)
     }
     if (runid == "bold" && setting == "cpl_output_470") {
-        datainpath <- paste0("/work/bm0944/a270062/fesom_echam/bold/", setting)
+        datainpaths <- paste0("/work/bm0944/a270062/fesom_echam/bold/", setting)
         #meshpath <- "/work/bm0944/a270111/mesh_Agulhas/" ==
         #            "/work/ba0941/a270073/mesh/agulhas"
     }
     if (runid == "fro03") {
-        datainpath <- "/work/bm0944/a270067/fron/fro03/"
+        datainpaths <- "/work/bm0944/a270067/fron/fro03/"
         meshpath <- "/work/ab0995/a270067/fesom/fron/mesh_Agulhas/"
     }
     if (runid == "bol01") {
-        #datainpath <- "/work/ab0995/a270067/fesom/bold/bol02/"
-        datainpath <- "/work/ab0995/a270067/fesom/bold/bol01/"
+        #datainpaths <- "/work/ab0995/a270067/fesom/bold/bol02/"
+        datainpaths <- "/work/ab0995/a270067/fesom/bold/bol01/"
     }
     if ((runid == "CORE2" && setting == "s1") || 
         (runid == "CORE2_ctl" && setting == "s1")) { ## 1st CORE2 spinups in xuezhus directory
-            datainpath <- paste0("/work/ab0246/a270055/output_fesom_alone/", runid)
+            datainpaths <- paste0("/work/ab0246/a270055/output_fesom_alone/", runid)
     }
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily", 
                            "Arc22_sub", "Arc22_sub_small"))) {
         if (machine_tag == "ollie") {
-            datainpath <- paste0("/work/ollie/cwekerle/result/", runid)
+            datainpaths <- paste0("/work/ollie/cwekerle/result/", runid)
             meshpath <- paste0("/work/ollie/cwekerle/mesh/", meshid)
         }
     }
@@ -547,5 +525,6 @@ message("*** myrunids end ***")
 
 ## do not change below this line ##
 # run rfesom
+rfesompath <- system("git rev-parse --show-toplevel", intern=T)
 source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 

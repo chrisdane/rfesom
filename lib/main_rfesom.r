@@ -2,35 +2,59 @@
 ## R-script for reading, plotting and saving FESOM output                   #
 ##                                                                          #
 ## Necessary R-packages:                                                    #
-##   ncdf.tools (or ncdf4), lubridate                                       #
+##   ncdf.tools (or ncdf4), stringr                                         #
 ##                                                                          #
 ## Optional R-packages (depending on user options):                         #
-##   data.table, gsw, abind, fields, akima, maps, splancs, mapproj, pramca  #
+##   data.table, gsw, abind, fields, akima, maps, splancs, mapproj, pracma  #
 ##                                                                          #
-## C. Danek (cdanek@awi.de)                                                 # 
-## version 0.1                                                              #
+## https://github.com/chrisdane/rfesom                                      # 
 #############################################################################
 
 # R hints:
 # 1) R counts from 1, not zero
-# 2) index syntax in R is `[]`, not `()`
-# 3) `T` = `TRUE`, `F` = `FALSE` (booleans)
+# 2) index syntax in is `arrayname[]`, not `arrayname()`
+# 3) booleans `TRUE` and `FALSE` can be abbreviated with `T` and `F`
 # 4) 'not equal' condition is `!=`
 
-## clear work space and close possibly open plot devices
+rfesom_version <- c(1, 0, 0)
+message("\n",
+        "***********************************************************************\n",
+        "* rfesom v", paste(rfesom_version, collapse="."), " for reading, ",
+        "postprocessing and plotting FESOM output *\n",
+        "* https://github.com/chrisdane/rfesom                                 *\n",
+        "***********************************************************************")
+
+## close any open plot devices
 graphics.off()
-if (!exists("rfesompath")) {
-    rfesompath <- system("git rev-parse --show-toplevel", intern=T)
-    if (!is.null(attributes(rfesompath))) {
-        stop("`rfesompath` is not given and running `git rev-parse --show-toplevel` on\n", 
-             "   ", system("whoami", intern=T), "@", system("hostname -f", intern=T), ":", getwd(), "\n",
-             "returned exit code ", attributes(rfesompath)$status)
-    }
+
+## check if user runscript is ok
+user_runscript_filename <- paste0(normalizePath(dirname(sys.frame(1)$ofile)), "/", sys.frame(1)$ofile)
+message("\nCalled by runscript \"", user_runscript_filename, "\"")
+user_runscript <- readLines(user_runscript_filename)
+# throw out all lines that start with "rfesom <- " from user runscript
+if (any(regexpr("^rfesompath <- ", user_runscript) != -1)) {
+    user_runscript <- user_runscript[-which(regexpr("^rfesompath <- ", user_runscript) != -1)]
 }
+# throw out all lines that start with "source(" from user runscript
+if (any(regexpr("^source\\(", user_runscript) != -1)) {
+    user_runscript <- user_runscript[-which(regexpr("^source\\(", user_runscript) != -1)]
+}
+
+if (!exists("rfesompath")) {
+    stop("`rfesompath` not defined. this should happen somewhere in your runscript ", user_runscript_filename)
+}
+rfesompath <- suppressWarnings(normalizePath(rfesompath))
+message("Given `rfesompath` = \"", rfesompath, "\"")
+
+## clear work space
 ws <- ls()
-ws <- ws[-which(ws == "this_runscript_filename" | 
-                ws == "rfesompath")]
+ws <- ws[-which(ws == "rfesom_version" | ws == "rfesompath" | 
+                ws == "user_runscript_filename" | ws == "user_runscript")]
+message("Clear work space ...")
 rm(list=ws)
+
+## rfesom specs
+helppage <- "https://github.com/chrisdane/rfesom#installing-new-r-packages--libraries"
 
 ## show line number in case of errors
 options(show.error.locations=T)
@@ -44,149 +68,48 @@ fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 # --> use drop() to reduce dimensions
 # --> restore default: with `[` <- fctbackup
 
-message("\n", "********************************************************************")
-message("* Run rfesom for reading, postprocessing and plotting FESOM output *")
-message("* https://github.com/chrisdane/rfesom                              *")
-message("********************************************************************", "\n")
-helppage <- "https://github.com/chrisdane/rfesom#installing-new-r-packages--libraries"
+## set some defaults; do not change
+restart <- F # keep F; does not work anymore
+var_coords <- "geo" # fesom output in which coords? "geo" or "rot"; only geo allowed for rfesom
+out_coords <- "geo" # output of this script in which coords? "geo" or "rot"; only "geo" implemented
+#nisobaths <- length(isobaths)
+nisobaths <- 0
+zave_method <- 1 # default = 1
+    # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_global_vert[inds_2d]*deltaz[i]
+    # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
+keep_gsw <- T
+pb_char <- "#"
+pb_width <- 30
+pb_style <- 3
 
 ## Load default options
+message("\nLoad default options from \"", rfesompath, "/namelists/namelist.config.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.config.r")) 
 
 ## Load user options
-if (file.exists(paste0(rfesompath, "/runscripts/", this_runscript_filename))) {
-    user_runscript_filename <- normalizePath(paste0(rfesompath, "/runscripts/", this_runscript_filename))
-} else if (file.exists(this_runscript_filename)) {
-    user_runscript_filename <- normalizePath(this_runscript_filename)
-} else {
-    stop("`this_runscript_filename` = ", this_runscript_filename, 
-         " does not exist in ", rfesompath, "/runscripts and at all.")
-}
-user_runscript <- readLines(user_runscript_filename)
-user_runscript_end <- regexpr("\\# do not change below this line", user_runscript)
-if (!any(user_runscript_end != -1)) {
-    stop("you changed the \"do not change below this line\"-line in the runscript. stop.")
-} else {
-    user_runscript_end <- which(user_runscript_end != -1)
-    if (length(user_runscript_end) != 1) {
-        message("this should not happen")
-        user_runscript_end <- user_runscript_end[1]
-    }
-}
-message("Load user options from \"", user_runscript_filename, "\" ...\n")
-source(textConnection(user_runscript[1:user_runscript_end])) # here the runscript of the user is finally loaded
-message()
-
-# checks
-if (!exists("meshpath")) stop("No 'meshpath' provided.")
-if (file.access(meshpath, mode=0) == -1) { # does not exist
-    stop("meshpath = ", meshpath, " does not exist.")
-}
-meshpath <- suppressWarnings(normalizePath(meshpath))
-if (!exists("meshid")) {
-    meshid <- basename(meshpath)
-    message("'meshid' not given. Take last directory of `meshpath` = \"", meshpath, "\"\n",
-            "--> \"", meshid, "\". You can set `meshid` in the runscript with e.g. `meshid <- \"my_mesh_name\"`")
-}
+message("Load user options from \"", user_runscript_filename, "\" ...")
+source(textConnection(user_runscript)) # here the runscript of the user is finally loaded
 
 ## Load plot options
+message("Load plot options from \"", rfesompath, "/namelists/namelist.plot.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
 
 ## Load variable options
+message("Load variable options from \"", rfesompath, "/namelists/namelist.var.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.var.r"))
 
-# load function subroutines
+## Load area and projection options
+message("Load area options from \"", rfesompath, "/namelists/namelist.area.r\" ...")
+source(paste0(rfesompath, "/namelists/namelist.area.r"))
+
+# load subroutines
 if (!exists("subroutinepath")) {
     subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
 }
 subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
-if (file.access(subroutinepath, mode=0) == -1) {
-    stop("subroutinepath = ", subroutinepath, " does not exist.")
-}
-for (i in c("leap_function.r", "load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "gcd.r", "myls.r")) {
-    source(paste0(subroutinepath, "/functions/", i))
-}
 
-# check paths
-if (plot_map || plot_csec
-    || any(out_mode == c("moc_mean", "moc_depth"))) {
-    
-    if (!exists("plotpath")) {
-        # use default
-        plotpath <- paste0(workpath, "/plots/", model)
-        message("No 'plotpath' is given for saving plots.\n",
-                "   Use default: ", plotpath, " (= `workpath`/plots/`model`)\n",
-                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
-    } else {
-        plotpath <- suppressWarnings(normalizePath(plotpath))
-    }
-    # plotpath does not exist
-    if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        #message(paste0("'plotpath' = ", plotpath, " does not exist ..."))
-        message(paste0("Try to create 'plotpath' = ", plotpath, " ... "), appendLF=F)
-        dir.create(plotpath, recursive=T, showWarnings=F)
-        if (file.access(plotpath, mode=0) == -1) {
-            message("")
-            stop(" Could not create 'plotpath' = ", plotpath)
-        } else {
-            message("done.")
-        }   
-    # no writing rights to plot path
-    } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        message("You have no writing rights in 'plotpath' = ", plotpath, " ...")
-        plotpath <- paste0(workpath, "/plots/", model)
-        message("   Use default: ", plotpath, " (= `workpath`/plots/`model`)\n",
-                "   You can set `plotpath <- \"/path/with/writing/rights\"` in the runscript.")
-    }
-    success <- load_package("fields")
-    if (!success) stop(helppage)
-} # check paths if plot_mat || plot_csec
-
-## Load area and projection options
-source(paste0(rfesompath, "/namelists/namelist.area.r"))
-
-## check user input
-if (!exists("rotate_mesh")) {
-    rotate_mesh <- F
-}
-if (!exists("cycl")) {
-    cycl <- T # treat cyclic mesh elements? always true for global mesh
-}
-if (!exists("setting")) {
-    setting <- ""
-    setting_fname <- ""
-}
-if (setting != "") {
-    setting_fname <- paste0("_", setting)
-}
-if (!exists("regular_dy")) {
-    message("'regular_dy' is not given. Use regular_dx ...")
-    regular_dy <- regular_dx # regular_dx # [deg]
-}
-colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
-
-## add more directories to where to look for packages to load
-if (exists("rpackagepaths")) {
-    if (file.access(rpackagepaths, mode=0) == -1) { # mode=0: existing, -1: no success
-        if (verbose > 0) {
-            message(paste0("Note: your 'rpackagepaths' = ", rpackagepaths, " does not exist ..."))
-        }
-        rm(rpackagepaths)
-    }
-}
-if (exists("rpackagepaths")) {
-    if (file.access(rpackagepaths, mode=4) == -1) { # mode=4: reading, -1: no success
-        stop(paste0("You have no reading rights in your provided 'rpackagepaths' = ", rpackagepaths, " ..."))
-    }
-    rm(rpackagepaths)
-}
-# if exist and readable, add to R search path for this session
-if (exists("rpackagepaths")) {
-    .libPaths(rpackagepaths) 
-}
-
-## load rfesom subroutines
+# Load rfesom subroutines
+message("Load rfesom subroutines from \"", subroutinepath, "\" ...")
 for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
             "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
             "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
@@ -195,72 +118,96 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
     source(paste0(subroutinepath, "/", i))
 }
 
-# TODO: check all needed packages at the beginning!!! e.g. gsw
+# Load general functions 
+# todo: how to load helper functions from another repo without the subrepo hassle?
+message("Load general subroutines from \"", subroutinepath, "/functions\" ...")
+# needed myfunctions.r functions: 
+# ht(), is.leap(), identical_list(), 
+# not?: make_posixlt_origin_function(), tryCatch.W.E(), cdo_get_filetype()
+for (i in c("load_package.r", "mytxtProgressBar.r",
+            "image.plot.pre.r", "gcd.r", "myfunctions.r")) {
+    source(paste0(subroutinepath, "/functions/", i))
+}
+colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 
-## load akima package and functions needed if
-if (plot_map && plot_type == "interp") {
-    success <- load_package("akima")
-    if (!success) stop(helppage)
-    source(paste0(subroutinepath, "/m2lon.r"))
-    source(paste0(subroutinepath, "/m2lat.r"))
+## user input checks
+message("\nCheck user input ...")
+if (!exists("meshpath")) stop("No 'meshpath' provided.")
+if (file.access(meshpath, mode=0) == -1) { # does not exist
+    stop("meshpath = ", meshpath, " does not exist.")
+}
+meshpath <- suppressWarnings(normalizePath(meshpath))
+if (!exists("meshid")) {
+    meshid <- basename(meshpath)
+    message("'meshid' not given. Use name of last directory of `meshpath` = \"", meshpath, "\"\n",
+            "--> \"", meshid, "\" (you can set `meshid` in the runscript with e.g. `meshid <- \"my_mesh_name\"`)")
+}
+if (!exists("rotate_mesh")) rotate_mesh <- F
+if (!exists("cycl")) cycl <- T # treat cyclic mesh elements? always true for global mesh
+
+# fesom mesh rotation sanity checks
+if (meshid == "core" ||
+    meshpath == "/work/ab0995/a270046/meshes_default/core") {
+    if (rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is true. i think this is not correct?")
+}
+if (meshid == "CORE2_final" ||
+    meshpath == "/work/ab0246/a270064/meshes/CORE2_final") {
+    if (!rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
+}
+if (meshid == "CORE2_lgmf" ||
+    meshpath == "/work/ab0246/a270064/meshes/CORE2_lgmf") {
+    if (!rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
 }
 
-## check stuff
-if (!exists("runid")) {
-    runid <- "runid"
-    message("'runid' not given. Use default: runid\n",
-            "You can set a runid somewhere in the runscript or a namelist with e.g.\n",
-            "   runid <- \"myexp\"")
+if (is.null(varname_nc)) { # non-netcdf variables like resolution
+    nvars <- 0
+} else { # all other variables to be read from netcdf files
+    nvars <- length(varname_nc) # assumes that one file is needed per variable (e.g. for density the 2 vars temp and salt are needed)
 }
-if (is.null(varname_nc)) {
-    nfiles <- 0
-} else {
-    nfiles <- length(varname_nc)
-}
+fuser_tag <- F # default
 if (exists("fnames_user")) {
     fuser_tag <- T
-    if (nfiles != 0) { # variable like resolution in case of user provided file
+    if (nvars != 0) { # variable like resolution in case of user provided file
         if (length(fnames_user) > 1) {
             stop("not defined yet since ntime needs to be determined first!")
         }
-        nfiles <- length(fnames_user)
+        nvars <- length(fnames_user)
     }
-} else {
-    fuser_tag <- F
 }
 if (fuser_tag) {
-    if (!exists("datainpath")) {
-        datainpath <- dirname(fnames_user[1])
+    if (!exists("datainpaths")) {
+        datainpaths <- dirname(fnames_user[1])
     }
 } else if (!fuser_tag) {
-    if (!exists("datainpath")) {
-        stop("No 'datainpath' provided.")
+    if (!exists("datainpaths")) {
+        stop("No 'datainpaths' provided.")
     } else {
-        datainpath <- suppressWarnings(normalizePath(datainpath))
+        datainpaths <- suppressWarnings(normalizePath(datainpaths))
     }
-    if (nfiles > 0 && !exists("fpatterns")) {
+    if (nvars > 0 && !exists("fpatterns") ||
+        length(fpatterns) != nvars) {
         stop("according to the \"namelist.var.r\" entry of your `varname` choice \"", varname, 
-             "\" the variable", ifelse(nfiles > 1, "s", ""), "\n",
+             "\" the variable", ifelse(nvars > 1, "s", ""), "\n",
              "   `varname_nc` = \"", paste0(varname_nc, collapse="\", \""), "\"\n",
              "are needed. so you must provide `fpatterns` as e.g.\n", 
-             "   `fpatterns <- \"<setting>_fesom_<varname_nc>_<YYYY>0101.nc\"`\n",
+             "   `fpatterns <- \"Exp01_fesom_<varname_nc>_<YYYY>0101.nc\"`\n",
              "or e.g.\n",
-             "   `fpatterns <- ", ifelse(nfiles > 1, "c(", ""), "\"", 
-             paste0("<runid>.<YYYY>.file", 1:nfiles, ".nc", collapse="\", \""), "\"", 
-             ifelse(nfiles > 1, ")", ""), "\n",
-             "for ", ifelse(nfiles > 1, "each of", ""), " the above variable", 
-             ifelse(nfiles > 1, "s", ""), " in namelist.config.r or namelist.var.r or in this runscript \"",
+             "   `fpatterns <- ", ifelse(nvars > 1, "c(", ""), "\"", 
+             paste0("Exp02.<YYYY>.file", 1:nvars, ".nc", collapse="\", \""), "\"", 
+             ifelse(nvars > 1, ")", ""), "\n",
+             "for", ifelse(nvars > 1, " each of", ""), " the above variable", 
+             ifelse(nvars > 1, "s", ""), " in namelist.config.r or namelist.var.r or in this runscript \"",
              basename(user_runscript_filename), "\" (entries in the latter overwrite entries in ones before).")
     }
 }
-if (nfiles == 0) {
+if (nvars == 0) {
     transient_out <- F
     regular_transient_out <- F
     rms_out <- F
     sd_out <- F
 }
 if (out_mode == "area" && regular_transient_out && transient_out) {
-    stop("error: `out_mode` = \"area\" and both `transient_out` and `regular_transient_out` are true.  not both")
+    stop("`out_mode` = \"area\" and both `transient_out` and `regular_transient_out` are true. only one of the latter two can be true.")
 }
 if (out_mode == "areadepth" && transient_out) {
     regular_transient_out <- T
@@ -286,9 +233,8 @@ if (exists("map_geogr_lim_lon") && length(map_geogr_lim_lon) == 1) { # a single 
 }   
 if (!vec) uv_out <- F
 if (!uv_out && sd_method == "ackermann83") {
-    message(paste0("warning: you set 'sd_method'=ackermann83 but 'varname'=",
-                 varname,
-                 " is not a vector variable. continue with 'sd_method'=default ..."))
+    message("You set 'sd_method'=ackermann83 but 'varname'=", varname,
+            " is not a vector variable. continue with 'sd_method'=default ...")
     sd_method <- "default"
 }
 #if ((out_mode == "csec_mean" || out_mode == "csec_depth") &&
@@ -338,6 +284,13 @@ if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
                 "depth) or `c(42, \"MLD\")` (from 42 m to depth of mixed layer)")
     }
 }
+if (regular_ltm_out && transient_out) {
+    if (!any(out_mode == c("area", "areadepth"))) {
+        stop("You want regular ltm ('regular_ltm_out'=T) and transient ('transient_out'=T) output. ",
+             "this only works at the same time if 'out_mode' is 'area' or 'areadepth'. however, 'out_mode' = '", 
+             out_mode, "'. decide for either regular ltm or transient output if you want this out_mode.")
+    }
+}
 if (regular_ltm_out && !any(out_mode == c("area", "areadepth"))) {
     stop("You want regular ltm output ('regular_ltm_out'=T) but then 'out_mode' must be one of 'area', 'areadepth'")
 }
@@ -347,13 +300,22 @@ if (regular_ltm_out && out_mode == "areadepth") {
 
 
 ## check given time points per file for inconsistency
+season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12))
+if (exists("season")) { # test if provided season makes sense.
+    season_inds <- regexpr(season, season_check$string)
+    if (season_inds == -1) {
+        warning("wanted season \"", season, "\" was not found in test string \"", 
+                season_check$string, "\". choose a substring or do not define",
+                " `season` for taking all available time points of a year into account.",
+                " continue with Jan-Dec ...")
+    }
+} # if season exists
 months_plot <- month.abb # Jan, Feb, ...
 months <- substr(month.abb, 1, 1) # J, F, ...
 days_per_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_per_month_leap <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12))
 if (!exists("time_dim_or_var_names")) time_dim_or_var_names <- c("time", "T") # add more here if necessary
-if (!exists("node_dim_or_var_names")) node_dim_or_var_names <- c("nodes_2d", "nodes_3d", "nodes") 
+if (!exists("node_dim_or_var_names")) node_dim_or_var_names <- c("nodes_2d", "nodes_3d", "nodes", "ncells") 
 if (!exists("depth_dim_or_var_names")) depth_dim_or_var_names <- c("depth")
 
 if (fuser_tag) {
@@ -366,52 +328,44 @@ if (fuser_tag) {
     nyears <- length(years)
 } # if fuser_tag or not
 
-
-## check paths
+# check paths
 if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out, 
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        postpath <- paste0(workpath, "/post/", model)
-        message("No 'postpath' is given for saving postprocessing results.\n",
-                "   Use default: ", postpath, " (= `workpath`/post/`model`).\n",
-                "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
+        stop("No `postpath` given for saving any post processed data.")
     } else {
         postpath <- suppressWarnings(normalizePath(postpath))
     }
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
-        #message(paste0("'postpath' = ", postpath, " does not exist ... "))
-        message(paste0("Try to create 'postpath' = ", postpath, " ... "), appendLF=F)
+        message("Try to create `postpath` = ", postpath, " ... ", appendLF=F)
         dir.create(postpath, recursive=T, showWarnings=F)
         if (file.access(postpath, mode=0) == -1) {
             message("")
-            stop("Could not create 'postpath' = ", postpath)
+            stop("could not create `postpath` = ", postpath)
         } else {
             message("done")
         }
     } else if (file.access(postpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        message("You have no writing rights in 'postpath' = ", postpath, " ...")
-        postpath <- paste0(workpath, "/post/", model)
-        message("   Use default: ", postpath, " (= `workpath`/post/`model`).\n",
-                "   You can set `postpath <- \"/path/with/writing/rights\"` in the runscript.")
+        stop("You have no writing rights in 'postpath' = ", postpath)
     }
 
     # make dirs in postpath. at this point, writing rights of postpath were already checked
     if (transient_out) {
         if (!exists("transientpath")) {
             transientpath <- paste0(postpath, "/", out_mode, "/", varname)
-            message("No 'transientpath' is given for saving output of this script.\n",
-                    "   Use default: ", transientpath, " (= `postpath`/`out_mode`/`varname`)\n",
-                    "   You can set `transientpath <- \"/path/with/writing/rights\"` in the runscript.")
+            message("No 'transientpath' is given for saving output of this script. ",
+                    " Use default `postpath`/`out_mode`/`varname = ", transientpath,
+                    " (you can set `transientpath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             transientpath <- suppressWarnings(normalizePath(transientpath))
         }
         if (file.access(transientpath, mode=0) == -1) { # mode=0: existing, -1: no success
-            message(paste0("Try to create 'transientpath' = ", transientpath, " ... "), appendLF=F)
+            message("Try to create 'transientpath' = ", transientpath, " ... ", appendLF=F)
             dir.create(transientpath, recursive=T, showWarnings=F)
             if (file.access(transientpath, mode=0) == -1) {
                 message("")
-                stop("Could not create 'transientpath' = ", transientpath)
+                stop("could not create 'transientpath' = ", transientpath)
             } else {
                 message("done.")
             }
@@ -421,40 +375,47 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (!exists("ltmpath")) {
             ltmpath <- paste0(postpath, "/timmean/", varname)
-            message("No 'ltmpath' is given for saving output of this script.\n",
-                    "   Use default: ", ltmpath, " (= `postpath`/timmean/`varname`)\n",
-                    "   You can set `ltmpath <- \"/path/with/writing/rights\"` in the runscript.")
+            message("No 'ltmpath' is given for saving output of this script. ",
+                    " Use default `postpath`/timmean/`varname` = ", ltmpath, 
+                    " (you can set `ltmpath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             ltmpath <- suppressWarnings(normalizePath(ltmpath))
         }
         if (file.access(ltmpath, mode=0) == -1) { # mode=0: existing, -1: no success
-            message(paste0("Try to create 'ltmpath' = ", ltmpath, " ... "), appendLF=F)
+            message("Try to create 'ltmpath' = ", ltmpath, " ... ", appendLF=F)
             dir.create(ltmpath, recursive=T, showWarnings=F)
             if (file.access(ltmpath, mode=0) == -1) {
                 message("")
-                stop("Could not create 'ltmpath' = ", ltmpath)
+                stop("could not create 'ltmpath' = ", ltmpath)
             } else {
                 message("done.")
             }
         }            
     }
 
+    # if regular interpolation is needed
     if (any(regular_transient_out, regular_ltm_out)) {
+        
+        if (!exists("regular_dy")) {
+            message("`regular_dy` is not given. Use regular_dx ...")
+            regular_dy <- regular_dx # regular_dx # [deg]
+        }
+
         if (regular_transient_out) {
             if (!exists("reg_transient_outpath")) {
                 reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", varname)
-                message("No 'reg_transient_outpath' is given for saving output of this script.\n",
-                        "   Use default: ", reg_transient_outpath, " (= `postpath`/regular_grid/`out_mode`/`varname`)\n",
-                        "   You can set `reg_transient_outpath <- \"/path/with/writing/rights\"` in the runscript.")
+                message("No 'reg_transient_outpath' is given for saving output of this script.",
+                        " Use default `postpath`/regular_grid/`out_mode`/`varname` = ", reg_transient_outpath,
+                        " (you can set `reg_transient_outpath <- \"/path/with/writing/rights\"` in the runscript)")
             } else {
                 reg_transient_outpath <- suppressWarnings(normalizePath(reg_transient_outpath))
             }
             if (file.access(reg_transient_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
-                message(paste0("Try to create 'reg_transient_outpath' = ", reg_transient_outpath, " ... "), appendLF=F)
+                message("Try to create 'reg_transient_outpath' = ", reg_transient_outpath, " ... ", appendLF=F)
                 dir.create(reg_transient_outpath, recursive=T, showWarnings=F)
                 if (file.access(reg_transient_outpath, mode=0) == -1) {
                     message("")
-                    stop("Could not create 'reg_transient_outpath' = ", reg_transient_outpath)
+                    stop("could not create 'reg_transient_outpath' = ", reg_transient_outpath)
                 } else {
                     message("done.")
                 }
@@ -463,18 +424,18 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         if (regular_ltm_out) {
             if (!exists("reg_ltm_outpath")) {
                 reg_ltm_outpath <- paste0(postpath, "/regular_grid/timmean/", out_mode, "/", varname)
-                message("No 'reg_ltm_outpath' is given for saving output of this script.\n",
-                        "   Use default: ", reg_ltm_outpath, " (= `postpath`/regular_grid/timmean/`out_mode`/`varname`)\n",
-                        "   You can set `reg_ltm_outpath <- \"/path/with/writing/rights\"` in the runscript.")
+                message("No 'reg_ltm_outpath' is given for saving output of this script.",
+                        " Use default `postpath`/regular_grid/timmean/`out_mode`/`varname` = ", reg_ltm_outpath, 
+                        " (you can set `reg_ltm_outpath <- \"/path/with/writing/rights\"` in the runscript)")
             } else {
                 reg_ltm_outpath <- suppressWarnings(normalizePath(reg_ltm_outpath))
             }
             if (file.access(reg_ltm_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
-                message(paste0("Try to create 'reg_ltm_outpath' = ", reg_ltm_outpath, " ... "), appendLF=F)
+                message("Try to create 'reg_ltm_outpath' = ", reg_ltm_outpath, " ... ", appendLF=F)
                 dir.create(reg_ltm_outpath, recursive=T, showWarnings=F)
                 if (file.access(reg_ltm_outpath, mode=0) == -1) {
                     message("")
-                    stop("Could not create 'reg_ltm_outpath' = ", reg_ltm_outpath)
+                    stop("could not create 'reg_ltm_outpath' = ", reg_ltm_outpath)
                 } else {
                     message("done.")
                 }
@@ -482,64 +443,48 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         } # regular_ltm_out
         if (!exists("interppath")) {
             interppath <- paste0(postpath, "/meshes/", meshid, "/interp") # use default
-            message("No 'interppath' is given for saving/reading regular interpolation matrix.\n",
-                    "   Use default: ", interppath, " (= `postpath`/meshes/`meshid`/interp)\n",
-                    "   You can set `interppath <- \"/path/with/writing/rights\"` in the runscript.")
+            message("No 'interppath' is given for saving/reading regular interpolation matrix.",
+                    " Use default `postpath`/meshes/`meshid`/interp = ", interppath, 
+                    " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             interppath <- suppressWarnings(normalizePath(interppath))
         }
         if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
-            message(paste0("Try to create 'interppath' = ", interppath, " ... "), appendLF=F)
+            message("Try to create 'interppath' = ", interppath, " ... ", appendLF=F)
             dir.create(interppath, recursive=T, showWarnings=T)
             if (file.access(interppath, mode=0) == -1) {
                 message("")
-                stop("Could not create 'interppath' = ", interppath)
+                stop("could not create 'interppath' = ", interppath)
             } else {
                 message("done.")
             }
         }
-
     } # if regular_transient_out regular_ltm_out
 
-} # check post paths if output wanted
-
-
-## try to load all needed packages alread now
-message("\nLoad necessary R packages ...")
-if (nfiles > 0) {
-    success <- load_package("ncdf.tools")
-    if (!success) {
-        ncdf.tools_tag <- F
-        message(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get()")
-    } else if (success) {
-        ncdf.tools_tag <- T
+} # if ltm_out, regular_ltm_out, transient_out, regular_transient_out, moc_ltm_out, csec_ltm_out
+if (plot_map || plot_csec
+    || any(out_mode == c("moc_mean", "moc_depth"))) {
+    
+    if (!exists("plotpath")) {
+        stop("No `plotpath` given.")
+    } else {
+        plotpath <- suppressWarnings(normalizePath(plotpath))
     }
-    #if (ncdf.tools_tag == F) {
-        success <- load_package("ncdf4")
-        if (!success) stop(helppage)
-    #}
-    success <- load_package("lubridate")
-    if (!success) stop(helppage)
-} # load ncdf.tools or ncdf4 package
-if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
-    success <- load_package("abind")
-    if (!success) stop(helppage)
-}
+    if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
+        message("Try to create `plotpath` = ", plotpath, " ... ", appendLF=F)
+        dir.create(plotpath, recursive=T, showWarnings=F)
+        if (file.access(plotpath, mode=0) == -1) {
+            message("")
+            stop("could not create `plotpath` = ", plotpath)
+        } else {
+            message("done.")
+        }   
+    # no writing rights to plotpath
+    } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
+        stop("You have no writing rights in `plotpath` = ", plotpath)
+    }
+} # check paths if plot_mat || plot_csec
 
-
-## set defaults; do not change
-restart <- F # keep F; does not work anymore
-var_coords <- "geo" # fesom output in which coords? "geo" or "rot"; only geo allowed for rfesom
-out_coords <- "geo" # output of this script in which coords? "geo" or "rot"; only "geo" implemented
-#nisobaths <- length(isobaths)
-nisobaths <- 0
-zave_method <- 1 # default = 1
-    # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_global_vert[inds_2d]*deltaz[i]
-    # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
-keep_gsw <- T
-pb_char <- "#"
-pb_width <- 30
-pb_style <- 3
 
 ## Special SSH aviso correction !! special
 if (varname == "ssh" && ssh_aviso_correct) {
@@ -557,10 +502,10 @@ if (F) { # not yet
         if (horiz_deriv_tag != F && horiz_deriv_tag != T) { # horiz_deriv_tag is specified by user
             if (horiz_deriv_tag != var_coords) {
                 message("error:")
-                message(paste0("   by setting 'horiz_deriv_tag'=", horiz_deriv_tag, " in the 'sub_variable_lookup.r',"))
+                message(paste0("   by defining 'horiz_deriv_tag'=", horiz_deriv_tag, " in the 'sub_variable_lookup.r',"))
                 message(paste0("   you say that the horiz_deriv_tag necessary for calculating ", varname))
                 message(paste0("   *must* be carried out in ", horiz_deriv_tag, "-coordinates."))
-                message(paste0("   but the output of this fesom experiment '", runid, "' is in "))
+                message(paste0("   but the output of this fesom experiment is in "))
                 message(paste0("   ", var_coord, "-coordinates. if it is possible to just rotate the data to "))
                 message(paste0("   ", horiz_deriv_tag, "-coordinates prior to taking the horiz_deriv_tag, "))
                 message(paste0("   then set 'horiz_deriv_tag'=T in the 'sub_variable_lookup.r'."))
@@ -571,101 +516,147 @@ if (F) { # not yet
         } else { # horiz_deriv_tag in rot or geo coordinates may be used
 
             message("note: ")
-            message(paste0("   by setting 'horiz_deriv_tag'=", horiz_deriv_tag, " in the 'sub_variable_lookup.r',"))
+            message(paste0("   by defining 'horiz_deriv_tag'=", horiz_deriv_tag, " in the 'sub_variable_lookup.r',"))
             message(paste0("   you say that the horiz_deriv_tag necessary for calculating ", varname))
             message(paste0("   *can* be carried out in either geo- or rot-coordinates."))
-            message(paste0("   by setting 'out_coords'=", out_coords, " you want the output/plot of this script"))
+            message(paste0("   by defining 'out_coords'=", out_coords, " you want the output/plot of this script"))
             message(paste0("   in ", out_coords, "-coordinates."))
 
 
         }
     } # if (horiz_deriv_tag != F)
 } # not yet
+    
+message("... all runscript & namelist checks passed")
 
+## add more directories to where to look for packages to load
+message("\nLoad necessary R packages ...")
+if (exists("rpackagepaths")) {
+    if (file.access(rpackagepaths, mode=0) == -1) { # mode=0: existing, -1: no success
+        message("You specified `rpackagepaths` as an additional directory to load r packages from. ",
+                "however, `rpackagepaths` = ", rpackagepaths, " does not exist. continue without considering this dir ...")
+        rm(rpackagepaths)
+    }
+}
+if (exists("rpackagepaths")) {
+    if (file.access(rpackagepaths, mode=4) == -1) { # mode=4: reading, -1: no success
+        message("You specified `rpackagepaths` as an additional directory to load r packages from. ",
+                "however, `rpackagepaths` = ", rpackagepaths, " is not readable for you. continue without considering this dir ...")
+    }
+    rm(rpackagepaths)
+}
+if (exists("rpackagepaths")) { # if exist and readable, add to R search path for this session
+    .libPaths(rpackagepaths) 
+}
+
+# try to load all needed packages
+if (nvars > 0) {
+    success <- load_package("ncdf.tools")
+    if (!success) {
+        ncdf.tools_tag <- F
+        message(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get()")
+    } else if (success) {
+        ncdf.tools_tag <- T
+    }
+    #if (ncdf.tools_tag == F) {
+        success <- load_package("ncdf4")
+        if (!success) stop(helppage)
+    #}
+    success <- load_package("stringr")
+    if (!success) stop(helppage)
+} # if nvars > 0
+if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
+    success <- load_package("abind")
+    if (!success) stop(helppage)
+}
+
+# load akima package and functions needed if
+# todo: check all needed packages at the beginning, e.g. gsw
+if (plot_map && plot_type == "interp") {
+    success <- load_package("akima")
+    if (!success) stop(helppage)
+    source(paste0(subroutinepath, "/m2lon.r"))
+    source(paste0(subroutinepath, "/m2lat.r"))
+}
+if (plot_map || plot_csec
+    || any(out_mode == c("moc_mean", "moc_depth"))) {
+    success <- load_package("fields") # fields here for plot functions
+    if (!success) stop(helppage)
+}
 
 ################################## check done ################################################
 
 
 ## start
+indent <- "   "
 if (verbose > 0) {
-    message("\nAll runscript & namelist checks passed")
-    message("verbose: ", verbose, " (change this in the runscript for more/less info)")
-    message("datainpath: ", datainpath)
-    message("runid: ", runid)
-    if (setting != "") message("setting: ", setting)
-    message("meshpath: ", meshpath)
-    message("meshid: ", meshid)
-    message("   rotate mesh back to geographic coordinates: ", rotate_mesh)
-    message("   treat cyclic elements: ", cycl)
+    message("\nSummary:\n",
+            indent, "verbose: ", verbose, " (change this in the runscript for more/less info)\n",
+            indent, "model: ", model, "\n",
+            indent, "datainpaths: ", paste(datainpaths, collapse=", "), "\n",
+            indent, "fpatterns: ", paste(fpatterns, collapse=", "))
     if (exists("fnames_user")) {
-        message("fnames_user: ", fnames_user)
+        message(indent, "fnames_user: ", fnames_user)
     }
-    message("varname: ", varname)
-    if (nfiles > 0) {
-        message("depths: ", paste(depths, collapse="-"))
-        message("snapshot: ", snapshot)
+    message(indent, "meshid: ", meshid, "\n",
+            indent, "meshpath: ", meshpath, "\n",
+            indent, "rotate mesh back to geographic coordinates: ", rotate_mesh, "\n",
+            indent, "varname: ", varname)
+    if (nvars > 0) {
+        message(indent, "depths: ", paste(depths, collapse="-"), "\n",
+                indent, "snapshot: ", snapshot)
         if (exists("nyears")) {
-            message("years: ", ifelse(nyears == 1, years, 
+            message(indent, "years: ", ifelse(nyears == 1, years, 
                                       paste0(years[1], "-", years[nyears])))
         }
+        message(indent, "all_recs: ", all_recs)
     }
-    message(paste0("area: ", area))
+    message(indent, "area: ", area)
     if (plot_map) {
-        message(paste0("projection: ", projection))
+        message(indent, "projection: ", projection)
         if (exists("map_geogr_lim_lon")) {
-            message("plot map from longitude: ", round(range(map_geogr_lim_lon)[1], 2), 
+            message(indent, "plot map from longitude: ", round(range(map_geogr_lim_lon)[1], 2), 
                     " to ", round(range(map_geogr_lim_lon)[2], 2))
-            message("plot map from latitude: ", round(range(map_geogr_lim_lat)[1], 2),
+            message(indent, "plot map from latitude: ", round(range(map_geogr_lim_lat)[1], 2),
                     " to ", round(range(map_geogr_lim_lat)[2], 2))
-            message("draw polygons from longitude: ", round(range(poly_geogr_lim_lon)[1], 2), 
+            message(indent, "draw polygons from longitude: ", round(range(poly_geogr_lim_lon)[1], 2), 
                     " to ", round(range(poly_geogr_lim_lon)[2], 2))
-            message("draw polygons from latitude: ", round(range(poly_geogr_lim_lat)[1], 2),  
+            message(indent, "draw polygons from latitude: ", round(range(poly_geogr_lim_lat)[1], 2),  
                     " to ", round(range(poly_geogr_lim_lat)[2], 2))
         }
         if (projection != "rectangular") {
-            message("orientation: c(lat=", orient[1], ",lon=", orient[2], 
-                    ",rot=", orient[3], ")")
+            message(indent, "orientation: c(lat=", orient[1], ",lon=", orient[2], ",rot=", orient[3], ")")
         }
         if (vec && quiver_tag) {
             if (quiver_thr != 0) {
-                message("plot u- and v- quivers above ", quiver_thr, " m s-1")
+                message(indent, "plot u- and v- quivers above ", quiver_thr, " m s-1")
             } else if (quiver_thr == 0) {
-                message("plot u- and v- quivers")
+                message(indent, "plot u- and v- quivers")
             }
         }
     }
-    
     if (transient_out) {
-        message("save transient ", out_mode, " data in ", area, " area to\n",
-                "   `transientpath` = ", transientpath)
+        message(indent, "save transient ", out_mode, " data in ", area, " area to\n",
+                indent, "   `transientpath` = ", transientpath)
     }
-    
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
-        message("Save ltm data in ", area, " area to\n",
-                "   `ltmpath` = ", ltmpath)
+        message(indent, "Save ltm data in ", area, " area to\n",
+                indent, "   `ltmpath` = ", ltmpath)
     }
-    
     if (regular_transient_out) {
-        message("Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to\n",
-                "   `reg_transient_outpath` = ", reg_transient_outpath)
+        message(indent, "Save transient ", out_mode, " data in area ", area, " on regular (lon,lat) grid to\n",
+                indent, "   `reg_transient_outpath` = ", reg_transient_outpath)
     }
-    
     if (regular_ltm_out) {
-        message("Save ltm data in ", area, " area on regular (lon,lat) grid to\n",
-                "   `reg_ltm_outpath` = ", reg_ltm_outpath)
+        message(indent, "Save ltm data in ", area, " area on regular (lon,lat) grid to\n",
+                indent, "   `reg_ltm_outpath` = ", reg_ltm_outpath)
     }
 
-    message("==============================================")
     message("\nStart clock ...")
 } # if (verbose > 0)
 
 ptm <- proc.time()
-
-if (verbose > 0) {
-    message("==============================================")
-}
-
-indent <- "   "
+if (verbose > 0) message("==============================================")
 
 ## 1) Get fesom data header information
 if (verbose > 0) {
@@ -679,122 +670,412 @@ if (file.access(paste0(meshpath, "/nod3d.out"), mode=4) == 0) { # readable
     message(indent, "   ", meshpath, "/nod3d.out --> nod3d_n = ", nod3d_n)
 }
 
-# construct fesom filenames
-if (nfiles > 0) {
-    if (!fuser_tag) {
-        year <- years[1]
+# find fesom filenames if nc-variables are wanted (i.e. not resolution etc.)
+if (nvars > 0) {
+    special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
+    if (fuser_tag) {
         if (verbose > 0) {
-            message(indent, "Construct input file names for given `varname_nc` = \"", 
+            message(indent, "Input file names are given by user via `fnames_user`:")
+        }
+        ht(fnames_user)
+        files_list <- list(fnames_user)
+
+    } else if (!fuser_tag) {
+        if (verbose > 0) {
+            message(indent, "Find input file names for ", length(varname_nc), 
+                    " given `varname_nc` = \"", 
                     paste(varname_nc, collapse="\", \""), "\" ...")
         }
-    } else if (fuser_tag) {
-        year <- length(fnames_user)
-        stop("is this correct?")
-    }
-    year_cnt <- 1
-    fnames <- rep(NA, nfiles) # overwritten in every year
-    indent <- "      "
-    for (file in 1:nfiles) { # nfiles=2 if e.g. temp and salt are needed per time (e.g. year)
-      
-        # filenames are given
-        if (fuser_tag) {
-            if (verbose > 0) {
-                message(indent, "Read user provided file `fnames_user` ...")
-            }
-            stop("not tested")
-            fname <- fnames_user[year_cnt]
-
-        # filenames are not given: construct file names based on fpatterns
-        } else if (!fuser_tag) {
-                    
+        files_list <- vector("list", l=nvars) # all annual files per variable (e.g. temp and salt)
+        names(files_list) <- varname_nc
+        indent <- "      "
+        for (vari in seq_len(nvars)) { # nvars=2 if e.g. temp and salt are needed per time (e.g. year)
+          
             ## construct input filename(s) based on given `fpatterns`
-            if (verbose > 0) {
-                message(indent, "file ", file, "/", nfiles, " based on ", appendLF=F)
-            }
-            if (length(fpatterns) != nfiles) {
-                stop("adassdasda")
-                fpattern 
-            } else {
-                fpattern <- fpatterns[file]
-                message("`fpatterns[", file, "]` = \"", fpattern, "\"")
-            }
-
-            fname <- fpattern
-            pattern_inds <- list(from=gregexpr("<", fpattern)[[1]], 
-                                 to=gregexpr(">", fpattern)[[1]])
-            if (length(pattern_inds$from) != length(pattern_inds$to)) {
-                stop("You provided a different number of \"<\" and \">\" tags in fpattern. stop.")
-            }
-            # replace found patterns with variables with the same name as the pattern
-            for (pati in 1:length(pattern_inds$from)) {
-                pattern <- substr(fpattern, 
-                                  pattern_inds$from[pati] + 1,
-                                  pattern_inds$to[pati] - 1)
-                if (pattern == "YYYY") {
-                    replacement_var <- "year"
-                } else {
-                    replacement_var <- pattern
+            message(indent, "check needed variable ", vari, "/", nvars, " based on `fpatterns[", vari, "]` =\n", 
+                    indent, "   \"", fpatterns[vari], "\"\n", indent, "for \"<...>\" patterns to replace ...")
+            sub_list <- NULL # default
+            pattern_inds_open <- gregexpr("<", fpatterns[vari])[[1]] # returns n inds if found or -1 
+            pattern_inds_closed <- gregexpr(">", fpatterns[vari])[[1]]
+            if (!all(pattern_inds_open == -1) || !all(pattern_inds_closed == -1)) {
+                if (length(pattern_inds_open) != length(pattern_inds_closed)) {
+                    stop("in `fpatterns[", vari, "]` you provided ", length(pattern_inds_open), 
+                         " opening brackets \"<\" to indicate a file pattern to replace but ", 
+                         length(pattern_inds_closed), " closing brackets \">\". there must be a \"<\" for every \">\".")
                 }
-                # check if variable that should be the replacement exists
-                cmd <- paste0("replacement_exists <- exists(\"", replacement_var, "\")")
-                eval(parse(text=cmd))
-                if (!replacement_exists) {
-                    stop("Cannot replace pattern ", pati, "/", length(pattern_inds$from), 
-                         ": \"<", pattern, ">\": variable \"", 
-                         replacement_var, "\" not defined")
-                } else {
-                    if (verbose > 0) {
-                        message(indent, "   replace pattern ", pati, "/", length(pattern_inds$from), 
-                                ": \"<", pattern, ">\" with variable `", replacement_var, appendLF=F)
-                    }
-                    # if length of replacement variable equals the number of files,
-                    # assume that the replacement should be made for every file:
-                    if (eval(parse(text=paste0("length(", replacement_var, ")"))) == nfiles && nfiles > 1) {
-                        replacement <- eval(parse(text=paste0(replacement_var, "[file]")))
-                        if (verbose > 0) {
-                            message("[", file, "]` = \"", replacement, "\" ...")
+                n_patterns_per_file <- length(pattern_inds_open)
+                sub_list <- vector("list", l=n_patterns_per_file)
+                for (pati in seq_len(n_patterns_per_file)) {
+                    pattern <- substr(fpatterns[vari], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
+                    sub_list[[pati]]$pattern <- pattern
+                    sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
+                    # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                    if (pattern %in% special_patterns) {
+                        message(indent, "replace special pattern \"", pattern, "\" by \"*\"")
+                        sub_list[[pati]]$replacement <- "*"
+                        if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
+                            sub_list[[pati]]$replacement_length <- 4
+                        } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
+                            sub_list[[pati]]$replacement_length <- 2
                         }
-                    } else {
-                        replacement <- eval(parse(text=paste0(replacement_var)))
-                        if (verbose > 0) {
-                            message("` = \"", replacement, "\" ...")
+                    # all other patterns: replace <pattern> by value of object in the current work space named `pattern`
+                    } else { 
+                        obj <- substr(pattern, 2, nchar(pattern)-1) # pattern string without leading "<" and trailing ">"
+                        if (exists(eval(obj))) { # variable with the name of the pattern exists
+                            eval(parse(text=paste0("length_of_obj <- length(", obj, ")")))
+                            if (length(fpatterns) > 1 && length_of_obj == length(fpatterns)) { # assume that the entry of setting i should be replaced
+                                eval(parse(text=paste0("replacement <- ", obj, "[vari]")))
+                            } else {
+                                eval(parse(text=paste0("replacement <- ", obj)))
+                            }
+                        } else { # no such a variable exists
+                            stop("did not find an object named \"", obj, " to replace the pattern \"", 
+                                 pattern, "\" in `fpatterns[", vari, "]`. dont know how to interpret this case.")
                         }
-                    }
+                        message(indent, "replace pattern \"", pattern, "\" by \"", replacement, "\"")
+                        sub_list[[pati]]$replacement <- replacement
+                        sub_list[[pati]]$replacement_length <- nchar(replacement)
+                    } # special or default <pattern>
+                    sub_list[[pati]]$nchar_diff <- sub_list[[pati]]$replacement_length - nchar(sub_list[[pati]]$pattern)
+                } # for pati n <patterns> to replace
+
+                # apply replacements of patterns one by one (thats why `sub()` and not `gsub()`; the latter would replace all occurences at once)
+                fpattern <- fpatterns[vari]
+                for (pati in seq_along(sub_list)) {
+                    fpattern <- sub(sub_list[[pati]]$pattern, sub_list[[pati]]$replacement, fpattern)
                 }
-                cmd <- paste0("fname <- gsub(paste0(\"<", pattern, ">\"), \"", replacement, "\", fname)")
-                eval(parse(text=cmd))
-            } # for pati in fpattern
-           
-            fname <- paste0(datainpath, "/", fname)
-
-        } # if fuser_tag or not
-
-        if (verbose > 0 && year_cnt == 1) {
-            message(indent, "   --> fname = \"", fname, "\" ... ", appendLF=F)
-        }
-        if (!file.exists(fname)) {
-            message("does not exist.")
-            stop("fname = \"", fname, "\" does not exist.")
-        } else {
-            message("exists.")
-        }
-        fnames[file] <- fname
-
-    } # for file nfiles
+                message(indent, "--> final search pattern = \"", fpattern, "\"")
                 
-    ## Open annual ncdf files (do not load the same file more than once)
+                # find replacement inds
+                for (pati in seq_along(sub_list)) {
+                    if (pati == 1) { # first pattern
+                        sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1]
+                    } else if (pati == length(sub_list)) { # last
+                        sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1] + sum(sapply(sub_list[1:(pati-1)], "[[", "nchar_diff"))
+                    } else { # all other patterns in between first and last
+                        sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1] + sum(sapply(sub_list[1:(pati-1)], "[[", "nchar_diff"))
+                    }
+                    sub_list[[pati]]$replacement_inds[2] <- sub_list[[pati]]$replacement_inds[1] + sub_list[[pati]]$replacement_length - 1
+                }
+            } else {
+                message(indent, "   no \"<...>\" strings detected ...")
+                fpattern <- fpatterns[vari]
+            } # if user provided <patterns>
+
+            # find files based on datapath and fpattern with potential <patterns> applied
+            # todo: search for files and links and compare
+            #cmd <- paste0("ls ", datainpaths[vari], "/", fpattern) 
+            # --> this may result in `-bash: /bin/ls: Argument list too long`
+            cmd <- paste0("find ", datainpaths[vari], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+            # --> `find` does not have this limit 
+            message(indent, "run `", cmd, "` ...")
+            ticcmd <- Sys.time()
+            files <- system(cmd, intern=T)
+            toccmd <- Sys.time()
+            if (length(files) == 0) stop("found zero files. Are `datainpaths[", vari, "]` and `fpatterns[", vari, "]` correct?")
+            elapsedcmd <- toccmd - ticcmd
+            message(indent, "`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
+            
+            # separate into dirname and basename
+            df <- data.frame(files, stringsAsFactors=F)
+
+            # show found files
+            if (verbose > 0) {
+                message("\nfound ", length(files), " file", 
+                        ifelse(length(files) > 1, "s", ""), ":")
+                if (length(files) > 1) {
+                    ht(df, n=15)
+                } else {
+                    print(df)
+                }
+            }
+            
+            # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. patterns if given or, alternatively, based on `cdo showdate`
+            if (any(special_patterns %in% sapply(sub_list, "[[", "pattern"))) {
+                message("\nfind years/months/etc. of based on <YYYY*>, <MM*>, etc. patterns of found files ...")
+                
+                special_patterns_in_filenames <- special_patterns[which(special_patterns %in% sapply(sub_list, "[[", "pattern"))]
+                for (pati in seq_along(special_patterns_in_filenames)) {
+                    pattern_inds <- which(sapply(sub_list, "[[", "pattern") == special_patterns_in_filenames[pati])
+                    pattern_list <- vector("list", l=length(pattern_inds))
+                    for (patj in seq_along(pattern_inds)) {
+                        pattern_list[[patj]] <- substr(files, 
+                                                       sub_list[[pattern_inds[patj]]]$replacement_inds[1],
+                                                       sub_list[[pattern_inds[patj]]]$replacement_inds[2])
+                    }
+                    # check if all found values for <YYYY*>, <MM*>, etc. patterns are identical
+                    if (identical_list(pattern_list)) {
+                        df[sub(">", "", sub("<", "", special_patterns_in_filenames[pati]))] <- pattern_list[[1]]
+                        if (special_patterns_in_filenames[pati] == "<YYYY>") {
+                            years_filenames <- as.integer(df$YYYY)
+                        } else if (special_patterns_in_filenames[pati] == "<YYYY_from>") {
+                            years_filenames_from <- as.integer(df$YYYY_from)
+                        } else if (special_patterns_in_filenames[pati] == "<YYYY_to>") {
+                            years_filenames_to <- as.integer(df$YYYY_to)
+                        } else if (special_patterns_in_filenames[pati] == "<MM>") {
+                            months_filenames <- as.integer(df$MM)
+                        }
+                        # todo: YYYY_from, YYYY_to, MM_from, MM_to
+                    } else {
+                        message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pati_list), 
+                                " times and the values differ from each other:")
+                        for (patj in yyyy_list) ht(yyyy_list[[patj]])
+                        stop("-> dont know how to interpret this.")
+                    }
+                } # for pati all special patterns in fnames
+
+            } else { # no <YYYY*>, <MM*>, etc. special patterns given by user
+
+                if (length(files) == 1) { # assume that user wants to use one specific file
+                    years_filenames <- years[1]:years[length(years)]
+
+                } else {
+                    message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
+                    years_filenames <- vector("list", l=length(files))
+                    for (fi in seq_along(files)) {
+                        cmd <- paste0(cdo, " showdate ", datainpaths[vari], "/", files[fi])
+                        message("run `", cmd, "`")
+                        dates <- system(cmd, intern=T)
+                        dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
+                        dates <- strsplit(dates, " ")[[1]]
+                        if (verbose) {
+                            message("\n", length(dates), " cdo dates of this file:")
+                            ht(dates, n=20)
+                        }
+                        years_filenames[[fi]] <- substr(dates, 1, 4)
+                    }
+                    years_filenames <- as.numeric(unlist(years_filenames))
+                } # if length(files) == 1 or not
+
+            } # if <YYYY*> or <MM*> patterns are given by user or not
+           
+            # show years, months, etc. of found files
+            if (verbose > 0) {
+                message("\nfound years/months/etc. based on ", length(files), " file", 
+                        ifelse(length(files) > 1, "s", ""), ":")
+                if (length(files) > 1) {
+                    ht(df)
+                } else {
+                    print(df)
+                }
+            }
+            
+            # special treatment: if only YYYY_from and YYYY_to were provided, but not YYYY, derive `years_filenames` now
+            if (!exists("years_filenames")) {
+                if (exists("years_filenames_from") && exists("years_filenames_to")) {
+                    message("\nderive input years based on \"<YYYY_from>\" and \"<YYYY_to>\" in a consecutive order ...") 
+                    years_filenames <- as.vector(mapply(function(x,y) x:y, years_filenames_from, years_filenames_to))
+                    years_filenames <- unlist(years_filenames) # is list if not all x[i]:y[i] sequences from the line above are of same length
+                    if (any(diff(years_filenames) < 0)) {
+                        stop("derived `years_filenames` are not monotonically increasing")
+                    }
+                } else {
+                    stop("this is not implemented yet")
+                }
+                message("derived ", length(years_filenames), " years:")
+                ht(years_filenames, n=30)
+            } # if years_filenames does not exist
+            
+            # todo: same as above with months_filenames
+
+            # check if found input years are strange: dt not constant
+            if (length(unique(diff(unique(years_filenames)))) != 1) {
+                warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
+            }
+
+            # update files which were mistakenly included in by given fpattern:
+            # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
+            # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
+            # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
+            if (length(files) > 1 && !is.null(sub_list)) {
+                message("\ncheck if any of the ", length(files), " found files do not match given\n",
+                        "   `fpatterns[", vari, "]` = \"", fpatterns[vari], "\"\n... ", appendLF=F)
+                
+                # construct file names that should be found based on `fpatterns` with all given <patterns>
+                filesp <- rep(fpatterns[vari], t=length(files))
+
+                # apply replacements one by one (thats why `str_replace()` and not `str_replace_all()`)  
+                # vectorized (thats why stringr and not base package) and take care of special patterns <YYYY*>, <MM*>, etc. 
+                for (pati in seq_along(sub_list)) {
+                    if (any(sub_list[[pati]]$pattern %in% special_patterns)) { # special patterns
+                        filesp <- stringr::str_replace(string=filesp,
+                                                       pattern=sub_list[[pati]]$pattern, 
+                                                       replacement=as.character(df[[sub(">", "", sub("<", "", sub_list[[pati]]$pattern))]]))
+                    } else { # all other patterns
+                        filesp <- stringr::str_replace(string=filesp,
+                                                       pattern=sub_list[[pati]]$pattern, 
+                                                       replacement=sub_list[[pati]]$replacement)
+                    }
+                } # for pati in sub_list
+
+                # identify and throw out fount files that do not fit to given `fpatterns` 
+                if (any(!(files %in% filesp))) {
+                    wrong_file_inds <- which(!files %in% filesp)
+                    message("these ", length(wrong_file_inds), " files differ from wanted `fpatterns[", vari, "]` = ", fpatterns[vari], ":")
+                    ht(files[wrong_file_inds])
+                    if (length(wrong_file_inds) == length(files)) {
+                        stop("removing them would yield zero files. something with the given fpattern is maybe strange?")
+                    }
+                    message("remove them ...")
+                    files <- files[-wrong_file_inds]
+                    df <- df[-wrong_file_inds,]
+                    years_filenames <- years_filenames[-wrong_file_inds]
+                    if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-wrong_file_inds]
+                } else { # if any found files differ from wanted `fpatterns[i]` or not
+                    message("ok")
+                }
+            } # if length(files) > 1
+
+            # verbose
+            if (verbose > 0) {
+                message("\nfinal ", length(years_filenames), " `years_filenames`:")
+                ht(years_filenames, n=30)
+                if (grepl("<MM>", fpatterns[i])) {
+                    message("\nfinal ", length(months_filenames), " `months_filenames`:")
+                    ht(months_filenames, n=30)
+                }
+            }
+        
+            ## remove found years (which were found based on the file names) out of wanted years
+            #from <- as.POSIXlt(paste0(froms[i], "-01-01"), tz="UTC")
+            #to <- as.POSIXlt(paste0(tos[i], "-12-31"), tz="UTC")
+            #years_wanted <- (unclass(from)$year+1900):(unclass(to)$year+1900)
+
+            # check if some wanted years are out of found years, which were found based on the file names
+            #if (any(years_wanted %in% years_filenames == F)) {
+            message("\ngiven `years[", 1, "]` = ", years[1], " and `years[", length(years), "]` = ", years[length(years)])
+            if (as.integer(years[1]) < min(years_filenames) || 
+                as.integer(years[length(years)]) > max(years_filenames)) {
+                    stop("--> these are out of found years from filenames: ", 
+                         min(years_filenames), " to ", max(years_filenames))
+            } else {
+                #from_ind <- which.min(abs(years_filenames - as.integer(froms[i])))[1]
+                #to_ind <- which.min(abs(years_filenames - as.integer(tos[i])))
+                #to_ind <- to_ind[length(to_ind)]
+                from_ind <- which(years_filenames == as.integer(years[1]))[1]
+                to_ind <- which(years_filenames == as.integer(years[length(years)]))
+                to_ind <- to_ind[length(to_ind)]
+                years_wanted <- years_filenames[from_ind:to_ind]
+                message("--> found filename years from inds ", from_ind, " to ", to_ind, 
+                        " (from total 1 to ", length(years_wanted), "): ",
+                        min(years_wanted), " to ", max(years_wanted))
+            }
+            outside_years_inds <- which(years_filenames %in% years_wanted == F)
+            cdoselyear <- "" # default: none
+            
+            if (length(outside_years_inds) > 0) {
+                message("--> some input years are not needed. throw out ...")
+
+                # case a) one year per file
+                # remove _files_ of years outside of wanted range if one year per file
+                if (length(files) == length(years_filenames)) { 
+                    message("   case a) length(files) = ", length(files), " == length(years_filenames) = ", 
+                            length(years_filenames), "\n",
+                            "      --> assume that data of one year is saved in one file\n",
+                            "      --> remove ", length(outside_years_inds), " file",
+                            ifelse(length(outside_years_inds) > 1, "s", ""),
+                            " outside of wanted years defined by years[", 1, "] = ", 
+                            years[1], " to years[", length(years), "] = ", years[length(years)], " ...")
+                    files <- files[-outside_years_inds]
+                    df <- df[-outside_years_inds,]
+                    years_filenames <- years_filenames[-outside_years_inds]
+                    if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-outside_years_inds]
+                    if (verbose > 0) {
+                        message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
+                                " remaining:")
+                        if (length(files) > 1) {
+                            ht(df)
+                        } else {
+                            print(df)
+                        }
+                    } 
+            
+                # case b) several years per file
+                # else remove _timepoints_ of years outside of wanted range if more than one year per file
+                } else if (length(files) != length(years_filenames)) {
+                    if (length(files) == 1) {
+                        # case b1) only 1 input file with all available years
+                        message("   case b) length(files) = ", length(files), " != length(years_filenames) = ", 
+                                length(years_filenames), "\n",
+                                "      --> assume that data of more than one year is saved in one file\n",
+                                "      --> remove ", length(outside_years_inds), " timestep",
+                                ifelse(length(outside_years_inds) > 1, "s", ""),
+                                " outside of wanted years defined by years[", 1, "] = ", 
+                                years[1], " to years[", length(years), "] = ", years[length(years)], " ...")
+                        cdoselyear <- paste0("-selyear,", years[1], "/", years[length(years)])
+                    } else {
+                        # case b2) more than one input files with multiple years
+                        message("   case b2) length(files) = ", length(files), " != length(years_filenames) = ", 
+                                length(years_filenames), " AND length(files) != 1\n",
+                                "      --> assume that data of more than one year is saved in more than one file\n",
+                                "      --> remove ", length(outside_years_inds), " timestep",
+                                ifelse(length(outside_years_inds) > 1, "s", ""),
+                                " outside of wanted years defined by years[", 1, "] = ", 
+                                years[1], " to years[", length(years), "] = ", years[length(years)], " ...")
+                        if (!any(names(df) == "YYYY_from") || !any(names(df) == "YYYY_to")) {
+                            stop("this should not happen")
+                        }
+                        inds <- rep(F, t=length(files))
+                        for (fi in seq_along(files)) {
+                            years_to_check <- df$YYYY_from[fi]:df$YYYY_to[fi]
+                            if (any(years_to_check %in% years_wanted)) {
+                                inds[fi] <- T
+                            }
+                        }
+                        files <- files[inds]
+                        df <- df[inds,]
+                        years_filenames <- years_filenames[-outside_years_inds]
+                        if (verbose > 0) {
+                            message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
+                                    " remaining:")
+                            if (length(files) > 1) {
+                                ht(df)
+                            } else {
+                                print(df)
+                            }
+                        } 
+                    } # case b1 or case b2
+                    cdoselyear <- paste0("-selyear,", years[1], "/", years[length(years)]) # for case b1 and b2
+                    #message("      --> `cdoselyear` = \"", cdoselyear, "\"")
+                
+                } # if (length(files) == length(years_filenames)) or not
+            
+            } # length(outside_years_inds) > 0
+             
+            #files_list[[vari]] <- paste0(datainpaths[vari], "/", files)
+            tmp <- vector("list", l=length(files))
+            for (fi in seq_along(tmp)) {
+                tmp[[fi]] <- as.list(df[fi,])
+                tmp[[fi]]$files <- paste0(datainpaths[vari], "/", tmp[[fi]]$files)
+            }
+            files_list[[vari]] <- tmp
+        
+        } # for vari nvars
+    
+    } # if fuser_tag or not
+   
+    nfiles <- length(sapply(files_list[[1]], "[[", "files"))
+
+    ## get dimension infos of ncdf files once 
     indent <- "   "
-    ncids <- vector("list", l=length(unique(fnames)))
-    fnames_unique <- unique(fnames)
-    message(indent, "Get variable dimension values from ", 
-            length(fnames_unique), " unique files ...")
-    for (file in 1:length(fnames_unique)) {
-        message(indent, "   \"", fnames_unique[file], "\"")
+    #stop("asd")
+    #fnames_of_first_year <- sapply(files_list, "[", 1)
+    #fnames_of_first_year <- sapply(lapply(files_list, "[[", "files"), "[", 1)
+    message("todo: test if next line works for nvars > 1")
+    fnames_of_first_year <- sapply(lapply(files_list, "[[", 1), "[[", 1)
+    fnames_of_first_year_unique <- unique(fnames_of_first_year)
+    ncids <- vector("list", l=length(fnames_of_first_year_unique))
+    message(indent, "\nGet variable dimension infos from ", 
+            length(fnames_of_first_year_unique), " first file", 
+            ifelse(length(fnames_of_first_year_unique) > 1, "s", ""), " ...")
+    for (vari in seq_along(fnames_of_first_year_unique)) {
+        message(indent, "   \"", fnames_of_first_year_unique[vari], "\"")
         if (ncdf.tools_tag == F) {
-            ncids[[file]] <- ncdf4::nc_open(fnames_unique[file])
+            ncids[[vari]] <- ncdf4::nc_open(fnames_of_first_year_unique[vari])
+            message("todo: check if filename is attribute as in rnetcdf case below")
         } else if (ncdf.tools_tag == T) {
-            ncids[[file]] <- RNetCDF::open.nc(fnames_unique[file])
-            attributes(ncids[[file]])$filename <- fnames_unique[file]
+            ncids[[vari]] <- RNetCDF::open.nc(fnames_of_first_year_unique[vari])
+            attributes(ncids[[vari]])$filename <- fnames_of_first_year_unique[vari]
         }
     } # for all files
 
@@ -803,8 +1084,8 @@ if (nfiles > 0) {
     names(var_nc_inds) <- varname_nc
     var_nc_infos <- vector("list", l=length(varname_nc))
     names(var_nc_infos) <- varname_nc
-    for (nci in 1:length(ncids)) {
-        for (vari in 1:length(varname_nc)) {
+    for (nci in seq_along(ncids)) {
+        for (vari in seq_along(varname_nc)) {
             if (ncdf.tools_tag == T) {
                 var_names <- ncdf.tools::infoNcdfVars(ncids[[nci]])$name
             } else if (ncdf.tools_tag == F) {
@@ -815,7 +1096,7 @@ if (nfiles > 0) {
                 if (ncdf.tools_tag == T) {
                     var_natts <- RNetCDF::var.inq.nc(ncids[[nci]], varname_nc[vari])$natts
                     tmp <- vector("list", l=var_natts)
-                    for (atti in 1:var_natts) {
+                    for (atti in seq_len(var_natts)) {
                         names(tmp)[atti] <- RNetCDF::att.inq.nc(ncids[[nci]], varname_nc[vari], attribute=atti-1)$name
                         tmp[[atti]] <- RNetCDF::att.get.nc(ncids[[nci]], varname_nc[vari], attribute=atti-1)
                     }
@@ -829,21 +1110,21 @@ if (nfiles > 0) {
     if (any(is.na(var_nc_inds))) {
         nainds <- which(is.na(var_nc_is))
         stop("varname_nc = \"", paste(varname_nc[nainds], collapse="\", \""), 
-             "\" not included in file", ifelse(length(fnames_uniue) > 1, "s", ""), "\n",
-             paste(indent, fnames_unique, collapse="\n"), 
+             "\" not included in file", ifelse(length(fnames_of_first_year_unique) > 1, "s", ""), "\n",
+             paste(indent, fnames_of_first_year_unique, collapse="\n"), 
              "solution: adjust `varname_nc` in the \"", varname, 
              "\" block of namelist.var.r.")
     } 
     # finished check if all varname_nc can be loaded from provided files
     
     ## get dimensions of all wanted variables
-    dims_of_vars <- vector("list", l=nfiles)
+    dims_of_vars <- vector("list", l=nvars)
     names(dims_of_vars) <- varname_nc
-    for (vari in 1:nfiles) { # all varname_nc
+    for (vari in seq_len(nvars)) { # all varname_nc
         if (ncdf.tools_tag == F) {
             tmp <- ncids[[var_nc_inds[vari]]]$var[[varname_nc[vari]]]$dim
             tmplist <- vector("list", l=length(tmp))
-            for (di in 1:length(tmplist)) {
+            for (di in seq_along(tmplist)) {
                 names(tmplist)[di] <- tmp[[di]]$id
                 tmplist[[di]]$name <- tmp[[di]]$name
                 tmplist[[di]]$len <- tmp[[di]]$len
@@ -851,7 +1132,7 @@ if (nfiles > 0) {
         } else if (ncdf.tools_tag == T) {
             dimids <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[vari]]], varname_nc[vari])$dimids
             tmplist <- vector("list", l=length(dimids))
-            for (di in 1:length(tmplist)) {
+            for (di in seq_along(tmplist)) {
                 tmp <- RNetCDF::dim.inq.nc(ncids[[var_nc_inds[vari]]], dimids[di])
                 names(tmplist)[di] <- dimids[di]
                 tmplist[[di]]$name <- tmp$name
@@ -864,18 +1145,18 @@ if (nfiles > 0) {
         tmplist$filename <- attributes(ncids[[var_nc_inds[vari]]])$filename
         tmplist$dimids <- dimids
         dims_of_vars[[vari]] <- tmplist
-    } # for vari nfiles
+    } # for vari nvars
     rm(tmp, tmplist)
     # finised get all dimensions of all wanted variables of provided files
     
-    # figure out the time/node/depth dimensions of all wanted variables
-    for (vari in 1:nfiles) { # all varname_nc
+    # find time/node/depth dimensions of all wanted variables
+    for (vari in seq_len(nvars)) { # all varname_nc
         dims_of_vars[[vari]]$timedim_ind <- dims_of_vars[[vari]]$timedim_name <- NULL
         dims_of_vars[[vari]]$nodedim_ind <- dims_of_vars[[vari]]$nodedim_name <- NULL
         dims_of_vars[[vari]]$depthdim_ind <- dims_of_vars[[vari]]$depthdim_name <- NULL
         # add further special dimensions here
         dimids <- dims_of_vars[[vari]]$dimids
-        for (dimi in 1:length(dimids)) {
+        for (dimi in seq_along(dimids)) {
             
             # find time dimension and set start/count to wanted recs
             if (any(dims_of_vars[[vari]][[dimi]]$name == time_dim_or_var_names)) {
@@ -924,28 +1205,30 @@ if (nfiles > 0) {
         }
         if (is.null(dims_of_vars[[vari]]$nodedim_ind)) {
             stop("could not figure out a node dimension based on `node_dim_or_var_names` = \"",
-                 paste(node_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".")
+                 paste(node_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".\n",
+                 "add further names to check to `node_dim_or_var_names`.")
         }
         if (verbose > 0) {
-            message(indent, "nc variable ", vari, "/", nfiles, ": \"", varname_nc[vari], "\" dimension infos:")
-            for (di in 1:length(dimids)) {
+            message(indent, "nc variable ", vari, "/", nvars, ": \"", varname_nc[vari], "\" dimension infos:")
+            for (di in seq_along(dimids)) {
                 message(indent, "   dim ", di, "/", length(dimids), ": name = \"", 
                         dims_of_vars[[vari]][[dimids[di]]]$name, 
                         "\", id = ", dimids[di], ", len = ",
                         dims_of_vars[[vari]][[dimids[di]]]$len, appendLF=F)
                 if (di == timedim_ind) {
-                    message(" (this is the time dim)")
+                    message(" --> this is the time dim")
                 } else if (di == nodedim_ind) {
-                    message(" (this is the node dim)")
+                    message(" --> this is the node dim")
                 } else if (!is.null(depthdim_ind) && di == depthdim_ind) {
-                    message(" (this is the depth dim)")
+                    message(" --> this is the depth dim")
                 } else {
                     message()
                 }
             } # for di dimids
-        }
+        } # verbose
     } # for vari all varname_nc
-    message(indent, "--> if something is wrong with these variable dimensions, adjust the known dimension/variable names to correctly identify the time/node/depth/etc. dimensions by setting e.g.:\n",
+    message(indent, "If something is wrong with these variable dimensions, adjust the known dimension/variable\n",
+            indent, "names to correctly identify the time/node/depth/etc. dimensions by defining e.g.:\n",
             indent, "   `time_dim_or_var_names <- c(\"", paste(time_dim_or_var_names, collapse="\", \""), 
             "\", \"my_special_time_dimension_name\")`\n",
             indent, "   `node_dim_or_var_names <- c(\"", paste(node_dim_or_var_names, collapse="\", \""), 
@@ -955,61 +1238,65 @@ if (nfiles > 0) {
             indent, "in the runscript.")
     # finished creating start and count vectors
 
-    ## try to obtain time from nc file
-    # assumption: do this only once for all files
-    nc_with_time_ind <- NULL
-    for (vari in 1:nfiles) {
+    ## try to obtain time values from nc files
+    nc_with_time_inds <- c()
+    cnt <- 0
+    for (vari in seq_len(nvars)) {
         if (!is.null(dims_of_vars[[vari]]$timedim_ind)) {
-            nc_with_time_ind <- vari
-            break
+            cnt <- cnt + 1
+            nc_with_time_inds[cnt] <- vari
         }
     }
-    if (is.null(nc_with_time_ind)) {
+    if (length(nc_with_time_inds) == 0) {
+        stop("Variable", ifelse(nvars > 1, "s", ""), " \"", 
+             paste(varname_nc, collapse="\", \""), "\"", " do", 
+             ifelse(nvars > 1, "es", ""), " not have a time dim. this never happened.")
+    } else { # if time dim or var present
         if (verbose > 0) {
-            message(indent, "Cannot get any time information for variable", 
-                    ifelse(nfiles > 1, "s", ""), " \"", paste(varname_nc, collapse="\", \""), "\"")
+            message("Get time information of ", ifelse(nfiles > 1, "all ", ""),
+                    nfiles, " file", ifelse(nfiles > 1, "s", ""), 
+                    " with a variable with a time dimension", 
+                    ifelse(nfiles > 1, ". this may take some time", ""), " ...") 
         }
-    } else {
-        if (verbose > 0) {
-            message(indent, "Get time information of first found variable with a time dimension: \"", 
-                    varname_nc[nc_with_time_ind], "\" ...")
-        }
-        timeobj <- list(time=NULL, units="") # default: no time
-        if (ncdf.tools_tag == T) {
-            dim_names <- ncdf.tools::infoNcdfDims(ncids[[var_nc_inds[nc_with_time_ind]]])$name
-            var_names <- ncdf.tools::infoNcdfVars(ncids[[var_nc_inds[nc_with_time_ind]]])$name
-        } else if (ncdf.tools_tag == F) {
-            dim_names <- names(ncids[[var_nc_inds[nc_with_time_ind]]]$dim)
-            var_names <- names(ncids[[var_nc_inds[nc_with_time_ind]]]$var)
-        }
-    
-        # 1st try: check if there is time _variable_
-        if (any(!is.na(match(time_dim_or_var_names, var_names)))) { # there is a time variable
-            time_var <- var_names[match(time_dim_or_var_names, var_names)]
-            if (any(is.na(time_var))) {
-                time_var <- time_var[-which(is.na(time_var))]
+        timeobj <- vector("list", l=length(nc_with_time_inds)) # saves time attributes of nc file
+        names(timeobj) <- varname_nc[nc_with_time_inds]
+        for (time_vari in seq_along(nc_with_time_inds)) {
+            if (verbose > 0) message(indent, "variable ", time_vari, "/", length(nc_with_time_inds), ": \"",
+                                     varname_nc[nc_with_time_inds[time_vari]], "\" ...")
+
+            if (ncdf.tools_tag == T) {
+                dim_names <- ncdf.tools::infoNcdfDims(ncids[[nc_with_time_inds[time_vari]]])$name
+                var_names <- ncdf.tools::infoNcdfVars(ncids[[nc_with_time_inds[time_vari]]])$name
+            } else if (ncdf.tools_tag == F) {
+                dim_names <- names(ncids[[nc_with_time_inds[time_vari]]]$dim)
+                var_names <- names(ncids[[nc_with_time_inds[time_vari]]]$var)
             }
-            if (length(time_var) > 1) {
-                stop("found ", length(time_var), " time vars: ",
-                     paste(time_var, collapse=", "), ". not implemented.")
-            }
-            # read time variable
-            if (ncdf.tools_tag == F) {
-                timeobj$time <- ncdf4::ncvar_get(ncids[[var_nc_inds[nc_with_time_ind]]], time_var)
-                timeobj <- c(timeobj, ncdf4::ncatt_get(ncids[[var_nc_inds[nc_with_time_ind]]], time_var))
-            } else if (ncdf.tools_tag == T) {
-                timeobj$time <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_var)
-                time_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_var)$natts
-                for (atti in 1:time_natts) {
-                    attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_var, attribute=atti-1)$name
-                    timeobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_var, attribute=atti-1)
-                }
-            } # ncdf4 or ncdf.tools
-        } # if there is time var
         
-        # 2nd try: check if there is time _dimension_
-        if (is.null(timeobj$time)) {
-            if (any(!is.na(match(time_dim_or_var_names, dim_names)))) { # there is a time dimension
+            # 1st try: check if there is time _variable_
+            if (any(!is.na(match(time_dim_or_var_names, var_names)))) { # there is a time variable
+                time_var <- var_names[match(time_dim_or_var_names, var_names)]
+                if (any(is.na(time_var))) {
+                    time_var <- time_var[-which(is.na(time_var))]
+                }
+                if (length(time_var) > 1) {
+                    stop("found ", length(time_var), " time vars: ",
+                         paste(time_var, collapse=", "), ". not implemented.")
+                }
+                # read time variable
+                tmp <- list()
+                if (ncdf.tools_tag == F) {
+                    #tmp$time <- ncdf4::ncvar_get(ncids[[nc_with_time_inds[time_vari]]], time_var)
+                    tmp <- c(tmp, ncdf4::ncatt_get(ncids[[nc_with_time_inds[time_vari]]], time_var))
+                } else if (ncdf.tools_tag == T) {
+                    #tmp$time <- RNetCDF::var.get.nc(ncids[[nc_with_time_inds[time_vari]]], time_var)
+                    time_natts <- RNetCDF::var.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_var)$natts
+                    for (atti in 1:time_natts) {
+                        attname <- RNetCDF::att.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_var, attribute=atti-1)$name
+                        tmp[[attname]] <- RNetCDF::att.get.nc(ncids[[nc_with_time_inds[time_vari]]], time_var, attribute=atti-1)
+                    }
+                } # ncdf4 or ncdf.tools
+                timeobj[[time_vari]] <- tmp
+             } else if (any(!is.na(match(time_dim_or_var_names, dim_names)))) { # 2nd try: check if there is time _dimension_
                 time_dim <- dim_names[match(time_dim_or_var_names, dim_names)]
                 if (any(is.na(time_dim))) {
                     time_dim <- time_dim[-which(is.na(time_dim))]
@@ -1018,505 +1305,328 @@ if (nfiles > 0) {
                     stop("found ", length(time_dim), " time dims: ",
                          paste(time_dim, collapse=", "), ". not implemented.")
                 }
+                tmp <- list()
                 if (ncdf.tools_tag == F) { # use ncdf4 package
-                    timeobj$time <- ncids[[var_nc_inds[nc_with_time_ind]]]$dim[[time_dim]]$vals
-                    timeobj$units <- ncids[[var_nc_inds[nc_with_time_ind]]]$dim[[time_dim]]$units
+                    #tmp$time <- ncids[[nc_with_time_inds[time_vari]]]$dim[[time_dim]]$vals
+                    tmp$units <- ncids[[nc_with_time_inds[time_vari]]]$dim[[time_dim]]$units
                 } else if (ncdf.tools_tag == T) { # use ncdf.tools package
-                    #time_dim_id <- RNetCDF::dim.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim)$id
-                    timeobj$time <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim)
-                    time_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim)$natts
-                    for (atti in 1:time_natts) { # using id or name here?
-                        #attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim_id, attribute=atti-1)$name
-                        #timeobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim_id, attribute=atti-1)
-                        attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim, attribute=atti-1)$name
-                        timeobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_time_ind]]], time_dim, attribute=atti-1)
+                    #time_dim_id <- RNetCDF::dim.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim)$id
+                    #tmp$time <- RNetCDF::var.get.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim)
+                    time_natts <- RNetCDF::var.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim)$natts
+                    for (atti in seq_len(time_natts)) { # using id or name here?
+                        #attname <- RNetCDF::att.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim_id, attribute=atti-1)$name
+                        #tmp[[attname]] <- RNetCDF::att.get.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim_id, attribute=atti-1)
+                        attname <- RNetCDF::att.inq.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim, attribute=atti-1)$name
+                        tmp[[attname]] <- RNetCDF::att.get.nc(ncids[[nc_with_time_inds[time_vari]]], time_dim, attribute=atti-1)
                     }
                 }
-            } # if there is time var
-        } # if no time var was found
-        if (verbose > 0) {
-            message(indent, "   found ", length(timeobj$time), " time points from ", 
-                    min(timeobj$time), "-", max(timeobj$time), " in units \"", 
-                    timeobj$units, "\"")
-        }
-        
-        ## make POSIX time object
-        # 1st case: time unit is e.g. "seconds since ..."
-        if (grepl(" since ", timeobj$units) && grepl(" as ", timeobj$units)) {
-            stop("strange time units")
-        } else if (grepl(" since ", timeobj$units) && !grepl(" as ", timeobj$units)) {
-            timeunit <- substr(timeobj$units, 1, regexpr(" since ", timeobj$units) - 1)
-            if (timeunit == "seconds") {
-                timefac <- 1
-            } else if (timeunit == "days") {
-                timefac <- 86400
+                timeobj[[time_vari]] <- tmp
             } else {
-                stop("define case for timeunit \"", timeunit, "\"")
+                message("no time dim or var found in file. this should not happen")
+            } # if time dim or var was found
+            
+            # `cdo showtimestep` for old fesom standalone data yields erroneous values:
+            # cdo showtimestep Low01.2008.oce.nc
+            # Warning (find_time_vars): Time variable >T< not found!
+            # 0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00
+            # `ncdump -v time` works:
+            # time = 2678400, 5097600, 7776000, 10368000, 13046400, 15638400, 18316800, 
+            #     20995200, 23587200, 26265600, 28857600, 31536000 ;
+            # however, old fesom standalone data has strange time value jumps every 20 years:
+            # YYYYMM      time         dt
+            # 194801   2678400
+            # 194802   5097600    2419200
+            # ...
+            # 196711 628041600
+            # 196712 630720000    2678400
+            # 196801   2678400 -628041600
+            # 196802   5097600    2419200
+            # -> test if old erroneous data is used: if `cdo showtimestamp` all equal "0000-00-00T00:00:00"
+            dates <- system(paste0("cdo -s showtimestamp ", 
+                                   attributes(ncids[[nc_with_time_inds[time_vari]]])$filename), intern=T)
+            dates <- strsplit(trimws(dates), "  ")[[1]]
+            if (all(dates == "0000-00-00T00:00:00")) {
+                timevalue_strat <- "old" # --> construct times based on YYYY from filenames
+            } else {
+                timevalue_strat <- "new" # --> use result of `cdo showtimestamp`
             }
-            timeobj$origin <- substr(timeobj$units,
-                                     regexpr(" since ", timeobj$units) + 7,
-                                     nchar(timeobj$units))
-        # 2nd case: time unit is e.g. "day as ..."
-        } else if (!grepl(" since ", timeobj$units) && grepl(" as ", timeobj$units)) {
-            stop("not happened yet")
-        # 3rd case: time unit is "s" (old fesom files)
-        } else if (timeobj$units == "s") {
-            timeunit <- "s"
-            timefac <- 1
-            timeobj$origin <- paste0(year, "-01-01")
-        } else {
-            stop("cannot infer posix time object from these time units. not yet defined.")
-        }
-        # make POSIX object
-        timeobj$origin <- as.POSIXct(timeobj$origin, tz="UTC") #%Y-%m-%d %H:%M:%OS"
-        timeobj$posix <- as.POSIXlt(timeobj$time*timefac, tz="UTC", origin=timeobj$origin)
-        # the same:
-        #posix <- as.POSIXlt(timeobj$time*timefac, tz="UTC", format="%Y-%m-%d %H:%M:%OS", origin=paste0(origin, " 00:00:00"))
-        if (verbose > 0) {
-            message(indent, "   time range of file = ", min(timeobj$posix), " to ", max(timeobj$posix), " ...")
-        }
-        # old fesom bug: need to remove 1 day at first time
-        ntime <- length(timeobj$time)
-        if (timeunit == "s") { 
-            if (verbose > 0) {
-                message(indent, "   timeunit = \"s\" --> old fesom bug: remove 1 day of first time point ...")
-            }
-            timeobj$posix[1] <- timeobj$posix[1] - 86400
-            timeobj$time[1] <- timeobj$time[1] - 86400
-            # todo: how to do this with cdo
-            cdo_shifttime <- ""
-        # general fesom bug: need to remove 1 month of all time points
-        } else {
-            if (verbose > 0) {
-                message(indent, "   fesom bug: remove 1 day of all time points ...")
-            }
-            # if [1:ntime] is not provided in the next line, posixlt will be converted to posixct o_O
-            timeobj$posix[1:ntime] <- timeobj$posix[1:ntime] - 86400 
-            timeobj$time <- timeobj$time - 86400
-            cdo_shifttime <- "-shifttime,-1sec"
-        }
-        if (verbose > 0) {
-            message(indent, "   time range of file = ", min(timeobj$posix), " to ", max(timeobj$posix), " ...")
-        }
-       
-        ## determine temporal frequency of data
-        if (exists("frequency_in")) { # given my user
-            timeobj$frequency <- frequency_in
-        } else {
-            known_frequencies <- c("daily"=1, 
-                                   "5day"=2,
-                                   "monthly"=3,
-                                   "annual"=4)
-            if (ntime == 1) {
-                stop("not defined yet")
-            } else if (ntime > 1) { # more than 1 rec per file
-                timediff <- lubridate::as.duration(diff(timeobj$posix))
-                timediff <- lubridate::as.duration(unique(timediff))
-                if (all(timediff %in% lubridate::dyears(1))) {
-                    timeobj$frequency <- "annual" 
-                } else if (all(timediff %in% lubridate::ddays(28:31))) {
-                    timeobj$frequency <- "monthly" 
-                } else if (all(timediff %in% lubridate::dseconds(438000))) {
-                    timeobj$frequency <- "5day" 
-                } else if (all(timediff %in% lubridate::ddays(1))) {
-                    timeobj$frequency <- "daily" 
-                } else {
-                    print(summary(timediff))
-                    stop("--> these time intervals are not known yet")
-                }
-                if (verbose > 0) {
-                    message(indent, "   determined time frequency = ", timeobj$frequency)
-                }
-            }
-        } # if `frequency_in` is not given by user
-        output <- timeobj$frequency # e.g. "monthly"
-        if (verbose > 2) {
-            message(indent, "timeobj:")
-            cat(capture.output(str(timeobj)), sep="\n")
-        }
-        
-        ## check if any temporal reduction of original data is wanted via cdo 
-        cdo_temporalmean <- ""
-        if (!exists("frequency_post")) {
-            freq_ind <- which(names(known_frequencies) == output)
-            message(indent, "`frequency_post` is not defined. if you want to calculate a ",
-                    "temporal mean before any other analysis, set e.g.\n",
-                    paste0(indent, "   `frequency_post <- \"", 
-                           names(known_frequencies)[(freq_ind+1):length(known_frequencies)], "\"`\n"),
-                    indent, "in the runscript (possible frequencies are \"", 
-                    paste(names(known_frequencies), collapse="\",\""), "\").")
-        
-        } else { # `frequency_post` is given by user
-            if (output != frequency_post) {
-                message(indent, "The determined output frequency is \"", output, "\" but `frequency_post` = \"", 
-                        frequency_post, "\"")
-                if (frequency_post == "monthly") {
-                    #cdo_temporalmean <- "cdo -s -monmean"
-                    cdo_temporalmean <- "cdo -monmean"
-                    if (exists("recs")) {
-                        if (any(diff(recs) != 1)) {
-                            stop("no gaps in `recs` are allowed if a new output frequency shall be set. ",
-                                 "rerun without setting `recs` or without defining `frequency_post` ",
-                                 "(i.e. keeping the original \"", output, "\" frequency.")
+
+            ## make POSIX time object of all files
+            dates_all <- recvec <- seasonvec <- timestampvec <- rec_tag_vec <- c()
+            for (fi in seq_along(files_list[[nc_with_time_inds[time_vari]]])) {
+                if (timevalue_strat == "old") { # all `cdo showtimestamp` = "0000-00-00T00:00:00"
+                    # construct time based on filename years and number of time points; assume that dt is constant in time
+                    ntimepf <- as.integer(system(paste0("cdo -s ntime ", 
+                                                        files_list[[nc_with_time_inds[time_vari]]][[fi]]$files), intern=T))
+                    if (any(names(files_list[[nc_with_time_inds[time_vari]]][[fi]]) == "YYYY")) {
+                        dates <- files_list[[nc_with_time_inds[time_vari]]][[fi]]$YYYY # YYYY of filename
+                        dates <- seq.Date(as.Date(paste0(dates, "-1-1")), as.Date(paste0(dates, "-12-31")), l=ntimepf)
+                        dates <- as.POSIXlt(dates)
+                    } else if (any(names(files_list[[nc_with_time_inds[time_vari]]][[fi]]) == "YYYY_from") &&
+                               any(names(files_list[[nc_with_time_inds[time_vari]]][[fi]]) == "YYYY_to")) {
+                        stop("this case never happend before")
+                    } else {
+                        stop("this should not happen")
+                    }
+                } else if (timevalue_strat == "new") { # `cdo showtimestamp` has success
+                    dates <- system(paste0("cdo -s showtimestamp ", 
+                                           files_list[[nc_with_time_inds[time_vari]]][[fi]]$files), intern=T)
+                    dates <- strsplit(trimws(dates), "  ")[[1]]
+                    dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
+                    ntimepf <- length(dates)
+                } # which timevalue_strat
+                
+                # find record indices based on wanted years 
+                if (!exists("recs") && !exists("season")) { # case 1/4: no recs and no season were given
+                    recsi <- which((dates$year+1900) %in% years)
+                    if (length(recsi) == 0) stop("this should not happen")
+                    months_wanted_inds <- unique(dates$mon[recsi]) + 1
+                    if (length(months_wanted_inds) == 12 && months_wanted_inds == 1:12) {
+                        seasoni <- "Jan-Dec"
+                    } else {
+                        seasoni <- paste(months[months_wanted_inds], collapse="")
+                    }
+                } else if (!exists("recs") && exists("season")) { # case 2/4: no recs but season was given
+                    months_wanted <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
+                    message(indent, "wanted `season` = \"", season, "\" -> months_wanted = ", 
+                            paste(months_wanted, collapse=","))
+                    recsi <- c()
+                    for (mi in 1:length(months_wanted)) {
+                        recsi <- c(recsi, which(dates$mon + 1 == months_wanted[mi]))
+                    }
+                    seasoni <- season
+                } else if (exists("recs") && !exists("season")) { # case 3/4: recs is given but no season
+                    if (length(recs) != length(unique(recs))) {
+                        message(indent, "some entries of given `recs` occur more than once. continue with unique(recs) ...")
+                        recs <- unique(recs)
+                    }
+                    months_wanted_inds <- unique(dates$mon[recs]) + 1
+                    seasoni <- paste(months[months_wanted_inds], collapse="")
+                    if (seasoni == "JFMAMJJASOND") seasoni <- "Jan-Dec"
+                    wanted_months_in_data <- which(!is.na(match(dates$mon+1, months_wanted_inds)))
+                    if (!all(wanted_months_in_data %in% recs)) {
+                        # specified records do not cover complete months
+                        # e.g. if daily data and `recs` define not the whole month
+                        # e.g. if more than one year saved per file and `recs` define only the months of the first year
+                        month_inds_out_of_recs <- which(!(wanted_months_in_data %in% recs))
+                        if (verbose > 0) {
+                            message(indent, "given `recs` (n=", length(recs), "):")
+                            ht(recs)
+                            message(indent, "indicate season ", seasoni, " is wanted. however, ",
+                                    "the given `recs` cover only a subset of all available ", seasoni, 
+                                    " months of the nc file.\n", 
+                                    indent, "--> ", length(month_inds_out_of_recs), 
+                                    " records of all available ", seasoni, " months will not be considered ",
+                                    "based on the given `recs`\n",
+                                    indent, "--> script continues with season = \"\" since the loaded ",
+                                    "data will not represent the whole ", seasoni, " season of the file\n",
+                                    indent, "--> if you want all data from season ", seasoni, 
+                                    ", rerun the script with `season <- \"", seasoni, "\"` and without ",
+                                    "`recs` defined in the runscript.")
+                        }
+                        seasoni <- ""
+                    } else {
+                        if (verbose > 0) {
+                            message(indent, "Based on wanted `recs` (n=", length(recs), "):")
+                            ht(recs)
+                            message(indent, "`season` = \"", seasoni, "\"")
                         }
                     }
-                    lt <- unclass(timeobj$posix)
-                    timeobj$posix <- seq(as.POSIXct(paste0(lt$year[1] + 1900, "-", lt$mon[1] + 1, "-15"), tz="UTC"),
-                                         as.POSIXct(paste0(lt$year[ntime] + 1900, "-", lt$mon[ntime] + 1, "-15"), tz="UTC"),
-                                         l=12)
-                } else {
-                    stop("not yet")
-                } # which output frequency is wanted?
-
-                # update timeobj
-                timeobj$posix <- as.POSIXlt(timeobj$posix) # posixct -> posixlt
-                ntime <- length(timeobj$posix)
-                timeobj$time <- as.numeric(timeobj$posix, units="secs") # always uses 1970-01-01 as origin
-                timeobj$origin <- as.POSIXct("1970-01-01", tz="UTC")
-                timeobj$units <- "seconds since 1970-01-01"
-                timeobj$frequency <- frequency_post
-                cdo_temporalmean <- paste0(cdo_temporalmean, " ", cdo_shifttime)
-                message(indent, "--> run `", cdo_temporalmean, "` for every file ...")
-                output <- frequency_post
-                if (verbose > 2) {
-                    message(indent, "updated timeobj:")
-                    cat(capture.output(str(timeobj)), sep="\n")
-                } 
-            
-            } else { # output == frequency_post; e.g. "monthly" == "monthly"
-                message("the given `frequency_post` = \"", frequency_post, "\" is the same as the ",
-                        "input frequency --> calculating temporal mean does not make sense.")
-            } # if cdo temporal reduction of original input data
-        
-        } # if `frequency_post` is given by user or not
-        
-        output_fname <- paste0("_", output)
-        if (snapshot) {
-            output_fname <- paste0(output_fname, "_snapshot")
-        } else {
-            output_fname <- paste0(output_fname, "_mean")
-        }
-        
-        ## determine or check time indices and season 
-        lt <- unclass(timeobj$posix)
-        if (exists("season")) { # test if provided season makes sense.
-            season_inds <- regexpr(season, season_check$string)
-            if (season_inds == -1) {
-                warning("wanted season \"", season, "\" was not found in test string \"", 
-                        season_check$string, "\". choose a substring or do not define",
-                        " `season` for taking all available time points of a year into account.",
-                        " continue with Jan-Dec ...")
-                rm(season)
-            }
-        }
-        if (!exists("recs")) { # no recs were given
-            if (!exists("season")) { # no season was given
-                recs <- 1:ntime # default
-                months_wanted_inds <- unique(lt$mon[recs]) + 1
-                if (length(months_wanted_inds) == 12 && months_wanted_inds == 1:12) {
-                    season <- "Jan-Dec"
-                } else {
-                    season <- paste(months[months_wanted_inds], collapse="")
-                }
-            } else if (exists("season")) { # season was given
-                months_wanted <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
-                message(indent, "wanted `season` = \"", season, "\" -> months_wanted = ", 
-                        paste(months_wanted, collapse=","))
-                recs <- c()
-                for (mi in 1:length(months_wanted)) {
-                    recs <- c(recs, which(lt$mon + 1 == months_wanted[mi]))
-                }
-            } # if season was provided
-        } else if (exists("recs")) {
-            if (any(recs < 1) || any(recs > ntime)) {
-                stop("wanted `recs` = ", paste(recs, collaps=","), 
-                     " are out of the ", ntime, " time indices of the file.")
-            }
-            if (!exists("season")) {
-                months_wanted_inds <- unique(lt$mon[recs]) + 1
-                season <- paste(months[months_wanted_inds], collapse="")
-                wanted_months_in_data <- which(!is.na(match(lt$mon+1, months_wanted_inds)))
-                if (!all(wanted_months_in_data %in% recs)) {
-                    # specified records do not cover complete months
-                    # --> e.g. if daily data and `recs` define not the whole month
-                    month_inds_out_of_recs <- which(!(wanted_months_in_data %in% recs))
-                    if (verbose > 0) {
-                        message(indent, "   however, the wanted `recs` cover only a subset of these months\n", 
-                                indent, "   --> ", length(month_inds_out_of_recs), 
-                                " records from these months are not wanted based on the given `recs`\n",
-                                indent, "   --> set season to \"\"")
-                    }
-                    season <- ""
-                }
-                # special case: Jan-Dec; change "JFMAMJJASOND" to "Jan-Dec"
-                if (season == "JFMAMJJASOND") season <- "Jan-Dec"
-                if (verbose > 0) {
-                    message(indent, "Based on wanted `recs` = ", recs[1], ":", recs[length(recs)], 
-                            " (n=", length(recs), "), `season` = \"", season, "\"")
-                }
-            } else if (exists("season")) {
-                # check if wanted recs and wanted season fit to each other
-                if (season == "Jan-Dec") {
-                    recs_should_be <- 1:ntime
-                } else {
-                    season_inds <- regexpr(season, season_check$string)
-                    months_wanted <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
-                    recs_should_be <- c()
-                    for (mi in 1:length(months_wanted)) {
-                        recs_should_be <- c(recs_should_be, which(lt$mon + 1 == months_wanted[mi]))
+                    recsi <- recs
+                } else if (exists("recs") && exists("season")) { # case 4/4: both recs and season were given
+                    # check if wanted recs and wanted season fit to each other
+                    if (season == "Jan-Dec") {
+                        recs_should_be <- seq_len(ntimepf)
+                    } else {
+                        season_inds <- regexpr(season, season_check$string)
+                        months_wanted <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
+                        recs_should_be <- c()
+                        for (mi in 1:length(months_wanted)) {
+                            recs_should_be <- c(recs_should_be, which(dates$mon + 1 == months_wanted[mi]))
+                        }
                     }
                     if (length(recs_should_be) != length(recs) ||
                         length(recs_should_be) == length(recs) && recs_should_be != recs) {
-                        stop("wanted `recs` = ", recs[1], ":", recs[length(recs)],  
-                             " and wanted `season` = \"", season, "\" do not fit to each other.",
-                             " based on the time information of the input file, `recs` should be ", 
-                             recs_should_be[1], ":", recs_should_be[length(recs_should_be)], 
-                             " to obtain data of this season only.\n", 
-                             "solution: either do not define `recs` in the namelist if you want season \"", season, 
-                             "\" or do not define `season` in the namelist if you want to use your wanted `recs`.")
+                        message(indent, "wanted `recs` (n=", length(recs), "):")
+                        ht(recs)
+                        message(indent, " and wanted `season` = \"", season, "\" do not fit to each other.",
+                                " based on the time information of the input file, `recs` of season \"", 
+                                season, "\" should be these ", length(recs_should_be), ":")
+                        ht(recs_should_be)
+                        stop("rerun the script with `season <- \"", season, 
+                             "\"` and without `recs` defined if you want all data of this season ",
+                             "or rerun the script with `recs` defined as they are but `season` undefined.")
+                    } else {
+                        recsi <- recs
+                        seasoni <- season
                     }
+                } # if recs and/or season were provided or not
+               
+                # cut only wanted dates
+                recsi <- sort(recsi) # e.g. c(12, 1, 2) --> c(1, 2, 12) since this should also be the order of e.g. a time series
+                if (length(recsi) != length(dates)) {
+                    dates <- dates[recsi]
                 }
-            } # if season was provided
-        } # if recs and/or season were provided or not
-        recs <- sort(recs) # e.g. 12,1,2 --> 1,2,12
 
-        ## decide if all time records per file shoul be read or only 1 after another
-        if (length(recs) > 1) {
-            if (any(diff(recs) != 1)) { # if recs per year are irregular, i.e. DJF
-                all_recs <- F
-            }
-        }
-        if (all_recs) { # from namelist.config
-            rec_tag <- T
-            if (length(recs) == 1) rec_tag <- F 
-        } else if (!all_recs) {
-            rec_tag <- F
-        }
-        
-        ## cut time indices if wanted (recs in namelist.config)
-        if (length(recs) != ntime || (length(recs) == ntime && recs != 1:ntime)) {
-            if (verbose > 0) {
-                message(indent, "Cut ", length(recs), " of ", ntime, 
-                        " time points based on wanted `recs` ...")
-            }
-            timeobj$time <- timeobj$time[recs]
-            timeobj$posix <- timeobj$posix[recs]
-            lt <- lapply(lt, "[", recs)
-            if (verbose > 0) {
-                message(indent, "   time range = ", min(timeobj$posix), " to ", max(timeobj$posix), " ...")
-            }
-            ntime <- length(timeobj$time)
-        } # if cut time
-
-        ## consider leap years
-        # up to know, the assumption was made that all input files have 
-        # the same number of time points. but if the output interval is daily
-        # some files may have 365 and some 366 time points, i.e. the array 
-        # lengths for the summation of the timmean would differ.
-        leap_tag <- F # default
-        if (any(timeobj$frequency == c("daily"))) { # add frequency conditions here
-            if (any(is.leap(years)) && any(lt$mon + 1 == 2)) {
-                # find time record indices for leap-year files
-                # assume here that if there is data at 28th february, 
-                # the 29th february in the leap years is also wanted
-                february_28th_inds <- which(lt$mon + 1 == 2 & lt$mday >= 28)
-                if (length(february_28th_inds) != 0) {
-                    if (verbose > 0) {
-                        message(indent, "   time frequency = ", timeobj$frequency, 
-                                " AND some years are leap years AND some February 28th/29th indices (n=", 
-                                length(february_28th_inds), ") were found.\n",
-                                indent, "   --> assume that February 29th data should be included from all data. ",
-                                "adjust time indices for leap/non-leap years ...")
-                    }
-                    if (is.leap(year)) { # if current first year is leap year
-                        february_29th_inds <- which(lt$mon + 1 == 2 & lt$mday == 29)
-                        if (length(february_29th_inds) != 0) {
-                            leap_tag <- T 
-                            recs_leap <- recs
-                            recs <- recs[-february_29th_inds]
-                            # recuce all indices after february 29 by 1 (is this correct for all cases?)
-                            recs[february_29th_inds:length(recs)] <- recs[february_29th_inds:length(recs)] - 1
-                            lt_leap <- lt
-                            lt <- lapply(lt, "[", -february_29th_inds) # apply() removes tz attribute
-                            attributes(lt) <- attributes(lt_leap)
-                            timeobj$posix_leap <- timeobj$posix
-                            timeobj$posix <- timeobj$posix[-february_29th_inds]
-                        } else {
-                            # if current leap year data with daily frequency does not have february 29th data
-                            # it is assumed that the february 29th data is not wanted or present in all years
-                            # -> leap year consideration not needed
-                        }
-                    } else if (!is.leap(year)) { # if current first year is not a leap year
-                        leap_tag <- T 
-                        smallerequal_feb28_inds <- 1:february_28th_inds[length(february_28th_inds)]
-                        largerthan_feb29_inds <- (february_28th_inds[length(february_28th_inds)] + 1):length(recs)
-
-                        # define time objects for leap years
-                        recs_leap <- c(recs[smallerequal_feb28_inds], 
-                                       seq(recs[smallerequal_feb28_inds[length(smallerequal_feb28_inds)]] + 1,
-                                           l=length(february_28th_inds), b=1),
-                                       recs[largerthan_feb29_inds] + 1)
-                        if (any(recs_leap > 366)) {
-                            stop("this did not work")
-                        }
-                        lt_leap <- list(mon=c(), mday=c(), hour=c(), min=c(), sec=c())
-                        for (i in 1:length(lt_leap)) {
-                            if (any(names(lt_leap)[i] == c("mday"))) {
-                                add_one <- T
-                            } else {
-                                add_one <- F
-                            }
-                            cmd <- paste0("lt_leap[[names(lt_leap)[i]]] <- c(",
-                                          # add before february 29th:
-                                          "lt[[names(lt_leap)[i]]][smallerequal_feb28_inds], ",
-                                          # add february 29th:
-                                          "seq(lt[[names(lt_leap)[i]]][smallerequal_feb28_inds[length(smallerequal_feb28_inds)]]",
-                                          " + ifelse(add_one, 1, 0), l=length(february_28th_inds), b=ifelse(add_one, 1, 0)), ",
-                                          # add after february 29th:
-                                          "lt[[names(lt_leap)[i]]][largerthan_feb29_inds])")
-                            #message(cmd)
-                            eval(parse(text=cmd))
-                        }
-                        rm(smallerequal_feb28_inds, largerthan_feb29_inds)
-                    } # if current first year is not a leap year
-                } # if february 28th is present
-            } # if any years are leap years and any data if from february
-        } # consider leap years if daily data
-       
-        ## adjust season in special case
-        if (timeobj$frequency == "daily" && season != "") {
-            wanted_month_inds <- unique(lt$mon + 1)
-            for (mi in 1:length(wanted_month_inds)) {
-                minds <- which(lt$mon == wanted_month_inds[mi])
-                if (leap_tag && is.leap(year)) {
-                    if (length(minds) != days_per_month_leap[wanted_month_inds[mi]]) {
-                        season <- ""
-                    } # if not complete month is wanted based on `recs`
+                # save to list 
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$recs <- recsi
+                if (fi == 1) {
+                    files_list[[nc_with_time_inds[time_vari]]][[fi]]$total_recs <- recsi
                 } else {
-                    if (length(minds) != days_per_month[wanted_month_inds[mi]]) {
-                        season <- ""
-                    } # if not complete month is wanted based on `recs`
+                    files_list[[nc_with_time_inds[time_vari]]][[fi]]$total_recs <- 
+                        (max(files_list[[nc_with_time_inds[time_vari]]][[fi-1]]$total_recs)+1):
+                        (max(files_list[[nc_with_time_inds[time_vari]]][[fi-1]]$total_recs)+length(recsi))
                 }
-            } # for mi all wanted months
-            if (season == "") {
-                if (verbose > 2) {
-                    message(indent, "   based on the daily input, `recs` cover only a subset of the month", 
-                            ifelse(length(wanted_month_inds) > 1, "s", ""), " \"", 
-                            paste(months_plot[wanted_month_inds], collapse=", "), "\"\n", 
-                            indent, "   --> set season to \"\"")
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates <- dates
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$ntime <- length(recsi)
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$season <- seasoni
+                timestamp <- paste0(dates$year + 1900, sprintf("%.2i", dates$mon + 1), sprintf("%.2i", dates$mday))
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$timestamp <- timestamp
+                if (all_recs) { # read all records per file at once (defined in namelist.config)
+                    rec_tagi <- T # default
+                    if (length(recsi) > 1 && any(diff(recsi) != 1)) { # if recs per year are irregular, i.e. DJF
+                        rec_tagi <- F
+                    }
+                } else if (!all_recs) { # read one record after another (defined in namelist.config)
+                    rec_tagi <- F
                 }
-            } # if `season` was adjusted from something to ""
-        } # treat `season` in special case if daily data 
+                dates_all <- c(dates_all, as.POSIXct(dates))
+                recvec <- c(recvec, recsi)
+                seasonvec <- c(seasonvec, seasoni)
+                timestampvec <- c(timestampvec, timestamp)
+                rec_tag_vec <- c(rec_tag_vec, rec_tagi)
+            } # for fi files
+
+            # all time infos per variable
+            timeobj[[time_vari]]$recs <- recvec
+            dates_all <- as.POSIXlt(dates_all, origin="1970-1-1", tz="UTC")
+            timeobj[[time_vari]]$time <- as.numeric(dates_all)
+            timeobj[[time_vari]]$units_out <- "seconds since 1970-1-1"
+            timeobj[[time_vari]]$dates <- dates_all
+            timeobj[[time_vari]]$ntime <- length(dates_all)
+            if (length(unique(seasonvec)) != 1) {
+                stop("recs yield different seasons. this should only happen in DJF case?")
+            } else {
+                seasoni <- unique(seasonvec)
+            }
+            timeobj[[time_vari]]$season <- seasoni
+            timeobj[[time_vari]]$timestamp <- timestampvec
+            if (length(unique(rec_tag_vec)) != 1) {
+                stop("rec_tag_vec should all be the same")
+            } else {
+                rec_tagi <- unique(rec_tag_vec)
+            }
+            timeobj[[time_vari]]$rec_tag <- rec_tagi
+            timeobj[[time_vari]]$maxnrecpf <- max(sapply(lapply(files_list[[nc_with_time_inds[time_vari]]], "[[", "recs"), length))
+
+            ## check if any temporal reduction of original data is wanted via cdo 
+            cdo_temporalmean <- ""
+            if (F) { # update
+                if (!exists("frequency_post")) {
+                    freq_ind <- which(names(known_frequencies) == output)
+                    message(indent, indent, "`frequency_post` is not defined. if you want to calculate a ",
+                            "temporal mean before any other analysis, set e.g.\n",
+                            paste0(indent, indent, "   `frequency_post <- \"", 
+                                   names(known_frequencies)[(freq_ind+1):length(known_frequencies)], "\"`\n"),
+                            indent, indent, "in the runscript (possible frequencies are \"", 
+                            paste(names(known_frequencies), collapse="\",\""), "\").")
+                
+                } else { # `frequency_post` is given by user
+                    if (output != frequency_post) {
+                        stop("update")
+                        message(indent, indent, "`frequency_post` = \"", frequency_post, 
+                                "\" is defined and != the determined output frequency \"", output, "\"")
+                        if (frequency_post == "monthly") {
+                            #cdo_temporalmean <- "cdo -s -monmean"
+                            cdo_temporalmean <- "cdo -monmean"
+                            if (exists("recs")) {
+                                if (any(diff(recs) != 1)) {
+                                    stop("no gaps in `recs` are allowed if a new output frequency shall be set. ",
+                                         "rerun without defining `recs` or without defining `frequency_post` ",
+                                         "(i.e. keeping the original \"", output, "\" frequency.")
+                                }
+                            }
+                            lt <- timeobj$dates
+                            timeobj$dates <- seq(as.POSIXct(paste0(lt$year[1] + 1900, "-", lt$mon[1] + 1, "-15"), tz="UTC"),
+                                                 as.POSIXct(paste0(lt$year[ntime] + 1900, "-", lt$mon[ntime] + 1, "-15"), tz="UTC"),
+                                                 l=12)
+                        } else {
+                            stop("not yet")
+                        } # which output frequency is wanted?
+
+                        message(indent, indent, "--> run `", cdo_temporalmean, "` before any analysis")
+
+                        # update timeobj
+                        timeobj$posix <- as.POSIXlt(timeobj$posix) # posixct -> posixlt
+                        ntime <- length(timeobj$posix)
+                        timeobj$time <- as.numeric(timeobj$posix, units="secs") # always uses 1970-01-01 as origin
+                        timeobj$origin <- as.POSIXct("1970-01-01", tz="UTC")
+                        timeobj$units <- "seconds since 1970-01-01"
+                        timeobj$frequency <- frequency_post
+                        cdo_temporalmean <- paste0(cdo_temporalmean, " ", cdo_shifttime)
+                        message(indent, "--> run `", cdo_temporalmean, "` for every file ...")
+                        output <- frequency_post
+                        if (verbose > 2) {
+                            message(indent, "updated timeobj:")
+                            cat(capture.output(str(timeobj)), sep="\n")
+                        } 
+                    } # if cdo temporal reduction of original input data
+                } # if `frequency_post` is given by user or not
+            } # if F update
+            
+            if (verbose > 1) {
+                message(indent, "timeobj (check `files_list` for more infos):")
+                cat(capture.output(str(timeobj[[time_vari]])), sep="\n")
+                message(indent, "range of all ", timeobj[[time_vari]]$ntime, " time points to read = ", 
+                        min(dates_all), " to ", max(dates_all))
+            }
+
+        } # for time_vari all variables with time dimension
+       
+        # check if same number of files was found for every variable
+        message("todo: check if same number of files was found for every variable")
+
+        maxnrecpf <- sapply(timeobj, "[[", "maxnrecpf")
+        maxnrecpf <- unique(maxnrecpf)
+            
+        season <- sapply(timeobj, "[[", "season")
+        if (length(unique(season)) != 1) {
+            stop("determined season should be the same for all variables. this should not happen")
+        } else {
+            season <- unique(season)
+        }
         
-        ## construct complete time as posix and numeric
-        nrecspf <- length(recs)
-        if (!leap_tag) {
-            recvec <- rep(recs, t=nyears)
-            yearvec <- rep(years, e=nrecspf) 
-            monvec <- rep(lt$mon + 1, t=nyears)
-            mdayvec <- rep(lt$mday, t=nyears)
-            hourvec <- rep(lt$hour, t=nyears)
-            minvec <- rep(lt$min, t=nyears)
-            secvec <- rep(lt$sec, t=nyears)
-            # need to correct mdayvec for possible februaries 29th in non-leap years
-            nonleapinds <- which(!is.leap(yearvec))
-            if (length(nonleapinds) > 0) {
-                if (any(mdayvec[nonleapinds] == 29)) {
-                    wrong_feb29_inds <- which(mdayvec[nonleapinds] == 29)
-                    mdayvec[nonleapinds][wrong_feb29_inds] <- 28
-                }
-            }
-        } else if (leap_tag) { # loop through all years (how to improve that?!)
-            nrecspf_leap <- length(recs_leap)
-            recvec <- yearvec <- monvec <- mdayvec <- hourvec <- minvec <- secvec <- c() 
-            for (i in 1:length(years)) {
-                if (is.leap(years[i])) {
-                    recvec <- c(recvec, recs_leap)
-                    yearvec <- c(yearvec, rep(years[i], e=nrecspf_leap))
-                    monvec <- c(monvec, lt_leap$mon + 1)
-                    mdayvec <- c(mdayvec, lt_leap$mday)
-                    hourvec <- c(hourvec, lt_leap$hour)
-                    minvec <- c(minvec, lt_leap$min)
-                    secvec <- c(secvec, lt_leap$sec)
-                } else if (!is.leap(years[i])) {
-                    recvec <- c(recvec, recs)
-                    yearvec <- c(yearvec, rep(years[i], e=nrecspf))
-                    monvec <- c(monvec, lt$mon + 1)
-                    mdayvec <- c(mdayvec, lt$mday)
-                    hourvec <- c(hourvec, lt$hour)
-                    minvec <- c(minvec, lt$min)
-                    secvec <- c(secvec, lt$sec)
-                }
-            }
-        } # leap_tag or not
-        posix_all <- paste0(yearvec, "-", monvec, "-", mdayvec, " ", hourvec, ":", minvec, ":", secvec)
-        posix_all <- as.POSIXlt(posix_all, origin=timeobj$origin, tz="UTC")
-        time_all <- as.numeric(posix_all, units="secs") # always uses 1970-01-01 as origin
-        seconds_19700101_minus_origin <- difftime(time1=as.POSIXlt("1970-01-01", tz="UTC"), time2=timeobj$origin, tz="UTC", units="secs")
-        time_all <- time_all + as.numeric(seconds_19700101_minus_origin)
-        #posix_test <- as.POSIXlt(time_all, origin=timeobj$origin, tz="UTC")
-        timeobj$time <- time_all
-        timeobj$posix <- posix_all 
-        time <- time_all
-        ntime <- length(time) # complete time
-        rm(time_all, posix_all)
-
-        ## construct timestamp depending on temporal resolution
-        lt_all <- unclass(timeobj$posix) 
-        if (timeobj$frequency == "annual") {
-            timeobj$timestamp_format <- "YYYY" 
-            timestamp <- paste0(lt_all$year + 1900)
-        } else if (timeobj$frequency == "monthly") {
-            timeobj$timestamp_format <- "YYYYMM" 
-            timestamp <- paste0(lt_all$year + 1900, sprintf("%.2i", lt_all$mon + 1))
-        } else if (timeobj$frequency == "5day") {
-            timeobj$timestamp_format <- "YYYYDOY" 
-            timestamp <- paste0(lt_all$year + 1900, sprintf("%.3i", lt_all$yday))
-        } else if (timeobj$frequency == "daily") {
-            timeobj$timestamp_format <- "YYYYMMDD" 
-            timestamp <- paste0(lt_all$year + 1900, sprintf("%.2i", lt_all$mon + 1), sprintf("%.2i", lt_all$mday))
-        }
-        timeobj$timestamp <- timestamp
-        rm(lt_all)
-        if (verbose > 0) {
-            message(indent, "   timestamp = ", timeobj$timestamp[1], " to ", timeobj$timestamp[ntime])
-        }
-
-        ## construct complete timespan
-        timespan <- ifelse(season == "", "", paste0(season, "_"))
-        if (timeobj$timestamp_format == "YYYYMM") {
-            timespan <- paste0(timespan, years[1])
+        # one common date-string for post files
+        timespan <- years[1]
+        if (season != "") timespan <- paste0(season, "_", timespan)
+        if (nyears > 1) timespan <- paste0(timespan, "-", years[nyears])
+        if (snapshot) {
+            timespan <- paste0(timespan, "_snapshot")
         } else {
-            timespan <- paste0(timespan, timeobj$timestamp[1])
+            timespan <- paste0(timespan, "_mean")
         }
-        if (timeobj$timestamp_format == "YYYYMM") {
-            if (nyears > 1) timespan <- paste0(timespan, "-", years[nyears])
-        } else {
-            if (ntime > 1) {
-                timespan <- paste0(timespan, "-", years[nyears],
-                                   substr(timeobj$timestamp[ntime], 5, nchar(timeobj$timestamp[ntime])))
-            }
-        }
-        if (verbose > 0) {
-            message(indent, "   timespan = ", timespan, " (`snapshot` = ", snapshot, ")")
-        }
-        timeobj$timespan <- timespan
         if (timespan == "") {
             timespan_fname <- ""
         } else {
             timespan_fname <- paste0("_", timespan)
         }
-        if (verbose > 2) {
-            message(indent, "timeobj:")
-            cat(capture.output(str(timeobj)), sep="\n")
+        if (verbose > 1) message(indent, "determined timespan of complete data = \"", timespan, "\"")
+
+        # decide for all data if rec_tag T or F
+        rec_tag <- sapply(timeobj, "[[", "rec_tag")
+        if (length(unique(rec_tag)) != 1) {
+            stop("determined rec_tag should be the same for all variables. this should not happen")
+        } else {
+            rec_tag <- unique(rec_tag)
         }
-    } # if !is.null(nc_with_time_ind)    
+
+    } # if !is.null(nc_with_time_inds[time_vari])    
     # finished time stuff
 
     ## try to obtain depth from nc file
     # assumption: do this only once for all files
     nc_with_depth_ind <- NULL
-    for (vari in 1:nfiles) {
+    for (vari in seq_len(nvars)) {
         if (!is.null(dims_of_vars[[vari]]$depthdim_ind)) { 
             # get depth information of first file that has a variable with a depth dimension 
             nc_with_depth_ind <- vari
@@ -1525,7 +1635,8 @@ if (nfiles > 0) {
     }
     if (!is.null(nc_with_depth_ind)) {
         if (verbose > 0) {
-            message(indent, "Get depth information for variable \"", varname_nc[nc_with_depth_ind], "\" ...")
+            message("Get depth information for variable \"", varname_nc[nc_with_depth_ind], 
+                    "\" and assume that all files have the same depth information ...")
         }
         depthobj <- list(depth=NULL, units="") # default: no depth
         if (ncdf.tools_tag == T) {
@@ -1553,7 +1664,7 @@ if (nfiles > 0) {
             } else if (ncdf.tools_tag == T) {
                 depthobj$depth <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_var)
                 depth_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_var)$natts
-                for (atti in 1:depth_natts) {
+                for (atti in seq_len(depth_natts)) {
                     attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_var, attribute=atti-1)$name
                     depthobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], 
                                                                depth_var, attribute=atti-1)
@@ -1579,7 +1690,7 @@ if (nfiles > 0) {
                     #depth_dim_id <- RNetCDF::dim.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_dim)$id
                     depthobj$depth <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_dim)
                     depth_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_dim)$natts
-                    for (atti in 1:depth_natts) { # dimid does not work here
+                    for (atti in seq_len(depth_natts)) { # dimid does not work here
                         #attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_dim_id, attribute=atti-1)$name
                         #depthobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], depth_dim_id, attribute=atti-1)
                         attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_depth_ind]]], 
@@ -1592,7 +1703,7 @@ if (nfiles > 0) {
         } # if no depth var was found
         
         if (verbose > 0) {
-            message(indent, "   found ", length(depthobj$depth), " depth points from ", 
+            message(indent, "found ", length(depthobj$depth), " depth points from ", 
                     min(depthobj$depth), "-", max(depthobj$depth), " in units \"", 
                     depthobj$units, "\"")
         }
@@ -1604,107 +1715,95 @@ if (nfiles > 0) {
 
     ## create start and count vectors for reading only a subset 
     ## of the nc files for every wanted variable
-    istart <- icount <- vector("list", l=nfiles)
-    names(istart) <- varname_nc
-    icount <- istart
-    if (leap_tag) icount_leap <- icount
-    for (vari in 1:nfiles) { # all varname_nc
+    for (vari in seq_len(nvars)) { # all varname_nc
         
-        # construct start and count based on dimesions of variable
-        starttmp <- counttmp <- rep(NA, t=length(dimids))
-        if (leap_tag) count_leaptmp <- starttmp
-        dimids <- dims_of_vars[[vari]]$dimids
-        # defaults:
-        dim_tag <- "2D" # default: 2d data (i.e. nod2d)
-        for (dimi in 1:length(dimids)) {
-          
-            # default: from 1 to length of dim 
-            # (number index dimids[dimi] (= "0" e.g.) in this list works as name of list)  
-            names(starttmp)[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$name
-            names(counttmp)[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$name
+        for (fi in seq_along(files_list[[vari]])) { # for every file of variable
             
-            # find time dimension and set start/count to wanted recs
-            if (!is.null(dims_of_vars[[vari]]$timedim_ind) &&
-                dimids[dimi] == dimids[dims_of_vars[[vari]]$timedim_ind]) {
-                if (!is.na(counttmp[dimi])) {
-                    stop("this is the second attempt to set a time dimension based on ",
-                         "`time_dim_or_var_names` = \"", 
-                          paste(time_dim_or_var_names, collapse="\", \""), 
-                         "\". this means more than 1 dimensions were considered to be the time dimension.")
-                }
-                if (rec_tag) { # read all time points at once
-                    starttmp[dimi] <- recs[1]
-                    counttmp[dimi] <- nrecspf
-                    if (leap_tag) {
-                        count_leaptmp[dimi] <- nrecspf_leap
-                    }
-                } else if (!rec_tag) { # read 1 time point after another
-                    counttmp[dimi] <- 1 # set start in recs loop below
-                }
-            } # if time dim
+            # construct start and count based on dimesions of variable
+            starttmp <- counttmp <- rep(NA, t=length(dimids))
+            dimids <- dims_of_vars[[vari]]$dimids
+            # defaults:
+            dim_tag <- "2D" # default: 2d data (i.e. nod2d)
+            for (dimi in seq_along(dimids)) {
+              
+                # default: from 1 to length of dim 
+                # (number index dimids[dimi] (= "0" e.g.) in this list works as name of list)  
+                names(starttmp)[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$name
+                names(counttmp)[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$name
                 
-            # find node dimension
-            if (!is.null(dims_of_vars[[vari]]$nodedim_ind) &&
-                dimids[dimi] == dimids[dims_of_vars[[vari]]$nodedim_ind]) {
-                if (!is.na(counttmp[dimi])) {
-                    stop("this is the second attempt to set a node dimension based on ",
-                         "`node_dim_or_var_names` = \"", 
-                          paste(node_dim_or_var_names, collapse="\", \""), 
-                         "\". this means more than 1 dimensions were considered to be the node dimension.")
-                }
-                starttmp[dimi] <- 1
-                counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len
-                if (dims_of_vars[[vari]][[dimids[dimi]]]$len != nod2d_n) {
-                    if (exists("nod3d_n")) {
-                        if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod3d_n) {
-                            dim_tag <- "3D"
-                            dims_of_vars[[vari]]$levelwise <- F
-                        } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == 1) {
-                            dim_tag <- "1D"
-                            dims_of_vars[[vari]]$levelwise <- F
-                        } else {
-                            stop("the node dimension is not of length `nod2d_n` = ", nod2d_n, 
-                                 ", `nod3d_n` = ", nod3d_n, " or 1. this case is not yet defined.")
-                        }
-                    } else { # nod3d.out was not found or was not readable
-                        stop("the node dimension of the variable \"", varname_nc[vari], "\", 
-                             called \"", dims_of_vars[[vari]][[dimids[dimi]]]$name, "\" is of length ",
-                             dims_of_vars[[vari]][[dimids[dimi]]]$len, ". this does not equal `nod2d_n` = ", 
-                             nod2d_n, " and `nod3d.out` was not found or not readable in meshpath \"", 
-                             meshpath, "\". So we cannot check if this variable is 3D.")
+                # find time dimension and set start/count to wanted recs
+                if (!is.null(dims_of_vars[[vari]]$timedim_ind) &&
+                    dimids[dimi] == dimids[dims_of_vars[[vari]]$timedim_ind]) {
+                    if (!is.na(counttmp[dimi])) {
+                        stop("this is the second attempt to set a time dimension based on ",
+                             "`time_dim_or_var_names` = \"", 
+                              paste(time_dim_or_var_names, collapse="\", \""), 
+                             "\". this means more than 1 dimensions were considered to be the time dimension.")
                     }
-                } # if not 2d
-                dims_of_vars[[vari]]$dim_tag <- dim_tag
-            } # if node dim
+                    #if (files_list[[vari]][[fi]]$rec_tag) { # read all time points at once
+                    if (rec_tag) {
+                        starttmp[dimi] <- files_list[[vari]][[fi]]$recs[1]
+                        counttmp[dimi] <- length(files_list[[vari]][[fi]]$recs)
+                    } else { # read 1 time point after another
+                        counttmp[dimi] <- 1 
+                    }
+                } # if time dim
+                    
+                # find node dimension
+                if (!is.null(dims_of_vars[[vari]]$nodedim_ind) &&
+                    dimids[dimi] == dimids[dims_of_vars[[vari]]$nodedim_ind]) {
+                    if (!is.na(counttmp[dimi])) {
+                        stop("this is the second attempt to set a node dimension based on ",
+                             "`node_dim_or_var_names` = \"", 
+                              paste(node_dim_or_var_names, collapse="\", \""), 
+                             "\". this means more than 1 dimensions were considered to be the node dimension.")
+                    }
+                    starttmp[dimi] <- 1
+                    counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len
+                    if (dims_of_vars[[vari]][[dimids[dimi]]]$len != nod2d_n) {
+                        if (exists("nod3d_n")) {
+                            if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod3d_n) {
+                                dim_tag <- "3D"
+                                dims_of_vars[[vari]]$levelwise <- F
+                            } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == 1) {
+                                dim_tag <- "1D"
+                                dims_of_vars[[vari]]$levelwise <- F
+                            } else {
+                                stop("the input node dimension is neither of length ", nod2d_n,
+                                     " (=`nod2d_n`), ", nod3d_n, " (=`nod3d_n`) nor 1.")
+                            }
+                        } else { # nod3d.out was not found or was not readable
+                            stop("the node dimension of the variable \"", varname_nc[vari], "\", 
+                                 called \"", dims_of_vars[[vari]][[dimids[dimi]]]$name, "\" is of length ",
+                                 dims_of_vars[[vari]][[dimids[dimi]]]$len, ". this does not equal `nod2d_n` = ", 
+                                 nod2d_n, " and `nod3d.out` was not found or not readable in meshpath \"", 
+                                 meshpath, "\". So we cannot check if this variable is 3D.")
+                        }
+                    } # if not 2d
+                    dims_of_vars[[vari]]$dim_tag <- dim_tag
+                } # if node dim
 
-            # find depth dimension
-            if (!is.null(dims_of_vars[[vari]]$depthdim_ind) &&
-                dimids[dimi] == dimids[dims_of_vars[[vari]]$depthdim_ind]) {
-                if (!is.na(counttmp[dimi])) {
-                    stop("this is the second attempt to set a depth dimension based on ",
-                         "`depth_dim_or_var_names` = \"", 
-                          paste(depth_dim_or_var_names, collapse="\", \""), 
-                         "\". this means more than 1 dimensions were considered to be the depth dimension.")
+                # find depth dimension
+                if (!is.null(dims_of_vars[[vari]]$depthdim_ind) &&
+                    dimids[dimi] == dimids[dims_of_vars[[vari]]$depthdim_ind]) {
+                    if (!is.na(counttmp[dimi])) {
+                        stop("this is the second attempt to set a depth dimension based on ",
+                             "`depth_dim_or_var_names` = \"", 
+                              paste(depth_dim_or_var_names, collapse="\", \""), 
+                             "\". this means more than 1 dimensions were considered to be the depth dimension.")
+                    }
+                    starttmp[dimi] <- 1 # todo: same subsetting for node/depth dims as for time
+                    counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len
+                    dims_of_vars[[vari]]$levelwise <- T
                 }
-                starttmp[dimi] <- 1 # todo: same subsetting for node/depth dims as for time
-                counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len
-                dims_of_vars[[vari]]$levelwise <- T
-            }
-           
-            # if still NA: default dimension range from 1 to length of dimension
-            if (is.na(starttmp[dimi])) {
-                starttmp[dimi] <- 1 
-                counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len 
-                if (leap_tag) names(count_leaptmp)[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$name 
-            }
-
-        } # for dimi all dims of var
+               
+            } # for dimi all dims of var
         
-        # start/count vectors for reading nc
-        istart[[vari]] <- starttmp 
-        icount[[vari]] <- counttmp
-        if (leap_tag) icount_leap[[vari]] <- count_leaptmp
-
+            files_list[[vari]][[fi]]$start <- starttmp
+            files_list[[vari]][[fi]]$count <- counttmp
+        
+        } # for fi all files per variable 
+        
         # adjust the combination (2D && levelwise) to (3D && levelwise)
         if (dims_of_vars[[vari]]$dim_tag == "2D" 
             && any(names(dims_of_vars[[vari]]) == "levelwise") 
@@ -1741,15 +1840,13 @@ if (nfiles > 0) {
         } else {
             stop("this should not happen")
         }
-    }
-    # finished creating start and count vectors
+    } # decide about dim_tag and levelwise
     
-    rm(year, year_cnt)
     if (verbose > 0) {
         message("==============================================")
     }
 
-} # if nfiles > 0
+} # if nvars > 0
 # finished getting fesom data header information
 
 ## Further checks with dim_tag
@@ -1821,8 +1918,7 @@ if (!restart || # ... not a restart run
     fid <- paste0(meshpath, "/elem2d.out")
     elem2d_n <- as.numeric(readLines(fid, n=1))
     if (verbose > 1) {
-        message(paste0(indent, "read ", elem2d_n, 
-                     " 2D elements from elem2d.out ..."))
+        message(indent, "read ", elem2d_n, " 2D elements from elem2d.out ...", appendLF=F)
     }
     if (!fread_tag) {
         tmp <- scan(fid, skip=1, quiet=T)
@@ -1831,6 +1927,7 @@ if (!restart || # ... not a restart run
         tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
         elem2d <- as.matrix(tmp)
     }
+    if (verbose > 1) message(" min/max elem2d = ", min(elem2d), "/", max(elem2d))
     rm(tmp)
    
     # read nod2d.out
@@ -1838,8 +1935,7 @@ if (!restart || # ... not a restart run
         #|| dim_tag == "3D" && levelwise == T
         ) {
         if (verbose > 1) {
-            message(paste0(indent, "read ", nod2d_n, 
-                         " 2D nodes from nod2d.out ..."))
+            message(indent, "read ", nod2d_n, " 2D nodes from nod2d.out ...", appendLF=F)
         }
         fid <- paste0(meshpath, "/nod2d.out")
         if (!fread_tag) {
@@ -1856,6 +1952,8 @@ if (!restart || # ... not a restart run
         nod_y <- nod2d_y
         nod2d_check <- T
         #message(str(nod2d))
+        if (verbose > 1) message(" min/max nod2d_x,nod2d_y = ", min(nod_x), "/", max(nod_x), ", ", 
+                                 min(nod_y), "/", max(nod_y))
         rm(tmp, nod2d)
     } # if dim_tag == "2D" || (dim_tag == "3D" && levelwise == T)
     
@@ -1865,10 +1963,7 @@ if (!restart || # ... not a restart run
         ) {
         fid <- paste0(meshpath, "/nod3d.out")
         nod3d_n <- as.numeric(readLines(fid, n=1))
-        if (verbose > 1) {
-            message(paste0(indent, "read ", nod3d_n, 
-                         " 3D nodes from nod3d.out ..."))
-        }
+        if (verbose > 1) message(indent, "read ", nod3d_n, " 3D nodes from nod3d.out ...", appendLF=F)
         if (!fread_tag) {
             tmp <- scan(fid, skip=1, quiet=T)
             nod3d <- matrix(tmp, nrow=nod3d_n, byrow=T)
@@ -1884,6 +1979,8 @@ if (!restart || # ... not a restart run
         nod_z <- nod3d_z
         fesom_depths <- abs(unique(nod_z)) # these are the model depths in m (positive downwards) 
         nod3d_check <- T
+        if (verbose > 1) message(" min/max nod3d_x,nod3d_y,nod3d_z = ", min(nod_x), "/", max(nod_x), ", ", 
+                                 min(nod_y), "/", max(nod_y), ", ", min(nod_z), "/", max(nod_z))
         rm(tmp, nod3d)
     } # if dim_tag == "3D" && levelwise == F
     
@@ -1892,8 +1989,8 @@ if (!restart || # ... not a restart run
         fid <- paste0(meshpath, "/aux3d.out")
         aux3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
-            message(paste0(indent, "read ", aux3d_n*nod2d_n, 
-                         " nod3d indices vs depth from aux3d.out ..."))
+            message(indent, "read ", aux3d_n*nod2d_n, 
+                    " nod3d indices vs depth from aux3d.out ...", appendLF=F)
         }
         if (!fread_tag) {
             tmp <- scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
@@ -1903,6 +2000,7 @@ if (!restart || # ... not a restart run
                          showProgress=ifelse(verbose > 1, T, F))
             aux3d <- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
         }
+        if (verbose > 1) message(" min/max = ", min(aux3d), "/", max(aux3d))
         rm(tmp)
         
         # fesom depths levels and dz
@@ -2101,7 +2199,7 @@ if (!restart || # ... not a restart run
     xcsur <- nod_x[1:nod2d_n]
     ycsur <- nod_y[1:nod2d_n]
 
-    if (!rotate_mesh && area == "global") {
+    if (!rotate_mesh && area == "global") { # why !rotate_mesh here?
         map_geogr_lim_lon <- range(xcsur)
         map_geogr_lim_lat <- range(ycsur)
         poly_geogr_lim_lon <- map_geogr_lim_lon
@@ -2150,6 +2248,11 @@ if (!restart || # ... not a restart run
         xc_global_save <- xc_global
         yc_global_save <- yc_global
         elem2d_orig_save <- elem2d_orig
+    }
+
+    if (verbose > 2) {
+        for (i in 1:3) message(indent, "min/max xc_global[", i, ",] = ", min(xc_global[i,]), "/", max(xc_global))
+        for (i in 1:3) message(indent, "min/max yc_global[", i, ",] = ", min(yc_global[i,]), "/", max(yc_global))
     }
 
 # else: restart run: mesh reading not necessary
@@ -2236,9 +2339,9 @@ if (horiz_deriv_tag != F ||
     if (!exists("derivpath")) {
         # use default
         derivpath <- paste0(postpath, "/meshes/", meshid, "/derivatives")
-        message(indent, "No 'derivpath' is given for saving/reading horizontal derivative/cluster area/resolution matrices.\n",
-                indent, "   Use default: ", derivpath, " (= `postpath`/meshes/`meshid`/derivatives)\n",
-                indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
+        message(indent, "No 'derivpath' is given for saving/reading horizontal derivative/cluster area/resolution matrices.",
+                indent, " Use default `postpath`/meshes/`meshid`/derivatives = \"", derivpath, "\"",
+                indent, " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
     } else {
         derivpath <- suppressWarnings(normalizePath(derivpath))
     }
@@ -2247,15 +2350,15 @@ if (horiz_deriv_tag != F ||
         dir.create(derivpath, recursive=T, showWarnings=T)
         if (file.access(derivpath, mode=0) == -1) {
             message("")
-            stop(indent, "Could not create 'derivpath' = ", derivpath)
+            stop("Could not create 'derivpath' = ", derivpath)
         } else {
             message("done.")
         }
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
         derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
-        message(indent, "   Use default: ", derivpath, " (= `postpath`/meshes/`meshid`/derivatives')\n",
-                indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
+        message(indent, "   Use default `postpath`/meshes/`meshid`/derivatives = \"", derivpath, "\"",
+                indent, " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
     }
 
     deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
@@ -2309,11 +2412,12 @@ if (zave_method == 2 &&
             message(paste0(indent, indent, "using deriv_3.r and save result in"))
             message(paste0(indent, indent, "'deriv_3d_fname' = ", deriv_3d_fname, " ..."))
         }
-        if (!exists("derivpath")) {
-            # use default
-            message(indent, "Need to calculate and save horizontal derivative/cluster area and resolution matrix.\n",
-                    indent, "No 'derivpath' is given for saving the result. Use default ...")
+        if (!exists("derivpath")) { # use default
             derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
+            message(indent, "No 'derivpath' is given for saving result of horizontal derivative/cluster ",
+                    "area and resolution matrix calculation.", 
+                    " Use default `rfesompath/mesh/`meshid`/derivatives = \"", derivpath, "\"",
+                    " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             derivpath <- suppressWarnings(normalizePath(derivpath))
         }
@@ -2328,10 +2432,10 @@ if (zave_method == 2 &&
                 message("done.")
             }
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-            message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
             derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
-            message(indent, "   Use default: ", derivpath, " (= `meshpath`/derivatives')\n",
-                    indent, "   You can set `derivpath <- \"/path/with/writing/rights\"` in the runscript.")
+            message(indent, "You have no writing rights in 'derivpath' = ", derivpath,
+                    ". Use default `rfesompath/mesh/`meshid`/derivatives = \"", derivpath, "\"",
+                    " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
         }
 
         # load elem3d
@@ -2377,11 +2481,7 @@ if (zave_method == 2 &&
 ## Interpolate irregular mesh to regular
 if (any(regular_transient_out, regular_ltm_out)) {
 
-    source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
-    source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
-
-    # if namelist.config@fesom: rotated_grid = .true.
-    #    --> namelist@rfesom: rotate_mesh = T
+    # matrix with interpolation weights (needs to be calculated only once per mesh)
     interpfname <- paste0(meshid,
                           "_dx", sprintf("%.3f", regular_dx),
                           "_dy", sprintf("%.3f", regular_dy),
@@ -2393,54 +2493,82 @@ if (any(regular_transient_out, regular_ltm_out)) {
     # interpolation matrix already exists
     if (file.exists(paste0(interppath, "/", interpfname))) {
         if (verbose > 0) {
-            message(paste0(indent, "Found and load regular interpolation mat (dx=",
-                         sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
-                         " deg) for ", meshid, " mesh from"))
-            message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
+            message(indent, "Found and load regular interpolation mat (dx=",
+                    sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
+                    " deg) for ", meshid, " mesh from")
+            message(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ...")
         }
     
     # calculate interpolation matrix 
     } else {
         if (verbose > 0) {
-            message(paste0(indent, "Calc regular interpolation mat (dx=",
-                         sprintf("%.3f", regular_dx), " deg,dy=", sprintf("%.3f", regular_dy),
-                         " deg) for '", meshid, "' mesh using"))
-            message(paste0(indent, indent, "sub_calc_load_regular_IMAT.r and save result in"))
-            message(paste0(indent, indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ..."))
+            message(indent, "Calc regular interpolation mat (`dx_interp`=",
+                    sprintf("%.3f", regular_dx), " deg, `dy_interp`=", sprintf("%.3f", regular_dy),
+                    " deg) for ", ifelse(global_mesh, "global", "non-global"), " (`global_mesh`=", 
+                    ifelse(global_mesh, "T", "F"), ") mesh '", meshid, "' using")
+            message(indent, "sub_calc_load_regular_IMAT.r and save result in")
+            message(indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ...")
         }
+        # if global mesh, test if all coordinates are within -180,180 and -90,90
+        if (global_mesh) {
+            if (any(xc_global < -180)) {
+                stop("some of the given longitude coordinates are < -180 degree longitude")
+            }
+            if (any(xc_global > 180)) {
+                stop("some of the given longitude coordinates are > 180 degree longitude")
+            }
+            if (any(yc_global < -90)) {
+                stop("some of the given latitude coordinates are < -90 degree latitude")
+            }
+            if (any(yc_global > 90)) {
+                stop("some of the given latitude coordinates are > 90 degree latitude")
+            }
+        } # if global_mesh
+
         if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
             message("You have no writing rights in 'interppath' = ", interppath, " ...")
-            interppath <- paste0(rfesompath, "/mesh/", meshid, "/interp")
-            message("   Use default: ", interppath, " (= `rfesompath`/mesh/`meshid`/interp)\n",
-                    "   You can set `interppath <- \"/path/with/writing/rights\"` in the runscript.")
+            interppath <- paste0(postpath, "/meshes/", meshid, "/interp")
+            message("   Use default `postpath`/meshes/`meshid`/interp = ", interppath, 
+                    " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
         }
         dir.create(interppath, recursive=T, showWarnings=F)
+        source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
         sub_calc_load_regular_IMAT(regular_dx=regular_dx, regular_dy=regular_dy,
-                                   xp=xc_global, yp=yc_global,
+                                   xp=xc_global, yp=yc_global, global_mesh=global_mesh,
                                    interppath=interppath,
                                    interpfname=interpfname,
                                    mv=mv)
     }
 
+    # todo: ncdf4/ncdf.tools check
     imatncin <- nc_open(paste0(interppath, "/", interpfname))
     xi <- ncvar_get(imatncin, "xi")
     yi <- ncvar_get(imatncin, "yi")
     XI <- ncvar_get(imatncin, "XI")
     YI <- ncvar_get(imatncin, "YI")
     IMAT <- ncvar_get(imatncin, "IMAT")
-
-    ## Select data in defined area in regular x,y space
-    xinds <- which(xi >= range(map_geogr_lim_lon)[1] & 
-                   xi <= range(map_geogr_lim_lon)[2])
-    yinds <- which(yi >= range(map_geogr_lim_lat)[1] & 
-                   yi <= range(map_geogr_lim_lat)[2])
-    if (length(xinds) == 0 || length(yi) == 0) {
-        stop("Error: Cannot find '", area, "# coordinates in regular xi,yi!")
-    }
-    xi <- xi[xinds]
-    yi <- yi[yinds]
     nxi <- length(xi)
     nyi <- length(yi)
+    
+    # Select data in defined area in regular x,y space if not global.
+    if (area != "global") {
+        xinds <- which(xi >= range(map_geogr_lim_lon)[1] & 
+                       xi <= range(map_geogr_lim_lon)[2])
+        yinds <- which(yi >= range(map_geogr_lim_lat)[1] & 
+                       yi <= range(map_geogr_lim_lat)[2])
+        if (length(xinds) == 0 || length(yi) == 0) {
+            stop("Error: Cannot find '", area, "' coordinates lon ", paste(map_geogr_lim_lon, collapse=" to "), 
+                 " and lat ", paste(map_geogr_lim_lat, collapse=" to "), " in regular lon,lat")
+        }
+    # If global, keep the -180,180 and -90,90 so that regular fesom data 
+    # from different meshes are comparable with e.g. `cdo sub`.
+    } else {
+        xinds <- seq_len(nxi)
+        yinds <- seq_len(nyi)
+    }
+
+    # load function for actual interpolation done later
+    source(paste0(subroutinepath, "/sub_calc_regular_2d_interp.r"))
 
 } # if any(regular_transient_out, regular_ltm_out)
 
@@ -2501,8 +2629,8 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
     ## with data everywhere in plot area)
     } else if (geogr_lims) {
         if (verbose > 1) {
-            message(paste0(indent, "Find coordinates in plot area with geographic plot lims in '", 
-                         projection, "' projection ..."))
+            message(indent, "Find coordinates in plot area with geographic plot lims in '", 
+                    projection, "' projection ...")
         }
             
         if (projection != "rectangular") {
@@ -2595,10 +2723,10 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
             # all other cases
             } else {
                 cyclic_plot <- F
-                poly_inds_geogr <- which(xc > range(poly_geogr_lim_lon)[1] & 
-                                         xc < range(poly_geogr_lim_lon)[2] &
-                                         yc > range(poly_geogr_lim_lat)[1] & 
-                                         yc < range(poly_geogr_lim_lat)[2], arr.ind=T)
+                poly_inds_geogr <- which(xc >= range(poly_geogr_lim_lon)[1] &  # < or <= ?
+                                         xc <= range(poly_geogr_lim_lon)[2] &
+                                         yc >= range(poly_geogr_lim_lat)[1] & 
+                                         yc <= range(poly_geogr_lim_lat)[2], arr.ind=T)
                 poly_inds_geogr <- unique(poly_inds_geogr[,2])
 
                 # closed polygon of arbitrary shape
@@ -2682,8 +2810,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
             # Cut area in element space
             if (length(poly_inds_geogr) == 0) {
-                stop(paste0(indent,
-                            "Error: not any mesh elements within the chosen area. Choose another!"))
+                stop("not any mesh elements within the chosen area. Choose another!")
             }
             xp <- xc[,poly_inds_geogr] # these elements may include nodes 
             yp <- yc[,poly_inds_geogr] # outside of xlim and/or ylim
@@ -2705,10 +2832,10 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
             # 4-corner box 
             } else if (length(poly_geogr_lim_lon) == 2) {
-                poly_node_inds_geogr <- which(xcsur > range(poly_geogr_lim_lon)[1] &
-                                              xcsur < range(poly_geogr_lim_lon)[2] &
-                                              ycsur > range(poly_geogr_lim_lat)[1] &
-                                              ycsur < range(poly_geogr_lim_lat)[2])
+                poly_node_inds_geogr <- which(xcsur >= range(poly_geogr_lim_lon)[1] & # < or <= ?
+                                              xcsur <= range(poly_geogr_lim_lon)[2] &
+                                              ycsur >= range(poly_geogr_lim_lat)[1] &
+                                              ycsur <= range(poly_geogr_lim_lat)[2])
             # single-point location
             } else if (length(poly_geogr_lim_lon) == 1) {
 
@@ -2725,9 +2852,9 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                         break
                     }
                     if (i == elem2d_n) {
-                        stop(paste0("The single-point '", area, "' location (x=",
-                                    map_geogr_lim_lon, ",y=", map_geogr_lim_lat,
-                                    ") is not contained in your mesh. choose another location."))
+                        stop("The single-point '", area, "' location (x=",
+                             map_geogr_lim_lon, ",y=", map_geogr_lim_lat,
+                             ") is not contained in your mesh. choose another location.")
                     }
                 }
                 # from element to nodes
@@ -2744,8 +2871,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
             } # arbitrary polygon, box, or single-point location
 
             if (length(poly_inds_geogr) == 0) {
-                stop(paste0(indent, 
-                            "Error: not any nodes within the chosen area. Choose another!"))
+                stop("not any nodes within the chosen area. Choose another!")
             }
 
         } # if projection == "rectangular" or not
@@ -2763,20 +2889,19 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
 
     ## Check coordinates so far
     if (verbose > 1) {
-        message(paste0(indent, "Found ", dim(xp)[2], " elements in ", area, " area"))
-        message(paste0(indent, "Projected (", projection,
-                     ") longitudinal elements in ", area, " = ",
-                     round(range(xp)[1], 3), " deg to ",
-                     round(range(xp)[2], 3), " deg"))
-        message(paste0(indent, "Projected (", projection,
-                     ") latitudinal elements in ", area, " = ",
-                     round(range(yp)[1], 3), " deg to ",
-                     round(range(yp)[2], 3), " deg"))
+        message(indent, "Found ", dim(xp)[2], " elements (elem2d_n = ", elem2d_n, ") in '", 
+                area, "' area (='area')\n", 
+                indent, "Projected (", projection,
+                ") longitudinal elements in ", area, " = ", round(range(xp)[1], 3), " deg to ",
+                round(range(xp)[2], 3), " deg\n",
+                indent, "Projected (", projection,
+                ") latitudinal elements in ", area, " = ", round(range(yp)[1], 3), " deg to ",
+                round(range(yp)[2], 3), " deg")
     }
 
     if (verbose > 0) {
-        message(paste0(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
-                     " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+        message(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
+                " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
         message("==============================================")
     }
 
@@ -3492,7 +3617,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
         }
         zoomout_fac <- 1 # 1=nothing; >1: zoom out; <1: zoom in
         plotname <- paste0(plotpath, "/csec_locations/",
-                           runid, "_", setting, 
+                           postprefix, 
                            "_csec_location_", area,
                            "_zoomout", zoomout_fac, ".", plot_file)
         
@@ -3548,11 +3673,8 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
                  xlab="Longitude [°]", ylab="Latitude [°]")
 
             # add bathy first if available 
-            bathyf <- paste0("/work/ba0941/a270073/post/", 
-                             substr(runid, 1, 5), 
-                             "/", setting, "/regular_grid/ltm/area/global/bathy/",
-                             substr(runid, 1, 5), 
-                             "_", setting, "_bathy_ltm_area_global_rectangular_regular_dx0.100_dy0.100.nc")
+            bathyf <- paste0("/work/ba0941/a270073/post/regular_grid/ltm/area/global/bathy/",
+                             postprefix, "_bathy_ltm_area_global_rectangular_regular_dx0.100_dy0.100.nc")
             if (file.exists(bathyf)) {
                 bathync <- nc_open(bathyf)
                 bathy <- ncvar_get(bathync, "bathy")
@@ -3778,7 +3900,7 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
 
 ## 4) Vertical Interpolation
-if (nfiles > 0) {
+if (nvars > 0) {
 
     if (dim_tag == "2D") {
         if (verbose > 0) {
@@ -4065,18 +4187,21 @@ if (nfiles > 0) {
     } # if dim_tag == 2D or dim_tag == 3D
 
     ## adjust count vector in depth dimension for reading only subset of nc data
-    for (vari in 1:nfiles) {
-        if (!is.null(dims_of_vars[[vari]]$depthdim_ind)) {
-            if (dims_of_vars[[vari]][[dimids[dims_of_vars[[vari]]$depthdim_ind]]]$len != ndepths) {
-                icount[[vari]][depthdim_ind] <- ndepths
-                if (leap_tag) icount_leap[[vari]][depthdim_ind] <- ndepths
+    if (F) {
+        stop("update")
+        for (vari in seq_len(nvars)) {
+            if (!is.null(dims_of_vars[[vari]]$depthdim_ind)) {
+                if (dims_of_vars[[vari]][[dimids[dims_of_vars[[vari]]$depthdim_ind]]]$len != ndepths) {
+                    icount[[vari]][depthdim_ind] <- ndepths
+                    if (leap_tag) icount_leap[[vari]][depthdim_ind] <- ndepths
+                }
             }
         }
     }
 
-} else if (nfiles == 0) {
+} else if (nvars == 0) {
     if (verbose > 0) {
-        message(paste0("4) Vertical interpolation not necessary for '", varname, "' (nfiles=0) ..."))
+        message(paste0("4) Vertical interpolation not necessary for '", varname, "' (nvars=0) ..."))
     }
     ndepths <- 0
     depths_plot <- ""
@@ -4091,26 +4216,29 @@ if (verbose > 0) {
 
 
 ## 5) Read data through years and months
-if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
+if (nvars == 0) { # derive variable from mesh files, e.g. resolution
     if (verbose > 0) {
-        message(paste0("5) Reading FESOM files not necessary for '", 
-                     varname, "' (nfiles=0) ..."))
-        message(paste0(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
-                     " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+        message("5) Reading nc files not necessary for '", varname, "'")
+        message(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
+                " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
         message("==============================================")
     }
 
-    total_rec <- 0
+    total_rec <- rep(0, t=maxnrecpf) # counter over all time steps
 
-} else if (nfiles > 0) { # read data which are not constant in time
+} else if (nvars > 0) { # read data from nc files
     if (verbose > 0) {
-        message("5) Read variable", ifelse(nfiles > 1, "s", ""), " \"", 
-                paste0(varname_nc, collapse="\",\""), "\" (= `varname_nc`)", "\n",
-                "   ", "for `varname` = \"", varname, "\" (`longname` = \"", longname, "\")")
-        if (transient_out || regular_transient_out) {
-            message("   and save \"", out_mode, "\" (= `out_mode`)")
+        message("5) Read variable", ifelse(nvars > 1, "s", ""), " \"", 
+                paste0(varname_nc, collapse="\",\""), "\" (= `varname_nc`) for `varname` = \"", 
+                varname, "\" (`longname` = \"", longname, "\") ...")
+        if (!all_recs) { # decided by user
+            message("   `all_recs`=F --> read one time record after another per file")
+        } else if (all_recs && !rec_tag) {
+            message("   `all_recs`=T but needed time records to read are not consecutive ",
+                    "--> read one time record after another per file")
+        } else if (all_recs && rec_tag) {
+            message("   `all_recs`=T --> read all time records per file at once")
         }
-        message("   in region \"", area, "\" (= `area`) ...")
     }
 
     ## Data read loop preparation
@@ -4120,341 +4248,67 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
     # Thats why a timestep (e.g. month, day, hour, etc.)
     # and year loop is chosen to read in the data and
     # average "by hand" (-> mean(x) = 1/n sum(x)).
-    total_rec <- 0 # counter over all time steps
-    year_cnt <- 0
-    if (!fuser_tag) {
-        years_loop <- years 
-    } else if (fuser_tag) {
-        years_loop <- length(fnames_user) # is this correct?
-    }
-
-    ## Year loop
-    for (year in years_loop) { 
+    total_rec <- rep(0, t=maxnrecpf) # counter over all time steps
+    fname_cnt <- 0
+    
+    ## Fname loop
+    for (fi in seq_along(files_list[[1]])) { 
         
         indent <- "   "
-        if (verbose > 1) message(indent, "Year ", year)
-        indent <- "      "
-        year_cnt <- year_cnt + 1
+        if (verbose > 1) message(indent, "File ", fi, "/", length(files_list[[1]]))
+        fname_cnt <- fname_cnt + 1
 
-        ## construct fesom filenames
-        fnames <- rep(NA, nfiles) # overwritten in every year
-
-        for (file in 1:nfiles) { 
-          
-            # filenames are given
-            if (fuser_tag) {
-                if (verbose > 0) {
-                    message(indent, "Read user provided file ...")
-                }
-                fname <- fnames_user[year_cnt]
-
-            # filenames are not given: construct file names basedn on fpattern
-            } else if (!fuser_tag) {
-                        
-                ## construct input filename(s) based on given `fpatterns`
-                if (verbose > 2) {
-                    message(indent, "Construct input filename ", file, "/", nfiles, " based on ")
-                }
-                if (length(fpatterns) != nfiles) {
-                    stop("adassdasda")
-                    fpattern 
-                } else {
-                    fpattern <- fpatterns[file]
-                    if (verbose > 2) message(indent, "   `fpatterns[", file, "]` = \"", fpattern, "\"")
-                }
-                
-                fname <- fpattern
-                pattern_inds <- list(from=gregexpr("<", fpattern)[[1]], 
-                                     to=gregexpr(">", fpattern)[[1]])
-                if (length(pattern_inds$from) != length(pattern_inds$to)) {
-                    stop("You provided a different number of \"<\" and \">\" tags in fpattern. stop.")
-                }
-                # replace found patterns with variables with the same name as the pattern
-                for (pati in 1:length(pattern_inds$from)) {
-                    pattern <- substr(fpattern, 
-                                      pattern_inds$from[pati] + 1,
-                                      pattern_inds$to[pati] - 1)
-                    if (pattern == "YYYY") {
-                        replacement_var <- "year"
-                    } else {
-                        replacement_var <- pattern
-                    }
-                    # check if variable that should be the replacement exists
-                    cmd <- paste0("replacement_exists <- exists(\"", replacement_var, "\")")
-                    eval(parse(text=cmd))
-                    if (!replacement_exists) {
-                        stop("Cannot replace pattern \"<", pattern, ">\": variable \"", 
-                             replacement_var, "\" not defined")
-                    } else {
-                        if (verbose > 2) {
-                            message(indent, "   replace pattern \"<", pattern, 
-                                    ">\" with variable `", replacement_var, appendLF=F)
-                        }
-                        # if length of replacement variable equals the number of files,
-                        # assume that the replacement should be made for every file:
-                        if (eval(parse(text=paste0("length(", replacement_var, ")"))) == nfiles && nfiles > 1) {
-                            replacement <- eval(parse(text=paste0(replacement_var, "[file]")))
-                            if (verbose > 2) {
-                                message("[", file, "]` = \"", replacement, "\" ...")
-                            }
-                        } else {
-                            replacement <- eval(parse(text=paste0(replacement_var)))
-                            if (verbose > 2) {
-                                message("` = \"", replacement, "\" ...")
-                            }
-                        }
-                    }
-                    cmd <- paste0("fname <- gsub(paste0(\"<", pattern, ">\"), \"", replacement, "\", fname)")
-                    eval(parse(text=cmd))
-                } # for pati in fpattern
-               
-                fname <- paste0(datainpath, "/", fname)
-
-            } # if fuser_tag or not
-
-            if (verbose > 2) {
-                message(indent, "   --> fname = \"", fname, "\" ... ", appendLF=F)
-            }
-            if (!file.exists(fname)) {
-                message("does not exist.")
-                stop("fname = \"", fname, "\" does not exist.")
-            } else {
-                if (verbose > 2) message("exists.")
-            }
-            fnames[file] <- fname
-            
-            # check if any temporal reduction of original data is wanted via cdo 
-            if (cdo_temporalmean != "") {
-                tmpfile <- paste0(postpath, "/tmp/", basename(fname), "_", output, "_pid", Sys.getpid(), ".nc")
-                dir.create(dirname(tmpfile), recursive=T, showWarnings=F)
-                cmd <- paste0(cdo_temporalmean, " ", fname, " ", tmpfile)
-                if (verbose > 0) message(indent, cmd)
-                system(cmd)
-                fname <- tmpfile
-            } # calc temporal mean if wanted
-
-        } # for file nfiles
-
-        ## Open annual ncdf files
-        # Do not load the same file more than once
-        # (in old fesom, more than 1 variables are saved in one file)
-        
-        # speedtest opening a nc file:
-        if (F) {
-            library(ncdf4)
-            library(RNetCDF)
-            library(microbenchmark) 
-            f <- "/home/mozi/data/livneh/hdd.mon.mean.nc" # 617 MB file
-            microbenchmark(times=100,
-                           RNetCDF=RNetCDF::open.nc(f),
-                           ncdf4=ncdf4::nc_open(f))
-            # Unit: microseconds
-            #    expr      min       lq      mean   median       uq      max neval
-            #  RNetCDF  588.498  680.400  767.8692  748.939  826.214 1252.252   100
-            #    ncdf4 3005.510 3277.918 3621.9731 3519.698 3945.849 5897.440   100
-        } # --> RNectCDF::open.nc much faster opening a nc file
-        
-        # nc data depending on used package
-        ncids <- vector("list", l=length(unique(fnames)))
-        fnames_unique <- unique(fnames)
-        for (file in 1:length(fnames_unique)) {
-            if (ncdf.tools_tag == F) {
-                ncids[[file]] <- ncdf4::nc_open(fnames_unique[file])
-            } else if (ncdf.tools_tag == T) {
-                ncids[[file]] <- RNetCDF::open.nc(fnames_unique[file])
-                attributes(ncids[[file]])$filename <- fnames_unique[file]
-            }
-        } # for file all files
-
-        ## load netcdf file with mixed layer depth variable for integration over MLD depth
-        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-
-            stop("update with fpattern_mld")
-            if (cpl_tag) {
-                mld_varname <- "mlotst"
-            } else if (!cpl_tag) {
-                mld_varname <- "mixlay"
-            }
- 
-            if (ncdf.tools_tag == F) {
-
-                if (cpl_tag) {
-
-                    # if oce.diag already loaded
-                    if (any(regexpr(mld_varname, sapply(ncids, "[[", "filename")) != -1)) {
-                        #mld_fname <- fnames[which(regexpr("oce.diag", fnames) != -1)]
-                        #mld_nc_ind <- which(regexpr("oce.diag", fnames) != -1)
-                        mld_nc_ind <- which(regexpr(mld_varname, sapply(ncids, "[[", "filename")) != -1)
-                    
-                    # or oce.diag not loaded yet
-                    } else { 
-                        mld_fname <- paste0(datainpath, "/", mld_varname, "_fesom_",
-                                            year, "0101.nc")
-                        # newer esm version: exp name in fesom file names
-                        if (!file.exists(mld_fname)) {
-                            mld_fname <- paste0(datainpath, "/", setting, "_", mld_varname, "_fesom_",
-                                                year, "0101.nc")
-                        }
-                        if (!file.exists(mld_fname)) {
-                            message("Error: cannot find MLD file:\n")
-                            stop(mld_fname)
-                        }
-                        ncids[[length(ncids) + 1]] <- ncdf4::nc_open(mld_fname)
-                        mld_nc_ind <- length(ncids)
-                    }
-
-                } else if (!cpl_tag) {
-
-                    # if oce.diag already loaded
-                    if (any(regexpr("oce.diag", sapply(ncids, "[[", "filename")) != -1)) {
-                        #mld_fname <- fnames[which(regexpr("oce.diag", fnames) != -1)]
-                        #mld_nc_ind <- which(regexpr("oce.diag", fnames) != -1)
-                        mld_nc_ind <- which(regexpr("oce.diag", sapply(ncids, "[[", "filename")) != -1)
-                    
-                    # or oce.diag not loaded yet
-                    } else { 
-                        mld_fname <- paste0(substr(fnames[1], 1, 
-                                                   regexpr(year,fnames[1]) + 4), 
-                                            "oce.diag.nc")
-                        if (!file.exists(mld_fname)) {
-                            message("Error: cannot find MLD file:\n")
-                            stop(mld_fname)
-                        }
-                        ncids[[length(ncids) + 1]] <- ncdf4::nc_open(mld_fname)
-                        mld_nc_ind <- length(ncids)
-                    }
-                
-                } # if cpl_tag
-                        
-            } else if (ncdf.tools_tag == T) {
-
-                if (cpl_tag) {
-                    # if oce.diag already loaded
-                    if (any(sapply(ncids, function(x) regexpr(mld_varname, x)) != -1)) {
-                        mld_nc_ind <- which(sapply(ncids, function(x) regexpr(mld_varname, x)) != -1)
-
-                    # or oce.diag not loaded yet
-                    } else {
-                        mld_fname <- paste0(datainpath, "/", mld_varname, "_fesom_",
-                                            year, "0101.nc")
-                        # newer esm version: exp name in fesom file names
-                        if (!file.exists(mld_fname)) {
-                            mld_fname <- paste0(datainpath, "/", setting, "_", mld_varname, "_fesom_",
-                                                year, "0101.nc")
-                        }
-                        if (!file.exists(mld_fname)) {
-                            message("Error: cannot find MLD file:\n")
-                            stop(mld_fname)
-                        }
-                        ncids[[length(ncids) + 1]] <- mld_fname
-                        mld_nc_ind <- length(ncids)
-                    } # if mixlay file was already loaded due to varname_nc
-
-                } else if (!cpl_tag) {
-
-                    # if oce.diag already loaded
-                    if (any(sapply(ncids, function(x) regexpr("oce.diag", x)) != -1)) {
-                        mld_nc_ind <- which(sapply(ncids, function(x) regexpr("oce.diag", x)) != -1)
-
-                    # or oce.diag not loaded yet
-                    } else {
-                        mld_fname <- paste0(substr(fnames[1], 1,
-                                                   regexpr(year,fnames[1]) + 4),
-                                            "oce.diag.nc")
-                        if (!file.exists(mld_fname)) {
-                            message("Error: cannot find MLD file:\n")
-                            stop(mld_fname)
-                        }
-                        ncids[[length(ncids) + 1]] <- mld_fname
-                        mld_nc_ind <- length(ncids)
-
-                    } # if oce.diag was already loaded due to varname_nc
-
-                } # if cpl_tag
-            } # if ncdf.tools_tag
-        } # if load mld for integrate over MLD depth
-       
-        ## Timestep loop
+        ## loop through all time records of variable (if rec_tag = F) or just once (rec_tag = T) through files
         if (rec_tag) { # read all recs of file
-            recsi <- 1 
-        } else if (!rec_tag) { # read one record after another
+            recsi <- 1 # only 1 loop necessary 
+        } else if (!rec_tag) { # else read one record after another
             if (fuser_tag) {
-                recsi <- recs   
+                stop("update")
+                #recsi <- 
             } else if (!fuser_tag) {
-                recsi <- recvec[which(yearvec == year)]
+                recsi <- files_list[[1]][[fi]]$recs # loop through all needed time records of nc file
             }
         }
-       
-        ## loop through all time records of variable (if rec_tag = F) or
-        # just once (rec_tag = T) through files
-        #recsloop_systime <- system.time({
-        for (rec in 1:length(recsi)) {
-            indent <- "      "
+        
+        timestamp <- files_list[[1]][[fi]]$timestamp
 
-            ## now define time entry of start and count vector for every variable
-            if (!rec_tag) {
-                for (vari in 1:nfiles) { 
-                    istart[[vari]][timedim_ind] <- recsi[rec]
-                }
-            }
-
+        ## open all necessary nc files necessary to load all necessary variables to process wanted varname
+        fnames <- rep(NA, t=nvars)
+        for (vari in seq_len(nvars)) {
+            fnames[vari] <- files_list[[vari]][[fi]]$files
+        }
+        fnames_unique <- unique(fnames)
+        ncids <- vector("list", l=length(fnames_unique))
+        for (vari in 1:length(fnames_unique)) {
             if (verbose > 0) {
-                if (rec_tag) {
-                    if (leap_tag && is.leap(year)) {
-                        if (length(recs_leap) < 20 || length(unique(diff(recs_leap))) != 1) {
-                            message(indent, "recs ", paste(recs_leap, collapse=","),
-                                    " (total ", total_rec + nrecspf_leap, "/", ntime, ")")
-                        } else {
-                            message(indent, "recs ", 
-                                    paste(recs_leap[1:10], collapse=","), ",...,",
-                                    paste(recs_leap[(length(recs_leap)-10):length(recs_leap)], collapse=","),
-                                    " (total ", total_rec + nrecspf_leap, "/", ntime, ")")
-                        }
-                    } else {
-                        if (length(recs) < 20 || length(unique(diff(recs))) != 1) {
-                            message(indent, "recs ", paste0(recs, collapse=","), 
-                                    " (total ", total_rec + nrecspf, "/", ntime, ")")
-                        } else {
-                            message(indent, "recs ", 
-                                    paste(recs[1:10], collapse=","), ",...,",
-                                    paste(recs[(length(recs)-10):length(recs)], collapse=","),
-                                    " (total ", total_rec + nrecspf, "/", ntime, ")")
-                        }
-                    }
-                } else if (!rec_tag) {
-                    if (fuser_tag) {
-                        message(indent, "rec ", istart[[var_nc_inds[file]]][[timedim_name]], 
-                                " of ", length(recs), " in file (total ", total_rec + 1, ")")
-                    } else if (!fuser_tag) {
-                        message(indent, "rec ", istart[[var_nc_inds[file]]][[timedim_name]], 
-                                " (total ", total_rec+1, "/", ntime, ")")
-                    }
-                } # if rec_tag or not
+                message(indent, "   Open ", fnames_unique[vari])
             }
+            if (ncdf.tools_tag == F) {
+                time_load_ncdf4 <- system.time({
+                    ncids[[vari]] <- ncdf4::nc_open(fnames_unique[vari])
+                })
+            } else if (ncdf.tools_tag == T) {
+                time_load_ncdf.tools <- system.time({
+                    ncids[[vari]] <- RNetCDF::open.nc(fnames_unique[vari])
+                    attributes(ncids[[vari]])$filename <- fnames_unique[vari]
+                })
+            }
+        } # for file all variables
+               
+        #recsloop_systime <- system.time({
+        for (rec in seq_along(recsi)) {
+            indent <- "      "
 
             ## Transient time variable
             if (rec_tag) {
-                if (leap_tag && is.leap(year)) {
-                    timei <- timestamp[(total_rec+1):(total_rec+nrecspf_leap)]
-                } else {
-                    timei <- timestamp[(total_rec+1):(total_rec+nrecspf)]
-                }
+                timei <- timestamp
             } else if (!rec_tag) {
                 if (fuser_tag) {
+                    stop("update")
                     timei <- time[recsi[rec]]
                 } else if (!fuser_tag) {
-                    if (F) {
-                        timei <- recsi + (year_cnt - 1)*length(recsi)
-                        timei <- timestamp[timei[rec]]
-                    } else if (T) {
-                        timei <- timestamp[total_rec + 1]
-                    }
+                    timei <- timestamp[recsi[rec]]
                 }
-            }
-            if (snapshot) {
-                timei <- paste0(timei, "_snapshot")
-            } else {
-                timei <- paste0(timei, "_mean")
             }
 
             # need to take care of leap year: clean time of last year
@@ -4468,7 +4322,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 dims <- rep(NA, t=4) # max(sapply(lapply(dims_of_vars, "[[", "dimids"), length)) + 1)
                 dimnames <- list(var=varname_nc)
                 # 1st dim: variable
-                dims[1] <- nfiles
+                dims[1] <- nvars
                 # 2nd dim: nodes (use maximum of nodes of variables)
                 #dims[2] <- nod2d_n
                 #if (any(sapply(dims_of_vars, "[[", "dim_tag") == "3D") &&
@@ -4481,11 +4335,11 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 dimnames <- c(dimnames, list(node=NULL))
                 # 3rd dim: depth
                 if (dim_tag == "3D" && !levelwise) {
-                    dims[3] <- 1  # old non-levelwise 3D data is saved on one long vector
+                    dims[3] <- 1  # old non-levelwise 3D data is saved in one long vector
                     dimnames <- c(dimnames, list(depth=NULL))
                 } else if (dim_tag == "3D" && levelwise) {
-                    stop("woot")
-                } else {
+                    stop("this should not happen")
+                } else { # 2D or (2D and levelwise)
                     dims[3] <- 1
                     if (ndepths == 0) {
                         dimnames <- c(dimnames, list(depth=NULL))
@@ -4496,101 +4350,46 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
                 }
                 # 4th dim: time
-                dims[4] <- nrecspf
-                if (rec_tag) {
-                    dims[4] <- nrecspf
-                    if (leap_tag && is.leap(year)) {
-                        dims[4] <- nrecspf_leap
-                    }
-                } else if (!rec_tag) {
-                    dims[4] <- 1
-                }
+                dims[4] <- length(timei)
                 dimnames <- c(dimnames, list(rec=timei))
                 data_node <- array(0, dim=dims, dimnames=dimnames)
-
-                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                    stop("update")
-                    if (rec_tag) {
-                        if (leap_tag && is.leap(year)) {
-                            mld_node <- array(0,
-                                              dim=c(1, nod2d_n, 1, nrecspf_leap),
-                                              dimnames=list(var="mld",
-                                                            node=NULL,
-                                                            depth=NULL,
-                                                            rec=timei))
-                        } else {
-                            mld_node <- array(0,
-                                              dim=c(1, nod2d_n, 1, nrecspf),
-                                              dimnames=list(var="mld",
-                                                            node=NULL,
-                                                            depth=NULL,
-                                                            rec=timei))
-                        }
-                    } else if (!rec_tag) {
-                        mld_node <- array(0,
-                                          dim=c(1, nod2d_n, 1, 1),
-                                          dimnames=list(var="mld",
-                                                        node=NULL,
-                                                        depth=NULL,
-                                                        rec=1))
-                    } # if rec_tag or not
-
-                } # if mld
-
             }) # declare_time
-                
+       
             ## Read raw fesom output
             indent <- "         "
-            for (file in 1:nfiles) { # actually nvars needed to calculate wanted `varname`
+            for (vari in seq_len(nvars)) { # all needed variables to calculate wanted `varname`
             
-                if (verbose > 1) {
-                    message(indent, "get \"", varname_nc[file], "\" from ", fnames[file])
-                    message(indent, "   start = ", 
-                            paste0(paste0(names(istart[[var_nc_inds[file]]]), ": ", 
-                                          istart[[var_nc_inds[file]]]), collapse=", "))
-                    if (rec_tag && leap_tag && is.leap(year)) {
-                        message(indent, "   count = ", 
-                                paste0(paste0(names(icount_leap[[var_nc_inds[file]]]), ": ", 
-                                              icount_leap[[var_nc_inds[file]]]), collapse=", "))
-                    } else {
-                        message(indent, "   count = ", 
-                                paste0(paste0(names(icount[[var_nc_inds[file]]]), ": ", 
-                                              icount[[var_nc_inds[file]]]), collapse=", "))
+                # adjust time entry of start and count vector for depending on records to read
+                start <- files_list[[vari]][[fi]]$start
+                count <- files_list[[vari]][[fi]]$count
+                if (!rec_tag) {
+                    for (vari in seq_len(nvars)) { 
+                        start[dims_of_vars[[vari]]$timedim_ind] <- recsi[rec]
                     }
-                } # verbose
+                }
+
+                if (verbose > 1) {
+                    message(indent, "Get \"", varname_nc[vari], "\" from ", fnames[vari], "\n",
+                            indent, "   start = ", paste(paste0(names(start), ": ", start), collapse=", "), "\n",
+                            indent, "   count = ", paste0(paste0(names(count), ": ", count), collapse=", "))
+                }
 
                 ## read fesom data
                 if (ncdf.tools_tag == F) {
-                    aa <- system.time({
-                        if (rec_tag && leap_tag && is.leap(year)) {
-                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_nc[file],
-                                                         start=istart[[var_nc_inds[file]]], 
-                                                         count=icount_leap[[var_nc_inds[file]]])
-                        } else {
-                            raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[file]]], varname_nc[file], 
-                                                         start=istart[[var_nc_inds[file]]], 
-                                                         count=icount[[var_nc_inds[file]]])
-                        }
+                    time_get_ncdf4 <- system.time({
+                        raw_data <- ncdf4::ncvar_get(ncids[[var_nc_inds[vari]]], varname_nc[vari],
+                                                     start=start, count=count) 
                     })
 
                 } else if (ncdf.tools_tag == T) {
-                    bb <- system.time({
-                        #raw_data <- ncdf.tools::readNcdf(ncids[[var_nc_inds[file]]], 
-                        #                                 var.name=varname_nc[file])
-                        raw_data <- RNetCDF::var.get.nc(ncids[[var_nc_inds[file]]], 
-                                                        variable=varname_nc[file],
-                                                        start=istart[[var_nc_inds[file]]], 
-                                                        count=icount[[var_nc_inds[file]]])
-                        # just in case some original data are in other dimensons than given by user
-                        # for example if accidentally more time steps were appended to the file
-                        #if (leap_tag && is.leap(year)) {
-                        #    raw_data <- raw_data[istart[1]:icount[1],istart[2]:icount_leap[2]]
-                        #} else {
-                        #    raw_data <- raw_data[istart[1]:icount[1],istart[2]:icount[2]]
-                        #}
+                    time_get_ncdf.tools <- system.time({
+                        #raw_data <- ncdf.tools::readNcdf(ncids[[var_nc_inds[vari]]], 
+                        #                                 var.name=varname_nc[vari])
+                        raw_data <- RNetCDF::var.get.nc(ncids[[var_nc_inds[vari]]], 
+                                                        variable=varname_nc[vari],
+                                                        start=start, count=count)
                     })
                 }
-                
                 
                 # At this point, raw_data's time dimension may not equal the length of the
                 # time dimension of the original fesom file, e.g. if a monthly fesom file 
@@ -4599,7 +4398,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 
                 # test
                 if (ssh_aviso_correct && ssh_aviso_correct_fname != "") {
-                    stop("continue")
+                    stop("update")
                     ind <- which(ssh_aviso_correct_data$time == time[total_rec + 1])
                     if (length(ind) == 1) {
                         if (verbose > 1) {
@@ -4611,31 +4410,30 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 }   
 
                 if (verbose > 2) {
-                    message(indent, "   min/max 'raw_data' = ", paste0(range(raw_data), collapse="/"), appendLF=F)
-                    if (!is.null(var_nc_infos[[file]]$units)) {
-                        message(" in units \"", var_nc_infos[[file]]$units, "\"")
+                    message(indent, "   min/max 'raw_data' = ", paste(range(raw_data), collapse="/"), appendLF=F)
+                    if (!is.null(var_nc_infos[[vari]]$units)) {
+                        message(" in units \"", var_nc_infos[[vari]]$units, "\"")
                     } else {
                         message(" (no attribute named \"units\" found)")
                     }
                 }
 
                 ## Save data in array (vars,nodes,time,depths)
-                # need to use 1:icount[1] for indexing since both 2D and 3D variables may be used
+                # need to use indexing of the node-dim explicitly since both 2D and 3D variables may be saved in one mat
                 if (rec_tag) {
-                    if (leap_tag && is.leap(year)) {
-                        data_node[file,1:icount[[file]][nodedim_ind],,1:nrecspf_leap] <- raw_data
-                    } else {
-                        data_node[file,1:icount[[file]][nodedim_ind],,1:nrecspf] <- raw_data
-                    }
+                    data_node[vari,
+                              seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
+                              ,
+                              seq_len(count[dims_of_vars[[vari]]$timedim_ind])] <- raw_data
                 } else {
-                    data_node[file,1:icount[[file]][nodedim_ind],,] <- raw_data
+                    data_node[vari,seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),,] <- raw_data
                 }
 
                 ## read MLD for integrating only over MLD depths
                 if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                     
                     stop("update")
-                    if (file == nfiles) { # read MLD only at the end
+                    if (file == nvars) { # read MLD at the end
                         if (verbose > 1) {
                             message(paste0(indent, "Get '", mld_varname,
                                          "' from ", ifelse(ncdf.tools_tag,
@@ -4643,22 +4441,22 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                                            ncids[[mld_nc_ind]]$filename)))
                             if (rec_tag && leap_tag && is.leap(year)) {
                                 message(paste0(indent,
-                                             "   istart=c(node=", istart[1], ",rec=", istart[2],
-                                             "), icount_leap=c(nnode=", nod2d_n, ",nrec=", icount_leap[2], ")"))
+                                             "   start=c(node=", start[1], ",rec=", start[2],
+                                             "), count_leap=c(nnode=", nod2d_n, ",nrec=", count_leap[2], ")"))
                             } else {
                                 message(paste0(indent,
-                                             "   istart=c(node=", istart[1], ",rec=", istart[2],
-                                             "), icount=c(nnode=", nod2d_n, ",nrec=", icount[2], ")"))
+                                             "   start=c(node=", start[1], ",rec=", start[2],
+                                             "), count=c(nnode=", nod2d_n, ",nrec=", count[2], ")"))
                             }
                         }
 
                         if (ncdf.tools_tag == F) {
                             if (rec_tag && leap_tag && is.leap(year)) {
                                 mld_raw_data <- ncdf4::ncvar_get(ncids[[mld_nc_ind]], mld_varname,
-                                                                 start=istart, count=c(nod2d_n, icount_leap[2]))
+                                                                 start=start, count=c(nod2d_n, count_leap[2]))
                             } else {
                                 mld_raw_data <- ncdf4::ncvar_get(ncids[[mld_nc_ind]], mld_varname,
-                                                                 start=istart, count=c(nod2d_n, icount[2]))
+                                                                 start=start, count=c(nod2d_n, count[2]))
                             }
                             mld_units_raw <- ncatt_get(ncids[[mld_nc_ind]], mld_varname, "units")$value
                             if (mld_units_raw == 0) mld_units_raw <- "not given by nc file"
@@ -4669,9 +4467,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             # just in case some original data are in other dimensons than given by user
                             # for example if accidentally more time steps were appended to the file
                             if (leap_tag && is.leap(year)) {
-                                mld_raw_data <- mld_raw_data[istart[1]:nod2d_n,istart[2]:icount_leap[2]]
+                                mld_raw_data <- mld_raw_data[start[1]:nod2d_n,start[2]:count_leap[2]]
                             } else {
-                                mld_raw_data <- mld_raw_data[istart[1]:nod2d_n,istart[2]:icount[2]]
+                                mld_raw_data <- mld_raw_data[start[1]:nod2d_n,start[2]:count[2]]
                             }
                             mld_varsin <- ncdf.tools::infoNcdfVars(ncids[[mld_nc_ind]])
                             mld_varsin <- unlist(mld_varsin[which(mld_varsin[,2] == mld_varname),])
@@ -4685,7 +4483,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                         }
 
                         ## Save data in array (vars,nodes,time,depths)
-                        # need to use 1:icount[1] for indexing since both 2D and 3D variables may be used
+                        # need to use 1:count[1] for indexing since both 2D and 3D variables may be used
                         if (rec_tag) {
                             if (leap_tag && is.leap(year)) {
                                 mld_node[1,1:nod2d_n,1,1:nrecspf_leap] <- mld_raw_data
@@ -4696,64 +4494,36 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             mld_node[1,1:nod2d_n,,] <- mld_raw_data
                         }
 
-                    } # if file == nfiles
+                    } # if file == nvars
                 } # if MLD needed
                 
-                ## speed test reading variable
-                if (F) { 
-                    library(ncdf4)
-                    library(RNetCDF)
-                    library(microbenchmark) 
-                    #library(raster)
-                    #b <- brick(f, var=var)
-                    f <- "/home/mozi/data/livneh/hdd.mon.mean.nc" # 617 MB file
-                    ncin_rnetcdf <- RNetCDF::open.nc(f)
-                    ncin_ncdf4 <- ncdf4::nc_open(f)
-                    var <- names(ncin_ncdf4$var)[1]
-                    start <- count <- rep(NA, t=length(ncin_ncdf4$var[[var]]$dimids))
-                    dimids <- unlist(sapply(ncin_ncdf4$dim, "[", "id"))
-                    for (i in length(start):1) { # backward
-                        start[i] <- 1
-                        dimind <- which(ncin_ncdf4$var[[var]]$dimids == dimids[i])
-                        count[i] <- ncin_ncdf4$dim[[dimind]]$len
-                    }
-                    microbenchmark(times=5,
-                                   RNetCDF=RNetCDF::var.get.nc(ncin_rnetcdf, var, start=start, count=count),
-                                   ncdf4=ncdf4::ncvar_get(ncin_ncdf4, var, start=start, count=count))
-                    # 617 MB:
-                    #    expr      min       lq      mean   median       uq      max neval
-                    # RNetCDF  8.947664  9.197305  9.318564  9.378764  9.490095  9.578993     5
-                    #   ncdf4 12.296984 12.361039 12.427973 12.361947 12.559768 12.560129     5
-                    # note: using start and count in ncvar_get() is ~4 times faster for not too big files
-                    #       compared to reading the whole nc file
-                    #       39 GB file: loop (n=15):   11.375 sec
-                    #                   all:           42.036 sec
-                    #      458 GB file: loop (n=188): 159.694 sec
-                    #                   all:          155.094 sec
-                } # speed test reading nc variable
-
-            } # for file nfiles per time step
+            } # for file nvars per time step
             rm(raw_data)
             if (rec_tag) rm(ncids)
+            
             # remove temporary files
             if (cdo_temporalmean != "") {
-                for (file in 1:length(fnames_unique)) {
-                    message(indent, "Remove temporay file ", fnames_unique[file])
-                    file.remove(fnames_unique[file])
+                stop("update")
+                for (vari in 1:length(fnames_unique)) {
+                    message(indent, "Remove temporay file ", fnames_unique[vari])
+                    file.remove(fnames_unique[vari])
                 }
             }
+            
             if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
                 rm(mld_raw_data)
             }
+            
             # finished reading all needed variables per year and time step (if rec_tag = F) or 
             # all time steps per year (if rec_tag = T)
+            
             ## Calculate and save transient data for each timestep if wanted
             if (any(transient_out, regular_transient_out, rms_out, sd_out)) {
 
                 indent <- "         "
                 if (verbose > 1) {
-                    message(paste0(indent, "Calc and save transient ", 
-                                   out_mode, " (='out_mode') of area ", area, " (='area') ..."))
+                    message(paste0(indent, "Calc and save transient '", 
+                                   out_mode, "' (='out_mode') of area '", area, "' (='area') ..."))
                 }
 
                 ## Rotate vector components
@@ -4870,12 +4640,6 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     dimnames(data_node)[1] <- list(var=varname)
                 }
 
-                if (F) {
-                    ws <- ls2()
-                    message(ws[1:15,])
-                    stop("asd")
-                }
-
                 ## Check data so far
                 if (verbose > 2) {
                     for (i in 1:dim(data_node)[1]) {
@@ -4903,18 +4667,6 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
                 }
 
-                if (F) {
-                    message(paste0(indent, "   workspace memory = ", round(get_memory_of_workspace_gb(), 3), " Gb ..."))
-                    message(paste0(indent, "   session (pid=", pid, ") memory = ", round(get_memory_of_session_gb(pid), 3), " Gb ..."))
-                    message(paste0(indent, "   free memory (host=", host, ") = ", round(get_free_memory_of_hostname_gb(), 3), " Gb ..."))
-
-                    ws <- sort(sapply(ls(), function(x) object.size(get(x))), decreasing=T)/1024^2 # Mb
-                    message(paste0(indent, "   10 biggest objects in draw_oce() [Mb]:"))
-                    message(round(ws[1:10], 3))
-                }
-
-                #stop("asd")
-
                 if (!any(out_mode == c("csec_mean", "csec_depth", "moc_mean", "moc_depth"))) {
 
                     ## integrate vertically
@@ -4935,14 +4687,15 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     ## dim(data_node) = c(nvars,nod2d_n,ndepths,nrecspf) else
 
                     ## Declare matrix to save to netcdf
-                    if (total_rec == 0) {
+                    if (all(total_rec == 0)) {
 
                         if (transient_out && out_mode != "area") {
                             if (any(out_mode == c("mean", "meanint", "sum", "max", "max3D", "min"))) {
-                                data_funi <- array(NA, dim=c(dim(data_node)[1], ntime, 1)) # dim(data_funi) = c(nvars,ntime,ndepths=1)
-                                dimnames(data_funi) <- c(dimnames(data_node)[1],
-                                                         list(time=timestamp,
-                                                              depth=paste0(depths_plot, "m_", out_mode)))
+                                data_funi <- array(NA, 
+                                                   dim=c(dim(data_node)[1], timeobj[[1]]$ntime, 1), # c(nvars,ntime,ndepths=1)
+                                                   dimnames=c(dimnames(data_node)[1],
+                                                              list(time=timeobj[[1]]$timestamp,
+                                                                   depth=paste0(depths_plot, "m_", out_mode))))
         
                                 if (out_mode == "max3D") {
                                     data_funi_depths <- data_funi
@@ -4950,9 +4703,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             
                             } else if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                                 data_funi <- array(NA, 
-                                                   dim=c(dim(data_node)[1], ntime, ndepths),
+                                                   dim=c(dim(data_node)[1], timeobj[[1]]$ntime, ndepths), # c(nvars,ntime,ndepths)
                                                    dimnames=c(dimnames(data_node)[1],
-                                                              list(time=timestamp,
+                                                              list(time=timeobj[[1]]$timestamp,
                                                                    depth=interpolate_depths)))
                                 # dim(data_funi) = c(nvars,ntime,ndepths)
                             
@@ -4962,9 +4715,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                         if (regular_transient_out && out_mode != "area") {
                             data_reg_funi <- array(NA, 
-                                                   dim=c(dim(data_node)[1], ntime, 1),
+                                                   dim=c(dim(data_node)[1], timeobj[[1]]$ntime, 1),
                                                    dimnames=c(dimnames(data_node)[1],
-                                                              list(time=timestamp,
+                                                              list(time=timeobj[[1]]$timestamp,
                                                                    depth=paste0(depths_plot, "_", out_mode))))
                         } # regular_transient_out && out_mode != "area"
                     
@@ -5072,7 +4825,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                             ## Interpolation of transient data on regular grid
                             if (regular_transient_out) {
-                                if (total_rec == 0 && di == 1) { # initialize matrices
+                                if (all(total_rec == 0) && di == 1) { # initialize matrices
                                     datamat_reg <- array(NA, 
                                                          dim=c(dim(data_vert)[1],              # nvars
                                                                length(xinds), length(yinds),   # x, y of _area_
@@ -5214,18 +4967,15 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     ## Calc transient mean, depth, etc.
                     if (transient_out) { # the non-regular part
                         if (out_mode != "area") {
+                            
                             if (rec_tag) {
-                                if (leap_tag && is.leap(year)) {
-                                    time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
-                                } else {
-                                    time_inds <- (total_rec + 1):(total_rec + nrecspf)
-                                }
+                                time_inds <- files_list[[vari]][[fi]]$total_recs
                             } else {
-                                time_inds <- total_rec + 1
+                                time_inds <- files_list[[vari]][[fi]]$total_recs[recsi[rec]]
                             }
 
                             if (verbose > 1) {
-                                message(paste0(indent, "Select irregular data from region ", area, " (=area) ..."))
+                                message(indent, "Select irregular data from area '", area, "' (='area') ...")
                             }
                             
                             ## choose data from area in node space
@@ -5264,8 +5014,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             
                             } # if out_mode == "mean" && zave_method == 2
                             
-                            if (any(datavec == Inf)) message("jaaa3")
-                            if (any(datavec == -Inf)) message("-jaaa3")
+                            if (any(datavec == Inf)) message("some datavec Inf")
+                            if (any(datavec == -Inf)) message("some datevec -Inf")
 
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
@@ -5288,62 +5038,48 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             }
 
                             if (verbose > 1) {
-                                message(indent, "Calculate transient ", out_mode, " (=out_mode)", appendLF=F)
+                                message(indent, "Calculate transient '", out_mode, "' (=out_mode)", appendLF=F)
                                 if (dim_tag == "3D") {
-                                    message(" at ", depths_plot, appendLF=F)
+                                    message(" at", depths_plot, appendLF=F)
                                     if (!(depths == 1 && depths == "bottom")) {
                                         message(" m", appendLF=F)
                                     }
                                     message(" (=depths_plot)", appendLF=F)
                                 }
-                                message("")
-                                if (verbose > 2) {
-                                    message(paste0(indent, "and save at 'time_inds'=",
-                                                 paste(time_inds, collapse=",")))
-                                }
+                                message(" and save at 'time_inds'=", paste(time_inds, collapse=","))
                             }
                             
                             ## which calculation mode: mean, max, etc ...
                             if (any(out_mode == c("mean", "depth", "meanint", "depthint"))) {
                               
-                                if (rec_tag && leap_tag && is.leap(year)) {
-                                    if (out_mode == "mean" && zave_method == 2) { # special
-                                        if (!exists("patch_vol_leap")) {
-                                            patch_vol_leap <- cluster_vol_3d[nod3d_z_inds]
-                                            patch_vol_leap <- replicate(patch_vol_leap, n=dim(datavec)[3]) # nrecspf
-                                            patch_vol_leap <- replicate(patch_vol_leap, n=dim(datavec)[4]) # ndepth = 1
-                                            patch_vol_leap <- replicate(patch_vol_leap, n=dim(datavec)[1]) # nvars
-                                            patch_vol_leap <- aperm(patch_vol_leap, c(4, 1, 2, 3))
-                                        }
+                                if (out_mode == "mean" && zave_method == 2) { # special
+                                    if (!exists("patch_vol_woutrec")) {
+                                        patch_vol_woutrec <- cluster_vol_3d[nod3d_z_inds]
+                                        patch_vol_woutrec <- replicate(patch_vol_woutrec, n=dim(datavec)[1]) # nvars
+                                        patch_vol_woutrec <- replicate(patch_vol_woutrec, n=dim(datavec)[4]) # ndepth; nod2d, nvar, ndepth
+                                        patch_vol <- replicate(patch_vol_woutrec, n=dim(datavec)[3]) # nrecs; nod2d, nvar, ndepth, nrec 
+                                        patch_vol <- aperm(patch_vol, c(2, 1, 4, 3)) # datavec: nvar,nod,nrec,ndepth
                                     } else {
-                                        if (!exists("patch_area_leap")) {
-                                            patch_area_leap <- cluster_area_2d[poly_node_inds_geogr]
-                                            patch_area_leap <- replicate(patch_area_leap, n=dim(datavec)[3]) # nrecspf
-                                            patch_area_leap <- replicate(patch_area_leap, n=dim(datavec)[4]) # ndepths
-                                            patch_area_leap <- replicate(patch_area_leap, n=dim(datavec)[1]) # nvars
-                                            patch_area_leap <- aperm(patch_area_leap, c(4, 1, 2, 3))
+                                        if (dim(datavec)[3] != dim(patch_vol)[3]) { # update time dim of patch_vol
+                                            patch_vol <- replicate(patch_vol_woutrec, n=dim(datavec)[3]) # nrecs; nod2d, nvar, ndepth, nrec 
+                                            patch_vol <- aperm(patch_vol, c(2, 1, 4, 3)) # datavec: nvar,nod,nrec,ndepth
                                         }
-                                    }
-                                } else { # only 1 rec and/or no leap
-                                    if (out_mode == "mean" && zave_method == 2) { # special
-                                        if (!exists("patch_vol")) {
-                                            patch_vol <- cluster_vol_3d[nod3d_z_inds]
-                                            patch_vol <- replicate(patch_vol, n=dim(datavec)[3]) # nrecspf
-                                            patch_vol <- replicate(patch_vol, n=dim(datavec)[4]) # ndepth = 1
-                                            patch_vol <- replicate(patch_vol, n=dim(datavec)[1]) # nvars
-                                            patch_vol <- aperm(patch_vol, c(4, 1, 2, 3))
-                                        }
+                                    } # if patch_vol_woutrec already exists or not
+                                } else { # default
+                                    if (!exists("patch_area_woutrec")) {
+                                        patch_area_woutrec <- cluster_area_2d[poly_node_inds_geogr]
+                                        patch_area_woutrec <- replicate(patch_area_woutrec, n=dim(datavec)[1]) # nvars
+                                        patch_area_woutrec <- replicate(patch_area_woutrec, n=dim(datavec)[4]) # ndepth; nod2d, nvar, ndepth
+                                        patch_area <- replicate(patch_area_woutrec, n=dim(datavec)[3]) # nrecs; nod2d, nvar, ndepth, nrec 
+                                        patch_area <- aperm(patch_area, c(2, 1, 4, 3)) # datavec: nvar,nod,nrec,ndepth
                                     } else {
-                                        if (!exists("patch_area")) {
-                                            patch_area <- cluster_area_2d[poly_node_inds_geogr]
-                                            patch_area <- replicate(patch_area, n=dim(datavec)[3]) # nrecspf
-                                            patch_area <- replicate(patch_area, n=dim(datavec)[4]) # ndepths
-                                            patch_area <- replicate(patch_area, n=dim(datavec)[1]) # nvars
-                                            patch_area <- aperm(patch_area, c(4, 1, 2, 3))
+                                        if (dim(datavec)[3] != dim(patch_area)[3]) { # update time dim of patch_area
+                                            patch_area <- replicate(patch_area_woutrec, n=dim(datavec)[3]) # nrecs; nod2d, nvar, ndepth, nrec 
+                                            patch_area <- aperm(patch_area, c(2, 1, 4, 3)) # datavec: nvar,nod,nrec,ndepth
                                         }
-                                    }
-                                } # if leap years are present
-                                
+                                    } # if patch_area_woutrec already exists or not
+                                }
+ 
                                 # Calculate min/max/mean/median/nominal resolution of area as scalars.
                                 # Resolution is defined per 2d-element (check deriv_2d.r).
                                 # In these modes, the deriv_2d_nc was already loaded anyway.
@@ -5382,13 +5118,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                         res_node_max <- max(res_node, na.rm=T)
                                         res_node_median_simple <- median(res_node, na.rm=T)
                                         res_node_mean_simple <- mean(res_node, na.rm=T)
-                                        if (rec_tag && leap_tag && is.leap(year)) {
-                                            res_node_int <- res_node[!is.na(res_node)]*drop(patch_area_leap[1,!is.na(res_node),1,1])
-                                            tmp_area <- sum(patch_area_leap[1,!is.na(res_node),1,1]) 
-                                        } else {
-                                            res_node_int <- res_node[!is.na(res_node)]*drop(patch_area[1,!is.na(res_node),1,1])
-                                            tmp_area <- sum(patch_area[1,!is.na(res_node),1,1])
-                                        }
+                                        res_node_int <- res_node[!is.na(res_node)]*drop(patch_area[1,!is.na(res_node),1,1])
+                                        tmp_area <- sum(patch_area[1,!is.na(res_node),1,1])
                                         res_node_int <- sum(res_node_int) # sum data over nodes in area
                                         res_node_mean_weighted <- res_node_int/tmp_area
                                         # Nominal resolution calculation from CMIP6_global_attributes_filenames_CVs_v6.2.6.pdf:
@@ -5402,60 +5133,25 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                         # area (A). This defines the "mean resolution" (d_max). The formula is:
                                         # bar(d_max) = sum(A_i)^-1 * sum(d_max_i*A_i) for all i surface nodes
                                         # Note: For unstructured grid, there is no "d_max"?
-                                        #       Use area weighted mean instead. Is this correct?
-                                        res_node_nominal <- res_node_mean_weighted 
-                                        if (res_node_nominal < 0.72) {
-                                            res_node_nominal <- 0.5
-                                        } else if (res_node_nominal >= 0.72 && res_node_nominal < 1.6) {
-                                            res_node_nominal <- 1
-                                        } else if (res_node_nominal >= 1.6 && res_node_nominal < 3.6) {
-                                            res_node_nominal <- 2.5
-                                        } else if (res_node_nominal >= 3.6 && res_node_nominal < 7.2) {
-                                            res_node_nominal <- 5
-                                        } else if (res_node_nominal >= 7.2 && res_node_nominal < 16) {
-                                            res_node_nominal <- 10
-                                        } else if (res_node_nominal >= 16 && res_node_nominal < 36) {
-                                            res_node_nominal <- 25
-                                        } else if (res_node_nominal >= 36 && res_node_nominal < 72) {
-                                            res_node_nominal <- 50
-                                        } else if (res_node_nominal >= 72 && res_node_nominal < 160) {
-                                            res_node_nominal <- 100
-                                        } else if (res_node_nominal >= 160 && res_node_nominal < 360) {
-                                            res_node_nominal <- 250
-                                        } else if (res_node_nominal >= 360 && res_node_nominal < 720) {
-                                            res_node_nominal <- 500
-                                        } else if (res_node_nominal >= 720 && res_node_nominal < 1600) {
-                                            res_node_nominal <- 1000
-                                        } else if (res_node_nominal >= 1600 && res_node_nominal < 3600) {
-                                            res_node_nominal <- 2500
-                                        } else if (res_node_nominal >= 3600 && res_node_nominal < 7200) {
-                                            res_node_nominal <- 5000
-                                        } else if (res_node_nominal >= 7200) {
-                                            res_node_nominal <- 10000
-                                        }
-                                    }
+                                        #       Use area-weighted mean instead. Is this correct?
+                                        res_node_nominal <- nominal_res_df[which(res_node_mean_weighted >= nominal_res_df[,"greater_equal"] & 
+                                                                                 res_node_mean_weighted < nominal_res_df[,"less_than"]),
+                                                                           "nominal_res"]
+                                    } # which zave_method
                                 } # if add_res_to_nc
 
                                 # multiplay data by cluster area (in [unit of 'Rearth' in runscript]^2)
                                 if (out_mode == "mean" && zave_method == 2) {
-                                    if (rec_tag && leap_tag && is.leap(year)) {
-                                        area_int <- datavec*patch_vol_leap
-                                    } else {
-                                        area_int <- datavec*patch_vol
-                                    }
+                                    area_int <- datavec*patch_vol
                                 } else {
-                                    if (rec_tag && leap_tag && is.leap(year)) {
-                                        area_int <- datavec*patch_area_leap
-                                    } else {
-                                        area_int <- datavec*patch_area # c(var, nodes, recs, depth)
-                                    } 
+                                    area_int <- datavec*patch_area # c(var, nodes, recs, depth)
                                 }
 
                                 if (F) {
                                     for (i in 1:ndepths) {
-                                        message(paste0(interpolate_depths[i], "m: ",
-                                                     length(which(is.na(area_int[1,,1,i]))),
-                                                     " NA values"))
+                                        message(interpolate_depths[i], "m: ",
+                                                length(which(is.na(area_int[1,,1,i]))),
+                                                " NA values")
                                     }
                                 }
 
@@ -5465,7 +5161,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                                 if (out_mode == "mean" && zave_method == 2) {
                                     area_mean <- area_int/sum(cluster_vol_3d[nod3d_z_inds])
-                                    data_funi[,time_inds,] <- area_mean[,1:length(time_inds),] 
+                                    data_funi[,time_inds,] <- area_mean[,seq_along(time_inds),] 
 
                                 } else if ((out_mode == "mean" && zave_method == 1) || 
                                            out_mode == "depth") {
@@ -5473,11 +5169,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                     # divide by total cluster area in area and depth i
                                     area_mean <- area_int
                                     for (i in 1:dim(datavec)[4]) { # for all depths
-                                        if (rec_tag && leap_tag && is.leap(year)) {
-                                            tmp_area <- sum(patch_area_leap[1,which(!is.na(datavec[1,,1,i])),1,i]) # NA positions do not change in time
-                                        } else {
-                                            tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,i])),1,i])
-                                        }
+                                        tmp_area <- sum(patch_area[1,which(!is.na(datavec[1,,1,i])),1,i])
                                         if (verbose > 2) {
                                             message(paste0(indent, "         area in ", interpolate_depths[i], " m depth = ", tmp_area, " m^2"))
                                         }
@@ -5495,7 +5187,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                             } else if (out_mode == "sum") {
                                 # sum over nodes
-                                data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), sum, na.rm=T)[,1:length(time_inds),]
+                                data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), sum, na.rm=T)[,seq_along(time_inds),]
                                 # For Hu Yang: sum only where wind curl is negative
                                 #datavec2 <- datavec
                                 #message("Special for Hu: Sum over areas where curltau is negative")
@@ -5509,38 +5201,38 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 tmp[tmp == -Inf] <- NA
                                 
                                 if (out_mode == "max" || out_mode == "depthmax") {
-                                    data_funi[,time_inds,] <- tmp[,1:length(time_inds),] # time vs 1 depth for "max" or time vs depths for "depthmax"
+                                    data_funi[,time_inds,] <- tmp[,seq_along(time_inds),] # time vs 1 depth for "max" or time vs depths for "depthmax"
                                 
                                 } else if (out_mode == "max3D") {
-                                    data_funi[,time_inds,1] <- apply(tmp, c(1, 2), max)[,1:length(time_inds)] # time vs 1 maximum depth
+                                    data_funi[,time_inds,1] <- apply(tmp, c(1, 2), max)[,seq_along(time_inds)] # time vs 1 maximum depth
                                     data_funi_depths[,time_inds,1] <- interpolate_depths[apply(tmp, c(1, 2), which.max)]
                                 }
                             
                             } else if (out_mode == "min") {
-                                data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), min, na.rm=T)[,1:length(time_inds),]
+                                data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), min, na.rm=T)[,seq_along(time_inds),]
                             }
                            
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(data_funi)[1]) {
-                                    message(paste0(indent, "   min/max data_funi[", i, ":", 
-                                                   dimnames(data_funi)[[1]][i], ",,] = ",
-                                                   paste0(range(data_funi[i,,], na.rm=T), collapse="/"), 
-                                                   " ", units_out))
+                                    message(indent, "   min/max data_funi[", i, ":", 
+                                            dimnames(data_funi)[[1]][i], ",,] = ",
+                                            paste(range(data_funi[i,,], na.rm=T), collapse="/"), 
+                                            " ", units_out)
                                 }
                             }
 
                         ## Save transient area output
                         } else if (out_mode == "area") { # on irregular mesh
                             
-                            if (total_rec == 0) { # prepare output
+                            if (all(total_rec == 0)) { # prepare output
                                 if (rec_tag) {
                                     transient_count <- c(3, dim(datamat)[3], dim(datamat)[5]) # c(elements, nodes, time)
                                 } else {
                                     transient_count <- c(3, dim(datamat)[3], 1)
                                 }
 
-                                outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, 
+                                outname <- paste0(transientpath, "/", postprefix, 
                                                   "_", out_mode, "_", varname, "_", area, timespan_fname, 
                                                   depths_fname, ssh_aviso_correct_fname, 
                                                   p_ref_suffix, fname_suffix, ".nc")
@@ -5552,7 +5244,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 }
 
                                 time_dim <- ncdim_def(name="time",
-                                                      units=timeobj$units,
+                                                      units=timeobj[[1]]$units,
                                                       vals=time,
                                                       create_dimvar=T)
                                 node_dim <- ncdim_def(name="nodes_per_element", 
@@ -5602,13 +5294,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 ncvar_put(outnc, yp_var, yp)
                                 ncvar_put(outnc, time_var, timestamp)
 
-                                ncatt_put(outnc, 0, "runid", runid)
-                                if (setting != "") {
-                                    ncatt_put(outnc, 0, "setting", setting)
-                                }
-                                ncatt_put(outnc, 0, "meshid", meshid)
+                                ncatt_put(outnc, 0, "datapath", paste(datainpaths, collapse=", "))
+                                ncatt_put(outnc, 0, "meshpath", meshpath)
                                 ncatt_put(outnc, 0, "area", area)
-                                ncatt_put(outnc, 0, "projection", projection)
                                 ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
                                 ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
                                 if (exists("res_node_min")) {
@@ -5664,7 +5352,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                             }
 
                             # Prepare regular output file
-                            if (total_rec == 0) {
+                            if (all(total_rec == 0)) {
                                
                                 if (rec_tag) {
                                     if (out_mode == "area") {
@@ -5686,8 +5374,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                     }
                                 }
 
-                                outname_reg <- paste0(reg_transient_outpath, "/", runid, 
-                                                      setting_fname, output_fname, "_",
+                                outname_reg <- paste0(reg_transient_outpath, "/", 
+                                                      postprefix, "_", 
                                                       out_mode, "_", varname, "_", area, 
                                                       timespan_fname, depths_fname,  
                                                       "_regular_dx",
@@ -5701,7 +5389,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                     system(paste0("rm ", outname_reg), ignore.stderr=T) # silent
                                 }
              
-                                time_dim <- ncdim_def(name="time", units=timeobj$units, vals=time)                          
+                                time_dim <- ncdim_def(name="time", units=timeobj[[1]]$units, vals=time)                          
                                 lon_dim <- ncdim_def(name="lon", units="degree_east", vals=xi)
                                 lat_dim <- ncdim_def(name="lat", units="degree_north", vals=yi)
 
@@ -5759,13 +5447,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 }
                                 ncvar_put(outnc_reg, time_var, timestamp)
                                 
-                                ncatt_put(outnc_reg, 0, "runid", runid)
-                                if (setting != "") {
-                                    ncatt_put(outnc_reg, 0, "setting", setting)
-                                }
-                                ncatt_put(outnc_reg, 0, "meshid", meshid)
+                                ncatt_put(outnc_reg, 0, "datapath", paste(datainpaths, collapse=", "))
                                 ncatt_put(outnc_reg, 0, "area", area)
-                                ncatt_put(outnc_reg, 0, "projection", projection)
                                 ncatt_put(outnc_reg, 0, "longitude_lims_deg", range(xi), prec=prec)
                                 ncatt_put(outnc_reg, 0, "latitude_lims_deg", range(yi), prec=prec)
                                 ncatt_put(outnc_reg, 0, "regular_dx", sprintf("%.3f", regular_dx))
@@ -5793,9 +5476,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                                  " in ", depths_plot, " m depths in ", area,
                                                  " area to nc file ..."))
                                 }
-                                message(paste0(indent, "   istart=c(", 
+                                message(paste0(indent, "   start=c(", 
                                              paste0(transient_start_reg, collapse=","), 
-                                             "), icount=c(", 
+                                             "), count=c(", 
                                              paste0(transient_count_reg, collapse=","), ")"))
                                 message(indent, "   ", timei[1], appendLF=F)
                                 if (rec_tag) {
@@ -5921,7 +5604,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
                     
                     # Irregular dx and dz for section mean
-                    if (total_rec == 0) { # only once
+                    if (all(total_rec == 0)) { # only once
                         if (csec_use_middle) {
                             # diff(interpolate_depths) = 
                             # (inputarray.range.depth_vek{1}(kk)-inputarray.range.depth_vek{1}(kk-1)) =
@@ -6035,31 +5718,27 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
                     } # if csec_mean && csec_conds_n > 0
 
-                    if (total_rec == 0) {
+                    if (all(total_rec == 0)) {
                         if (out_mode == "csec_mean") {
-                            data_funi <- array(NA, c(dim(data_vert_csec)[1], ntime),
+                            data_funi <- array(NA, c(dim(data_vert_csec)[1], timeobj[[1]]$ntime),
                                                dimnames=c(dimnames(data_vert_csec)[1], 
-                                                          list(rec=timestamp)))
+                                                          list(rec=timeobj[[1]]$timestamp)))
                         } else if (out_mode == "csec_depth") {
-                            data_funi <- array(NA, c(dim(data_vert_csec)[1:3], ntime),
+                            data_funi <- array(NA, c(dim(data_vert_csec)[1:3], timeobj[[1]]$ntime),
                                                dimnames=c(dimnames(data_vert_csec)[1:3], 
-                                                          list(rec=timestamp)))
+                                                          list(rec=timeobj[[1]]$timestamp)))
                         }
                     }
                     if (rec_tag) {
-                        if (leap_tag && is.leap(year)) {
-                            time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
-                        } else {
-                            time_inds <- (total_rec + 1):(total_rec + nrecspf)
-                        }
+                        time_inds <- files_list[[vari]][[fi]]$total_recs
                     } else {
-                        time_inds <- total_rec + 1
+                        time_inds <- files_list[[vari]][[fi]]$total_recs[recsi[rec]]
                     }
 
                     if (verbose > 1) {
-                        message(paste0(indent, "Calc ", area, " area ", out_mode,
-                                     " and save at time inds=",
-                                     paste(time_inds, collapse=",")))
+                        message(indent, "Calc ", area, " area ", out_mode,
+                                " and save at time inds=",
+                                paste(time_inds, collapse=","))
                     }
 
                     # Save csection mean after applying csection conditions
@@ -6130,7 +5809,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     }
 
                     ## remove possible redundant latitudes and bottom depths with no values
-                    if (total_rec == 0) {
+                    if (all(total_rec == 0)) {
                         moc_reg_lat <- moc_reg_lat_global
                         lat_na_inds <- which(apply(moc_topo, 1, function(x) all(x == 1)))
                         depth_na_inds <- which(apply(moc_topo, 2, function(x) all(x == 1)))
@@ -6148,7 +5827,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     if (length(depth_na_inds) > 0) {
                         data_node <- data_node[,,-depth_na_inds,]
                     }
-                    if (total_rec == 0) {
+                    if (all(total_rec == 0)) {
                         # improve this: only use depths where MOC has data
                         interpolate_depths <- interpolate_depths[1:dim(data_node)[3]]
                     }
@@ -6160,22 +5839,19 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                    ylim=rev(range(interpolate_depths)))
                     }
 
-                    if (total_rec == 0) {
+                    if (all(total_rec == 0)) {
                         if (out_mode == "moc_mean") {
                             stop("not yet")
                         } else if (out_mode == "moc_depth") {
-                            data_funi <- array(NA, dim=c(dim(data_node)[1:3], ntime),
-                                               dimnames=c(dimnames(data_node)[1:3], list(rec=timestamp)))
+                            data_funi <- array(NA, dim=c(dim(data_node)[1:3], timeobj[[1]]$ntime),
+                                               dimnames=c(dimnames(data_node)[1:3], 
+                                                          list(rec=timeobj[[1]]$timestamp)))
                         }
                     }
                     if (rec_tag) {
-                        if (leap_tag && is.leap(year)) {
-                            time_inds <- (total_rec + 1):(total_rec + nrecspf_leap)
-                        } else {
-                            time_inds <- (total_rec + 1):(total_rec + nrecspf)
-                        }
+                        time_inds <- files_list[[vari]][[fi]]$total_recs
                     } else {
-                        time_inds <- total_rec + 1
+                        time_inds <- files_list[[vari]][[fi]]$total_recs[recsi[rec]]
                     }
 
                     if (verbose > 1) {
@@ -6256,12 +5932,13 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                                 ## Check data so far
                                 if (verbose > 2) {
                                     for (i in 1:dim(data_node)[1]) {
-                                        message(paste0(indent, "   min/max data_node[", i, ":",
-                                                     dimnames(data_node)[[1]][i], ",,,] = ",
-                                                     paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                        message(indent, "   min/max data_node[", i, ":",
+                                                dimnames(data_node)[[1]][i], ",,,] = ",
+                                                paste(range(data_node[i,,,], na.rm=T), collapse="/"))
                                     }
                                 }
-                            } else {
+
+                            } else { # only 1 depth
                                 
                                 data_node <- data_vert
                             
@@ -6275,10 +5952,19 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     ## dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
 
                     ## matrix for ltm output 
-                    if (total_rec == 0) {
-                        data_node_ltm <- array(0,
-                                               dim=dim(data_node), # c(nvars,nod2d_n,ndepths,nrecspf)
-                                               dimnames=dimnames(data_node))
+                    if (all(total_rec == 0)) {
+                        dims_ltm <- dims # of data_node
+                        dimnames_ltm <- dimnames
+                        if (rec_tag) {
+                            dims_ltm[4] <- maxnrecpf
+                        } else {
+                            dims_ltm[4] <- 1   
+                        }
+                        dimnames_ltm[[4]] <- NULL
+                        data_node_ltm <- array(0, 
+                                               dim=dims_ltm,
+                                               dimnames=dimnames_ltm) # c(nvar,nnod,ndepths=1,nrecspf)
+                        
                         if (rms_out || sd_out) {
                             data_node_sd <- data_node_ltm
                             if (sd_method == "ackermann83") {
@@ -6298,25 +5984,24 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     } # if total_rec == 0
 
                     if (verbose > 1) {
-                            message(paste0(indent, "Sum transient ", 
-                                          paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
+                            message(indent, "Sum transient ", 
+                                    paste(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ...")
                     }   
                     
                     ## Save data in array (vars,nodes,depths=1,nrecspf)
-                    message("update for levelwise")
-                    if (rec_tag) {
-                        if (leap_tag && is.leap(year)) {
-                            data_node_ltm[,,,1:nrecspf_leap] <- data_node_ltm[,,,1:nrecspf_leap] + data_node
-                        } else {
-                            data_node_ltm[,,,1:nrecspf] <- data_node_ltm[,,,1:nrecspf] + data_node
-                        }
-                    } else {
-                        data_node_ltm <- data_node_ltm + data_node
-                    }
+                    data_node_ltm[vari,
+                                  seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
+                                  1,
+                                  seq_len(count[dims_of_vars[[vari]]$timedim_ind])] <- 
+                        data_node_ltm[vari,
+                                      seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
+                                      1,
+                                      seq_len(count[dims_of_vars[[vari]]$timedim_ind])] + 
+                        data_node[vari,seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),,]
                     #message(range(data_node_ltm, na.rm=T))
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                        message("update for levelwise")
+                        stop("update")
                         if (rec_tag) {
                             if (leap_tag && is.leap(year)) {
                                 mld_node_ltm[,,1,1:nrecspf_leap] <- mld_node_ltm[,,1,1:nrecspf_leap] + mld_node
@@ -6331,8 +6016,9 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     if (rms_out || sd_out) {
 
                         if (verbose > 1) {
-                            message(paste0(indent, "Sum transient ",
-                                         paste0(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), " for rms/sd ..."))
+                            message(indent, "Sum transient ",
+                                    paste(paste0(dimnames(data_node)[[1]], "^2"), collapse=","), 
+                                    " for rms/sd ...")
                         }
 
                         message("update for levelwise")
@@ -6378,16 +6064,25 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, plot_map)) {
              
                     if (verbose > 1) {
-                        message(paste0(indent, "Sum non-transient ", 
+                        message(paste0(indent, "sum non-transient ", 
                                      paste0(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ..."))
                     }
 
-                    if (total_rec == 0) { 
+                    if (all(total_rec == 0)) { 
+                        dims_ltm <- dims # of data_node
+                        dimnames_ltm <- dimnames
+                        if (rec_tag) {
+                            dims_ltm[4] <- maxnrecpf
+                        } else {
+                            dims_ltm[4] <- 1   
+                        }
+                        dimnames_ltm[[4]] <- NULL
                         data_node_ltm <- array(0, 
-                                               dim=dim(data_node),
-                                               dimnames=dimnames(data_node)) # c(nvar,nnod,ndepths=1,nrecspf)
+                                               dim=dims_ltm,
+                                               dimnames=dimnames_ltm) # c(nvar,nnod,ndepths=1,nrecspf)
 
                         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
+                            stop("update")
                             mld_node_ltm <- mld_node
                             mld_node_ltm[] <- 0
                         }
@@ -6395,23 +6090,17 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
                     } # if total_rec == 0
 
                     ## Save data in array (vars,nodes,time,depths)
-                    # need to use 1:icount[1] for indexing since both 2D and 3D variables may be used
-                    for (i in 1:dim(data_node)[1]) { # nvars
-                        if (rec_tag) {
-                            if (leap_tag && is.leap(year)) {
-                                data_node_ltm[i,1:icount[[i]][nodedim_ind],1,1:nrecspf_leap] <- 
-                                    data_node_ltm[i,1:icount[[i]][nodedim_ind],1,1:nrecspf_leap] + 
-                                    data_node[i,1:icount[[i]][nodedim_ind],,]
-                            } else {
-                                data_node_ltm[i,1:icount[[i]][nodedim_ind],1,1:nrecspf] <- 
-                                    data_node_ltm[i,1:icount[[i]][nodedim_ind],1,1:nrecspf] + 
-                                    data_node[i,1:icount[[i]][nodedim_ind],,]
-                            }
-                        } else {
-                            data_node_ltm[i,1:icount[[i]][nodedim_ind],,] <- 
-                                data_node_ltm[i,1:icount[[i]][nodedim_ind],,] + 
-                                data_node[i,1:icount[[i]][nodedim_ind],,]
-                        }
+                    # need to use 1:count[1] for indexing since both 2D and 3D variables may be used
+                    for (vari in seq_len(dim(data_node)[1])) { # nvars
+                        data_node_ltm[vari,
+                                      seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
+                                      1,
+                                      seq_len(count[dims_of_vars[[vari]]$timedim_ind])] <- 
+                            data_node_ltm[vari,
+                                          seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
+                                          1,
+                                          seq_len(count[dims_of_vars[[vari]]$timedim_ind])] + 
+                            data_node[vari,seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),,]
                     }
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
@@ -6442,15 +6131,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             } # if (any(transient_out, regular_transient_out, rms_out, sd_out))  
 
             # set total counter
-            if (rec_tag) {
-                if (leap_tag && is.leap(year)) {
-                    total_rec <- total_rec + nrecspf_leap
-                } else {
-                    total_rec <- total_rec + nrecspf
-                }
-            } else {
-                total_rec <- total_rec + 1
-            }
+            total_rec[seq_len(count[dims_of_vars[[vari]]$timedim_ind])] <- 
+                total_rec[seq_len(count[dims_of_vars[[vari]]$timedim_ind])] + 1
 
         } # for recsi timesteps (e.g. monthly, daily, hourly) per fesom file loop
         #}) # recsloop_systime 
@@ -6459,9 +6141,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
     } # end year loop
   
     indent <- "   "
-    if (verbose > 1) {
-        message(paste0(indent, "Year loop done"))
-    }
+    if (verbose > 1) message(indent, "File loop done")
 
     #stop("asd")
 
@@ -6480,8 +6160,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
         if (out_mode == "area") { # this is irregular
         #if (out_mode == "area" || out_mode == "areadepth") {
             if (verbose > 1) {
-                message(paste0(indent, "Save transient ", out_mode, " (=out_mode) file (=outname):"))
-                message(paste0(indent, indent, outname))
+                message(indent, "Save transient irregular '", out_mode, "' (=out_mode) file (=outname):\n",
+                        indent, indent, outname)
             }
             nc_close(outnc)
 
@@ -6501,18 +6181,18 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             # nc name
             if (any(varname == c("iceextent", "icevol"))) {
                 if (is.null(sic_cond_fname)) {
-                    outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_",
+                    outname <- paste0(transientpath, "/", postprefix, "_", 
                                       out_mode, "_", varname, "_sic_", area, timespan_fname, 
                                       p_ref_suffix, fname_suffix,
                                       ".nc")
                 } else {
-                    outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_",
+                    outname <- paste0(transientpath, "/", postprefix, "_", 
                                       out_mode, "_", varname, "_sic.", sic_cond_fname, ".", sic_thr*100, 
                                       "_", area, timespan_fname, p_ref_suffix, fname_suffix,
                                       ".nc")
                 }
             } else {
-                outname <- paste0(transientpath, "/", runid, setting_fname, output_fname, "_", 
+                outname <- paste0(transientpath, "/", postprefix, "_",  
                                   out_mode, "_", varname, "_", area, timespan_fname,
                                   depths_fname,
                                   ifelse(out_mode == "csec_mean" && csec_conds_n > 0, 
@@ -6532,14 +6212,14 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             }
 
             if (verbose > 1) {
-                message(paste0(indent, "Save transient ", out_mode, " (=out_mode) file (=outname):"))
-                message(paste0(indent, indent, outname))
+                message(indent, "Save transient '", out_mode, "' (=out_mode) file (=outname):\n",
+                        indent, indent, outname)
             }
 
             ## Set dimensions for transient nc file
             time_dim <- ncdim_def(name="time", 
-                                  units=timeobj$units, 
-                                  vals=time, 
+                                  units=timeobj[[1]]$units_out, 
+                                  vals=timeobj[[1]]$time, 
                                   create_dimvar=T)
      
             if (any(out_mode == c("depth", "depthint", "depthmax"))) {
@@ -6581,9 +6261,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 
             ## Set dimension variables for nc file
             time_var <- ncvar_def(name="timestamp", 
-                                  units=timeunit, 
+                                  units="YYYYMMDD", 
                                   dim=time_dim,
-                                  missval=-9999, 
                                   prec="integer")
 
             if (any(out_mode == c("depth", "depthint", "depthmax", 
@@ -6770,7 +6449,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             } # moc_depth
 
             ## Put dimensions to transient nc file
-            ncvar_put(outnc, time_var, timestamp)
+            ncvar_put(outnc, time_var, timeobj[[1]]$timestamp)
 
             if (any(out_mode == c("depth", "depthint", "depthmax"))) {
                 ncvar_put(outnc, depth_var, -interpolate_depths)
@@ -6812,14 +6491,10 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
             } # for i vars
 
             ## Put attributes to nc file
-            ncatt_put(outnc, 0, "runid", runid)
-            if (setting == "") {
-                ncatt_put(outnc, 0, "setting", setting)
-            }
-            ncatt_put(outnc, 0, "meshid", meshid)
+            ncatt_put(outnc, 0, "datapath", paste(datainpaths, collapse=", "))
+            ncatt_put(outnc, 0, "meshpath", meshpath)
             if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
             ncatt_put(outnc, 0, "area", area)
-            ncatt_put(outnc, 0, "projection", projection)
             ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec="double")
             ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec="double")
             if (dim_tag == "3D") {
@@ -6868,8 +6543,8 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
         
         if (any(out_mode == c("area", "areadepth"))) {
             if (verbose > 1) {
-                message(paste0(indent, "Save transient regular ", out_mode, " file: (=outname_reg)"))
-                message(paste0(indent, indent, outname_reg))
+                message(indent, "Save transient regular '", out_mode, "' file: (=outname_reg)\n",
+                        indent, indent, outname_reg)
             }
             nc_close(outnc_reg)
         
@@ -6886,12 +6561,12 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
     }
 
     if (verbose > 0) {
-        message(paste0(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
-                                  " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+        message(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
+                " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
         message("==============================================")
     }
 
-} # end if (nfiles > 0)
+} # end if (nvars > 0)
 
 #stop("asd")
 
@@ -6899,7 +6574,7 @@ if (nfiles == 0) { # derive variable from mesh files, e.g. resolution
 if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     
     if (verbose > 0) {
-        if (nfiles > 0) {
+        if (nvars > 0) {
             message(paste0("6) Calculate ", varname, " ltm over ", timespan, " ..."))
         } else {
             message(paste0("6) Calculate ", varname, " ..."))
@@ -6907,7 +6582,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     }
    
     ## continue with already calculated data
-    if (any(transient_out, regular_transient_out, rms_out, sd_out) && nfiles > 0) { # nfiles > 0 for not bathy, resolution, etc.
+    if (any(transient_out, regular_transient_out, rms_out, sd_out) && nvars > 0) { # nvars > 0 for not bathy, resolution, etc.
 
         # append sum(u*v) to sd if needed to only have one sd matrix
         if (sd_method == "ackermann83") {
@@ -6918,102 +6593,54 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if any(transient_out, regular_transient_out, rms_out, sd_out)
 
     ## Calculate Mean for 'timespan' of already calculated data
-    if (total_rec > 1) {
+    if (any(total_rec > 0)) {
 
-        ## ltm average starts here
-        if (!rec_tag) {
-            if (verbose > 1) {
-                message(paste0(indent, "Divide by total_rec=", total_rec, " ..."))
-            }
-            data_node_ltm <- data_node_ltm/total_rec
+        # ltm average 
+        tmp <- array(0,
+                     dim=c(dim(data_node_ltm)[1:3], 1), # nvar,node,depth,nrecspf=1
+                     dimnames=c(dimnames(data_node_ltm)[1:3],
+                                list(time=timespan)))
+        if (rms_out || sd_out) {
+            tmp_sd <- array(0,
+                            dim=c(dim(data_node_sd)[1:3], 1),
+                            dimnames=c(dimnames(data_node_sd)[1:3],
+                                       list(time=timespan)))
+        }
+        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
+            tmp_mld <- array(0, c(dim(mld_node_ltm)[1:3], 1),
+                             dimnames=c(dimnames(mld_node_ltm)[1:3],
+                                        list(time=timespan)))
+        }
+
+        if (verbose > 1) {
+            message(indent, "Divide by sum(total_rec) = ", sum(total_rec), " ...")
+        }
+
+        # sum over all times of a year (e.g. months)
+        #message("data_node_ltm")
+        for (i in seq_len(dim(data_node_ltm)[4])) { # maxnrecpf
+            tmp[,,,1] <- tmp[,,,1] + data_node_ltm[,,,i]
+            #message(range(data_node_ltm[,,,i], na.rm=T))
             if (rms_out || sd_out) {
-                data_node_sd <- data_node_sd/total_rec
+                 tmp_sd[,,,1] <- tmp_sd[,,,1] + data_node_sd[,,,i]
             }
             if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                mld_node_ltm <- mld_node_ltm/total_rec
+                tmp_mld[,,,1] <- tmp_mld[,,,1] + mld_node_ltm[,,,i]
             }
+        }
 
-        } else if (rec_tag) {
-
-            ## 1) annual average
-            if (nyears > 1) {
-
-                if (leap_tag && any(is.leap(years))) {
-                    nyears_leap <- length(which(is.leap(years)))
-                    if (verbose > 1) {
-                        message(paste0(indent, "Divide rec ", nrecspf_leap, " by nyears_leap=", nyears_leap, " ..."))
-                    }
-                    data_node_ltm[,,,nrecspf_leap] <- data_node_ltm[,,,nrecspf_leap]/nyears_leap # (var,node,time,depth)
-                    if (rms_out || sd_out) {
-                        data_node_sd[,,,nrecspf_leap] <- data_node_sd[,,,nrecspf_leap]/nyears_leap
-                    }
-                    if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                        mld_node_ltm[,,,nrecspf_leap] <- mld_node_ltm[,,,nrecspf_leap]/nyears_leap
-                    }
-                }
-
-                if (verbose > 1) {
-                    message(paste0(indent, "Divide recs (1,...,", nrecspf, ") by nyears=", nyears, " ..."))
-                }
-                data_node_ltm[,,,1:nrecspf] <- data_node_ltm[,,,1:nrecspf]/nyears
-                if (rms_out || sd_out) {
-                    data_node_sd[,,,1:nrecspf] <- data_node_sd[,,,1:nrecspf]/nyears
-                }
-                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                    mld_node_ltm[,,,1:nrecspf] <- mld_node_ltm[,,,1:nrecspf]/nyears
-                }
-
-            } # if nyears > 1
-
-
-            ## 2) average over all times of a year (e.g. months)
-            tmp <- array(0,
-                         dim=c(dim(data_node_ltm)[1:3], 1), # nvar,node,depth,nrecspf=1
-                         dimnames=c(dimnames(data_node_ltm)[1:3],
-                                    list(time=timespan)))
-            if (rms_out || sd_out) {
-                tmp_sd <- array(0,
-                                dim=c(dim(data_node_sd)[1:3], 1),
-                                dimnames=c(dimnames(data_node_sd)[1:3],
-                                           list(time=timespan)))
-            }
-            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                    tmp_mld <- array(0, c(dim(mld_node_ltm)[1:3], 1),
-                                     dimnames=c(dimnames(mld_node_ltm)[1:3],
-                                                list(time=timespan)))
-            }
-
-            if (verbose > 1) {
-                message(paste0(indent, "Divide by nrecspf=", nrecspf, " ..."))
-            }
-
-            # sum over all times of a year (e.g. months)
-            #message("data_node_ltm")
-            for (i in 1:dim(data_node_ltm)[4]) { # nrecspf
-                tmp[,,,1] <- tmp[,,,1] + data_node_ltm[,,,i]
-                #message(range(data_node_ltm[,,,i], na.rm=T))
-                if (rms_out || sd_out) {
-                     tmp_sd[,,,1] <- tmp_sd[,,,1] + data_node_sd[,,,i]
-                }
-                if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                    tmp_mld[,,,1] <- tmp_mld[,,,1] + mld_node_ltm[,,,i]
-                }
-            }
-
-            # divide though the number of times of a year (e.g. months)
-            # note: leap years were already taken into account before
-            data_node_ltm <- tmp/nrecspf
-            rm(tmp)
-            if (rms_out || sd_out) {
-                data_node_sd <- tmp_sd/nrecspf
-                rm(tmp_sd)
-            }
-            if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
-                mld_node_ltm <- tmp_mld/nrecspf
-                rm(tmp_mld)
-            }
-
-        } # if rec_tag or not
+        # divide though the number of times of a year (e.g. months)
+        # note: leap years were already taken into account before
+        data_node_ltm <- tmp/sum(total_rec)
+        rm(tmp)
+        if (rms_out || sd_out) {
+            data_node_sd <- tmp_sd/sum(total_rec)
+            rm(tmp_sd)
+        }
+        if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
+            mld_node_ltm <- tmp_mld/sum(total_rec)
+            rm(tmp_mld)
+        }
 
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
@@ -7021,18 +6648,20 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## Check data so far
         if (verbose > 2) {
-            for (i in 1:dim(data_node_ltm)[1]) {
+            for (i in seq_len(dim(data_node_ltm)[1])) {
                 message(indent, "   min/max data_node_ltm[", i, ":",
                         dimnames(data_node_ltm)[[1]][i], ",,,] = ",
-                        paste0(range(data_node_ltm[i,,,], na.rm=T), collapse="/"),
+                        paste(range(data_node_ltm[i,,,], na.rm=T), collapse="/"),
                         " ", units_out)
             }
         }
 
-    } # if total_rec > 1
+    } else {
+        stop("not defined")   
+    } # if any total_rec > 0
 
     ## calc varname with ltm data if not calculated before (=not transient)
-    if (!any(transient_out, regular_transient_out, rms_out, sd_out) || nfiles == 0) { # nfiles == 0 for bathy, resolution, etc.  
+    if (!any(transient_out, regular_transient_out, rms_out, sd_out) || nvars == 0) { # nvars == 0 for bathy, resolution, etc.  
 
         if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {
             mld_node <- mld_node_ltm # for sub_vertical_integrate() function
@@ -7068,7 +6697,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             rm(tmp)
         }
 
-        if (nfiles == 0) {
+        if (nvars == 0) {
             if (!exists("data_node_ltm")) {
                 #message(indent, "Prepare matrix ...")
                 data_node_ltm <- array(NA, 
@@ -7083,7 +6712,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 dimnames(data_node_ltm) <- list(var=varname, node=NULL,
                                                 depth=depths_plot, time=timespan)
             }
-        } # nfiles = 0
+        } # nvars = 0
       
         
         ## At this point,
@@ -7092,7 +6721,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
 
         ## Save memory by depth averaging data if possible
-        if (average_depth && nfiles > 0) {
+        if (average_depth && nvars > 0) {
 
             if (levelwise == F) {
                 if (zave_method == 1) { # level-wise dz                        
@@ -7199,7 +6828,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## integrate vertically
-        if (integrate_depth && nfiles > 0) {
+        if (integrate_depth && nvars > 0) {
             if (verbose > 1) {
                 message(paste0(indent, "Integrate between ", depths_plot, " m ..."))
                 if (verbose > 2) {
@@ -7458,8 +7087,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
                     for (j in 1:dim(data_elem_ltm)[5]) { # nrecspf == 1 here (ltm)
                         if (dim(data_elem_ltm)[5] > 1 && verbose > 2) {
-                            message(paste0(indent, "      time = ",
-                                         dimnames(data_elem_ltm)[[5]][j], " ..."))
+                            message(indent, "      time = ",
+                                    dimnames(data_elem_ltm)[[5]][j], " ...")
                         }
                    
                         # set values outside "area" to NA before interp
@@ -7588,7 +7217,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     ## ltm output start
     if (ltm_out) { # irregular
 
-        outname <- paste0(ltmpath, "/", runid, setting_fname, output_fname, "_",
+        outname <- paste0(ltmpath, "/", postprefix, "_", 
                           out_mode, "_", varname, "_", area, timespan_fname, depths_fname,
                           "_", output_type, ssh_aviso_correct_fname, 
                           p_ref_suffix, fname_suffix, ".nc")
@@ -7675,14 +7304,10 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
         }
 
-        ncatt_put(outnc, 0, "runid", runid)
-        if (setting != "") {
-            ncatt_put(outnc, 0, "setting", setting)
-        }
-        ncatt_put(outnc, 0, "meshid", meshid)
+        ncatt_put(outnc, 0, "datapath", paste(datainpaths, collapse=", "))
+        ncatt_put(outnc, 0, "meshpath", meshpath)
         if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
         ncatt_put(outnc, 0, "area", area)
-        ncatt_put(outnc, 0, "projection", projection)
         ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec=prec)
         ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec=prec)
         if (dim_tag == "3D") {
@@ -7697,9 +7322,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     } # if ltm_out
 
     if (regular_ltm_out) {
-        if (T) { # old nameing
-            message("old nameing convenction!!!")
-            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, "_", output, "_",  
+        message("old or new naming?")
+        if (F) { # old nameing
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", postprefix, "_", output, "_",  
                                       varname, "_ltm_", out_mode, timespan_fname, "_mean", depths_fname, "_",
                                       area, "_regular_dx", 
                                       sprintf("%.3f", regular_dx), "_dy",
@@ -7708,8 +7333,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                       p_ref_suffix, fname_suffix, 
                                       ".nc")
         } else if (T) { # new nameing
-            message("new nameing convenction!!!")
-            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", runid, setting_fname, output_fname, "_",
+            outname_reg_ltm <- paste0(reg_ltm_outpath, "/", postprefix, "_",
                                       out_mode, "_", varname, "_", area, timespan_fname, depths_fname, 
                                       "_regular_dx", 
                                       sprintf("%.3f", regular_dx), "_dy",
@@ -7727,8 +7351,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## nc out
         if (verbose > 1) {
-            message(paste0("   Save regular ", out_mode, " (=out_mode) ltm file:"))
-            message(paste0("      ", outname_reg_ltm, " (=outname_reg_ltm)"))
+            message("   Save regular ", out_mode, " (=out_mode) ltm file:\n",
+                    "      ", outname_reg_ltm, " (=outname_reg_ltm)")
         }
         
         if (F) { # old
@@ -7782,17 +7406,17 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             ncvar_put(regular_nc, datamat_reg_var[[i]], drop(datamat_reg_ltm[i,,,,1]))
         }
         
-        if (setting != "") {
-            ncatt_put(regular_nc, 0, "setting", setting)
-        }
-        ncatt_put(regular_nc, 0, "meshid", meshid)
+        ncatt_put(regular_nc, 0, "datapath", paste(datainpaths, collapse=", "))
+        ncatt_put(regular_nc, 0, "meshpath", meshpath)
         if (timespan != "") ncatt_put(regular_nc, 0, "time", timespan)
         ncatt_put(regular_nc, 0, "area", area)
+        ncatt_put(regular_nc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon), prec=prec)
+        ncatt_put(regular_nc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat), prec=prec)
+        ncatt_put(regular_nc, 0, "regular_dx", sprintf("%.3f", regular_dx))
+        ncatt_put(regular_nc, 0, "regular_dy", sprintf("%.3f", regular_dy))
         if (dim_tag == "3D") {
             ncatt_put(regular_nc, 0, "depths_m", depths_plot, prec="double")
         }
-        ncatt_put(regular_nc, 0, "regular_dx", sprintf("%.3f", regular_dx))
-        ncatt_put(regular_nc, 0, "regular_dy", sprintf("%.3f", regular_dy))
         if (p_ref_suffix != "") {
             ncatt_put(regular_nc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
         }
@@ -7804,7 +7428,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
     # ltm moc output
     if (moc_ltm_out) {
 
-        moc_outname <- paste0(ltmpath, "/", runid, setting_fname, output_fname, "_",
+        moc_outname <- paste0(ltmpath, "/", postprefix, "_", 
                               out_mode, "_", varname, "_", area, timespan_fname, depths_fname,
                               p_ref_suffix, fname_suffix, ".nc")
 
@@ -7887,11 +7511,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         }
 
         ## Put attributes to nc file
-        ncatt_put(outnc, 0, "runid", runid)
-        if (setting != "") {
-            ncatt_put(outnc, 0, "setting", setting)
-        }
-        ncatt_put(outnc, 0, "meshid", meshid)
+        ncatt_put(outnc, 0, "datapath", paste(datainpaths, collapse=", "))
+        ncatt_put(outnc, 0, "meshpath", meshpath)
         if (timespan != "") ncatt_put(outnc, 0, "time", timespan)
         ncatt_put(outnc, 0, "area", area)
         ncatt_put(outnc, 0, "longitude_lims_deg", range(map_geogr_lim_lon), prec="double")
@@ -7920,8 +7541,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
 
     if (verbose > 0) {
-        message(paste0("   elapsed total: ", round((proc.time() - ptm)[3], 2),
-                     " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+        message("   elapsed total: ", round((proc.time() - ptm)[3], 2),
+                " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
         message("==============================================")
     }
 
@@ -7937,7 +7558,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         ##  if ((plot_map && plot_type == "const") || output_type == "elems")
 
         if (verbose > 0) {
-            if (nfiles > 0) {
+            if (nvars > 0) {
                 message(paste0("7) Plot ltm (timespan=", timespan, ") ", 
                                varname, " (", longname,
                              ") in ", area, " area ..."))  
@@ -7984,7 +7605,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             } # which plot_type
 
             plotname <- paste0(plotpath, "/map/", varnamei, "/", 
-                               runid, setting_fname, output_fname, "_", varnamei,
+                               postprefix, "_", varnamei,
                                "_", area, timespan_fname, depths_fname, 
                                p_ref_suffix, fname_suffix, "_", plot_type, ".", plot_file)
             if (!dir.exists(dirname(plotname))) {
@@ -8104,18 +7725,18 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 if (verbose > 1) {
                     message(paste0(indent, "   Add title to plot (plot_title=T) ..."))
                 }
-                if (nfiles > 0) {
+                if (nvars > 0) {
                     if (dim_tag == "2D") {
-                        title(paste0(runid, " ", setting, " ", varnamei, " ", timespan, 
+                        title(paste0(postprefix, " ", varnamei, " ", timespan, 
                                      " ", area), 
                               cex.main=cex.main)
                     } else if (dim_tag == "3D") {
-                        title(paste0(runid, " ", setting, " ", varnamei, " ", timespan, 
+                        title(paste0(postprefix, " ", varnamei, " ", timespan, 
                                      " ", depths_plot, " m ", area), 
                               cex.main=cex.main)
                     }
-                } else if (nfiles == 0) {
-                    title(paste0(runid, " ", setting, " ", varnamei, " ", area), 
+                } else if (nvars == 0) {
+                    title(paste0(postprefix, " ", varnamei, " ", area), 
                           cex.main=cex.main)
                 }
 
@@ -8558,8 +8179,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 col_inds_vec <- findInterval(data_mean_vec, ip$levels, all.inside=T)
 
                 if (verbose > 1) {
-                    message(paste0(indent, "   Add ", dim(z)[2],
-                                 " constant data polygons to plot (`plot_type` = \"const\") ..."))
+                    message(indent, "   Add ", dim(z)[2],
+                            " constant data polygons to plot (`plot_type` = \"const\"; ",
+                            "check other plot options in \"namelist.plot.r\") ...")
                 }
                     
                 if (plot_file == "png") {
@@ -8725,7 +8347,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                         iso_area_inds <- splancs::inpip(cbind(isobath_coords$V1, isobath_coords$V2), 
                                                         cbind(rep(map_geogr_lim_lon, e=2), 
                                                               c(map_geogr_lim_lat, rev(map_geogr_lim_lat))))
-                        if (runid == "CbSCL") {
+                        if (meshid == "CbSCL") {
                             lines(isobath_coords[iso_area_inds,], lwd=2, col=isobath_cols[i])
                         } else {
                             points(isobath_coords[iso_area_inds,], pch=".", col=isobath_cols[i], cex=2.5)
@@ -8876,8 +8498,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         } # end for ploti=1:nplots
 
         if (verbose > 0) {
-            message(paste0(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
-                         " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+            message(indent, "elapsed total: ", round((proc.time() - ptm)[3], 2),
+                    " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
             message("==============================================")
         }
     } # if plot_map
@@ -8885,8 +8507,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 } else {
     
     if (verbose > 0) {
-        message(paste0("   elapsed total: ", round((proc.time() - ptm)[3], 2),
-                     " sec (", round((proc.time() - ptm)[3]/60, 2), " min)"))
+        message("   elapsed total: ", round((proc.time() - ptm)[3], 2),
+                " sec (", round((proc.time() - ptm)[3]/60, 2), " min)")
         message("==============================================")
     }
 

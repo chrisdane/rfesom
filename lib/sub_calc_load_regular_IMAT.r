@@ -1,18 +1,24 @@
 sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy, 
-                                       xp, yp,
+                                       xp, yp, global_mesh,
                                        interppath, interpfname,
                                        mv) {
     
     ## R-function for calculating IMAT
     success <- load_package("splancs")
-    if (!success) stop()
+    if (!success) stop(helppage)
     success <- load_package("ncdf4")
-    if (!success) stop()
+    if (!success) stop(helppage)
    
     # how to define the regular grid correctly?
-    # https://github.com/chrisdane/rfesom/issues/1 
-    xlim <- range(xp)
-    ylim <- range(yp)
+    # https://github.com/chrisdane/rfesom/issues/1
+    # -> workaround-solution: treat all global meshes equally from -180,180 and -90,90
+    if (global_mesh) {
+        xlim <- c(-180, 180)
+        ylim <- c(-90, 90)
+    } else {
+        xlim <- range(xp)
+        ylim <- range(yp)
+    }
     x_len <- diff(xlim)
     y_len <- diff(ylim)
     xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, l=x_len/regular_dx)
@@ -21,6 +27,12 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     #yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, b=regular_dy)
     nxi <- length(xi)
     nyi <- length(yi)
+    message("   --> regular longitudes will have ", nxi, " points with dlon = ", diff(xi)[1])
+    ht(xi)
+    message("   --> regular latitudes will have ", nyi, " points with dlat = ", diff(yi)[1])
+    ht(yi)
+    
+    # save interpolation weights
     XI <- array(rep(xi, e=nyi), c(nyi,nxi))
     YI <- array(rep(yi, t=nxi), c(nyi,nxi))
     IMAT <- array(0, c(nyi, nxi))
@@ -28,7 +40,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
                            char=pb_char, width=pb_width,
                            indent=paste0("   ", indent)) # 5 " " for default message()
-    
+
     # for every element
     for (ii in 1:(dim(xp)[2])) {
         

@@ -4517,7 +4517,7 @@ if (varname == "tos") { # fesom 1.4
     vec <- F
 
 } else {
-    stop(paste0("varname '", varname, "' is not defined in namelist.var.r"))
+    stop("`varname` \"", varname, "\" is not defined in namelist.var.r")
 }
 
 ## update units_out

@@ -536,7 +536,7 @@ sub_prepare2 <<- function(data_node) {
 
     } # if coriolis_tag
 
-    ## read bathymetry data for 2D variables (dim_tag = 2D") obtained from mesh files (nfiles = 0)
+    ## read bathymetry data for 2D variables (dim_tag = 2D") obtained from mesh files (nvars = 0)
     if (any(varname == c("bathy", "gradbathy", "hvel_dot_gradbathy",
                          "c_barotrop", "foverh"))) {
         

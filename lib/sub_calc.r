@@ -5,8 +5,8 @@
 ## input:
 ##
 ##   'data_node': 
-##     dim=(nfiles,nod2d_n,ndepths=1,nrecspf) if dim_tag=="2D"
-##     dim=(nfiles,nod3d_n,ndepths=1,nrecspf) if dim_tag=="3D"
+##     dim=(nvars,nod2d_n,ndepths=1,nrecspf) if dim_tag=="2D"
+##     dim=(nvars,nod3d_n,ndepths=1,nrecspf) if dim_tag=="3D"
 ##
 ## output:
 ##  

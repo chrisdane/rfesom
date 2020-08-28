@@ -71,8 +71,8 @@ sub_vertical_average <- function(data_vert) {
                 patch_vol <<- cluster_vol_3d # dim = nod3d_n
                 patch_vol <<- replicate(patch_vol, n=dim(data_node)[3]) # ndepths = 1
                 patch_vol <<- replicate(patch_vol, n=dim(data_node)[4]) # nrecspf
-                patch_vol <<- replicate(patch_vol, n=dim(data_node)[1]) # nfiles
-                patch_vol <<- aperm(patch_vol, c(4, 1, 2, 3)) # dim(patch_vol) = c(nfiles,nod3d_n,ndepths=1,nrecspf)
+                patch_vol <<- replicate(patch_vol, n=dim(data_node)[1]) # nvars
+                patch_vol <<- aperm(patch_vol, c(4, 1, 2, 3)) # dim(patch_vol) = c(nvars,nod3d_n,ndepths=1,nrecspf)
                 nod3d_z_inds <<- which(abs(nod_z) >= interpolate_depths[1] &
                                       abs(nod_z) <= interpolate_depths[ndepths])
                 # total volume
@@ -82,7 +82,7 @@ sub_vertical_average <- function(data_vert) {
             # data*volume
             tmp[,nod3d_z_inds,,] <<- data_node[,nod3d_z_inds,,]*patch_vol[,nod3d_z_inds,,]
             
-            # sum and keep 1st (nfiles), 3rd (ndepths=1) and 4th (nrecspf) dimensions
+            # sum and keep 1st (nvars), 3rd (ndepths=1) and 4th (nrecspf) dimensions
             tmp <<- apply(tmp, c(1, 3, 4), sum)
             
             # divide through total volume

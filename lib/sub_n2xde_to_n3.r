@@ -6,7 +6,7 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
     ## output: dim(tmp) = c(nvars,nod3d_n,ndepths=1,nrecspf)
 
     tmp <<- array(NA,
-                  dim=c(dim(data_n2xnd)[1],       # nfiles 
+                  dim=c(dim(data_n2xnd)[1],       # nvars 
                         nod3d_n, 1,               # nod3d_n, ndepths=1
                         dim(data_n2xnd)[4]),      # nrecspf
                   dimnames=c(dimnames(data_n2xnd)[1],

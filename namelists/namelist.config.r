@@ -47,14 +47,26 @@ rotate_mesh <- F # rotate back to geographic coordinates around Euler angles
                  # If you dont know whether the coordinates in your *.out files are
                  # rotated or not, check 'rotated_grid' in namelist.config of 
                  # the model run (there, .true. means they are rotated so that the
-                 # north pole is NOT at 90° N) of the model run or ask the person 
-                 # who performed the run.
+                 # north pole is NOT at 90° N) or ask the person who made the run.
 Ealpha <- 50 # Euler angles (from namelist.config)
 Ebeta <- 15
 Egamma <- -90
 cycl <- T # treat cyclic elements; set true for global mesh
+global_mesh <- T # If true, regular interpolation of irregular fesom data yields lon,lat 
+                 # from -180,180 and -90,90 that allows e.g. `cdo sub mesh1 mesh2`
+                 # where `mesh1` is a regular interpolated fesom file whose original
+                 # irregular data lives on mesh1 and vice versa for `mesh2`. 
+                 # If a subset of fesom data is processed, set `global_mesh <- F` so that
+                 # the regular interpolation of the irregular fesom data yields lon,lat
+                 # from the respective limits of the mesh coordinates. 
+# lookup-table of "nominal resolution" according to 
+# CMIP6_global_attributes_filenames_CVs.pdf of http://goo.gl/v1drZl:
+# --> all numbers in km
+nominal_res_df <- data.frame(greater_equal=c(0   , 0.72, 1.6, 3.6, 7.2, 16, 36, 72 , 160, 360, 720 , 1600, 3600, 7200),
+                             less_than=    c(0.72, 1.6 , 3.6, 7.3, 16 , 36, 72, 160, 360, 720, 1600, 3600, 7200, Inf),
+                             nominal_res=  c(0.5 , 1   , 2.5, 5  , 10 , 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000))
 
-## Default variable (see namelist.var.r)
+## Which variable? (see namelist.var.r)
 varname <- "tos"
 
 ## Where? (see namelist.area.r)

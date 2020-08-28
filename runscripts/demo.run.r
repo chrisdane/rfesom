@@ -8,7 +8,7 @@ this_runscript_filename <- "demo.run.r" # just basename if saved in directory
 rfesompath  <- normalizePath("../") # assume this demo runscript was not moved 
 
 ## Set the blocks below to T or F to run the different demos
-datainpath  <- paste0(rfesompath, "/example_data/data/demo") # fesom data
+datainpaths  <- paste0(rfesompath, "/example_data/data/demo") # fesom data
 fpattern    <- "demo.<YYYY>.<fsuffix>"
 cpl_tag     <- F # demodata is from ocean-only experiment
 meshpath    <- paste0(rfesompath, "/example_data/meshes/demo") # *.out files
@@ -77,7 +77,7 @@ if (F) {
 
 } else if (T) {
     ## demo5
-    datainpath  <- paste0(rfesompath, "/example_data/data/PI-CTRL")
+    datainpaths  <- paste0(rfesompath, "/example_data/data/PI-CTRL")
     runid <- "PI-CTRL"
     meshpath <- paste0(rfesompath, "/example_data/meshes/core")
     rotate_mesh <- F
