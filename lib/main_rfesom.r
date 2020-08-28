@@ -783,11 +783,7 @@ if (nvars > 0) {
             if (verbose > 0) {
                 message("\nfound ", length(files), " file", 
                         ifelse(length(files) > 1, "s", ""), ":")
-                if (length(files) > 1) {
-                    ht(df, n=15)
-                } else {
-                    print(df)
-                }
+                ht(df)
             }
             
             # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. patterns if given or, alternatively, based on `cdo showdate`
@@ -840,7 +836,7 @@ if (nvars > 0) {
                         dates <- strsplit(dates, " ")[[1]]
                         if (verbose) {
                             message("\n", length(dates), " cdo dates of this file:")
-                            ht(dates, n=20)
+                            ht(dates)
                         }
                         years_filenames[[fi]] <- substr(dates, 1, 4)
                     }
@@ -853,11 +849,7 @@ if (nvars > 0) {
             if (verbose > 0) {
                 message("\nfound years/months/etc. based on ", length(files), " file", 
                         ifelse(length(files) > 1, "s", ""), ":")
-                if (length(files) > 1) {
-                    ht(df)
-                } else {
-                    print(df)
-                }
+                ht(df)
             }
             
             # special treatment: if only YYYY_from and YYYY_to were provided, but not YYYY, derive `years_filenames` now
@@ -873,7 +865,7 @@ if (nvars > 0) {
                     stop("this is not implemented yet")
                 }
                 message("derived ", length(years_filenames), " years:")
-                ht(years_filenames, n=30)
+                ht(years_filenames)
             } # if years_filenames does not exist
             
             # todo: same as above with months_filenames
@@ -929,10 +921,10 @@ if (nvars > 0) {
             # verbose
             if (verbose > 0) {
                 message("\nfinal ", length(years_filenames), " `years_filenames`:")
-                ht(years_filenames, n=30)
+                ht(years_filenames)
                 if (grepl("<MM>", fpatterns[i])) {
                     message("\nfinal ", length(months_filenames), " `months_filenames`:")
-                    ht(months_filenames, n=30)
+                    ht(months_filenames)
                 }
             }
         
@@ -983,11 +975,7 @@ if (nvars > 0) {
                     if (verbose > 0) {
                         message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                                 " remaining:")
-                        if (length(files) > 1) {
-                            ht(df)
-                        } else {
-                            print(df)
-                        }
+                        ht(df)
                     } 
             
                 # case b) several years per file
@@ -1028,11 +1016,7 @@ if (nvars > 0) {
                         if (verbose > 0) {
                             message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                                     " remaining:")
-                            if (length(files) > 1) {
-                                ht(df)
-                            } else {
-                                print(df)
-                            }
+                            ht(df)
                         } 
                     } # case b1 or case b2
                     cdoselyear <- paste0("-selyear,", years[1], "/", years[length(years)]) # for case b1 and b2
