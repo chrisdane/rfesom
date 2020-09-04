@@ -1355,15 +1355,18 @@ sub_calc <- function(data_node) {
     # with the variables in the first dim: c(var,node,depth,rec)
     if (horiz_deriv_tag != F) {
 
-        message(indent, "`horiz_deriv_tag` = ", horiz_deriv_tag)
+        if (verbose > 2) {
+            message(indent, "`horiz_deriv_tag` = ", horiz_deriv_tag, " is not false")
+        }
         vars_avail <- dimnames(data_node)[[1]] # not equal `varname_nc` through additional sub_prepare() steps...
 
         ## x,y-derivatives of which variables?
-        # user provided which ihorizontal derivatives of which variables should be calculated
+        # user provided which horizontal derivatives of which variables should be calculated
         if (!exists("dxinds") && !exists("dyinds") &&
             !exists("dxvars") && !exists("dyvars")) {
-                
-            stop("neither `dxinds` and/or `dxvars` nor `dyinds` and/or `dyvars` are defined.")
+            
+            dxinds <- dyinds <- dxvars <- dxvars <- NULL
+            #stop("neither `dxinds` and/or `dxvars` nor `dyinds` and/or `dyvars` are defined.")
             
         } else { # user provided any dx/dy information
 
@@ -1523,7 +1526,7 @@ sub_calc <- function(data_node) {
     } # if (horiz_deriv_tag != F) {
 
     ## horizontal derivative
-    if (horiz_deriv_tag != F  && 
+    if (horiz_deriv_tag != F && 
         (!is.null(dxinds) || !is.null(dyinds))) {
 
         # check
@@ -3176,8 +3179,8 @@ sub_calc <- function(data_node) {
             
             ## bring derivative back from (elem2d_n x ndepths) to (nod2d_n x ndepths)
             if (verbose > 1) {
-                message(paste0(indent, "Bring resolution from elem2d_n=", elem2d_n, 
-                               " to nod2d_n=", nod2d_n, " ..."))
+                message(indent, "Bring resolution from elem2d_n=", elem2d_n, 
+                        " to nod2d_n=", nod2d_n, " ...")
             }
             
             success <- load_package("Rcpp", indent=indent)
@@ -3192,7 +3195,10 @@ sub_calc <- function(data_node) {
             # check if Rcpp
             if (Rcpp_tag) {
                 #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
+                dll <- paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so")
+                if (verbose > 0) message(indent, "Load dynamic lib dyn.load(", dll, ") ...")
                 tmp <- dyn.load(paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so"))
+                if (verbose > 0) message(indent, "Run Rcpp:::sourceCppFunction(sourceCpp_1_sub_e2_to_n2) ...")
                 sub_e2_to_n2 <- Rcpp:::sourceCppFunction(function(elem2d, data_elem2d, nod2d_n) {}, 
                                                          isVoid=F, dll=tmp, symbol='sourceCpp_1_sub_e2_to_n2')
                 tmp <- sub_e2_to_n2(elem2d, resolution, nod2d_n) 

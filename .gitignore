@@ -1,10 +1,10 @@
-## Ignore everthing
+# ignore everthing
 *
 
-## except 
+# except 
 !runscripts/
 !namelists/
 !lib/
 !example_data/meshes/demo/
-!example_data/data/demo/
+!example_data/data/
 !README.md

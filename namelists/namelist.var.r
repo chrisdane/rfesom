@@ -1548,7 +1548,7 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- 100 # m --> cm
     units_plot <- "cm"
     var_label_plot <- "Sea Surface Height [cm]"
-    fsuffix <- "oce.mean.nc"
+    #fsuffix <- "oce.mean.nc"
     varname_nc <- "ssh"
     #varname_nc <- "zos"
 
