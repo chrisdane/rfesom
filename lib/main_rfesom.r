@@ -2,7 +2,7 @@
 ## R-script for reading, plotting and saving FESOM output                   #
 ##                                                                          #
 ## Necessary R-packages:                                                    #
-##   ncdf.tools (or ncdf4), stringr                                         #
+##   ncdf.tools (or ncdf4)                                                  #
 ##                                                                          #
 ## Optional R-packages (depending on user options):                         #
 ##   data.table, gsw, abind, fields, akima, maps, splancs, mapproj, pracma  #
@@ -22,7 +22,6 @@ message("\n",
 graphics.off()
 
 ## check if user runscript is ok
-user_runscript_filename <- paste0(normalizePath(dirname(sys.frame(1)$ofile)), "/", sys.frame(1)$ofile)
 message("\nCalled by runscript \"", user_runscript_filename, "\"")
 user_runscript <- readLines(user_runscript_filename)
 # throw out all lines that start with "rfesom <- " from user runscript
@@ -127,6 +126,7 @@ colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 ## user input checks
 message("\nCheck user input ...")
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
+if (!exists("postprefix")) stop("No 'postprefix' provided.")
 if (file.access(meshpath, mode=0) == -1) { # does not exist
     stop("meshpath = ", meshpath, " does not exist.")
 }
@@ -151,15 +151,21 @@ if (global_mesh && !cycl || !global_mesh && cycl) {
 # fesom mesh rotation sanity checks
 if (meshid == "core" ||
     meshpath == "/work/ab0995/a270046/meshes_default/core") {
-    if (rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is true. i think this is not correct?")
+    if (rotate_mesh) {
+        stop("meshid is \"", meshid, "\" but `rotate_mesh` is true. i think this is not correct?")
+    }
 }
 if (meshid == "CORE2_final" ||
     meshpath == "/work/ab0246/a270064/meshes/CORE2_final") {
-    if (!rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
+    if (!rotate_mesh) {
+        stop("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
+    }
 }
 if (meshid == "CORE2_lgmf" ||
     meshpath == "/work/ab0246/a270064/meshes/CORE2_lgmf") {
-    if (!rotate_mesh) warning("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
+    if (!rotate_mesh) {
+        stop("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
+    }
 }
 
 if (is.null(varname_nc)) { # non-netcdf variables like resolution
@@ -279,8 +285,9 @@ csec_ltm_out <- F # TODO
 if (csec_ltm_out || regexpr("csec_", out_mode) != -1) {
     plot_map <- F # TODO
 }
-if (transient_out && any(out_mode == c("depth", "depthint", "depthmax",
-                                             "areadepth"))) {
+if (transient_out && 
+    any(out_mode == c("depth", "depthint", 
+                      "depthmax", "areadepth"))) {
     if (length(depths) == 1) {
         stop("You specificed 'out_mode'=", out_mode, 
                 " but 'depths'=", depths, ". change depths to e.g. `c(0, 100)` ",
@@ -531,7 +538,7 @@ if (F) { # not yet
     } # if (horiz_deriv_tag != F)
 } # not yet
     
-message("all runscript & namelist checks passed")
+message("\nAll runscript & namelist checks passed")
 
 ## add more directories to where to look for packages to load
 message("\nLoad necessary R packages ...")
@@ -566,8 +573,6 @@ if (nvars > 0) {
         success <- load_package("ncdf4")
         if (!success) stop(helppage)
     #}
-    success <- load_package("stringr")
-    if (!success) stop(helppage)
 } # if nvars > 0
 if (uv_out || rms_out || sd_out || horiz_deriv_tag != F) {
     success <- load_package("abind")
@@ -819,10 +824,11 @@ if (nvars > 0) {
                         }
                         # todo: YYYY_from, YYYY_to, MM_from, MM_to
                     } else {
-                        message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pati_list), 
+                        message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pattern_list), 
                                 " times and the values differ from each other:")
-                        for (patj in yyyy_list) ht(yyyy_list[[patj]])
-                        stop("-> dont know how to interpret this.")
+                        for (patj in seq_along(pattern_list)) ht(pattern_list[[patj]])
+                        stop("dont know how to interpret this. maybe changing to one of \"", 
+                             paste(special_patterns, collapse="\", \""), "\" helps")
                     }
                 } # for pati all special patterns in fnames
 
@@ -884,50 +890,6 @@ if (nvars > 0) {
                     warning("found years have non-constant dt. evaluate further with e.g. `diff(unique(years_filenames))`")
                 }
             }
-
-            # update files which were mistakenly included in by given fpattern:
-            # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-            # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
-            # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
-            if (length(files) > 1 && !is.null(sub_list)) {
-                message("\ncheck if any of the ", length(files), " found files do not match given\n",
-                        "   `fpatterns[", vari, "]` = \"", fpatterns[vari], "\"\n... ", appendLF=F)
-                
-                # construct file names that should be found based on `fpatterns` with all given <patterns>
-                filesp <- rep(fpatterns[vari], t=length(files))
-
-                # apply replacements one by one (thats why `str_replace()` and not `str_replace_all()`)  
-                # vectorized (thats why stringr and not base package) and take care of special patterns <YYYY*>, <MM*>, etc. 
-                for (pati in seq_along(sub_list)) {
-                    if (any(sub_list[[pati]]$pattern %in% special_patterns)) { # special patterns
-                        filesp <- stringr::str_replace(string=filesp,
-                                                       pattern=sub_list[[pati]]$pattern, 
-                                                       replacement=as.character(df[[sub(">", "", sub("<", "", sub_list[[pati]]$pattern))]]))
-                    } else { # all other patterns
-                        filesp <- stringr::str_replace(string=filesp,
-                                                       pattern=sub_list[[pati]]$pattern, 
-                                                       replacement=sub_list[[pati]]$replacement)
-                    }
-                } # for pati in sub_list
-
-                # identify and throw out fount files that do not fit to given `fpatterns` 
-                if (any(!(files %in% filesp))) {
-                    wrong_file_inds <- which(!files %in% filesp)
-                    message("these ", length(wrong_file_inds), " files differ from wanted `fpatterns[", 
-                            vari, "]` = ", fpatterns[vari], ":")
-                    ht(files[wrong_file_inds])
-                    if (length(wrong_file_inds) == length(files)) {
-                        stop("removing them would yield zero files. something with the given fpattern is maybe strange?")
-                    }
-                    message("remove them ...")
-                    files <- files[-wrong_file_inds]
-                    df <- df[-wrong_file_inds,]
-                    years_filenames <- years_filenames[-wrong_file_inds]
-                    if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-wrong_file_inds]
-                } else { # if any found files differ from wanted `fpatterns[i]` or not
-                    message("ok")
-                }
-            } # if length(files) > 1
 
             # verbose
             if (verbose > 0) {
@@ -1322,14 +1284,14 @@ if (nvars > 0) {
             
             ## make POSIX time object of all files
             # loading all nc files into work space would take too much time
-            # prob 1: `cdo showtimestamp` for old fesom standalone data yields erroneous values:
+            ## prob 1: `cdo showtimestamp` for old fesom1 standalone data yields erroneous values:
             # cdo showtimestamp Low01.2008.oce.nc
             # Warning (find_time_vars): Time variable >T< not found!
             # 0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00  0000-00-00T00:00:00
             # `ncdump -v time` works:
             # time = 2678400, 5097600, 7776000, 10368000, 13046400, 15638400, 18316800, 
             #     20995200, 23587200, 26265600, 28857600, 31536000 ;
-            # however, old fesom standalone data has strange time value jumps every 20 years:
+            # however, old fesom1 standalone data has strange time value jumps every 20 years:
             # YYYYMM      time         dt
             # 194801   2678400
             # 194802   5097600    2419200
@@ -1339,8 +1301,14 @@ if (nvars > 0) {
             # 196801   2678400 -628041600
             # 196802   5097600    2419200
             # -> test if old erroneous data is used: if `cdo showtimestamp` all equal "0000-00-00T00:00:00"
-            # prob 2: sub data (e.g. the demo data) yield `cdo ntime` = 1 independent of the number of time points and
+            ## prob 2: sub data (e.g. the demo data) yield `cdo ntime` = 1 independent of the number of time points and
             # `cdo showtimestamp` yields "" (nothing)
+            ## prob 3: new fesom1 data has incorrect times, e.g. files from 1955:
+            # annual: 1956-01-01T00:00:00
+            # monthly: 1955-02-01T00:00:00  1955-03-01T00:00:00  ...  1955-12-01T00:00:00  1956-01-01T00:00:00
+            # daily: 1956-01-02T00:00:00  1956-01-03T00:00:00  ...  1956-12-31T00:00:00  1957-01-01T00:00:00 
+            # -> annual shifttime,-1a; monthly shifttime,-1mo; daily shifttime,-1d
+            # -> general shifttime,-1dt
             dates <- system(paste0("cdo -s showtimestamp ", 
                                    attributes(ncids[[nc_with_time_inds[time_vari]]])$filename), intern=T)
             dates <- strsplit(trimws(dates), "  ")[[1]]
@@ -1352,8 +1320,9 @@ if (nvars > 0) {
                 timevalue_strat <- "new" # --> use result of `cdo showtimestamp`
             }
 
-            dates_all <- recvec <- seasonvec <- timestampvec <- rec_tag_vec <- c()
+            # get input times of all files to read 
             for (fi in seq_along(files_list[[nc_with_time_inds[time_vari]]])) {
+                
                 if (any(timevalue_strat == c("old", "sub"))) { 
                     # construct time based on filename years and number of time points; assume that dt is constant in time
                     if (timevalue_strat == "old") {
@@ -1375,7 +1344,7 @@ if (nvars > 0) {
                         stop("sth went wrong here")
                     }
                     if (any(names(files_list[[nc_with_time_inds[time_vari]]][[fi]]) == "YYYY")) {
-                        dates <- files_list[[nc_with_time_inds[time_vari]]][[fi]]$YYYY # YYYY of filename
+                        dates <- files_list[[nc_with_time_inds[time_vari]]][[fi]]$YYYY # use YYYY of filename
                         dates <- seq.Date(as.Date(paste0(dates, "-1-1")), as.Date(paste0(dates, "-12-31")), l=ntimepf)
                         dates <- as.POSIXlt(dates)
                     } else if (any(names(files_list[[nc_with_time_inds[time_vari]]][[fi]]) == "YYYY_from") &&
@@ -1384,6 +1353,7 @@ if (nvars > 0) {
                     } else {
                         stop("this should not happen")
                     }
+                
                 } else if (timevalue_strat == "new") { # `cdo showtimestamp` has success
                     dates <- system(paste0("cdo -s showtimestamp ", 
                                            files_list[[nc_with_time_inds[time_vari]]][[fi]]$files), intern=T)
@@ -1394,11 +1364,106 @@ if (nvars > 0) {
                     dates <- strsplit(trimws(dates), "  ")[[1]]
                     dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
                     ntimepf <- length(dates)
+                    
                 } # which timevalue_strat
+                    
+                # get dt in sec
+                if (fi == 1) { # first file only
+                    if (ntimepf > 1) {
+                        dt <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
+                        dt <- unique(dt)
+                        if (all(dt == 86400)) {
+                            frequency <- "daily"
+                            attributes(frequency)$units <- "day"
+                        } else if (all(dt == c(2419200, 2678400, 2592000))) {
+                            frequency <- "monthly"
+                            attributes(frequency)$units <- "month"
+                        } else {
+                            stop("dt = ", paste(dt, collapse=", "), " secs unknown")
+                        }
+                    } else { # only one time per file (= annual)
+                        frequency <- "annual"
+                        attributes(frequency)$units <- "year"
+                    }
+                } # if fi == 1
+
+                # check for time prob 3 (check comments above for infos)
+                if (fi == 1) cdo_shifttime <- "" # default: apply no shifttime
+                if (timevalue_strat == "new" && shifttime_minus1dt) {
+                    if (fi == 1) message(indent, "   `shifttime_minus1dt`=T --> shift time by -1 dt = -1 ", 
+                                         attributes(frequency)$units, " ...")
+                    if (frequency == "daily") { # subtract 1 day from each time point
+                        dates <- as.POSIXlt(dates - 86400)
+                        if (fi == 1) cdo_shifttime <- "-shifttime,-1d" # only needed if `frequency_post` is set
+                    } else if (frequency == "monthly") { # subtract 1 from each month (januaries year i become decembers year i-1)
+                        dates$mon <- dates$mon - 1 
+                        if (fi == 1) cdo_shifttime <- "-shifttime,-1mon" # only needed if `frequency_post` is set
+                    } else if (frequency == "annual") { # subtract 1 from year 
+                        dates$year <- dates$year - 1
+                        if (fi == 1) cdo_shifttime <- "-shifttime,-1year" # only needed if `frequency_post` is set
+                    } else {
+                        stop("frequency = ", frequency, " not defined")
+                    }
+                } # if timevalue_strat == "new" && shifttime_minus1dt
+               
+                files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates <- dates
+            
+            } # for fi
+
+            ## check if any temporal reduction of original data is wanted via cdo 
+            cdo_temporalmean <- "" # default: do not calc any temporal mean, e.g. cdo monmean, before any analysis
+            if (!exists("frequency_post")) {
+                message(indent, "   `frequency_post` is not defined. if you want to calculate a ",
+                        "temporal mean before any other analysis, set e.g.\n",
+                        indent, "      `frequency_post <- \"monthly\"`\n",
+                        indent, "   in the runscript to convert e.g. daily to monthly data first.")
+            
+            } else { # `frequency_post` is given by user
+                if (frequency != frequency_post) {
+                    message(indent, "   `frequency_post` = \"", frequency_post, 
+                            "\" is defined and != the determined output frequency \"", frequency, "\"")
+                    if (frequency_post == "monthly") {
+                        cdo_temporalmean <- "-monmean"
+                        # make monthly times from input times
+                        for (fi in seq_along(files_list[[nc_with_time_inds[time_vari]]])) {
+                            dates <- files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates
+                            years_in <- unique(dates$year + 1900)
+                            dates_new <- rep(dates[1], t=12*length(years_in))
+                            for (yi in seq_along(years_in)) {
+                                yinds <- which(dates$year + 1900 == years_in[yi])
+                                for (mi in seq_len(12)) {
+                                    minds <- which(dates$mon[yinds] + 1 == mi)
+                                    newind <- (yi-1)*12 + mi 
+                                    if (F) message("average ", length(minds), " times from ", 
+                                                   min(dates[yinds][minds]), " to ", 
+                                                   max(dates[yinds][minds]), " ...")
+                                    dates_new[newind] <- mean(dates[yinds][minds])
+                                }
+                            }
+                            files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates <- dates_new
+                        } # for fi 
+                                
+                    } else {
+                        stop("frequency_post = \"", frequency_post, "\" not defined")
+                    } # which output frequency is wanted?
+
+                    cdo_bin <- Sys.which("cdo")
+                    cdo_temporalmean <- paste0(cdo_bin, " ", cdo_temporalmean, " ", cdo_shifttime)
+                    message(indent, "   --> run `", cdo_temporalmean, "` for every file ...")
                 
+                } # if cdo temporal reduction of original input data
+            } # if `frequency_post` is given by user or not
+            
+            # find time specs based on wanted `recs` and/or `season`
+            dates_all <- recvec <- seasonvec <- timestampvec <- rec_tag_vec <- c() 
+            for (fi in seq_along(files_list[[nc_with_time_inds[time_vari]]])) {
+                
+                # posixlt time of current file (with potentially applied `cdo -monmean -shifttime`)
+                dates <- files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates
+
                 # find record indices based on wanted years 
                 if (!exists("recs") && !exists("season")) { # case 1/4: no recs and no season were given
-                    recsi <- which((dates$year+1900) %in% years)
+                    recsi <- which((dates$year + 1900) %in% years)
                     if (length(recsi) == 0) stop("this should not happen")
                     months_wanted_inds <- unique(dates$mon[recsi]) + 1
                     if (length(months_wanted_inds) == 12 && months_wanted_inds == 1:12) {
@@ -1497,7 +1562,6 @@ if (nvars > 0) {
                         (max(files_list[[nc_with_time_inds[time_vari]]][[fi-1]]$total_recs)+1):
                         (max(files_list[[nc_with_time_inds[time_vari]]][[fi-1]]$total_recs)+length(recsi))
                 }
-                files_list[[nc_with_time_inds[time_vari]]][[fi]]$dates <- dates
                 files_list[[nc_with_time_inds[time_vari]]][[fi]]$ntime <- length(recsi)
                 files_list[[nc_with_time_inds[time_vari]]][[fi]]$season <- seasoni
                 timestamp <- paste0(dates$year + 1900, sprintf("%.2i", dates$mon + 1), sprintf("%.2i", dates$mday))
@@ -1524,6 +1588,7 @@ if (nvars > 0) {
             timeobj[[time_vari]]$units_out <- "seconds since 1970-1-1"
             timeobj[[time_vari]]$dates <- dates_all
             timeobj[[time_vari]]$ntime <- length(dates_all)
+            timeobj[[time_vari]]$frequency <- frequency
             if (length(unique(seasonvec)) != 1) {
                 stop("recs yield different seasons. this should only happen in DJF case?")
             } else {
@@ -1539,70 +1604,15 @@ if (nvars > 0) {
             timeobj[[time_vari]]$rec_tag <- rec_tagi
             timeobj[[time_vari]]$maxnrecpf <- max(sapply(lapply(files_list[[nc_with_time_inds[time_vari]]], "[[", "recs"), length))
 
-            ## check if any temporal reduction of original data is wanted via cdo 
-            cdo_temporalmean <- ""
-            if (F) { # update
-                if (!exists("frequency_post")) {
-                    freq_ind <- which(names(known_frequencies) == output)
-                    message(indent, indent, "`frequency_post` is not defined. if you want to calculate a ",
-                            "temporal mean before any other analysis, set e.g.\n",
-                            paste0(indent, indent, "   `frequency_post <- \"", 
-                                   names(known_frequencies)[(freq_ind+1):length(known_frequencies)], "\"`\n"),
-                            indent, indent, "in the runscript (possible frequencies are \"", 
-                            paste(names(known_frequencies), collapse="\",\""), "\").")
-                
-                } else { # `frequency_post` is given by user
-                    if (output != frequency_post) {
-                        stop("update")
-                        message(indent, indent, "`frequency_post` = \"", frequency_post, 
-                                "\" is defined and != the determined output frequency \"", output, "\"")
-                        if (frequency_post == "monthly") {
-                            #cdo_temporalmean <- "cdo -s -monmean"
-                            cdo_temporalmean <- "cdo -monmean"
-                            if (exists("recs")) {
-                                if (any(diff(recs) != 1)) {
-                                    stop("no gaps in `recs` are allowed if a new output frequency shall be set. ",
-                                         "rerun without defining `recs` or without defining `frequency_post` ",
-                                         "(i.e. keeping the original \"", output, "\" frequency.")
-                                }
-                            }
-                            lt <- timeobj$dates
-                            timeobj$dates <- seq(as.POSIXct(paste0(lt$year[1] + 1900, "-", lt$mon[1] + 1, "-15"), tz="UTC"),
-                                                 as.POSIXct(paste0(lt$year[ntime] + 1900, "-", lt$mon[ntime] + 1, "-15"), tz="UTC"),
-                                                 l=12)
-                        } else {
-                            stop("not yet")
-                        } # which output frequency is wanted?
-
-                        message(indent, indent, "--> run `", cdo_temporalmean, "` before any analysis")
-
-                        # update timeobj
-                        timeobj$posix <- as.POSIXlt(timeobj$posix) # posixct -> posixlt
-                        ntime <- length(timeobj$posix)
-                        timeobj$time <- as.numeric(timeobj$posix, units="secs") # always uses 1970-01-01 as origin
-                        timeobj$origin <- as.POSIXct("1970-01-01", tz="UTC")
-                        timeobj$units <- "seconds since 1970-01-01"
-                        timeobj$frequency <- frequency_post
-                        cdo_temporalmean <- paste0(cdo_temporalmean, " ", cdo_shifttime)
-                        message(indent, "--> run `", cdo_temporalmean, "` for every file ...")
-                        output <- frequency_post
-                        if (verbose > 2) {
-                            message(indent, "updated timeobj:")
-                            cat(capture.output(str(timeobj)), sep="\n")
-                        } 
-                    } # if cdo temporal reduction of original input data
-                } # if `frequency_post` is given by user or not
-            } # if F update
-            
             if (verbose > 1) {
-                message(indent, "timeobj (check `files_list` for more infos):")
+                message(indent, "complete timeobj of all files to read (check `files_list` for more infos):")
+                message(indent, "(time range of all ", timeobj[[time_vari]]$ntime, " time points to read = ", 
+                        min(dates_all), " to ", max(dates_all), ")")
                 cat(capture.output(str(timeobj[[time_vari]])), sep="\n")
-                message(indent, "range of all ", timeobj[[time_vari]]$ntime, " time points to read = ", 
-                        min(dates_all), " to ", max(dates_all))
             }
 
         } # for time_vari all variables with time dimension
-       
+
         # check if same number of files was found for every variable
         message("todo: check if same number of files was found for every variable")
 
@@ -2529,7 +2539,7 @@ if (any(regular_transient_out, regular_ltm_out)) {
             message(indent, "Calc regular interpolation mat (`dx_interp`=",
                     sprintf("%.3f", regular_dx), " deg, `dy_interp`=", sprintf("%.3f", regular_dy),
                     " deg) for\n", 
-                    ifelse(global_mesh, "global", "non-global"), " (`global_mesh`=", 
+                    indent, ifelse(global_mesh, "global", "non-global"), " (`global_mesh`=", 
                     ifelse(global_mesh, "T", "F"), ") mesh '", meshid, "' and save result in ")
             message(indent, "'interppath'/'interpfname' = ", interppath, "/", interpfname, " ...")
         }
@@ -3698,7 +3708,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
                  xlab="Longitude [°]", ylab="Latitude [°]")
 
             # add bathy first if available 
-            bathyf <- paste0("/work/ba0941/a270073/post/regular_grid/ltm/area/global/bathy/",
+            bathyf <- paste0("/work/ba0941/a270073/post/regular_grid/timmean/area/global/bathy/",
                              postprefix, "_bathy_ltm_area_global_rectangular_regular_dx0.100_dy0.100.nc")
             if (file.exists(bathyf)) {
                 bathync <- nc_open(bathyf)
@@ -4304,7 +4314,27 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
         }
         fnames_unique <- unique(fnames)
         ncids <- vector("list", l=length(fnames_unique))
-        for (vari in 1:length(fnames_unique)) {
+        for (vari in seq_along(fnames_unique)) {
+            
+            # calc temporal reduction (e.g. daily -> monthly) before any other analysis
+            if (exists("frequency_post")) {
+                message(indent, "   `frequency_post`=\"", frequency_post, "\"")
+                if (cdo_temporalmean != "") {
+                    message(indent, "   `cdo_temporalmean` = \"", cdo_temporalmean, "\"")
+                    fout <- paste0(postpath, "/", frequency_post, "_", basename(fnames_unique[vari]))
+                    cmd <- paste0(cdo_temporalmean, " ", fnames_unique[vari], 
+                                  " ", fout)
+                    message(indent, "   run `", cmd, "` ...")
+                    system(cmd)
+                    # replace original file input by temporal time-reduced cdo output
+                    inds <- which(fnames == fnames_unique[vari])
+                    fnames[inds] <- fout
+                    fnames_unique[vari] <- fout
+                } else {
+                    message(indent, "   however, `cdo_temporalmean` is not defined. check this")
+                } # if cdo_temporalmean was defined
+            } # if frequency_post was provided by user
+
             if (verbose > 0) {
                 message(indent, "   Open ", fnames_unique[vari])
             }
@@ -4319,7 +4349,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 })
             }
         } # for file all variables
-               
+
         #recsloop_systime <- system.time({
         for (rec in seq_along(recsi)) {
             indent <- "      "
@@ -4525,11 +4555,11 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             } # for file nvars per time step
             rm(raw_data)
             if (rec_tag) rm(ncids)
-            
+                
+            indent <- "      "
             # remove temporary files
             if (cdo_temporalmean != "") {
-                stop("update")
-                for (vari in 1:length(fnames_unique)) {
+                for (vari in seq_along(fnames_unique)) {
                     message(indent, "Remove temporay file ", fnames_unique[vari])
                     file.remove(fnames_unique[vari])
                 }

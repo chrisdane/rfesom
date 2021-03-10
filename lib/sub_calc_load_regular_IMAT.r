@@ -31,7 +31,7 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     ht(xi)
     message("   --> regular latitudes will have ", nyi, " points with dlat = ", diff(yi)[1])
     ht(yi)
-    message("   --> nxi x nxy = ", nxi, " x ", nyi, " = ", nxy*nyi)
+    message("   --> nxi x nyi = ", nxi, " x ", nyi, " = ", nxi*nyi)
     
     # save interpolation weights
     XI <- array(rep(xi, e=nyi), c(nyi,nxi))

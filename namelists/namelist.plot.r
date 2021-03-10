@@ -14,7 +14,7 @@ plot_moc_mask <- T # plot moc mask area
 plot_csec <- T # make a plot of the location of the cross secion if out_mode == "csec_mean" or "csec_depth"?
 
 plot_file <- "png" # "png" or "pdf"
-plot_size <- c(width=2666, height=1600) # pixel
+plot_size <- c(width=2666, height=2000) # pixel
 dpi <- 400
 
 # if plot_type == "interp"

@@ -61,6 +61,7 @@ if (F) { # awi-esm-1-1-lr deck
         #area <- "GIN2"
         area <- "northernNA2"
     }
+
 } else if (F) {
     runid <- "awicm-CMIP6_dsein"
     # /work/ab0995/a270067/fesom_echam/core/cpl_output_16 

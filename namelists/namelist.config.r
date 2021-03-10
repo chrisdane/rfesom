@@ -93,6 +93,7 @@ snapshot      <- F # true for snapshot if available or false for mean data (.mea
                    # if snapshot not available
 all_recs      <- T # read all records of one fesom output file if possible 
                    # set to F if memory of computer is not big enough
+shifttime_minus1dt <- F # fesom1.4 bug: time values of nc files needs to get shifted by -1dt
 
 ## Which postprocessing output? (see table below for availabe output types)
 # ltm (long term mean) -> output has no time dimension)
