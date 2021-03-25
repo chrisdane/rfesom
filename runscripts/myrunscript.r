@@ -1,10 +1,11 @@
 ## Host options
 
-this_runscript_filename <- "myrunscript.r" # just basename 
+rfesompath <- "~/scripts/r/rfesom" 
 
 ############################################################
 
 if (F) { # awi-esm-1-1-lr deck
+    model <- "fesom"
     runid <- "awi-esm-1-1-lr"
     #datainpaths <- paste0("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/", setting, "/outdata/fesom")
     if (F) {
@@ -55,7 +56,7 @@ if (F) { # awi-esm-1-1-lr deck
         regular_transient_out <- F
         frequency_post <- "monthly"
         #out_mode <- "area"
-        #out_mode <- "mean"
+        #out_mode <- "fldmean"
         out_mode <- "depth"
         #area <- "LSstolpe18"
         #area <- "GIN2"
@@ -72,6 +73,7 @@ if (F) { # awi-esm-1-1-lr deck
     # --> fesom 1901:2199 all other as .tar for each variable
 
 } else if (F) {
+    model <- "fesom"
     runid <- "awicm-CMIP6_hu" # 2020:2700
     meshid <- "CORE2_final"
     setting <- "hu_svn471_ollie" # 2000:2363 (model years 1:364), 2803:2859 (model years 804:860)
@@ -91,6 +93,7 @@ if (F) { # awi-esm-1-1-lr deck
     }
 
 } else if (F) { # xiaoxu
+    model <- "fesom"
     datainpaths <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/fesom"
     fpatterns <- "mh_cmip_fesom_<varname>_<YYYY>0101.nc"
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
@@ -114,6 +117,7 @@ if (F) { # awi-esm-1-1-lr deck
     #setting <- "1850_dynveg" ## 2702:2729 (1850)
 
 } else if (F) {
+    model <- "fesom"
     runid <- "awicm-CMIP6_lars" # 1850:1980
     meshid <- "core"
     setting <- "htrans02"
@@ -124,6 +128,7 @@ if (F) { # awi-esm-1-1-lr deck
     }
 
 } else if (F) {
+    model <- "fesom"
     runid <- "awicm-test" 
     meshid <- "core"
     setting <- "hist"
@@ -138,6 +143,8 @@ if (F) { # awi-esm-1-1-lr deck
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/somint_fesom_18500101.nc"
     
 } else if (F) { # my phd stuff
+    model <- "fesom"
+    
     #runid <- "CbSCL"
     #meshid <- "CbSCL"
     #setting <- "spinup5"
@@ -503,7 +510,7 @@ if (F) { # awi-esm-1-1-lr deck
     regular_dx <- regular_dy <- 1/10
 
     #transient_out <- T
-    #out_mode <- "mean"
+    #out_mode <- "fldmean"
     #out_mode <- "meanint"
     #out_mode <- "depth"
     #out_mode <- "csec_depth"
@@ -524,8 +531,12 @@ if (F) { # awi-esm-1-1-lr deck
 
 message("*** myrunids end ***")
 
-## do not change below this line ##
-# run rfesom
-rfesompath <- system("git rev-parse --show-toplevel", intern=T)
+## do not change below this line
+if (interactive()) {
+    user_runscript_filename <- normalizePath(sys.frames()[[1]]$ofile)
+} else {
+    args <- commandArgs(trailingOnly=F)
+    user_runscript_filename <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
+}
 source(paste0(rfesompath, "/lib/main_rfesom.r")) 
 

@@ -93,7 +93,8 @@ snapshot      <- F # true for snapshot if available or false for mean data (.mea
                    # if snapshot not available
 all_recs      <- T # read all records of one fesom output file if possible 
                    # set to F if memory of computer is not big enough
-shifttime_minus1dt <- F # fesom1.4 bug: time values of nc files needs to get shifted by -1dt
+shifttime_minus1dt <- T # fesom1.4 bug: time values of nc files needs to get shifted by -1dt
+                        # this only applies if `model` = "fesom" (i.e. not "fesom2")
 
 ## Which postprocessing output? (see table below for availabe output types)
 # ltm (long term mean) -> output has no time dimension)
@@ -102,7 +103,7 @@ ltm_out               <- F # irregular time-average output
 regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
 regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
-out_mode              <- "area" # what kind of ouptut (see table at the bottom) 
+out_mode              <- "select" # what kind of ouptut (see table at the bottom) 
 regular_dx            <- 1/4 # resolution of interpolated data on regular grid [degree] 
 regular_dy            <- regular_dx # can be different than regular_dx
 uv_out                <- T # save horizontal components of vector variable
@@ -110,7 +111,7 @@ rms_out               <- F # calc and save root mean square = sqrt( E[x^2] )
 sd_out                <- F # calc and save population standard deviation = sqrt( E[x^2] - (E[x])^2)
 moc_ltm_out           <- F # save moc ltm if out_mode == "moc_depth"
 csec_ltm_out          <- F # save cross section ltm if out_mode == "csec_mean" or "csec_depth" # not yet
-add_res_to_nc         <- F # todo
+add_res_to_nc         <- T
 
 
 ###############################################################################################
@@ -128,7 +129,7 @@ add_res_to_nc         <- F # todo
 #
 #   if transient_out 
 #       if out_mode == 
-#           "mean"          xy_mean( z_*mean/int*(X) )  1: ntime
+#           "fldmean"       xy_mean( z_*mean/int*(X) )  1: ntime
 #           "meanint"       xy_int( z_*mean/int*(X) )   1: ntime
 #           "sum"           xy_sum( z_*mean/int*(X) )   1: ntime
 #           "max"           xy_max( z_*mean/int*(X) )   1: ntime

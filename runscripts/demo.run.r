@@ -53,7 +53,7 @@ if (F) { # demo1
     depths        <- c(0, 100)
     area          <- "lsea"
     transient_out <- T
-    out_mode      <- "mean"
+    out_mode      <- "fldmean"
     # If in active R session:
     #plot(time, drop(data_funi), t="o", main=paste0(area, " ", longname, " [", units_plot, "]"), ylab=varname, las=1)
     
@@ -82,7 +82,7 @@ if (F) { # demo1
     #depths <- c(0, 133.7)
     depths <- c(0, "max")
     transient_out <- T
-    #out_mode <- "mean"
+    #out_mode <- "fldmean"
     out_mode <- "moc_depth"
     fpattern <- "<runid>_fesom_<varname_nc>_<YYYY>0101.nc"
     years <- 1948

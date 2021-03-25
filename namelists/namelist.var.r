@@ -1558,14 +1558,37 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- expression(paste("Squared SSH [m"^"2", "]"))
     varname_nc <- "zossq"
 
-} else if (any(varname == c("mixlay", "mlotst"))) {
+} else if (varname == "mixlay") {
     longname <- "Mixed Layer Depth"
     units_out <- units_plot <- "m"
     var_label_plot <- "MLD [m]"
     typesuffix <- "oce."
     diagsuffix <- "diag."
     varname_nc <- "mixlay"
+
+} else if (varname == "mlotst") {
+    longname <- "mean Mixed Layer Depth by sigma theta"
+    units_out <- units_plot <- "m"
+    var_label_plot <- eval(substitute(expression(paste("MLD"[sigma[theta]], " [m]"))))
     varname_nc <- "mlotst"
+
+} else if (varname == "mlotstmax") {
+    longname <- "max Mixed Layer Depth by sigma theta"
+    units_out <- units_plot <- "m"
+    var_label_plot <- eval(substitute(expression(paste("MLD"[sigma[theta]], " max [m]"))))
+    varname_nc <- "mlotstmax"
+
+} else if (varname == "mlotstmin") {
+    longname <- "min Mixed Layer Depth by sigma theta"
+    units_out <- units_plot <- "m"
+    var_label_plot <- eval(substitute(expression(paste("MLD"[sigma[theta]], " min [m]"))))
+    varname_nc <- "mlotstmin"
+
+} else if (varname == "omldamax") {
+    longname <- "max Mixed Layer Depth by mixing scheme"
+    units_out <- units_plot <- "m"
+    var_label_plot <- eval(substitute(expression(paste("MLD"["MS"], " max [m]"))))
+    varname_nc <- "omldamax"
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
@@ -4262,6 +4285,18 @@ if (varname == "tos") { # fesom 1.4
     diagsuffix <- c("")
     varname_nc <- c("area")
     varname_nc <- "sisnconc"
+
+} else if (varname == "siextentn") {
+    longname <- "NH Sea Ice Extent (15%)"
+    varname_nc <- varname
+    var_label_plot <- substitute(paste("NH sea ice extent [Mio ", units_out^2, "]"),
+                                 list(units_out="km"))
+
+} else if (varname == "siextents") {
+    longname <- "SH Sea Ice Extent (15%)"
+    varname_nc <- varname
+    var_label_plot <- substitute(paste("SH sea ice extent [Mio ", units_out^2, "]"),
+                                 list(units_out="km"))
 
 } else if (varname == "siarean") {
     var_label_plot <- substitute(paste("Arctic sea ice extent [Mio ", units_out^2, "]"),
