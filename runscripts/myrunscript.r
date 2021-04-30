@@ -142,7 +142,7 @@ if (F) { # awi-esm-1-1-lr deck
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/opottempmint_fesom_18500101.nc"
     #fnames_user <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical_test3/outdata/fesom/somint_fesom_18500101.nc"
     
-} else if (F) { # my phd stuff
+} else if (T) { # my phd stuff
     model <- "fesom"
     
     #runid <- "CbSCL"
@@ -154,14 +154,14 @@ if (F) { # awi-esm-1-1-lr deck
     #meshid <- "swang"
     #setting <- ""
 
-    runid <- "Low01"
-    meshid <- "CbSCL"
+    #runid <- "Low01"
+    #meshid <- "CbSCL"
     #setting <- "s1"
     #setting <- "s2"
     #setting <- "s3"
     #setting <- "s4"
     #setting <- "s5"
-    setting <- "s52" # where is ice.diag ?!
+    #setting <- "s52" # where is ice.diag ?!
     #setting <- "s6"
 
     #runid <- "Low01_sub_lsea"
@@ -225,13 +225,13 @@ if (F) { # awi-esm-1-1-lr deck
     #setting <- "s4"
     #setting <- "s5" 
 
-    #runid <- "LSea5_sub_lsea" 
-    #meshid <- "LSea2_sub_lsea"
+    runid <- "LSea5_sub_lsea" 
+    meshid <- "LSea2_sub_lsea"
     #setting <- "s1"
     #setting <- "s2"
     #setting <- "s3"
     #setting <- "s4"
-    #setting <- "s5"
+    setting <- "s5"
 
     #runid <- "LSea5_sub_GSNAC" 
     #meshid <- "LSea2_sub_GSNAC"
@@ -392,14 +392,14 @@ if (F) { # awi-esm-1-1-lr deck
     #setting <- "xxsteps.1y"
 
     rotate_mesh <- T # my old meshes need to be rotated
-    if (regexpr("sub", meshid) != -1) { # my subsets from e.g. LabSea
+    if (grepl("sub", meshid)) { # my subsets from e.g. LabSea
+        message("meshid = \"", meshid, "\" --> set global_mesh and cycl to false ...")
+        global_mesh <- F 
         cycl <- F
     }
-    
     workpath <- "/work/ba0941/a270073"
     datainpaths <- paste0(workpath, "/out/", runid, "/", setting)
     meshpath   <- paste0(workpath, "/mesh/", meshid) # path of fesom mesh
-    #postpath   <- paste0(workpath, "/post") # --> new 
     postpath <- paste0(workpath, "/post/", runid, "/", setting) # my old phd folder structure
     derivpath  <- paste0(workpath, "/mesh/", meshid, "/derivatives") # path where to save derivative file if wanted
     interppath <- paste0(workpath, "/mesh/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
@@ -440,14 +440,21 @@ if (F) { # awi-esm-1-1-lr deck
         }
     }
 
+    #varname <- "resolutionkm"
+    #varname <- "bathy"
+    #fpatterns <- paste0(runid, ".<YYYY>.*.nc")
     #varname <- "Ftemp"
     #varname <- "tos"
     #varname <- "tossq"
     #varname <- "temp"
+    #fpatterns <- paste0(runid, ".<YYYY>.oce.mean.nc")
     #varname <- "potdens"
+    #fpatterns <- paste0(runid, ".<YYYY>.", c("oce", "oce"), ".mean.nc") 
     #varname <- "zossq"
-    varname <- "hvel"
+    #varname <- "hvel"
     #varname <- "vertvel"
+    varname <- "tke"
+    #varname <- "mke"
     #varname <- "eke"
     #varname <- "mixlay"
     #varname <- "Nsquared"
@@ -466,10 +473,12 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "opottempmint"
     #varname <- "somint"
     #varname <- "transport"
+    #varname <- "sic"
+    #varname <- "iceextent"
 
-    area <- "global"
+    #area <- "global"
     #area <- "lsea"
-    #area <- "LS30l2"
+    area <- "LS30l2"
     #area <- "LS30l"
     #area <- "LS20to30l"
     #area <- "LS20to30h"
@@ -479,21 +488,23 @@ if (F) { # awi-esm-1-1-lr deck
     #area <- "csec_S30"
     #area <- "csec_N74"
 
-    depths <- 0
+    #depths <- 0
     #depths <- 113
     #depths <- c(0, 100)
     #depths <- c(0, 1400)
     #depths <- c(0, "MLD")
-    #depths <- c(0, "max")
+    depths <- c(0, "max")
 
     integrate_depth <- F
-    #integrate_depth <- T
+    integrate_depth <- T
 
     #years <- 1948
-    #years <- 1948:2009
+    #years <- 1948:1949
+    years <- 1948:2009
     #years <- 1961:2009
-    years <- 1993:2009
+    #years <- 1993:2009
 
+    #season <- "Mar"
     recs <- 1:12
     #recs <- 3
     #recs <- 7
@@ -503,33 +514,40 @@ if (F) { # awi-esm-1-1-lr deck
     #recs <- 1:365
     #recs <- 1
 
-    #regular_ltm_out <- F
-    regular_ltm_out <- T
+    regular_ltm_out <- F
+    #regular_ltm_out <- T
     #rms_out <- T
     #sd_out <- T
+    regular_dx <- regular_dy <- 1/4
     regular_dx <- regular_dy <- 1/10
 
-    #transient_out <- T
+    transient_out <- F
+    transient_out <- T
+    #out_mode <- "select"
     #out_mode <- "fldmean"
     #out_mode <- "meanint"
+    out_mode <- "fldint"
     #out_mode <- "depth"
     #out_mode <- "csec_depth"
     #out_mode <- "csec_mean"
-    out_mode <- "area"
+    #out_mode <- "area"
    
     verbose <- 2
     #verbose <- 3
 
+    # for new rfresom version 
+    postprefix <- paste0(runid, "_", setting)
+    postpath   <- paste0(workpath, "/post/fesom")
     # my old directory structure /mode/area/var/ instead of new /mode/var/
     # for backwards compatibility
-    transientpath <- paste0(postpath, "/", out_mode, "/", area, "/", varname)
-    ltmpath <- paste0(postpath, "/ltm/", area, "/", varname)
-    reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", area, "/", varname)
-    reg_ltm_outpath <- paste0(postpath, "/regular_grid/ltm/", out_mode, "/", area, "/", varname)
+    if (F) {
+        transientpath <- paste0(postpath, "/", out_mode, "/", area, "/", varname)
+        ltmpath <- paste0(postpath, "/ltm/", area, "/", varname)
+        reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", area, "/", varname)
+        reg_ltm_outpath <- paste0(postpath, "/regular_grid/ltm/", out_mode, "/", area, "/", varname)
+    }
 
 } # my phd stuff
-
-message("*** myrunids end ***")
 
 ## do not change below this line
 if (interactive()) {

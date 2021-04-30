@@ -52,8 +52,8 @@ Ealpha <- 50 # Euler angles (from namelist.config)
 Ebeta <- 15
 Egamma <- -90
 global_mesh <- T # If true, regular interpolation of irregular fesom data yields lon,lat 
-                 # from -180,180 and -90,90 that allows e.g. `cdo sub mesh1 mesh2`
-                 # where `mesh1` is a regular interpolated fesom file whose original
+                 # from -180,180 and -90,90 that allows e.g. `cdo sub data_mesh1 data_mesh2`
+                 # where `data_mesh1` is regular interpolated fesom output whose original
                  # irregular data lives on mesh1 and vice versa for `mesh2`. 
                  # If a subset of fesom data is processed, set `global_mesh <- F` so that
                  # the regular interpolation of the irregular fesom data yields lon,lat
@@ -130,7 +130,7 @@ add_res_to_nc         <- T
 #   if transient_out 
 #       if out_mode == 
 #           "fldmean"       xy_mean( z_*mean/int*(X) )  1: ntime
-#           "meanint"       xy_int( z_*mean/int*(X) )   1: ntime
+#           "fldint"        xy_int( z_*mean/int*(X) )   1: ntime
 #           "sum"           xy_sum( z_*mean/int*(X) )   1: ntime
 #           "max"           xy_max( z_*mean/int*(X) )   1: ntime
 #           "max3D"         xyz_max(X)                  1: ntime

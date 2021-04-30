@@ -11,7 +11,9 @@ submit_via_nohup <- F
 submit_via_sbatch <- T # uses account resources!!!
 dry <- F # do not submit final jobs
 
-if (T) {
+myrunscript_fname <- "~/scripts/r/rfesom/runscripts/myrunscript.r"
+
+if (F) {
     replace_string <- list(string=" years <- ", between_lines=c(51, 56))
     # 1pct 4co2
     replace_by <- apply(cbind(seq(1850, 2090, b=10), 
@@ -28,8 +30,8 @@ if (T) {
     #replace_by <- apply(cbind(c(1842, seq(1850, 1930, b=10), 1940),
     #                          c(1849, seq(1859, 1939, b=10), 1941)),
     #                    1, paste, collapse=":")
-} else if (F) {
-    replace_string <- list(string=" years <- ", between_lines=c(45, 49))
+} else if (T) { # phd
+    replace_string <- list(string=" years <- ", between_lines=c(501, 501))
     replace_by <- c("1948:1957",
                     "1958:1967",
                     "1968:1977",
@@ -47,7 +49,8 @@ if (njobs == 0 || !is.null(dim(replace_by))) {
 }
 
 # read original runscript
-myrunscript_fname <- normalizePath("~/scripts/r/rfesom/runscripts/myrunscript.r")
+myrunscript_fname <- normalizePath(myrunscript_fname)
+message("read myrunscript_fname = ", myrunscript_fname, " ...")
 myrunscript <- readLines(myrunscript_fname)
 
 # find line to replace years between wanted lines
@@ -59,16 +62,10 @@ if (length(replace_ind) != 1) {
          " in original runscript file ", myrunscript_fname)
 }
 
-# find line to replace runscript name
-replace_fname_ind <- which(regexpr("this_runscript_filename <- ", myrunscript) != -1)
-if (length(replace_fname_ind) != 1) {
-    stop("Could not find 1 \"this_runscript_filename\" line")
-}
-
 message("submit ", njobs, " jobs ...")
-for (jobi in 1:njobs) {
+for (jobi in seq_len(njobs)) {
 
-    message("*** ", jobi, " ***")
+    message("*** job ", jobi, "/", njobs, " ***")
     
     # save temporary runscript as file
     ms <- format(as.numeric(Sys.time())*1000, digits=10) # some unique number for log file name
@@ -77,16 +74,15 @@ for (jobi in 1:njobs) {
         tmppath <- normalizePath("tmp")
         dir.create(tmppath, recursive=T, showWarnings=F)
     }
-    myrunscripttmp_fname <- paste0(tmppath, "/myrunscripttmp_",  suffix, "_", ms, ".r")
+    myrunscripttmp_fname <- paste0(tmppath, "/", basename(myrunscript_fname), 
+                                   "_",  suffix, "_", ms, ".r")
     
     # replace years
     myrunscripttmp <- myrunscript
-    myrunscripttmp[replace_inds][replace_ind] <- paste0(replace_string$string, replace_by[jobi])
-    message("replaced\n", myrunscript[replace_inds][replace_ind], "\nwith\n", 
-            myrunscripttmp[replace_inds][replace_ind])
-
-    # replace filename line
-    myrunscripttmp[replace_fname_ind] <- paste0("this_runscript_filename <- \"", myrunscripttmp_fname, "\"")
+    myrunscripttmp[replace_inds][replace_ind] <- trimws(paste0(replace_string$string, replace_by[jobi]))
+    message("replaced \"", 
+            myrunscript[replace_inds][replace_ind], "\" with \"", 
+            myrunscripttmp[replace_inds][replace_ind], "\"")
 
     # write temporary runscript 
     write(myrunscripttmp, myrunscripttmp_fname)
@@ -95,7 +91,6 @@ for (jobi in 1:njobs) {
     if (submit_via_nohup) {
         logfile <- paste0(tools::file_path_sans_ext(myrunscripttmp_fname), "_", ms, ".log")
         cmd <- paste0("rnohup ", myrunscripttmp_fname, " ", logfile)
-        message(cmd)
     } else if (submit_via_sbatch) {
         # mistral example scripts: https://www.dkrz.de/up/systems/mistral/running-jobs/example-batch-scripts
         # mistral partition limits: https://www.dkrz.de/up/systems/mistral/running-jobs/partitions-and-limits 
@@ -126,14 +121,15 @@ for (jobi in 1:njobs) {
         slurmrunscript_fname <- paste0(tmppath, "/slurmrunscript_", suffix, "_", ms, ".job")
         write(cmd, slurmrunscript_fname)
         cmd <- paste0("sbatch ", slurmrunscript_fname)
-        message(cmd)
     } # which job submission method
-    
+   
+    message("run `", cmd, "` ...")
+
     # submit job
     if (!dry) {
         system(cmd)
     } else {
-        message("this is a dry run; do not submit final command")
+        message("`dry` = T --> do not run this command")
     }
 
 } # for jobi njobs

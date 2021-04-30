@@ -851,7 +851,7 @@ sub_calc <- function(data_node) {
         }
 
         data_node <- 1/2*(data_node[varinds[1],,,]^2 + 
-                           data_node[varinds[2],,,]^2)
+                          data_node[varinds[2],,,]^2)
         dimnames(data_node)[[1]] <- varname
 
     } # "mke"
@@ -862,12 +862,12 @@ sub_calc <- function(data_node) {
                       which(vars == "vv" | vars == "v2o"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
-            message(paste0(indent, "TKE = 1/2 mean(", vars[varinds[1]], 
-                         "^2 + ", vars[varinds[2]], "^2) ..."))
+            message(indent, "TKE = 1/2 mean(", vars[varinds[1]], 
+                    " + ", vars[varinds[2]], ") ...")
         }
 
-        data_node <- 1/2*(data_node[varinds[1],,,]^2 +
-                           data_node[varinds[2],,,]^2)
+        data_node <- 1/2*(data_node[varinds[1],,,] +
+                          data_node[varinds[2],,,])
         dimnames(data_node)[[1]] <- varname
 
     } # "tke"
@@ -906,7 +906,7 @@ sub_calc <- function(data_node) {
         # and 'uu_diag.oce' indicating the output of FESOM output files
         # <id>.<year>.oce.mean.nc and <id>.<year>.oce.diag.nc respectively.
         data_node <- 1/2*(data_node[varinds[1],,,] - data_node[varinds[2],,,]^2 + 
-                           data_node[varinds[3],,,] - data_node[varinds[4],,,]^2) # [m^2/s^2]
+                          data_node[varinds[3],,,] - data_node[varinds[4],,,]^2) # [m^2/s^2]
         dimnames(data_node)[[1]] <- varname
 
     } # "eke"
@@ -975,8 +975,10 @@ sub_calc <- function(data_node) {
             }
         }
 
-        data_node <- data_node[varinds[5],,,] - data_node[varinds[1],,,]*data_node[varinds[3],,,] + 
-                     data_node[varinds[6],,,] - data_node[varinds[2],,,]*data_node[varinds[4],,,]
+        data_node <- data_node[varinds[5],seq_len(nod2d_n),,] - 
+                        data_node[varinds[1],seq_len(nod2d_n),,]*data_node[varinds[3],seq_len(nod2d_n),,] + 
+                     data_node[varinds[6],seq_len(nod2d_n),,] - 
+                        data_node[varinds[2],seq_len(nod2d_n),,]*data_node[varinds[4],seq_len(nod2d_n),,]
         if (varname == "FeKe") {
             data_node <- 1/rho0*data_node
         }
@@ -2567,7 +2569,10 @@ sub_calc <- function(data_node) {
         if (F) { # to do: non-constant cp
             data_node <- data_node[which(varname_nc == "qnet"),,,]/(cp_node*data_node[which(varname_nc == "rho"),,,])
         } else if (T) {
-            data_node <- data_node[which(varname_nc == "qnet"),,,]/(cp*data_node[which(varname_nc == "rho"),,,])
+            #fu <<- data_node
+            #stop("asd")
+            data_node <- data_node[which(varname_nc == "qnet"),seq_len(nod2d_n),,]/
+                            (cp*data_node[which(varname_nc == "rho"),seq_len(nod2d_n),,])
         }
     } # Ftemp
 
@@ -3196,13 +3201,14 @@ sub_calc <- function(data_node) {
             if (Rcpp_tag) {
                 #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
                 dll <- paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so")
-                if (verbose > 0) message(indent, "Load dynamic lib dyn.load(", dll, ") ...")
-                tmp <- dyn.load(paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so"))
+                if (verbose > 0) message(indent, "Load dynamic lib base::dyn.load(", dll, ") ...")
+                tmp <- base::dyn.load(paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so"))
                 if (verbose > 0) message(indent, "Run Rcpp:::sourceCppFunction(sourceCpp_1_sub_e2_to_n2) ...")
                 sub_e2_to_n2 <- Rcpp:::sourceCppFunction(function(elem2d, data_elem2d, nod2d_n) {}, 
                                                          isVoid=F, dll=tmp, symbol='sourceCpp_1_sub_e2_to_n2')
                 tmp <- sub_e2_to_n2(elem2d, resolution, nod2d_n) 
-            } else {
+            
+            } else if (!Rcpp_tag) {
                 tmp <- rep(0, t=nod2d_n)
                 inds <- tmp
                 # dim(resolution) = elem2d_n
@@ -3217,7 +3223,8 @@ sub_calc <- function(data_node) {
                 }
                 close(pb)
                 tmp <- tmp/inds # dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
-            }
+            
+            } # if Rcpp_tag or not
 
             # correct dims
             data_node <- array(tmp, dim=dim(data_node),

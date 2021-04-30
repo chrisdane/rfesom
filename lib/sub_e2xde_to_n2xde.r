@@ -25,17 +25,17 @@ sub_e2xde_to_n2xde <- function(data_elem2d) {
 
         #progress_function(elem2d_n, i, indent=paste0(indent, "      "))
         elnodes <- elem2d[,i]
-        aux <- data_elem2d[,,i,,] # 2D-element value of ith elem; dim=c(nvars,node=1,elem=1,ndepths,nrecspf)
+        aux <- data_elem2d[,,i,,] # value of ith 2d-element; dim=c(nvars,node=1,elem=1,ndepths,nrecspf)
         if (T && is.null(dim(drop(aux)))) { # only 1 var, 1 depth, 1 rec
-            aux <- array(drop(aux), c(1, 1, 3, 1, 1))
+            #aux <- array(drop(aux), c(1, 1, 3, 1, 1)) # repeat for all 3 nodes; dim=c(nvars=1,node=3,elem=1,ndepths=1,nrecspf=1)
+            aux <- array(aux, c(1, 3, 1, 1, 1))
         } else {
-            aux <- replicate(aux, n=3) # repeat 2D-element value for all 3 nodes; dim=c(nvars,elem=1,node=1,ndepths,nrecspf,3)
+            aux <- replicate(aux, n=3) # repeat for all 3 nodes; dim=c(nvars,elem=1,node=1,ndepths,nrecspf,3)
             aux <- adrop(aux, drop=2) # drop element placeholder dimension; dim=c(nvars,elem=i,ndepths=1,nrecspf=12,nodes=3)
             aux <- aperm(aux, c(1, 5, 2, 3, 4))  # reorder dimensions; dim=c(nvars,nodes=3,elem=i,ndepths,nrecs)
         }
-        #message(str(aux))
 
-        tmp[,elnodes,,,] <- aux
+        tmp[,elnodes,,,] <- tmp[,elnodes,,,] + aux
         inds[,elnodes,,,] <- inds[,elnodes,,,] + 1
 
         # update progress bar
