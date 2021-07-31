@@ -22,7 +22,7 @@ if (F) {
 
 } else if (F) { # awi-esm-1-1-lr piControl-1855:1954 = deck-1750:1849
     model <- "fesom"
-    datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/mlotst/gn/v20200212"
+    datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/tos/gn/v20200212"
     fpatterns <- "<varname>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
     shifttime_minus1dt <- F
     postprefix <- "awi-esm-1-1-lr_piControl"
@@ -30,12 +30,12 @@ if (F) {
     meshid <- "core"
     #years <- 1855:1856
     years <- 1855:1954
-    season <- "SON" # "FMA"
-    varname <- "mlotst"
+    #season <- "SON" # "FMA"
+    varname <- "tos"
+    #varname <- "mlotst"
     regular_ltm_out <- T
     regular_transient_out <- F
     transient_out <- F
-    add_res_to_nc <- T
     #out_mode <- "fldmean"
     #area <- "LSboening"
     #area <- "mldWeddel"
@@ -64,7 +64,7 @@ if (F) {
     #area <- "LSboening"
     #area <- "mldWeddel"
 
-} else if (T) { # awi-esm-1-1-lr 1pctCO2
+} else if (F) { # awi-esm-1-1-lr 1pctCO2
     model <- "fesom"
     datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
     fpatterns <- "1percCO2_fesom_<varname>_<YYYY>0101.nc"
@@ -123,10 +123,86 @@ if (F) {
     #varnme <- "siextentn"
     regular_ltm_out <- T
 
-}
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl og
+    model <- "fesom"
+    #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
+    datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
+    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    postprefix <- "awi-esm-1-1-lr_kh800_piControl_og"
+    meshid <- "core"
+    meshpath <- "/work/ab0995/a270046/meshes_default/core"
+    #years <- 1950:1951
+    #ears <- 1950:2029 # chunk 1: 1950:2029
+    #years <- 2685
+    #years <- 2030:2685 # chunk 2: 2030:2685
+    years <- 2586:2685 # last 100 years
+    #varname <- "tos"
+    #varname <- "thetao"
+    varname <- "bgc03" # alkalinity
+    regular_ltm_out <- T
+    #regular_dx <- regular_dy <- 1
+    transient_out <- F
+    out_mode <- "select"
+    #out_mode <- "fldmean"
+    #out_mode <- "depth"
+    #depths <- c(0, "max")
 
-postpath <- "/work/ab0246/a270073/post/fesom"
-plotpath <- "/work/ab0246/a270073/plots/fesom"
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
+    model <- "fesom"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/fesom"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
+    #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
+    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
+    postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
+    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    meshid <- "core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core/"
+    #years <- 2686
+    years <- 2686:2689
+    #years <- 2686:2760
+    frequency <- "monthly"
+    #varname <- "tos"
+    #varname <- "thetao"
+    varname <- "CO2f"
+    regular_ltm_out <- F
+    transient_out <- T
+    #out_mode <- "select"
+    out_mode <- "fldint"
+    #out_mode <- "fldmean"
+    #out_mode <- "depth"
+    #depths <- c(0, "max")
+
+} else if (F) { # awi-esm-1-1-lr_kh800 historical
+    model <- "fesom"
+    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
+    #postprefix <- "awi-esm-1-1-lr_kh800_historical"
+    postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
+    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    meshid <- "core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core/"
+    years <- 1850:1853
+    #years <- 1850:1863
+    #varname <- "tos"
+    varname <- "thetao"
+    #varname <- "CO2f"
+    #frequency_post <- "monmean"
+    regular_ltm_out <- F
+    transient_out <- T
+    #out_mode <- "select"
+    #out_mode <- "fldint"
+    #out_mode <- "fldmean"
+    out_mode <- "depth"
+    depths <- c(0, "max")
+
+} # which setting
+
+if (F) {
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
+} else if (T) {
+    postpath <- "/work/ba1103/a270073/post/fesom"
+    plotpath <- "/work/ba1103/a270073/plots/fesom"
+}
 derivpath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/derivatives")
 interppath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/interp")
 

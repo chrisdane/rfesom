@@ -1257,9 +1257,7 @@ if (nvars > 0) {
              ifelse(nvars > 1, "es", ""), " not have a time dim. this never happened.")
     } else { # if time dim or var present
         if (verbose > 0) {
-            message("Get time information of ", nfiles, " ", varname_nc[first_nc_with_time_ind], 
-                    " file", ifelse(nfiles > 1, "s", ""), 
-                    ifelse(nfiles > 1, ". this may take some time", ""), " ...") 
+            message("Get time information ...")
         }
         timeobj <- vector("list", l=length(first_nc_with_time_ind)) # saves time attributes of nc file
         names(timeobj) <- varname_nc[first_nc_with_time_ind]
@@ -1367,7 +1365,7 @@ if (nvars > 0) {
             } else {
                 timevalue_strat <- "new" # --> use result of `cdo showtimestamp`
             }
-
+            
             # get input times of all files to read 
             for (fi in seq_along(files_list[[first_nc_with_time_ind[time_vari]]])) {
                 
@@ -1424,37 +1422,68 @@ if (nvars > 0) {
                     
                 # get dt in sec
                 if (fi == 1) { # first file only
-                    if (ntimepf > 1) {
-                        dt <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
-                        dt <- unique(dt)
-                        if (all(dt == 86400)) {
-                            frequency <- "daily"
-                            attributes(frequency)$units <- "day"
-                        } else if (!any(is.na(match(dt, c(2419200, 2548800, 2592000, 2623418, 2635200, 2678400))))) {
-                            frequency <- "monthly"
-                            attributes(frequency)$units <- "month"
-                        } else {
-                            stop("dt = ", paste(dt, collapse=", "), " secs unknown")
+                    if (!exists("frequency") ||
+                        (exists("frequency") && class(frequency) == "function")) { # try to determine output frequency interval
+                        message(indent, "`frequency` not provided --> try to determine output frequency interval ...")
+                        if (ntimepf > 1) {
+                            dt_sec <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
+                            dt_sec <- unique(dt_sec)
+                            if (!any(is.na(match(dt_sec, 86400)))) {
+                                frequency <- "daily"
+                                attributes(frequency)$units <- "day"
+                            } else if (!any(is.na(match(dt_sec, 
+                                                        c(2419200, 2505600, 2548800, 2592000, 
+                                                          2635200, 2674800, 2678400, 2682000))))) {
+                                frequency <- "monthly"
+                                attributes(frequency)$units <- "month"
+                            } else {
+                                stop("at least some of dt = ", paste(dt_sec, collapse=", "), " secs are unknown")
+                            }
+                        } else { # only one time per file (= annual)
+                            # caution: this does not work if the file is not complete, e.g. only 1/12 time steps saved so far
+                            frequency <- "annual"
+                            attributes(frequency)$units <- "year"
                         }
-                    } else { # only one time per file (= annual)
-                        frequency <- "annual"
-                        attributes(frequency)$units <- "year"
-                    }
+                    } else { # if `frequency` was provided by user
+                        message(indent, "provided `frequency` = ", frequency)
+                        if (frequency == "daily") {
+                            attributes(frequency)$units <- "day"
+                        } else if (frequency == "monthly") {
+                            attributes(frequency)$units <- "month"
+                        } else if (frequency == "annual") {
+                            attributes(frequency)$units <- "year"
+                        } else {
+                            stop("not implemented yet")
+                        }
+                    } # if `frequency` was provided or not
+                    message(indent, "--> determined frequency is ", frequency, "; dt = ", attributes(frequency)$units,
+                            " --> if this is not correct, set `frequency` in the runscript and rerun rfesom.\n",
+                            indent, "valid `frequency`s are:\n",
+                            paste(paste0(indent, "   frequency <- \"", 
+                                         c("daily", "monthly", "annual"), "\""),
+                                  collapse="\n"))
                 } # if fi == 1
 
                 # check for time prob 3 (check comments above for infos)
                 if (fi == 1) cdo_shifttime <- "" # default: apply no shifttime
                 if (model == "fesom" && timevalue_strat == "new" && shifttime_minus1dt) {
-                    if (fi == 1) {
+                    if (fi == 1 && verbose > 0) {
                         message(indent, "   `shifttime_minus1dt`=T and `model`=\"fesom\" ",
-                                "--> shift time by -1 dt = -1 ", 
-                                attributes(frequency)$units, " of all input files ...")
+                                "--> shift ", length(dates), " dates\n",
+                                paste(head(dates), collapse=", "), " ... ", 
+                                paste(tail(dates), collapse=", "), "\n",
+                                indent, "   by -1 dt = -1 ", attributes(frequency)$units, 
+                                " -->")
                     }
                     if (frequency == "daily") { # subtract 1 day from each time point
                         dates <- as.POSIXlt(dates - 86400)
                         if (fi == 1) cdo_shifttime <- "-shifttime,-1d" # only needed if `frequency_post` is set
                     } else if (frequency == "monthly") { # subtract 1 from each month (januaries year i become decembers year i-1)
                         dates$mon <- dates$mon - 1 
+                        if (any(dates$mon == -1)) { # former january year i --> 0 minus 1 = -1 --> invalid --> becomes december year i-1
+                            dates$year[which(dates$mon == -1)] <- dates$year[which(dates$mon ==-1)] - 1
+                            dates$mon[which(dates$mon == -1)] <- 11
+                        }
                         if (fi == 1) cdo_shifttime <- "-shifttime,-1mon" # only needed if `frequency_post` is set
                     } else if (frequency == "annual") { # subtract 1 from year 
                         dates$year <- dates$year - 1
@@ -1462,10 +1491,21 @@ if (nvars > 0) {
                     } else {
                         stop("frequency = ", frequency, " not defined")
                     }
+                    if (fi == 1 && verbose > 0) {
+                        message(paste(head(dates), collapse=", "), " ... ", 
+                                paste(tail(dates), collapse=", "), "\n",
+                                indent, "   for all files ...")
+                    }
                 } # if timevalue_strat == "new" && shifttime_minus1dt
                
                 files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$dates <- dates
-            
+                
+                if (fi == 1) {
+                    message(indent, "Get time information of ", nfiles, " ", varname_nc[first_nc_with_time_ind], 
+                            " file", ifelse(nfiles > 1, "s", ""), 
+                            ifelse(nfiles > 1, ". this may take some time", ""), " ...") 
+                }
+
             } # for fi
 
             ## check if any temporal reduction of original data is wanted via cdo 
@@ -1502,7 +1542,8 @@ if (nvars > 0) {
                         } # for fi 
                                 
                     } else {
-                        stop("frequency_post = \"", frequency_post, "\" not defined")
+                        stop("frequency_post = \"", frequency_post, "\" not defined. ",
+                             "must be one of \"monmean\" or \"monmax\"")
                     } # which output frequency is wanted?
 
                     cdo_bin <- Sys.which("cdo")
@@ -1661,11 +1702,6 @@ if (nvars > 0) {
                 rec_tagi <- T
             }
             timeobj[[time_vari]]$rec_tag <- rec_tagi
-            if (rec_tagi) {
-                timeobj[[time_vari]]$maxnrecpf <- max(sapply(lapply(files_list[[first_nc_with_time_ind[time_vari]]], "[[", "recs"), length))
-            } else {
-                timeobj[[time_vari]]$maxnrecpf <- 1
-            }
 
             if (verbose > 1) {
                 message(indent, "--> `timeobj` of all files to read (check `files_list` for more infos):\n",
@@ -1678,7 +1714,18 @@ if (nvars > 0) {
 
         # only one timeobj needed
         timeobj <- timeobj[[1]]
-        maxnrecpf <- timeobj$maxnrecpf
+        
+        # maximum times per file
+        # e.g. 12 for monthly data; 365 for daily data if no leap year included or
+        # 366 for daily data if leap year included
+        if (rec_tagi) {
+            maxnrecpfs <- sort(unique(sapply(lapply(files_list[[first_nc_with_time_ind[time_vari]]], "[[", "recs"), length)))
+        } else {
+            maxnrecpfs <- 1
+        }
+        timeobj$maxnrecpfs <- maxnrecpfs
+        maxnrecpf <- max(timeobj$maxnrecpfs)
+        timeobj$maxnrecpf <- maxnrecpf
         season <- timeobj$season
         
         # one common date-string for post files
@@ -2002,8 +2049,8 @@ if (!restart || # ... not a restart run
     success <- load_package("data.table")
     if (!success) {
         fread_tag <- F
-        message(paste0(indent, "   use base::scan() instead."))
-        message(paste0(indent, "   this is much slower. you should install 'data.table' ..."))
+        message(indent, "   use base::scan() instead.")
+        message(indent, "   this is much slower. you should install 'data.table' ...")
     } else {
         fread_tag <- T
     }
@@ -2012,13 +2059,15 @@ if (!restart || # ... not a restart run
     fid <- paste0(meshpath, "/elem2d.out")
     elem2d_n <- as.numeric(readLines(fid, n=1))
     if (verbose > 1) {
-        message(indent, "read ", elem2d_n, " 2D elements from elem2d.out ...", appendLF=F)
+        message(indent, "read ", elem2d_n, " 2D elements from elem2d.out with ", appendLF=F)
+        if (!fread_tag) message("base::scan ...", appendLF=F)
+        if (fread_tag) message("data.table::fread ...", appendLF=F)
     }
     if (!fread_tag) {
-        tmp <- scan(fid, skip=1, quiet=T)
+        tmp <- base::scan(fid, skip=1, quiet=T)
         elem2d <- matrix(tmp, nrow=elem2d_n, byrow=T)
     } else if (fread_tag) {
-        tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
+        tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
         elem2d <- as.matrix(tmp)
     }
     if (verbose > 1) message(" min/max elem2d = ", min(elem2d), "/", max(elem2d))
@@ -2029,14 +2078,16 @@ if (!restart || # ... not a restart run
         #|| dim_tag == "3D" && levelwise == T
         ) {
         if (verbose > 1) {
-            message(indent, "read ", nod2d_n, " 2D nodes from nod2d.out ...", appendLF=F)
+            message(indent, "read ", nod2d_n, " 2D nodes from nod2d.out with ", appendLF=F)
+            if (!fread_tag) message("base::scan ...", appendLF=F)
+            if (fread_tag) message("data.table::fread ...", appendLF=F)
         }
         fid <- paste0(meshpath, "/nod2d.out")
         if (!fread_tag) {
-            tmp <- scan(fid, skip=1, quiet=T)
+            tmp <- base::scan(fid, skip=1, quiet=T)
             nod2d <- matrix(tmp, nrow=nod2d_n, byrow=T)
         } else {
-            tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
+            tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
             nod2d <- as.matrix(tmp)
         }
         nod2d_x <- drop(nod2d[,2])
@@ -2057,12 +2108,16 @@ if (!restart || # ... not a restart run
         ) {
         fid <- paste0(meshpath, "/nod3d.out")
         nod3d_n <- as.numeric(readLines(fid, n=1))
-        if (verbose > 1) message(indent, "read ", nod3d_n, " 3D nodes from nod3d.out ...", appendLF=F)
+        if (verbose > 1) {
+            message(indent, "read ", nod3d_n, " 3D nodes from nod3d.out with ", appendLF=F)
+            if (!fread_tag) message("base::scan ...", appendLF=F)
+            if (fread_tag) message("data.table::fread ...", appendLF=F)
+        }
         if (!fread_tag) {
-            tmp <- scan(fid, skip=1, quiet=T)
+            tmp <- base::scan(fid, skip=1, quiet=T)
             nod3d <- matrix(tmp, nrow=nod3d_n, byrow=T)
         } else if (fread_tag) {
-            tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
+            tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
             nod3d <- as.matrix(tmp)
         }
         nod3d_x <- drop(nod3d[,2])
@@ -2083,14 +2138,15 @@ if (!restart || # ... not a restart run
         fid <- paste0(meshpath, "/aux3d.out")
         aux3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
-            message(indent, "read ", aux3d_n*nod2d_n, 
-                    " nod3d indices vs depth from aux3d.out ...", appendLF=F)
+            message(indent, "read ", aux3d_n*nod2d_n, " nod3d indices vs depth from aux3d.out with ", appendLF=F)
+            if (!fread_tag) message("base::scan ...", appendLF=F)
+            if (fread_tag) message("data.table::fread ...", appendLF=F)
         }
         if (!fread_tag) {
-            tmp <- scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
+            tmp <- base::scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
             aux3d <- matrix(tmp, nrow=aux3d_n, ncol=nod2d_n)
         } else if (fread_tag) {
-            tmp <- fread(fid, skip=1, nrows=aux3d_n*nod2d_n, 
+            tmp <- data.table::fread(fid, skip=1, nrows=aux3d_n*nod2d_n, 
                          showProgress=ifelse(verbose > 1, T, F))
             aux3d <- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
         }
@@ -2534,15 +2590,16 @@ if (zave_method == 2 &&
         # load elem3d
         fid <- paste0(meshpath, "/elem3d.out")
         elem3d_n <- as.numeric(readLines(fid, n=1))
-        if (verbose == 2 || verbose == 3) {
-            message(paste0(indent, "   read ", elem3d_n,
-                         " 3D elements from elem3d.out ..."))
+        if (verbose > 1) {
+            message(indent, "   read ", elem3d_n, " 3D elements from elem3d.out with ", appendLF=F)
+            if (!fread_tag) message("base::scan ...", appendLF=F)
+            if (fread_tag) message("data.table::fread ...", appendLF=F)
         }
         if (!fread_tag) {
-            tmp <- scan(fid, skip=1, quiet=T)
+            tmp <- base::scan(fid, skip=1, quiet=T)
             elem3d <- t(matrix(tmp, nrow=elem3d_n, byrow=T))
         } else if (fread_tag) {
-            tmp <- fread(fid, skip=1, showProgress=ifelse(verbose > 0, T, F))
+            tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 0, T, F))
             elem3d <- t(as.matrix(tmp))
         }
         if (F) {
@@ -3873,7 +3930,7 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
         if (verbose > 0) {
             message(indent, "read provided `moc_mask_file` = ", moc_mask_file, " ...")
         }
-        moc_mask_inds <- fread(moc_mask_file)$V1
+        moc_mask_inds <- data.table::fread(moc_mask_file)$V1
         moc_mask_inds <- moc_mask_inds[2:moc_mask_inds[1]] # remove first line of dimas mask file
         moc_mask <- rep(0, t=nod2d_n)
         moc_mask[moc_mask_inds] <- 1
@@ -4345,7 +4402,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
     # Thats why a timestep (e.g. month, day, hour, etc.)
     # and year loop is chosen to read in the data and
     # average "by hand" (-> mean(x) = 1/n sum(x)).
-    total_rec <- rep(0, t=maxnrecpf) # counter over all time steps
+    total_rec <- rep(0, t=maxnrecpf) # counter over all time steps per file
     fname_cnt <- 0
     
     ## Fname loop
@@ -4366,7 +4423,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             
             # calc temporal reduction (e.g. daily -> monthly) before any other analysis
             if (exists("frequency_post")) {
-                message(indent, "   `frequency_post`=\"", frequency_post, "\"")
+                message(indent, "   `frequency_post` = \"", frequency_post, "\"")
                 if (cdo_temporalmean != "") {
                     message(indent, "   `cdo_temporalmean` = \"", cdo_temporalmean, "\"")
                     fout <- paste0(postpath, "/", frequency_post, "_", basename(fnames_unique[vari]))
@@ -4536,7 +4593,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     }
                 }
 
-                ## Save data in array (vars,nodes,time,depths)
+                ## Save data in array (vars,nodes,depth,time)
                 # need to use indexing of the node-dim explicitly since both 2D and 3D variables may be saved in one mat
                 if (rec_tag) {
                     data_node[vari,
@@ -5089,11 +5146,11 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             
                             # time inds to save (wrt to complete time)
                             if (rec_tag) {
-                                time_inds <- sum(total_rec) + seq_along(total_rec)
-                                #time_inds <- files_list[[vari]][[fi]]$total_recs
+                                #time_inds <- sum(total_rec) + seq_along(total_rec)
+                                time_inds <- files_list[[vari]][[fi]]$total_recs
                             } else {
-                                time_inds <- total_rec + 1
-                                #time_inds <- files_list[[vari]][[fi]]$total_recs[rec]
+                                #time_inds <- total_rec + 1
+                                time_inds <- files_list[[vari]][[fi]]$total_recs[rec]
                             }
 
                             if (verbose > 1) {
@@ -5136,8 +5193,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             
                             } # if out_mode == "fldmean" && zave_method == 2
                             
-                            if (any(datavec == Inf)) message("some datavec Inf")
-                            if (any(datavec == -Inf)) message("some datevec -Inf")
+                            if (any(datavec == Inf, na.rm=T)) message("some datavec Inf")
+                            if (any(datavec == -Inf, na.rm=T)) message("some datevec -Inf")
 
                             ## change depth and time dim here for better netcdf output
                             datavec <- aperm(datavec, c(1, 2, 4, 3)) # nvars,nodes,nrecspf,ndepths
@@ -5153,9 +5210,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             ## Check data so far
                             if (verbose > 2) {
                                 for (i in 1:dim(datavec)[1]) {
-                                    message(paste0(indent, "   min/max datavec[", i, ":", 
-                                                 dimnames(datavec)[[1]][i], ",,,] = ",
-                                                 paste0(range(datavec[i,,,], na.rm=T), collapse="/")))
+                                    message(indent, "   min/max datavec[", i, ":", 
+                                            dimnames(datavec)[[1]][i], ",,,] = ",
+                                            paste(range(datavec[i,,,], na.rm=T), collapse="/"))
                                 }
                             }
 
@@ -5168,7 +5225,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     }
                                     message(" (=depths_plot)", appendLF=F)
                                 }
-                                message(" and save at 'time_inds'=", paste(time_inds, collapse=","))
+                                message(" and save at ", length(time_inds), " `time_inds` = ", 
+                                        paste(head(time_inds, n=10), collapse=","), ",...,", 
+                                        paste(tail(time_inds, n=10), collapse=","))
                             }
                             
                             ## which calculation mode: mean, max, etc ...
@@ -6043,7 +6102,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, rms_out, sd_out, plot_map)) {
 
                     ## vertical average for ltm if not done before
-                    if (F && !integrate_depth && !average_depth) { # why the F here?
+                    if (!integrate_depth && !average_depth) {
                    
                         ## rearrange first if necessary
                         if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
@@ -6071,48 +6130,46 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         ## Check data so far
                         if (verbose > 2) {
                             for (i in 1:dim(data_node)[1]) {
-                                message(paste0(indent, "   min/max data_node[", i, ":",
-                                             dimnames(data_node)[[1]][i], ",,,] = ",
-                                             paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                                message(indent, "   min/max data_vert[", i, ":",
+                                        dimnames(data_vert)[[1]][i], ",,,] = ",
+                                        paste(range(data_vert[i,,,], na.rm=T), collapse="/"))
                                 if (F) {
-                                    for (j in 1:dim(data_node)[3]) {
-                                        message(range(data_node[i,,j,], na.rm=T))
+                                    for (j in 1:dim(data_vert)[3]) {
+                                        message(range(data_vert[i,,j,], na.rm=T))
                                     }
                                 }
                             }
                         }
 
-                        # not here or?
-                        if (F) {
-                            # if data_vert has more than 1 depth
-                            if (dim(data_vert)[3] > 1) { 
-                                if (verbose > 1) {
-                                    message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
-                                    if (verbose > 2) {
-                                        message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
-                                    }
-                                }
-                                sub_vertical_average(data_vert) # produces tmp
-                                data_node <- tmp # overwrite data_node
-                                # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                                # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                                rm(tmp, data_vert)
-
-                                ## Check data so far
+                        # if data_vert has more than 1 depth
+                        if (dim(data_vert)[3] > 1) { 
+                            if (verbose > 1) {
+                                message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
                                 if (verbose > 2) {
-                                    for (i in 1:dim(data_node)[1]) {
-                                        message(indent, "   min/max data_node[", i, ":",
-                                                dimnames(data_node)[[1]][i], ",,,] = ",
-                                                paste(range(data_node[i,,,], na.rm=T), collapse="/"))
-                                    }
+                                    message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
                                 }
+                            }
+                            sub_vertical_average(data_vert) # produces tmp
+                            data_node <- tmp # overwrite data_node
+                            # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
+                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
+                            rm(tmp, data_vert)
 
-                            } else { # only 1 depth
-                                
-                                data_node <- data_vert
+                            ## Check data so far
+                            if (verbose > 2) {
+                                for (i in 1:dim(data_node)[1]) {
+                                    message(indent, "   min/max data_node[", i, ":",
+                                            dimnames(data_node)[[1]][i], ",,,] = ",
+                                            paste(range(data_node[i,,,], na.rm=T), collapse="/"))
+                                }
+                            }
+
+                        } else { # only 1 depth
                             
-                            } # if data_vert has more than 1 depth
-                        } # F
+                            data_node <- data_vert
+                            rm(data_vert) 
+                        
+                        } # if data_vert has more than 1 depth
 
                     } # if !integrate_depth && !average_depth
 
@@ -6152,26 +6209,13 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                     } # if all(total_rec == 0)
 
+                    ## sum transient data in ltm array (vars,nodes=nod2d_n,depths=1,nrecspf)
                     if (verbose > 1) {
                             message(indent, "Sum transient ", 
                                     paste(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ...")
                     }   
-                    
-                    ## Save data in array (vars,nodes,depths=1,nrecspf)
-                    if (F) { # old
-                        data_node_ltm[vari,
-                                      seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
-                                      1,
-                                      seq_len(count[dims_of_vars[[vari]]$timedim_ind])] <- 
-                            data_node_ltm[vari,
-                                          seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),
-                                          1,
-                                          seq_len(count[dims_of_vars[[vari]]$timedim_ind])] + 
-                            data_node[vari,seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),,]
-                    } else if (T) {
-                        #data_node_ltm[vari,,1,] <- data_node_ltm[vari,,1,] + data_node[vari,,,]
-                        data_node_ltm[,,1,] <- data_node_ltm[,,1,] + data_node[,,,]
-                    }
+                    timeinds <- seq_len(count[dims_of_vars[[vari]]$timedim_ind]) # e.g. 1:12, 1:365, 1:366
+                    data_node_ltm[vari,,,timeinds] <- data_node_ltm[vari,,,timeinds] + data_node[vari,,,]
                     #message(range(data_node_ltm, na.rm=T))
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {

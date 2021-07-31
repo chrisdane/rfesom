@@ -38,24 +38,28 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Sea Surface Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
+    anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "tos"
 
 } else if (varname == "tso") { # fesom 1.4
     longname <- "Sea Surface Temperature snapshot"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST snapshot [", degree, "C]"))
+    anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "tso"
 
 } else if (varname == "sst") { # fesom 2.0 
     longname <- "Sea Surface Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("SST [", degree, "C]"))
+    anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "sst"
 
 } else if (any(varname == c("temp", "thetao"))) {
     longname <- "Potential Temperature"
     units_out <- units_plot <- "degC"
     var_label_plot <- expression(paste("Potential Temperature [", degree, "C]"))
+    anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     if (integrate_depth) {
         units_out <- "degC m"
         power_plot <- -3
@@ -76,8 +80,8 @@ if (varname == "tos") { # fesom 1.4
     }
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_nc <- "temp"
-    #varname_nc <- "thetao"
+    #varname_nc <- "temp"
+    varname_nc <- "thetao"
 
 } else if (any(varname == c("salt", "so"))) {
     longname <- "Salinity"
@@ -4080,6 +4084,15 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- F
 
+} else if (varname == "CO2f") {
+    longname <- "CO2-flux into the surface water"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("air-sea CO"[2], " flux [mmolC m"^"-2", " d"^"-1", "] (>0 into ocean)"))
+    varname_nc <- "CO2f"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
 } else if (varname == "uice") {
     longname <- "Sea Ice Zonal Velocity"
     units_out <- "m s-1"
@@ -4313,6 +4326,12 @@ if (varname == "tos") { # fesom 1.4
     }
     rotate_inds <- c(1, 2) # u, v
     vec <- F
+
+} else if (varname == "bgc03") {
+    longname <- "Total Alkalinity"
+    units_out <- units_plot <- "mmol m-3"
+    var_label_plot <- expression(paste("Total Alkalinity [mmol m"^paste(-3), "]"))
+    varname_nc <- "bgc03"
 
 } else if (varname == "bathy") {
     longname <- "Bathymetry"
