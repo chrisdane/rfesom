@@ -34,6 +34,8 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
         } # for i ndephts
     
     } else if (T) {
+            
+        `[` <<- fctbackup # restore to R's default for loop
         
         for (i in 1:ndepths) { 
 
@@ -75,12 +77,12 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
 
                 if (verbose > 1) {
                     # message(paste0(indent, "   x[low] = (x[z] - c[up] - c*x[up]) / c ..."))
-                    message(paste0(indent, "   x[", fesom_depths[i], "m] = (x[", z, "m] - x[", 
-                                 fesom_depths[i-1], "m] + c*x[", fesom_depths[i-1], "m]) / c..."))
+                    message(indent, "   x[", fesom_depths[i], "m] = (x[", z, "m] - x[", 
+                            fesom_depths[i-1], "m] + c*x[", fesom_depths[i-1], "m]) / c...")
                 }
                 
                 # replicate interpolation coefficients
-                indcoef_tmp <<- indcoef[i,inds] # c(1,ninds)
+                indcoef_tmp <<- indcoef[i,inds,drop=F] # c(1,ninds)
                 indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_n2xnd)[1]) # nvars
                 indcoef_tmp <<- replicate(indcoef_tmp, n=dim(data_n2xnd)[4]) # nrecspf
                 indcoef_tmp <<- aperm(indcoef_tmp, c(3, 2, 1, 4))
@@ -92,7 +94,6 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
                                                     (data_nod3d[,indlower[i,inds],,] -
                                                      data_nod3d[,indupper[i,inds],,])
                 } else {
-
                     tmp[,indlevel[i,inds],,] <<- data_n2xnd[,indsurf[i,inds],i,] +
                                                                  #indcoef[i,inds]*
                                                                  indcoef_tmp*
@@ -105,7 +106,9 @@ sub_n2xde_to_n3 <- function(data_n2xnd) {
             } # if user level needs to be interpolated or just rearranged from nod3d_n to ndepths x nod2d_n
 
         } # for i ndepths
+            
+        fctbackup <<- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
  
     } # if T/F
 
-} # end sub_n2xnd_to_n3
+} # end sub_n2xde_to_n3

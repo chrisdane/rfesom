@@ -7,22 +7,15 @@ sub_vertical_average <- function(data_vert) {
     ##  if (zave_method == 1): dim(tmp) = c(nvars,nod2d_n,ndepths=1,nrecspf)
     ##  if (zave_method == 2): dim(tmp) = c(nvars,nod_n=1,ndepths=1,nrecspf) # special !
     
-    if (ndepths == 1) {
-
-        # possible interpolation between depth layers was already done before
-        # nothing to do
+    if (ndepths == 1) { # no matter if any(dim_tag == "3D") or not; possible interpolation between depth layers was already done in sub_n3_to_n2xde.r
         tmp <- data_vert
 
-    } else if (ndepths > 1) {
+    } else if (ndepths > 1) { # implies that `any(dim_tag == "3D")` is true
 
         ## Which method for averaging over depth levels?
         # 1 = for i all depths: data[inds_2d] <- data[inds_2d] + data_vert[inds_2d]*deltaz[i]
         # 2 = sum(data[inds_3d]*cluster_vol_3d[inds_3d])
         if (zave_method == 1) {
-
-            if (verbose > 2) {
-                message(paste0(indent, "   using zave_method=1: dz ..."))
-            }
 
             tmp <- array(0, dim=c(dim(data_vert)[1:2], 1, dim(data_vert)[4])) # nvar, nod2d_n, ndepth=1, nrecspf
             dimnames(tmp)[c(1, 2, 4)] <- dimnames(data_vert)[c(1, 2, 4)]
@@ -30,40 +23,54 @@ sub_vertical_average <- function(data_vert) {
             dimnames(tmp)[[3]] <- paste0(depths_plot, "m")
             dep_total <- tmp
            
-            # vertical average
-            for (i in 1:ndepths) {
+            for (vari in seq_len(dim(tmp)[1])) { # for all vars; necessary to distinguish between 2D and 3D vars in data
+                
+                if (verbose > 0) message(indent, "   ", varname_nc[vari], ": ", appendLF=F)
+                
+                if (dim_tag[vari] == "2D") {
+                    if (verbose > 0) message("vertical average not necessary")
+                    tmp[vari,,,] <- data_vert[vari,,,]
 
-                if (verbose > 1) {
-                    z <- interpolate_depths[i]
-                    if (i == 1) message(indent, "   ", appendLF=F)
-                    message(z, "m ", appendLF=F)
-                    if (i == ndepths) message("") 
-                }
+                } else if (dim_tag[vari] == "3D") {
+                    
+                    # integrate over irregular depths
+                    for (i in seq_len(ndepths)) {
+                        if (verbose > 1) {
+                            z <- interpolate_depths[i]
+                            message(z, "m ", appendLF=ifelse(i == ndepths, T, F))
+                        }
+                        if (F) { # without vari loop
+                            aux <- data_vert[,,i,] # c(nvars,nod2d_n,ndepths,nrecspf)
+                            inds <- !is.na(aux)
+                            tmp[inds] <- tmp[inds] + aux[inds]*deltaz[i]
+                            dep_total[inds] <- dep_total[inds] + deltaz[i]
+                        } else if (T) { # with vari loop
+                            aux <- data_vert[vari,,i,] # if nrecspf=1 dim(aux)=nod2d_n else (nod2d_n,nrecspf)
+                            inds <- !is.na(aux)
+                            tmp[vari,,,][inds] <- tmp[vari,,,][inds] + aux[inds]*deltaz[i]
+                            dep_total[vari,,,][inds] <- dep_total[vari,,,][inds] + deltaz[i]
+                        }
+                    } # for i ndepths
+                    
+                    # divide through total depth
+                    tmp[vari,,,] <- tmp[vari,,,]/dep_total[vari,,,]
 
-                aux <- data_vert[,,i,] # c(nvars,nod2d_n,ndepths,nrecspf)
-                inds <- !is.na(aux)
-                tmp[inds] <- tmp[inds] + aux[inds]*deltaz[i]
-                dep_total[inds] <- dep_total[inds] + deltaz[i]
+                    if (F) { # special # soga = 34.72394 psu
+                        patch_area <- replicate(cluster_area_2d, n=dim(tmp)[4])
+                        area_sum <- apply(tmp[1,,1,] * patch_area, 2, sum)
+                        area_mean <- area_sum/sum(cluster_area_2d) # 34.59856 psu (0.12538 psu fresher)
+                        stop("asd")
+                    }
 
-            } # i ndepths
-
-            tmp <- tmp/dep_total
-            tmp[is.nan(tmp)] <- NA
+                } # if dim_tag[vari] == "2D" or "3D"
+            } # for vari nvars
+            
             #rm(dep_total, envir = .GlobalEnv) # if exported before
             rm(dep_total)
 
-            if (F) { # special # soga = 34.72394 psu
-                patch_area <- replicate(cluster_area_2d, n=dim(tmp)[4])
-                area_sum <- apply(tmp[1,,1,] * patch_area, 2, sum)
-                area_mean <- area_sum/sum(cluster_area_2d) # 34.59856 psu (0.12538 psu fresher)
-                stop("asd")
-            } # 
-
         } else if (zave_method == 2) {
 
-            if (verbose > 2) {
-                message(paste0(indent, "   using zave_method=2: cluster_vol_3d ..."))
-            }
+            stop("update dim_tag")
 
             tmp <- array(NA,
                           dim=dim(data_vert),
@@ -95,6 +102,7 @@ sub_vertical_average <- function(data_vert) {
     } # if ndepths > 1
 
     # export
+    tmp[is.nan(tmp)] <- NA
     tmp <<- tmp
 
 } # end sub_vertical_average

@@ -1753,13 +1753,11 @@ sub_calc <- function(data_node) {
                         message(indent, "   min / max 'dvardx_node3d[", k, ",,,]' = ", 
                                 paste(range(dvardx_node3d[k,,,]), collapse=" / "))
                     }
+                    if (verbose > 3) {
+                        message("dvardx_node3d:")
+                        cat(capture.output(str(dvardx_node3d)), sep="\n")
+                    }
                 }
-                
-                if (verbose > 3) {
-                    message("dvardx_node3d:")
-                    cat(capture.output(str(dvardx_node3d)), sep="\n")
-                }
-            
             } # if !is.null(dxinds)
 
             if (!is.null(dyinds)) {
@@ -1773,13 +1771,11 @@ sub_calc <- function(data_node) {
                         message(indent, "   min / max 'dvardy_node3d[", k, ",,,]' = ", 
                                 paste(range(dvardy_node3d[k,,,]), collapse=" / "))
                     }
+                    if (verbose > 3) {
+                        message("dvardy_node3d:")
+                        cat(capture.output(str(dvardy_node3d)), sep="\n")
+                    }
                 }
-
-                if (verbose > 3) {
-                    message("dvardy_node3d:")
-                    cat(capture.output(str(dvardy_node3d)), sep="\n")
-                }
-            
             }
 
         } # if horiz_deriv_node3d # which method
@@ -1890,9 +1886,8 @@ sub_calc <- function(data_node) {
             ## bring derivative back from (nod2d_n x ndepths) to (nod3d_n) if possible
             if (dim_tag == "2D" 
                 || average_depth
-                || (dim_tag == "3D" && ndepths == 1)) {
-
-                # nothing to do
+                || (dim_tag == "3D" && ndepths == 1)) { # nothing to do
+                
                 if (!is.null(dxinds)) {
                     dvardx_node <- dvardx_vert # dim(dvardx_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
                 }

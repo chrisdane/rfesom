@@ -254,13 +254,17 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- expression(paste("Squared SST [", degree, "C"^"2", "]"))
     varname_nc <- "tossq"
 
-} else if (varname == "u") {
+} else if (any(varname == c("u", "uo"))) {
     longname <- "Zonal Velocity"
     units_out <- "m s-1"
     var_label_plot <- expression(paste("Zonal Velocity u [m s"^"-1","]"))
-    typesuffix <- c("oce.", "oce.")
-    diagsuffix <- c("", "")
-    varname_nc <- c("u", "v")
+    if (varname == "u") { # old fesom1
+        typesuffix <- c("oce.", "oce.")
+        diagsuffix <- c("", "")
+        varname_nc <- c("u", "v")
+    } else { # new fesom1
+        varname_nc <- c("uo", "vo")
+    }
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -280,22 +284,13 @@ if (varname == "tos") { # fesom 1.4
     multfac_plot <- 100 # m s-1 --> cm s-1
     units_plot <- "cm s-1"
     var_label_plot <- expression(paste("|", bold("u")[h],"| [cm s"^"-1","]"))
-    typesuffix <- c("oce.", "oce.")
-    diagsuffix <- c("", "")
-    if (F) {
-        varname_nc <- c("uo", "vo")
-    } else if (T) { 
-        varname_nc <- c("u", "v")
-        fpatterns <- c("<runid>.<YYYY>.oce.mean.nc", "<runid>.<YYYY>.oce.mean.nc")
-    }
+    varname_nc <- c("uo", "vo")
+    if (F) varname_nc <- c("u", "v") # old
     rotate_inds <- c(1, 2)
     vec <- T
-    if (F) {
+    if (T) { # make small velocities more visible
         hvel_levels <- c(0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 100) # cm s-1
     }
-    hvel_cols <- c("#dde7f6", "#b2b3da", "#9b98cb", "#cdc774",
-                   "#fcee23", "#fdb514", "#f47720", "#ef4023",
-                   "darkred")
 
 } else if (varname == "uu") {
     longname <- "Zonal Velocity Squared"
@@ -4089,6 +4084,24 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "mmolC/m2/d"
     var_label_plot <- expression(paste("air-sea CO"[2], " flux [mmolC m"^"-2", " d"^"-1", "] (>0 into ocean)"))
     varname_nc <- "CO2f"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
+} else if (varname == "NPPd") {
+    longname <- "Mean NPP diatoms"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("NPP"[diatoms], " [mmolC m"^"-2", " d"^"-1", "]"))
+    varname_nc <- "NPPd"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
+} else if (varname == "NPPn") {
+    longname <- "Mean NPP nanophytoplankton"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("NPP"[nanophytoplankton], " [mmolC m"^"-2", " d"^"-1", "]"))
+    varname_nc <- "NPPn"
     if (out_mode == "fldint") {
         units_out <- "mmolC/d"
     }

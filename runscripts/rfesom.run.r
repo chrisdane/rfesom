@@ -64,20 +64,34 @@ if (F) {
     #area <- "LSboening"
     #area <- "mldWeddel"
 
-} else if (F) { # awi-esm-1-1-lr 1pctCO2
+} else if (T) { # awi-esm-1-1-lr 1pctCO2
     model <- "fesom"
-    datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
-    fpatterns <- "1percCO2_fesom_<varname>_<YYYY>0101.nc"
-    #postprefix <- "awi-esm-1-1-lr_1percCO2"
-    postprefix <- "awi-esm-1-1-lr_1percCO2_monmax"
+    #datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
+    #fpatterns <- "1percCO2_fesom_<varname>_<YYYY>0101.nc"
+    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/1pctCO2/r1i1p1f1/Omon/thetao/gn/v20200212"
+    datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/1pctCO2/r1i1p1f1/Omon/uo/gn/v20200212",
+                     "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/1pctCO2/r1i1p1f1/Omon/vo/gn/v20200212")
+    shifttime_minus1dt <- F
+    #fpatterns <- "thetao_Omon_AWI-ESM-1-1-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    fpatterns <- c("uo_Omon_AWI-ESM-1-1-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc",
+                   "vo_Omon_AWI-ESM-1-1-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc")
+    postprefix <- "awi-esm-1-1-lr_1percCO2"
+    #postprefix <- "awi-esm-1-1-lr_1percCO2_monmax"
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     meshid <- "core"
-    years <- 1910:1930
+    #years <- 1910
+    years <- 1910:1912
+    #years <- 1910:1930
     #season <- "SON" # "FMA"
     #varname <- "mlotst"
     #frequency_post <- "monmean" # calc monthly means before any other stuff
-    varname <- "omldamax"
-    frequency_post <- "monmax"
+    #varname <- "omldamax"
+    #frequency_post <- "monmax"
+    #varname <- "thetao"
+    #varname <- "uo"
+    varname <- "hvel"
+    #depths <- 0
+    depths <- c(0, 200)
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr lgm
@@ -123,7 +137,7 @@ if (F) {
     #varnme <- "siextentn"
     regular_ltm_out <- T
 
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl og
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl og
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
     datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
@@ -132,18 +146,23 @@ if (F) {
     meshid <- "core"
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     #years <- 1950:1951
-    #ears <- 1950:2029 # chunk 1: 1950:2029
+    #years <- 1950:2029 # chunk 1: 1950:2029
     #years <- 2685
     #years <- 2030:2685 # chunk 2: 2030:2685
-    years <- 2586:2685 # last 100 years
+    #years <- 2586:2685 # last 100 years
+    years <- 2676:2685 # last 10 years
     #varname <- "tos"
     #varname <- "thetao"
-    varname <- "bgc03" # alkalinity
-    regular_ltm_out <- T
+    #varname <- "bgc03" # alkalinity
+    #varname <- "CO2f"
+    #varname <- "NPPd"
+    varname <- "NPPn"
+    regular_ltm_out <- F
     #regular_dx <- regular_dy <- 1
-    transient_out <- F
-    out_mode <- "select"
+    transient_out <- T
+    #out_mode <- "select"
     #out_mode <- "fldmean"
+    out_mode <- "fldint"
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
@@ -175,23 +194,22 @@ if (F) {
 } else if (F) { # awi-esm-1-1-lr_kh800 historical
     model <- "fesom"
     datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical"
-    postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    postprefix <- "awi-esm-1-1-lr_kh800_historical"
+    #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core/"
-    years <- 1850:1853
-    #years <- 1850:1863
-    #varname <- "tos"
-    varname <- "thetao"
+    years <- 1850:1901
+    varname <- "tos"
+    #varname <- "thetao"
     #varname <- "CO2f"
-    #frequency_post <- "monmean"
+    frequency_post <- "monmean"
     regular_ltm_out <- F
     transient_out <- T
     #out_mode <- "select"
     #out_mode <- "fldint"
-    #out_mode <- "fldmean"
-    out_mode <- "depth"
+    out_mode <- "fldmean"
+    #out_mode <- "depth"
     depths <- c(0, "max")
 
 } # which setting
@@ -214,4 +232,5 @@ if (interactive()) {
     args <- commandArgs(trailingOnly=F)
     user_runscript_filename <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
 }
-source(paste0(rfesompath, "/lib/main_rfesom.r")) 
+source(paste0(rfesompath, "/lib/main_rfesom.r"))
+
