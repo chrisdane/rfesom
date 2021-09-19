@@ -74,6 +74,32 @@ pb_char <- "#" # progress bar specs
 pb_width <- 30
 pb_style <- 3
 
+# load rfesom subroutines
+if (!exists("subroutinepath")) {
+    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
+}
+subroutinepath <- normalizePath(subroutinepath)
+message("\nLoad rfesom subroutines from \"", subroutinepath, "\" ...")
+for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
+            "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
+            "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
+            "sub_vertical_average.r", 
+            "sub_vertical_integral.r", "sub_vertical_integral_keepz.r")) {
+    source(paste0(subroutinepath, "/", i))
+}
+
+# Load general functions 
+# todo: how to load helper functions from another repo without the subrepo hassle?
+message("Load general subroutines from \"", subroutinepath, "/functions\" ...")
+# needed myfunctions.r functions: 
+# ht(), is.leap(), identical_list(), get_memory()
+# not?: make_posixlt_origin_function(), tryCatch.W.E(), cdo_get_filetype()
+for (i in c("load_package.r", "mytxtProgressBar.r",
+            "image.plot.pre.r", "myfunctions.r")) {
+    source(paste0(subroutinepath, "/functions/", i))
+}
+colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
+
 ## Load default options
 message("\nLoad default options from \"", rfesompath, "/namelists/namelist.config.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.config.r")) 
@@ -93,34 +119,6 @@ source(paste0(rfesompath, "/namelists/namelist.var.r"))
 ## Load area and projection options
 message("Get area options based on user options from \"", rfesompath, "/namelists/namelist.area.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.area.r"))
-
-# load subroutines
-if (!exists("subroutinepath")) {
-    subroutinepath <- paste0(rfesompath, "/lib") # path where subroutines are saved
-}
-subroutinepath <- suppressWarnings(normalizePath(subroutinepath))
-
-# Load rfesom subroutines
-message("Load rfesom subroutines from \"", subroutinepath, "\" ...")
-for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
-            "sub_calc.r", "sub_e2xde_to_n2xde.r", "sub_n2xde_to_n3.r",
-            "sub_n3_to_n2xde.r", "sub_prepare1.r", "sub_prepare2.r",
-            "sub_vertical_average.r", 
-            "sub_vertical_integral.r", "sub_vertical_integral_keepz.r")) {
-    source(paste0(subroutinepath, "/", i))
-}
-
-# Load general functions 
-# todo: how to load helper functions from another repo without the subrepo hassle?
-message("Load general subroutines from \"", subroutinepath, "/functions\" ...")
-# needed myfunctions.r functions: 
-# ht(), is.leap(), identical_list(), 
-# not?: make_posixlt_origin_function(), tryCatch.W.E(), cdo_get_filetype()
-for (i in c("load_package.r", "mytxtProgressBar.r",
-            "image.plot.pre.r", "gcd.r", "myfunctions.r")) {
-    source(paste0(subroutinepath, "/functions/", i))
-}
-colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 
 ## user input checks
 message("\nCheck user input ...")
@@ -967,7 +965,7 @@ if (nvars > 0) {
             message("\ngiven `years[", 1, "]` = ", years[1], " and `years[", length(years), "]` = ", years[length(years)])
             if (as.integer(years[1]) < min(years_filenames) || 
                 as.integer(years[length(years)]) > max(years_filenames)) {
-                    stop("--> these are out of found years from filenames: ", 
+                    stop("--> these are not within found years from filenames: ", 
                          min(years_filenames), " to ", max(years_filenames))
             } else {
                 #from_ind <- which.min(abs(years_filenames - as.integer(froms[i])))[1]
@@ -1473,11 +1471,9 @@ if (nvars > 0) {
                         }
                     } # if `frequency` was provided or not
                     message(indent, "--> determined frequency is ", frequency, "; dt = ", attributes(frequency)$units,
-                            " --> if this is not correct, set `frequency` in the runscript and rerun rfesom.\n",
-                            indent, "valid `frequency`s are:\n",
-                            paste(paste0(indent, "   frequency <- \"", 
-                                         c("daily", "monthly", "annual"), "\""),
-                                  collapse="\n"))
+                            " --> if this is not correct, set `frequency <- \"<frequency>\"` in the runscript and rerun rfesom.\n",
+                            indent, "known `frequency`s are: \"", 
+                            paste(c("daily", "monthly", "annual"), collapse="\", \""), "\"")
                 } # if fi == 1
 
                 # check for time prob 3 (check comments above for infos)
@@ -1861,7 +1857,7 @@ if (nvars > 0) {
         depthobj$deltaz_all <- abs(deltaz_all)
         
         if (verbose > 0) {
-            message(indent, "found ", ndepths_all, " depth points from ", 
+            message(indent, "found ", ndepths_all, " depths from ", 
                     min(depthobj$depth), "-", max(depthobj$depth), " in units \"", 
                     depthobj$units, "\":\n",
                     indent, indent, paste(fesom_depths, collapse=", "))
@@ -1873,8 +1869,8 @@ if (nvars > 0) {
     # create start and count vectors for reading only a time- and, if possible, depth-subset 
     # of the nc files for every wanted variable
     # there are 4 cases of variables:
-    # case 1: 1D without node and depth dims:                   dim_tag = "1D", levelwise = NA
-    # case 2: 2D without depth dim:                             dim_tag = "2D", levelwise = NA
+    # case 1: 1D without node and depth dims:                   dim_tag = "1D", levelwise = F
+    # case 2: 2D without depth dim:                             dim_tag = "2D", levelwise = F
     # case 3: 3D with depth dim --> levelwise 3D output:        dim_tag = "3D", levelwise = T
     # case 4: 3D without depth dim --> non-levelwise 3D output: dim_tag = "3D", levelwise = F
     message("\nFind start and count inds for reading nc files ...")
@@ -1891,6 +1887,7 @@ if (nvars > 0) {
             dimids <- dims_of_vars[[vari]]$dimids
             
             # check all dimensions of current variable of current file
+            dim_tag <- levelwise <- NULL # initialize
             for (dimi in seq_along(dimids)) {
               
                 # default: from 1 to length of dim 
@@ -1930,11 +1927,11 @@ if (nvars > 0) {
                         if (dims_of_vars[[vari]][[dimids[dimi]]]$len == 1) {
                             message(indent, indent, "node dim equals 1 --> set dim_tag to \"1D\"")
                             dim_tag <- "1D"
-                            levelwise <- NA
+                            levelwise <- F
                         } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod2d_n) {
                             message(indent, indent, "node dim equals nod2d_n = ", nod2d_n, " --> set dim_tag to \"2D\"")
                             dim_tag <- "2D"
-                            levelwise <- NA # default; may be overwritten later
+                            levelwise <- F # default; may be overwritten later
                         } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod3d_n) {
                             message(indent, indent, "node dim equals nod3d_n = ", nod3d_n, " --> set dim_tag to \"3D\"")
                             dim_tag <- "3D"
@@ -1943,7 +1940,6 @@ if (nvars > 0) {
                             stop("the input node dimension is neither of length ", nod2d_n,
                                  " (=`nod2d_n`), ", nod3d_n, " (=`nod3d_n`), nor 1")
                         }
-                        dims_of_vars[[vari]]$dim_tag <- dim_tag
                     
                     } else { # repeat from first file for all other files
                         starttmp[dimi] <- files_list[[vari]][[1]]$start[dimi]
@@ -1963,11 +1959,10 @@ if (nvars > 0) {
                         }
                         levelwise <- T
                         # update dim_tag depending on levelwise
-                        if (levelwise && dims_of_vars[[vari]]$dim_tag == "2D") {
+                        if (levelwise && dim_tag == "2D") {
                             message(indent, indent, "levelwise output detected --> change dim_tag from \"2D\" to \"3D\"") 
-                            dims_of_vars[[vari]]$dim_tag <- "3D"
+                            dim_tag <- "3D"
                         }
-                        dims_of_vars[[vari]]$levelwise <- levelwise
                     
                         # find depth inds to read from nc file
                         if (!exists("depths") || is.null(depths)) stop("this should not happen")
@@ -2012,9 +2007,15 @@ if (nvars > 0) {
                     
                     } # if fi == 1 or not
                 } # if current dim is depth dim
-                
             } # for dimi all dims of var
-        
+               
+            if (fi == 1) {
+                if (is.null(dim_tag)) stop("dim_tag still null")
+                dims_of_vars[[vari]]$dim_tag <- dim_tag
+                if (is.null(levelwise)) stop("levelwise still null")
+                dims_of_vars[[vari]]$levelwise <- levelwise
+            }
+
             files_list[[vari]][[fi]]$start <- starttmp
             files_list[[vari]][[fi]]$count <- counttmp
         
@@ -2046,15 +2047,15 @@ if (nvars > 0) {
         message("Summary `levelwise`:")
         print(levelwise)
     }
-    if (any(levelwise == T && levelwise == F)) {
-        stop("old non-levelwise and new levelwise 3D fesom output not defined")
+    if (any(dim_tag == "3D" & levelwise == T) && any(dim_tag == "3D" & levelwise == F)) {
+        stop("both old non-levelwise and new levelwise 3D fesom output simultaneously not defined")
     }
 
 } else if (nvars == 0) {
    
     # set defaults for non-nc variable set defaults for non-nc variables
     dim_tag <- "2D"
-    levelwise <- NA
+    levelwise <- F
     timespan <- ""
 
 } # if nvars > 0 or not
@@ -4826,55 +4827,63 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 # dim(data_node) = c(nvars,nod3d_n,ndepths=1,nrecspf) if dim_tag == "3D" & !levelwise
 
                 ## Save memory by depth averaging data if possible
-                stop("update dim_tag levelwise")
                 if (average_depth) {
                    
-                    for (vari in seq_len(nvars)) {
-                    
-                        if ((levelwise[vari] == F && zave_method == 1)
-                            || levelwise == T && any(!(interpolate_depths %in% fesom_depths))) { # level-wise dz                        
-                            
-                            # rearrange first
-                            if (verbose > 1) { 
-                                if (levelwise == F && zave_method == 1) {
-                                    message(indent, "Bring data_node from (nod3d_n=", nod3d_n, 
-                                            ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ...")
-                                } else if (levelwise == T && any(!(interpolate_depths %in% fesom_depths))) {
-                                    message(indent, "Interpolate data_node to wanted nod2d_n=", 
-                                            nod2d_n, " x ndepths=", ndepths, " depth levels ", 
-                                            depths_plot, "m ...")
-                                }
-                                if (verbose > 2) {
-                                    message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
-                                }
-                            } # verbose
-                            #indent_save <- indent; indent <- paste0(indent_save, "   ")
-                            sub_n3_to_n2xde(data_node) # produces tmp
-                            #indent <- indent_save; rm(indent_save)
-                            data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
-                            rm(tmp)
-
-                        } else if (levelwise == F && zave_method == 2
-                                   || levelwise == T && all(interpolate_depths %in% fesom_depths)) { 
-                            # data already in level space and all wanted levels are on model levels
-                            data_vert <- data_node # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
+                    if (zave_method == 1) { # level-wise dz        
+                    # old:
+                    #if ((levelwise[vari] == F && zave_method == 1)
+                    #    || levelwise == T && any(!(interpolate_depths %in% fesom_depths))) { # level-wise dz                        
+                        if (verbose > 1) {
+                            message(indent, "Apply vertical interpolation coefficients to `data_node`", appendLF=F)
+                            if (any(dim_tag == "3D" & !levelwise)) {
+                                message(" and rearrange from (nod3d_n=", nod3d_n, ") on (nod2d_n=", 
+                                        nod2d_n, " x ndepths=", ndepths, ")", appendLF=F)
+                            }
+                            message(":\n", 
+                                    indent, "run ", subroutinepath, "/sub_n3_to_n2xde.r ...")
                         }
-                    
-                    } # for vari
+                        sub_n3_to_n2xde(data_node) # produces tmp
+                        data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
+                        rm(tmp)
 
-                    if (verbose > 1 && ndepths > 1) {
-                        message(paste0(indent, "Average over ", depths_plot, " m depths ..."))
-                        if (verbose > 2) {
-                            message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
+                    # old:
+                    #} else if (levelwise == F && zave_method == 2
+                    #           || levelwise == T && all(interpolate_depths %in% fesom_depths)) { 
+                    } else { # which zave_method
+                        data_vert_ltm <- data_node_ltm # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf)
+                    }
+                    
+                    # check data so far
+                    if (verbose > 2) {
+                        for (i in seq_len(dim(data_vert)[1])) {
+                            message(indent, "   min/max data_vert[", i, ":",
+                                    dimnames(data_vert)[[1]][i], ",,,] = ",
+                                    paste(range(data_vert[i,,,], na.rm=T), collapse="/"),
+                                    " ", units_out)
                         }
                     }
-                    #indent_save <- indent; indent <- paste0(indent_save, "   ")
-                    sub_vertical_average(data_vert) # produces tmp
-                    #indent <- indent_save; rm(indent_save)
+
+                    # calculate vertical average
+                    if (verbose > 1 && ndepths > 1) {
+                        message(indent, "Average over ", depths_plot, 
+                                " m depths (zave_method=", zave_method, "):\n",
+                                indent, "run ", subroutinepath, "/sub_vertical_average.r ...")
+                    }
+                    sub_vertical_average(data_vert) # prduces tmp
                     data_node <- tmp # overwrite old data_node
                     # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                    # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
+                    # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf=1) # special!
                     rm(tmp)
+                    
+                    # check data so far
+                    if (verbose > 2) {
+                        for (i in seq_len(dim(data_node)[1])) {
+                            message(indent, "   min/max data_node[", i, ":",
+                                    dimnames(data_node)[[1]][i], ",,,] = ",
+                                    paste(range(data_node[i,,,], na.rm=T), collapse="/"),
+                                    " ", units_out)
+                        }
+                    }
 
                 } # if average_depth
 
@@ -4998,12 +5007,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         (regular_transient_out && out_mode == "select") ||
                         (regular_transient_out && out_mode == "areadepth")) {
 
-                        if (length(poly_inds_geogr) == 0) {
-                            stop("poly_inds_geogr: this should not happen")
-                        }
-
-                        stop("update dim_tag levelwise")
                         if (!average_depth && !integrate_depth) {
+                            stop("update dim_tag levelwise")
                             if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
                                 if (verbose > 1) { # rearrange first
                                     message(indent, "For regular interpolation bring data_node from (nod3d_n=", nod3d_n,
@@ -6193,80 +6198,76 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                 } # if normal, csec, or moc output
 
-                ## prepare and sum transient data for ltm
+                # prepare and sum transient data for ltm
                 if (any(ltm_out, regular_ltm_out, moc_ltm_out, rms_out, sd_out, plot_map)) {
 
-                    ## vertical average for ltm if not done before
+                    # vertical rearrange and/or average for ltm if not done before
                     if (!integrate_depth && !average_depth) {
                    
-                        stop("update dim_tag levelwise")
-                        ## rearrange first if necessary
-                        if (dim_tag == "3D" && dim(data_node)[2] != nod2d_n && ndepths > 1) {
-
+                        # rearrange first if necessary
+                        if (ndepths > 1 && dim(data_node)[2] != nod2d_n) {
+                        
                             if (zave_method == 1) { # level-wise dz                        
-                                if (verbose > 1) { # rearrange first
-                                    message(paste0(indent, "For ltm/plot bring data_node from (nod3d_n=", nod3d_n,
-                                                   ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ..."))
-                                    if (verbose > 2) {
-                                        message(paste0(indent, "   run ", subroutinepath, "/sub_n3_to_n2xde.r ..."))
+                                if (verbose > 1) {
+                                    message(indent, "For ltm/plot Apply vertical interpolation coefficients to `data_node`", appendLF=F)
+                                    if (any(dim_tag == "3D" & !levelwise)) {
+                                        message(" and rearrange from (nod3d_n=", nod3d_n, ") on (nod2d_n=", 
+                                                nod2d_n, " x ndepths=", ndepths, ")", appendLF=F)
                                     }
+                                    message(":\n", 
+                                            indent, "run ", subroutinepath, "/sub_n3_to_n2xde.r ...")
                                 }
                                 sub_n3_to_n2xde(data_node) # produces tmp
                                 data_vert <- tmp # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
                                 rm(tmp)
 
-                            } else if (zave_method == 2) { # which zave_method
-                                data_vert <- data_node # dim(data_vert) = c(nvars,nod2d_n,ndepths,nrecspf)
+                            } else { # which zave_method
+                                data_vert <- data_node # dim(data_vert_ltm) = c(nvars,nod2d_n,ndepths,nrecspf)
                             }
+                        
                         } else {
                             data_vert <- data_node
-                            
-                        } # if data is not on 2d yet
+                        }
 
-                        ## Check data so far
+                        # check data so far
                         if (verbose > 2) {
-                            for (i in 1:dim(data_node)[1]) {
+                            for (i in seq_len(dim(data_vert)[1])) {
                                 message(indent, "   min/max data_vert[", i, ":",
                                         dimnames(data_vert)[[1]][i], ",,,] = ",
-                                        paste(range(data_vert[i,,,], na.rm=T), collapse="/"))
-                                if (F) {
-                                    for (j in 1:dim(data_vert)[3]) {
-                                        message(range(data_vert[i,,j,], na.rm=T))
-                                    }
-                                }
+                                        paste(range(data_vert[i,,,], na.rm=T), collapse="/"),
+                                        " ", units_out)
                             }
                         }
 
-                        # if data_vert has more than 1 depth
+                        # calculate vertical average
                         if (dim(data_vert)[3] > 1) { 
                             if (verbose > 1) {
-                                message(paste0(indent, "Average over ", depths_plot, " m depths for ltm or plot ..."))
-                                if (verbose > 2) {
-                                    message(paste0(indent, "   run ", subroutinepath, "/sub_vertical_average.r ..."))
-                                }
+                                message(indent, "Average over ", depths_plot, 
+                                        " m depths (zave_method=", zave_method, "):\n",
+                                        indent, "run ", subroutinepath, "/sub_vertical_average.r ...")
                             }
-                            sub_vertical_average(data_vert) # produces tmp
-                            data_node <- tmp # overwrite data_node
+                            sub_vertical_average(data_vert) # prduces tmp
+                            data_node <- tmp # overwrite old data_node
                             # if (zave_method == 1): dim(data_node) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf) # special!
-                            rm(tmp, data_vert)
-
-                            ## Check data so far
-                            if (verbose > 2) {
-                                for (i in 1:dim(data_node)[1]) {
-                                    message(indent, "   min/max data_node[", i, ":",
-                                            dimnames(data_node)[[1]][i], ",,,] = ",
-                                            paste(range(data_node[i,,,], na.rm=T), collapse="/"))
-                                }
-                            }
-
+                            # if (zave_method == 2): dim(data_node) = c(nvars,nod[23]d_n=1,ndepths=1,nrecspf=1) # special!
+                            rm(tmp)
+                        
                         } else { # only 1 depth
-                            
                             data_node <- data_vert
                             rm(data_vert) 
                         
                         } # if data_vert has more than 1 depth
-
+                        
+                        # check data so far
+                        if (verbose > 2) {
+                            for (i in seq_len(dim(data_node)[1])) {
+                                message(indent, "   min/max data_node[", i, ":",
+                                        dimnames(data_node)[[1]][i], ",,,] = ",
+                                        paste(range(data_node[i,,,], na.rm=T), collapse="/"),
+                                        " ", units_out)
+                            }
+                        }
+                        
                     } # if !integrate_depth && !average_depth
 
                     ## at this point
@@ -7271,8 +7272,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         # rearrange from nod3d_n to nod2d_n x ndepths
         if (!average_depth && !integrate_depth) {
-            stop("update dim_tag levelwise")
-            if (any(dim_tag == "3D") && dim(data_node_ltm)[2] != nod2d_n && ndepths > 1) {
+            
+            if (ndepths > 1 && dim(data_node_ltm)[2] != nod2d_n) {
                 if (verbose > 1) { # rearrange first
                     message(indent, "For regular interpolation bring data_node_ltm from (nod3d_n=", 
                             nod3d_n, ") on (nod2d_n=", nod2d_n, " x ndepths=", ndepths, ") ...")
@@ -7294,9 +7295,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         } # if !average_depth && !integrate_depth
 
         if (verbose > 1) {
-            message(paste0(indent, "For regular interpolation rearrange data_vert_ltm from (nod2d_n=", nod2d_n, 
-                         " x ndepths=", dim(data_vert_ltm)[3], ") to (3 x elem2d_n=", 
-                         elem2d_n, " x ndepths=", dim(data_vert_ltm)[3], ") ...")) 
+            message(indent, "For regular interpolation rearrange data_vert_ltm from (nod2d_n=", nod2d_n, 
+                    " x ndepths=", dim(data_vert_ltm)[3], ") to (3 x elem2d_n=", 
+                    elem2d_n, " x ndepths=", dim(data_vert_ltm)[3], ") ...") 
         }
 
         if (verbose > 1) {
@@ -8410,11 +8411,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             }
 
             # create color bar
-            # source("lib/functions/image.plot.pre.")
+            #source(paste0(rfesompath, "/lib/functions/image.plot.pre.r"))
             message(indent, "   Run image.plot.pre() ...")
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, max_labels=max_labels, 
                                  zlevels=zlevels, cols=cols, 
-                                 palname=palname,  colors_script=colors_script,
+                                 palname=palname, colors_script=colors_script,
                                  method=method, power_min=power_min,
                                  axis.labels=axis.labels, axis.round=axis.round,
                                  axis.zoom=axis.zoom, axis.addzlims=axis.addzlims,
@@ -8424,14 +8425,14 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (verbose > 1) {
                 if (!user_levels_exist) {
                     message(indent, "   You can define your own color levels with e.g.:\n",
-                            indent, "      `", varnamei, "_levels <- c(", paste0(ip$axis.labels, collapse=","), ")`\n",
+                            indent, "      `", varnamei, "_levels <- c(", paste(ip$axis.labels, collapse=","), ")`\n",
                             indent, "   in e.g. \"namelist.var.r\".")
                 }
                 if (!user_palname_exist && !user_cols_exist) {
                     message(indent, "   You can define your own colors with e.g.:\n",
                             indent, "      `", varnamei, "_palname <- \"Spectral\"` (run color_function() for a demo of available color palettes)\n", 
                             indent, "   or\n",
-                            indent, "      `", varnamei, "_cols <- c(\"", paste0(ip$cols, collapse="\",\""), "\")`\n",
+                            indent, "      `", varnamei, "_cols <- c(\"", paste(ip$cols, collapse="\",\""), "\")`\n",
                             indent, "   in e.g. \"namelist.var.r\".")
                 }
             }

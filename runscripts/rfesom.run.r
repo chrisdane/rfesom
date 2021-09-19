@@ -7,6 +7,8 @@ rfesompath <- "~/scripts/r/rfesom"
 
 # any variable already defined in rfesom/namelists/namelist.config.r can be overwritten here
 if (F) {
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
     datainpaths <- "/work/ab0246/a270124/esm-experiments/awicm_pism/LIG01/outdata/fesom"
     fpatterns <- "LIG01_fesom_<varname_nc>_<YYYY>0101.nc"
@@ -21,6 +23,8 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr piControl-1855:1954 = deck-1750:1849
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
     datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/tos/gn/v20200212"
     fpatterns <- "<varname>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
@@ -41,11 +45,15 @@ if (F) {
     #area <- "mldWeddel"
 
 } else if (F) { # awi-esm-1-1-lr piControl-1955:2104 = deck-1850:1999
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
-    datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom"
-    fpatterns <- "PI-CTRL6_fesom_<varname>_<YYYY>0101.nc"
-    #postprefix <- "awi-esm-1-1-lr_piControl"
-    postprefix <- "awi-esm-1-1-lr_piControl_monmax"
+    #datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom"
+    #fpatterns <- "PI-CTRL6_fesom_<varname>_<YYYY>0101.nc"
+    datainpaths <- rep("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom", t=2)
+    fpatterns <- c("PI-CTRL6_fesom_uo_<YYYY>0101.nc", "PI-CTRL6_fesom_vo_<YYYY>0101.nc")
+    postprefix <- "awi-esm-1-1-lr_piControl"
+    #postprefix <- "awi-esm-1-1-lr_piControl_monmax"
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     meshid <- "core"
     #years <- 2015:2016
@@ -54,9 +62,11 @@ if (F) {
     #season <- "SON" # "FMA" #"SON"
     #varname <- "mlotst"
     #frequency_post <- "monmean" # calc monthly means before any other stuff
-    varname <- "omldamax"
-    frequency_post <- "monmax"
+    #varname <- "omldamax"
+    #frequency_post <- "monmax"
     #varname <- "siextentn"
+    varname <- "hvel"
+    depths <- c(0, 200)
     regular_ltm_out <- T
     regular_transient_out <- F
     transient_out <- F
@@ -64,7 +74,9 @@ if (F) {
     #area <- "LSboening"
     #area <- "mldWeddel"
 
-} else if (T) { # awi-esm-1-1-lr 1pctCO2
+} else if (F) { # awi-esm-1-1-lr 1pctCO2
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
     #datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
     #fpatterns <- "1percCO2_fesom_<varname>_<YYYY>0101.nc"
@@ -80,8 +92,8 @@ if (F) {
     meshpath <- "/work/ab0995/a270046/meshes_default/core"
     meshid <- "core"
     #years <- 1910
-    years <- 1910:1912
-    #years <- 1910:1930
+    #years <- 1910:1912
+    years <- 1910:1930
     #season <- "SON" # "FMA"
     #varname <- "mlotst"
     #frequency_post <- "monmean" # calc monthly means before any other stuff
@@ -95,6 +107,8 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr lgm
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
     datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/lgm/r1i1p1f1/Omon/tob/gn/v20200212"
     fpatterns <- "<varname>_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
@@ -109,35 +123,52 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-cm-1-1-mr
+    postpath <- "/work/ab0246/a270073/post/fesom"
+    plotpath <- "/work/ab0246/a270073/plots/fesom"
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Oday/omldamax/gn/v20181218"
     #fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #postprefix <- "awi-cm-1-1-mr_piControl_monmax"
     #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/mlotst/gn/v20181218"
     #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    #postprefix <- "awi-cm-1-1-mr_piControl"
+    datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/uo/gn/v20181218",
+                     "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/vo/gn/v20181218")
+    fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
+                   "vo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
     #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Omon/mlotst/gn/v20181218"
     #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    #postprefix <- "awi-cm-1-1-mr_historical"
-    datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Oday/omldamax/gn/v20181218"
-    fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    postprefix <- "awi-cm-1-1-mr_1pctCO2_monmax"
+    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Oday/omldamax/gn/v20181218"
+    #fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/mlotst/gn/v20181218"
     #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/uo/gn/v20181218",
+    #                 "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/vo/gn/v20181218")
+    #fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
+    #               "vo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
+    postprefix <- "awi-cm-1-1-mr_piControl"
+    #postprefix <- "awi-cm-1-1-mr_piControl_monmax"
+    #postprefix <- "awi-cm-1-1-mr_historical"
+    #postprefix <- "awi-cm-1-1-mr_1pctCO2_monmax"
     #postprefix <- "awi-cm-1-1-mr_1pctCO2"
     shifttime_minus1dt <- F
     meshid <- "glob"
     meshpath <- paste0("/pool/data/AWICM/FESOM1/MESHES/", meshid)
-    #years <- 2710:2730 # awi-cm-1-1-mr piControl-2710:2730 = deck-1910:1930
-    years <- 1910:1930
+    #years <- 2710:2712
+    years <- 2710:2730 # awi-cm-1-1-mr piControl-2710:2730 = deck-1910:1930
+    #years <- 1910:1912
+    #years <- 1910:1930 # tcr mean
     #season <- "FMA" # "SON" "FMA"
     #varname <- "mlotst" # MLD by sigma_theta
-    varname <- "omldamax" # MLD by mixing scheme
-    frequency_post <- "monmax" # calc monthly means before any other stuff
+    #varname <- "omldamax" # MLD by mixing scheme
+    #frequency_post <- "monmax" # calc monthly means before any other stuff
     #varnme <- "siextentn"
+    #varname <- "uo"
+    varname <- "hvel"
+    depths <- c(0, 200)
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl og
+    postpath <- "/work/ba1103/a270073/post/fesom"
+    plotpath <- "/work/ba1103/a270073/plots/fesom"
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
     datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
@@ -166,32 +197,38 @@ if (F) {
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
+} else if (T) { # awi-esm-1-1-lr_kh800 esm-piControl
+    postpath <- "/work/ba1103/a270073/post/fesom"
+    plotpath <- "/work/ba1103/a270073/plots/fesom"
     model <- "fesom"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/fesom"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
     #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
-    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
-    postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
+    #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
+    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/fesom"
+    postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_restartall"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core/"
     #years <- 2686
-    years <- 2686:2689
+    years <- 2686:2688
     #years <- 2686:2760
     frequency <- "monthly"
-    #varname <- "tos"
+    varname <- "tos"
     #varname <- "thetao"
-    varname <- "CO2f"
+    #varname <- "CO2f"
     regular_ltm_out <- F
     transient_out <- T
     #out_mode <- "select"
-    out_mode <- "fldint"
-    #out_mode <- "fldmean"
+    #out_mode <- "fldint"
+    out_mode <- "fldmean"
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical
+    postpath <- "/work/ba1103/a270073/post/fesom"
+    plotpath <- "/work/ba1103/a270073/plots/fesom"
     model <- "fesom"
     datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
@@ -214,16 +251,8 @@ if (F) {
 
 } # which setting
 
-if (F) {
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
-} else if (T) {
-    postpath <- "/work/ba1103/a270073/post/fesom"
-    plotpath <- "/work/ba1103/a270073/plots/fesom"
-}
 derivpath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/derivatives")
 interppath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/interp")
-
 
 ### do not change below this line
 if (interactive()) {

@@ -57,17 +57,24 @@ quiver_arrow_edge_length <- 0.05
 quiver_legend_velocity  <- 0.04 # [unit of variable]
 
 # which font to use
-font_family <- "Droid Sans Mono"
-if (any(search() == "package:extrafont")) {
-    if (!any(fonts() == font_family)) {
-        font_family <- "sans" # the default 
+# --> for png, an invalid font will be ignored and the default will be used internally by png()
+# --> for pdf, an error occurs
+#font_family <- "sans" # default; on mistral R36, sans -> Helvetica is broken
+font_family <- "Nimbus Sans L"
+#font_family <- "Droid Sans Mono"
+if (plot_file == "pdf") {
+    font_avail <- names(grDevices::pdfFonts())
+    if (!any(font_avail == font_family)) {
+        message("wanted `font_family` = \"", font_family, 
+                "\" not available for pdf plots --> use default \"sans\"")
+        font_family <- "sans"
     }
 }
 
-## Colorbar Options
+# colorbar options
 # defaults for image.plot.pre()
 nlevels <- 11 
-max_labels <- 11
+max_labels <- NULL
 zlevels <- NULL
 cols <- NULL
 palname <- NULL
