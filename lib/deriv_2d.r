@@ -108,6 +108,7 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
     close(pb)
 
     ## output
+    message("todo: save elem2d")
     ncdf4 <- T
     if (ncdf4) { 
         library(ncdf4)
