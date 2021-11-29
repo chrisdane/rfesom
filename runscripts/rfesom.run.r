@@ -7,8 +7,7 @@ rfesompath <- "~/scripts/r/rfesom"
 
 # any variable already defined in rfesom/namelists/namelist.config.r can be overwritten here
 if (F) {
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     datainpaths <- "/work/ab0246/a270124/esm-experiments/awicm_pism/LIG01/outdata/fesom"
     fpatterns <- "LIG01_fesom_<varname_nc>_<YYYY>0101.nc"
@@ -23,8 +22,7 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr piControl-1855:1954 = deck-1750:1849
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/tos/gn/v20200212"
     fpatterns <- "<varname>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
@@ -45,8 +43,7 @@ if (F) {
     #area <- "mldWeddel"
 
 } else if (F) { # awi-esm-1-1-lr piControl-1955:2104 = deck-1850:1999
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     #datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom"
     #fpatterns <- "PI-CTRL6_fesom_<varname>_<YYYY>0101.nc"
@@ -75,8 +72,7 @@ if (F) {
     #area <- "mldWeddel"
 
 } else if (F) { # awi-esm-1-1-lr 1pctCO2
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     #datainpaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
     #fpatterns <- "1percCO2_fesom_<varname>_<YYYY>0101.nc"
@@ -107,8 +103,7 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr lgm
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/lgm/r1i1p1f1/Omon/tob/gn/v20200212"
     fpatterns <- "<varname>_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
@@ -123,8 +118,7 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-cm-1-1-mr
-    postpath <- "/work/ab0246/a270073/post/fesom"
-    plotpath <- "/work/ab0246/a270073/plots/fesom"
+    workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Oday/omldamax/gn/v20181218"
     #fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
@@ -167,8 +161,7 @@ if (F) {
     regular_ltm_out <- T
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl og
-    postpath <- "/work/ba1103/a270073/post/fesom"
-    plotpath <- "/work/ba1103/a270073/plots/fesom"
+    workpath <- "/work/ba1103/a270073"
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
     datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
@@ -197,9 +190,8 @@ if (F) {
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
-} else if (T) { # awi-esm-1-1-lr_kh800 esm-piControl
-    postpath <- "/work/ba1103/a270073/post/fesom"
-    plotpath <- "/work/ba1103/a270073/plots/fesom"
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
+    workpath <- "/work/ba1103/a270073"
     model <- "fesom"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/fesom"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
@@ -227,8 +219,7 @@ if (F) {
     #depths <- c(0, "max")
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical
-    postpath <- "/work/ba1103/a270073/post/fesom"
-    plotpath <- "/work/ba1103/a270073/plots/fesom"
+    workpath <- "/work/ba1103/a270073"
     model <- "fesom"
     datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
@@ -249,10 +240,35 @@ if (F) {
     #out_mode <- "depth"
     depths <- c(0, "max")
 
+} else if (T) { # reccap
+    workpath <- "/work/ollie/cdanek"
+    model <- "fesom"
+    #datainpaths <- "/work/ollie/frbunsen/model_runs/reccap_A_varCO2_varclim_1958_2019"
+    #postprefix <- "reccap_A"
+    #datainpaths <- "/work/ollie/frbunsen/model_runs/reccap_B_cstCO2_cstclim_1958_2019"
+    #postprefix <- "reccap_B"
+    #datainpaths <- "/work/ollie/frbunsen/model_runs/reccap_C_varCO2_cstclim_1958_2019"
+    #postprefix <- "reccap_C"
+    datainpaths <- "/work/ollie/frbunsen/model_runs/reccap_D_cstCO2_varclim_1958_2019"
+    postprefix <- "reccap_D"
+    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    meshid <- "core"
+    meshpath <- "/work/ollie/jhauck/input/meshes/core_new_384"
+    years <- 1958:2019
+    varname <- "CO2f"
+    regular_ltm_out <- F
+    transient_out <- T
+    #out_mode <- "select"
+    out_mode <- "fldint"
+    #out_mode <- "fldmean"
+    #out_mode <- "depth"
+
 } # which setting
 
-derivpath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/derivatives")
-interppath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/interp")
+postpath <- paste0(workpath, "/post/", model)
+plotpath <- paste0(workpath, "/plots/", model)
+derivpath <- paste0(workpath, "/mesh/", meshid, "/derivatives")
+interppath <- paste0(workpath, "/mesh/", meshid, "/interp")
 
 ### do not change below this line
 if (interactive()) {

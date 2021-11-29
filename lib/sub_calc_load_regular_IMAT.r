@@ -5,9 +5,9 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     
     ## R-function for calculating IMAT
     success <- load_package("splancs")
-    if (!success) stop(helppage)
+    if (!success) stop()
     success <- load_package("ncdf4")
-    if (!success) stop(helppage)
+    if (!success) stop()
    
     # how to define the regular grid correctly?
     # https://github.com/chrisdane/rfesom/issues/1
