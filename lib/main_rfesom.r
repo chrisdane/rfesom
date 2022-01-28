@@ -16,7 +16,7 @@ rfesom_version <- c(1, 0, 0)
 
 message("\n",
         "***********************************************************************\n",
-        "* rfesom v", paste(rfesom_version, collapse="."), " for processing FESOM1/2 output *\n",
+        "* rfesom v", paste(rfesom_version, collapse="."), " for processing FESOM1/2 output                        *\n",
         "* https://github.com/chrisdane/rfesom                                 *\n",
         "***********************************************************************")
 
@@ -93,7 +93,6 @@ for (i in c("vec_rotate_r2g.r", "grid_rotate_g2r.r", "grid_rotate_r2g.r",
 message("Load general subroutines from \"", subroutinepath, "/functions\" ...")
 # needed myfunctions.r functions: 
 # ht(), is.leap(), identical_list(), get_memory()
-# not?: make_posixlt_origin_function(), tryCatch.W.E(), cdo_get_filetype()
 for (i in c("load_package.r", "mytxtProgressBar.r",
             "image.plot.pre.r", "myfunctions.r")) {
     source(paste0(subroutinepath, "/functions/", i))
@@ -156,7 +155,7 @@ if (global_mesh && !cycl || !global_mesh && cycl) {
 if (meshid == "core" ||
     meshpath == "/work/ab0995/a270046/meshes_default/core") {
     if (rotate_mesh) {
-        stop("meshid is \"", meshid, "\" but `rotate_mesh` is true. i think this is not correct?")
+        warning("meshid is \"", meshid, "\" but `rotate_mesh` is true. i think this is not correct")
     }
 }
 if (meshid == "CORE2_final" ||
@@ -325,8 +324,8 @@ if (regular_ltm_out && !any(out_mode == c("select", "areadepth"))) {
 }
 
 # check provided season
-if (!exists("time_dim_or_var_names")) time_dim_or_var_names <- c("time", "T") # add more here if necessary
-if (!exists("node_dim_or_var_names")) node_dim_or_var_names <- c("nodes_2d", "nodes_3d", "nodes", "ncells") 
+if (!exists("time_dim_or_var_names")) time_dim_or_var_names <- c("time", "T", "ny") # add more here if necessary
+if (!exists("node_dim_or_var_names")) node_dim_or_var_names <- c("nodes_2d", "nodes_3d", "nodes", "ncells", "nx") 
 if (!exists("depth_dim_or_var_names")) depth_dim_or_var_names <- c("depth")
 days_per_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_per_month_leap <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
@@ -1286,7 +1285,9 @@ if (nvars > 0) {
                 dim_names <- names(ncids[[first_nc_with_time_ind[time_vari]]]$dim)
                 var_names <- names(ncids[[first_nc_with_time_ind[time_vari]]]$var)
             }
-        
+       
+            time_var <- time_dim <- NULL
+
             # 1st try: check if there is time _variable_
             if (any(!is.na(match(time_dim_or_var_names, var_names)))) { # there is a time variable
                 time_var <- var_names[match(time_dim_or_var_names, var_names)]
@@ -1327,7 +1328,9 @@ if (nvars > 0) {
                 } else if (ncdf.tools_tag == T) { # use ncdf.tools package
                     #time_dim_id <- RNetCDF::dim.inq.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim)$id
                     #tmp$time <- RNetCDF::var.get.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim)
-                    time_natts <- RNetCDF::var.inq.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim)$natts
+                    #time_natts <- RNetCDF::var.inq.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim)$natts
+                    time_natts <- RNetCDF::dim.inq.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim)$natts
+                    if (is.null(time_natts)) time_natts <- 0 # time dim has no attributes
                     for (atti in seq_len(time_natts)) { # using id or name here?
                         #attname <- RNetCDF::att.inq.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim_id, attribute=atti-1)$name
                         #tmp[[attname]] <- RNetCDF::att.get.nc(ncids[[first_nc_with_time_ind[time_vari]]], time_dim_id, attribute=atti-1)
@@ -1337,7 +1340,7 @@ if (nvars > 0) {
                 }
                 timeobj[[time_vari]] <- tmp
             } else {
-                message("no time dim or var found in file. this should not happen")
+                warning("no time dim or var found in file. this should not happen")
             } # if time dim or var was found
             
             ## make POSIX time object of all files
@@ -1373,17 +1376,19 @@ if (nvars > 0) {
             dates <- system(cmd, intern=T, ignore.stderr=T)
             dates <- strsplit(trimws(dates), "  ")[[1]]
             if (length(dates) != 0 && all(dates == "0000-00-00T00:00:00")) {
-                timevalue_strat <- "old" # --> construct times based on YYYY from filenames
-            } else if (length(dates) == 0) {
-                timevalue_strat <- "sub" # --> construct times based on YYYY from filenames
+                timevalue_strat <- "old" # construct times based on YYYY from filenames
+            } else if (length(dates) == 0 && !is.null(time_var)) {
+                timevalue_strat <- "sub" # construct times based on YYYY from filenames
+            } else if (length(dates) == 0 && !is.null(time_dim)) {
+                timevalue_strat <- "oasis" # construct times based on YYYY from filenames
             } else {
-                timevalue_strat <- "new" # --> use result of `cdo showtimestamp`
+                timevalue_strat <- "new" # use result of `cdo showtimestamp`
             }
             
             # get input times of all files to read 
             for (fi in seq_along(files_list[[first_nc_with_time_ind[time_vari]]])) {
                 
-                if (any(timevalue_strat == c("old", "sub"))) { 
+                if (any(timevalue_strat == c("old", "sub", "oasis"))) { 
                     # construct time based on filename years and number of time points; assume that dt is constant in time
                     if (timevalue_strat == "old") {
                         cmd <- paste0("cdo -s ntime ",
@@ -1391,7 +1396,9 @@ if (nvars > 0) {
                         ntimepf <- system(cmd, intern=T, ignore.stderr=T)
                         ntimepf <- as.integer(ntimepf)
                     } else if (timevalue_strat == "sub") {
-                        ntimepf <- system(paste0("ncdump -v time ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files), intern=T) 
+                        cmd <- paste0("ncdump -v ", time_var, " ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
+                        message(indent, "   run `", cmd, "` ...")
+                        ntimepf <- system(cmd, intern=T) 
                         ntimepf <- ntimepf[(which(ntimepf == "data:")+2):(length(ntimepf)-1)]
                         ntimepf <- sub("time = ", "", ntimepf)
                         ntimepf <- sub(" ;", "", ntimepf)
@@ -1401,7 +1408,9 @@ if (nvars > 0) {
                         if (length(ntimepf) != 1) stop("something went wrong here")
                         ntimepf <- ntimepf[[1]]
                         ntimepf <- length(ntimepf)
-                    }
+                    } else if (timevalue_strat == "oasis") {
+                        ntimepf <- 1
+                    } 
                     if (length(ntimepf) > 0 && all(ntimepf == "") || length(ntimepf) == 0) {
                         stop("sth went wrong here")
                     }
@@ -1409,6 +1418,8 @@ if (nvars > 0) {
                         dates <- files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$YYYY # use YYYY of filename
                         if (ntimepf == 12) {
                             dates <- seq.Date(as.Date(paste0(dates, "-1-15")), as.Date(paste0(dates, "-12-15")), l=ntimepf)
+                        } else if (ntimepf == 1) {
+                            dates <- as.Date(paste0(dates, "-12-31")) # minus dt
                         } else {
                             stop("ntimepf = ", ntimepf, " not implemented here")
                         }
@@ -1583,6 +1594,8 @@ if (nvars > 0) {
                     months_wanted_inds <- unique(dates$mon) + 1
                     if (length(months_wanted_inds) == 12 && all(months_wanted_inds == 1:12)) {
                         seasoni <- "Jan-Dec"
+                    } else if (length(months_wanted_inds) == 1) {
+                        seasoni <- months_plot[months_wanted_inds] # e.g. "Jan"
                     } else {
                         seasoni <- paste(months[months_wanted_inds], collapse="") # e.g. "JFM"
                     }
@@ -1601,7 +1614,11 @@ if (nvars > 0) {
                         recs <- unique(recs)
                     }
                     months_wanted_inds <- unique(dates$mon[recs]) + 1
-                    seasoni <- paste(months[months_wanted_inds], collapse="")
+                    if (length(months_wanted_inds) == 1) {
+                        seasoni <- months_plot[months_wanted_inds] # e.g. "Jan"
+                    } else {
+                        seasoni <- paste(months[months_wanted_inds], collapse="")
+                    }
                     if (seasoni == "JFMAMJJASOND") seasoni <- "Jan-Dec"
                     wanted_months_in_data <- which(!is.na(match(dates$mon + 1, months_wanted_inds)))
                     if (!all(wanted_months_in_data %in% recs)) {
@@ -1611,15 +1628,17 @@ if (nvars > 0) {
                         month_inds_out_of_recs <- which(!(wanted_months_in_data %in% recs))
                         message(indent, "given `recs` (n=", length(recs), "):")
                         ht(recs)
-                        stop(indent, "indicate season ", seasoni, " is wanted. however, ",
-                            "the given `recs` cover only a subset of all available ", seasoni, 
-                            " months of the nc file.\n", 
-                            indent, "--> ", length(month_inds_out_of_recs), 
-                            " records of all available ", seasoni, " months will not be considered ",
-                            "based on the given `recs`\n",
-                            indent, "--> if you want all data from season ", seasoni, 
-                            ", rerun the script with `season <- \"", seasoni, "\"` and without ",
-                            "`recs` defined in the runscript.")
+                        message(indent, "these recs indicate season \"", seasoni, "\" is wanted. however, ",
+                                "the given `recs` cover only a subset of all available \"", seasoni, 
+                                "\" inds of the nc file.\n", 
+                                indent, "--> ", length(month_inds_out_of_recs), 
+                                " records of all available \"", seasoni, "\" inds will not be considered ",
+                                "based on the given `recs`\n",
+                                indent, "--> if you want all data from season \"", seasoni, 
+                                "\", rerun the script with `season <- \"", seasoni, "\"` and without ",
+                                "`recs` defined in the runscript\n",
+                                indent, "--> continue with season \"\"")
+                        seasoni <- ""
                     } else {
                         if (verbose > 0 && fi == 1) {
                             message(indent, indent, "based on wanted `recs` (n=", length(recs), "):")
@@ -6282,12 +6301,14 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         dimnames_ltm$var <- dimnames(data_node)$var
                         if (dim(data_node)[2] != nod2d_n) stop("this should not happen?")
                         dims_ltm[2] <- nod2d_n # ltm is 2D
+                        dims_ltm[3] <- dim(data_node)[3] # ndepths input not necessarily ndepths output
+                        dimnames_ltm$depth <- dimnames(data_node)$depth
                         dims_ltm[4] <- maxnrecpf
                         dimnames_ltm[[4]] <- NULL
+                        if (verbose > 1) message(indent, "create data_node_ltm array with dims (", paste(dims_ltm, collapse=","), ") ...")
                         data_node_ltm <- array(0, 
                                                dim=dims_ltm,
                                                dimnames=dimnames_ltm) # c(nvar,nnod,ndepths=1,nrecspf)
-                        
                         if (rms_out || sd_out) {
                             data_node_sd <- data_node_ltm
                             if (sd_method == "ackermann83") {
@@ -6312,7 +6333,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     paste(dimnames(data_node)[[1]], collapse=","), " for ltm/plot ...")
                     }   
                     timeinds <- seq_len(count[dims_of_vars[[vari]]$timedim_ind]) # e.g. 1:12, 1:365, 1:366
-                    data_node_ltm[vari,,,timeinds] <- data_node_ltm[vari,,,timeinds] + data_node[vari,,,]
+                    for (vari in seq_len(dim(data_node)[1])) { # nvars
+                        data_node_ltm[vari,,,timeinds] <- data_node_ltm[vari,,,timeinds] + data_node[vari,,,]
+                    }
                     #message(range(data_node_ltm, na.rm=T))
 
                     if (integrate_depth && length(depths) == 2 && depths[2] == "MLD") {

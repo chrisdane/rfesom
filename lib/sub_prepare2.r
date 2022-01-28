@@ -60,7 +60,7 @@ sub_prepare2 <<- function(data_node) {
                             indent, "      `potdensnames` = \"", paste(potdensnames, collapse="\",\""), "\"\n",
                             indent, "   --> find temperature and salinity variables ...")
                 }
-                if (!any(tempnames %in% varname_nc) &&
+                if (!any(tempnames %in% varname_nc) ||
                     !any(saltnames %in% varname_nc)) {
                     stop("Provide temperature (i.e. \"", paste(tempnames, collapse="\",\""), "\" and ",
                          "salinity (i.e. \"", paste(saltnames, collapse="\",\""), "\" in 'varname_nc' ",
@@ -175,7 +175,14 @@ sub_prepare2 <<- function(data_node) {
                 p_ref_node <<- array(p_ref, dim=c(1, dim(data_node)[2:3], 1)) # nvar=1, nnode, ndepth, nrec=1
                 p_ref_suffix <<- paste0("_p_ref_", p_ref, "_dbar") # put this to output file name
             }
-            if (dim_tag == "3D") {
+            if (any(dim_tag == "2D") || any(dim_tag == "3D" & levelwise)) {
+                #p_node <<- rep(0, t=nod2d_n)
+                if (length(depths) == 2 && depths[2] == "MLD") {
+                    stop("implement")
+                } else {
+                    p_node <<- gsw::gsw_p_from_z(z=-rep(mean(interpolate_depths), t=nod2d_n), latitude=nod2d_y) # ndepth=1, nlat=nod2d_n
+                }
+            } else {
                 if (verbose > 0) {
                     message(paste0(indent, "Calc pressure p = gsw::gsw_p_from_z(z, latitude) ..."))
                     if (verbose > 1) {
@@ -184,15 +191,13 @@ sub_prepare2 <<- function(data_node) {
                                 indent, "   http://www.teos-10.org/pubs/gsw/html/gsw_p_from_z.html")
                     }
                 }
+                stop("update")
                 p_node <<- gsw::gsw_p_from_z(z=nod_z, latitude=nod_y)
-            } else if (dim_tag == "2D") {
-                p_node <<- rep(0, t=nod2d_n)
             }
+            # reorder matrix
             p_node <- array(p_node, dim=c(1, dim(data_node)[2:3], 1)) # nvar=1, nnode, ndepth, nrec=1
-        
             if (verbose > 2) {
-                message(indent, "   min / max 'p_node' = ", 
-                        paste(range(p_node), collapse=" / "))
+                message(indent, "   min / max 'p_node' = ", paste(range(p_node), collapse=" / "))
             }
         
         } # if !exists("p_node")
@@ -217,13 +222,11 @@ sub_prepare2 <<- function(data_node) {
         dimnames(SA_node)[[1]] <<- "SA"
         for (i in 1:dim(data_node)[4]) { # for nrecspf
             SA_node[,,,i] <<- gsw::gsw_SA_from_SP(SP=data_node[saltind,,,i], 
-                                                 p=p_node,
-                                                 longitude=nod_x, latitude=nod_y)
+                                                  p=p_node,
+                                                  longitude=nod2d_x, latitude=nod2d_y)
         }
-        
         if (verbose > 2) {
-            message(indent, "   min / max 'SA_node' = ", 
-                    paste(range(SA_node), collapse=" / "))
+            message(indent, "   min / max 'SA_node' = ", paste(range(SA_node, na.rm=T), collapse=" / "))
         }
         
         ## Calculate Conservative Temperature from Potential Temperature
@@ -244,10 +247,8 @@ sub_prepare2 <<- function(data_node) {
             CT_node[,,,i] <<- gsw::gsw_CT_from_pt(SA=SA_node[,,,i], 
                                                  pt=data_node[tempind,,,i])
         }
-
         if (verbose > 2) {
-            message(indent, "   min / max 'CT_node' = ", 
-                    paste(range(CT_node), collapse=" / "))
+            message(indent, "   min / max 'CT_node' = ", paste(range(CT_node, na.rm=T), collapse=" / "))
         }
         
         ## calc density

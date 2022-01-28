@@ -151,16 +151,17 @@ if (varname == "tos") { # fesom 1.4
     p_ref <- 0
     longname <- "Potential Density"
     units_out <- "kg m-3"
-    var_label_plot <- expression(paste(sigma[theta], " [kg m"^"-3","]"))
+    var_label_plot <- substitute(paste(sigma[theta], "(p"[ref], "=", p_ref, " db) [kg m"^"-3", "]"),
+                                 list(p_ref=p_ref))
     if (integrate_depth) {
         units_out <- "kg m-2"
-        var_label_plot <- expression(paste(sigma[theta], " [kg m"^"-2","]"))
+        var_label_plot <- substitute(paste(sigma[theta], "(p"[ref], "=", p_ref, " db) [kg m"^"-2", "]"),
+                                     list(p_ref=p_ref))
     }
-
     typesuffix <- c("oce.", "oce.")
     diagsuffix <- c("", "")
-    varname_nc <- c("temp", "salt")
-    #varname_nc <- c("thetao", "so")
+    #varname_nc <- c("temp", "salt")
+    varname_nc <- c("thetao", "so")
 
 } else if (varname == "insitub") {
     longname <- "In situ Buoyancy"
@@ -4019,8 +4020,8 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Buoyancy flux to ocean [",
                                      var1^2, " ", var2^-3, "] " %*% "  ",
                                      base^power_out),
-                              list(var1="m", var2="s", base=base,
-                                   power_out=-power_out))
+                                 list(var1="m", var2="s", base=base,
+                                      power_out=-power_out))
     typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
     diagsuffix <- c("", "", rep("diag.", t=7))
     varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
@@ -4037,8 +4038,8 @@ if (varname == "tos") { # fesom 1.4
     var_label_plot <- substitute(paste("Buoyancy flux to ocean [ ",
                                      var1^2, " ", var2^-3, 
                                      "] " %*% " ", base^power_out),
-                              list(var1="m", var2="s", 
-                                   base=base, power_out=-power_out))
+                                 list(var1="m", var2="s", 
+                                      base=base, power_out=-power_out))
     if (out_mode == "fldint") {
         power_out <- 0
         multfac_out <- base^power_out
@@ -4078,6 +4079,15 @@ if (varname == "tos") { # fesom 1.4
                         "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
+
+} else if (varname == "dpCO2s") {
+    longname <- "Difference of oceanic pCO2 minus atmospheric pCO2"
+    units_out <- units_plot <- "µatm"
+    var_label_plot <- expression(paste(Delta, "pCO"[2], " [µatm]"))
+    varname_nc <- "dpCO2s"
+    if (out_mode == "fldint") {
+        units_out <- "µatm m"
+    }
 
 } else if (varname == "CO2f") {
     longname <- "CO2-flux into the surface water"
@@ -4456,8 +4466,24 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- F
 
+} else if (varname == "sst_feom") {
+    varname_nc <- "sst_feom"
+    longname <- "SST from ocean"
+
+} else if (varname == "heat_oce") {
+    varname_nc <- "heat_oce"
+    longname <- "heat flux from atmosphere"
+
+} else if (varname == "co2c_oce") {
+    varname_nc <- "co2c_oce"
+    longname <- "co2 concentration from atmosphere"
+
+} else if (varname == "co2_feom") {
+    varname_nc <- "co2_feom"
+    longname <- "co2 concentration from ocean"
+
 } else {
-    stop("`varname` \"", varname, "\" is not defined in namelist.var.r")
+    stop("`varname` \"", varname, "\" not defined in namelist.var.r")
 }
 
 ## update units_out

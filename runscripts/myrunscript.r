@@ -161,7 +161,7 @@ if (F) { # awi-esm-1-1-lr deck
     #setting <- "s3"
     #setting <- "s4"
     #setting <- "s5"
-    #setting <- "s52" # where is ice.diag ?!
+    #setting <- "s52" # where are ice.nc and ice.diag.nc from 1948 to 2007?!
     #setting <- "s6"
 
     runid <- "Low01_sub_lsea"

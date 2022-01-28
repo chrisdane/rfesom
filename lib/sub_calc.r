@@ -331,6 +331,7 @@ sub_calc <- function(data_node) {
                          vars[varinds[5]], " - ", vars[varinds[2]], "*", vars[varinds[3]], " ..."))
         }
 
+        # mean(uT) - mean(u)*mean(T); mean() is e.g. monthly mean if monthly model output
         utmp <- data_node[varinds[4],,,] - data_node[varinds[1],,,]*data_node[varinds[3],,,]
         dimnames(utmp)[[1]] <- paste0(vars[varinds[4]], "_eddy")
         vtmp <- data_node[varinds[5],,,] - data_node[varinds[2],,,]*data_node[varinds[3],,,]
