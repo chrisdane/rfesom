@@ -324,9 +324,9 @@ if (regular_ltm_out && !any(out_mode == c("select", "areadepth"))) {
 }
 
 # check provided season
-if (!exists("time_dim_or_var_names")) time_dim_or_var_names <- c("time", "T", "ny") # add more here if necessary
-if (!exists("node_dim_or_var_names")) node_dim_or_var_names <- c("nodes_2d", "nodes_3d", "nodes", "ncells", "nx") 
-if (!exists("depth_dim_or_var_names")) depth_dim_or_var_names <- c("depth")
+if (!exists("known_time_dim_or_var_names")) known_time_dim_or_var_names <- c("time", "T", "ny") # add more here if necessary
+if (!exists("node_dim_or_var_names")) known_node_dim_or_var_names <- c("nod2", "nodes_2d", "nodes_3d", "nodes", "ncells", "nx")
+if (!exists("known_depth_dim_or_var_names")) known_depth_dim_or_var_names <- c("nz1", "depth")
 days_per_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_per_month_leap <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 months_plot <- month.abb # Jan, Feb, ...
@@ -508,9 +508,9 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             }
         } # regular_ltm_out
         if (!exists("interppath")) {
-            interppath <- paste0(postpath, "/meshes/", meshid, "/interp") # use default
+            interppath <- paste0(postpath, "/meshes/", model, "/", meshid, "/interp") # use default
             message("No 'interppath' is given for saving/reading regular interpolation matrix.",
-                    " Use default `postpath`/meshes/`meshid`/interp = ", interppath, 
+                    " Use default `postpath`/meshes/`model`/`meshid`/interp = ", interppath,
                     " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             interppath <- suppressWarnings(normalizePath(interppath))
@@ -728,8 +728,10 @@ if (verbose > 0) {
 }
 nod2d_n <- as.integer(readLines(paste0(meshpath, "/nod2d.out"), n=1))
 message(indent, "   ", meshpath, "/nod2d.out --> nod2d_n = ", nod2d_n)
-nod3d_n <- as.integer(readLines(paste0(meshpath, "/nod3d.out"), n=1))
-message(indent, "   ", meshpath, "/nod3d.out --> nod3d_n = ", nod3d_n)
+if (model == "fesom") {
+    nod3d_n <- as.integer(readLines(paste0(meshpath, "/nod3d.out"), n=1))
+    message(indent, "   ", meshpath, "/nod3d.out --> nod3d_n = ", nod3d_n)
+}
 
 # find fesom filenames if nc-variables are wanted (i.e. not resolution etc.)
 if (nvars > 0) {
@@ -937,13 +939,6 @@ if (nvars > 0) {
             
             # todo: same as above with months_filenames
 
-            # check if found input years are strange: dt not constant
-            if (length(years_filenames) > 1) {
-                if (length(unique(diff(unique(years_filenames)))) != 1) {
-                    warning("found years have non-constant dt. evaluate further with e.g. `diff(unique(years_filenames))`")
-                }
-            }
-
             # verbose
             if (verbose > 0) {
                 message("\nfinal ", length(years_filenames), " `years_filenames`:")
@@ -1065,9 +1060,17 @@ if (nvars > 0) {
             files_list[[vari]] <- tmp
 
             message()
+
+            # check if found input years are strange: dt not constant
+            if (length(years_filenames) > 1) {
+                if (length(unique(diff(unique(years_filenames)))) != 1) {
+                    years_filenames_warn <- years_filenames
+                    warning("found years have non-constant dt. evaluate further with e.g. `diff(unique(years_filenames_warn))`")
+                }
+            }
             
             # reset for next vari
-            rm(years_filenames) 
+            rm(years_filenames)
             if (exists("years_filenames_from")) rm(years_filenames_from)
             if (exists("years_filenames_to")) rm(years_filenames_to)
         
@@ -1177,11 +1180,11 @@ if (nvars > 0) {
         for (dimi in seq_along(dimids)) {
             
             # find time dimension and set start/count to wanted recs
-            if (any(dims_of_vars[[vari]][[dimi]]$name == time_dim_or_var_names)) {
+            if (any(dims_of_vars[[vari]][[dimi]]$name == known_time_dim_or_var_names)) {
                 if (!is.null(dims_of_vars[[vari]]$timedim_ind)) {
                     stop("this is the second attempt to set a time dimension based on ",
-                         "`time_dim_or_var_names` = \"", 
-                          paste(time_dim_or_var_names, collapse="\", \""), 
+                         "`known_time_dim_or_var_names` = \"", 
+                          paste(known_time_dim_or_var_names, collapse="\", \""), 
                          "\". this means more than 1 dimensions were considered to be the time dimension.")
                 }
                 timedim_ind <- dimi
@@ -1190,11 +1193,11 @@ if (nvars > 0) {
                 dims_of_vars[[vari]]$timedim_name <- timedim_name
                 
             # find node dimension
-            } else if (any(dims_of_vars[[vari]][[dimi]]$name == node_dim_or_var_names)) { 
+            } else if (any(dims_of_vars[[vari]][[dimi]]$name == known_node_dim_or_var_names)) { 
                 if (!is.null(dims_of_vars[[vari]]$nodedim_ind)) {
                     stop("this is the second attempt to set a node dimension based on ",
-                         "`node_dim_or_var_names` = \"", 
-                          paste(node_dim_or_var_names, collapse="\", \""), 
+                         "`known_node_dim_or_var_names` = \"", 
+                          paste(known_node_dim_or_var_names, collapse="\", \""), 
                          "\". this means more than 1 dimensions were considered to be the node dimension.")
                 }
                 nodedim_ind <- dimi
@@ -1203,11 +1206,11 @@ if (nvars > 0) {
                 dims_of_vars[[vari]]$nodedim_name <- nodedim_name
             
             # find depth dimension
-            } else if (any(dims_of_vars[[vari]][[dimi]]$name == depth_dim_or_var_names)) { 
+            } else if (any(dims_of_vars[[vari]][[dimi]]$name == known_depth_dim_or_var_names)) { 
                 if (!is.null(dims_of_vars[[vari]]$depthdim_ind)) {
                     stop("this is the second attempt to set a depth dimension based on ",
-                         "`depth_dim_or_var_names` = \"", 
-                          paste(depth_dim_or_var_names, collapse="\", \""), 
+                         "`known_depth_dim_or_var_names` = \"", 
+                          paste(known_depth_dim_or_var_names, collapse="\", \""), 
                          "\". this means more than 1 dimensions were considered to be the depth dimension.")
                 }
                 depthdim_ind <- dimi
@@ -1218,13 +1221,13 @@ if (nvars > 0) {
             
         } # for dimi all dims of var
         if (is.null(dims_of_vars[[vari]]$timedim_ind)) {
-            warning("could not figure out a time dimension based on `time_dim_or_var_names` = \"",
-                    paste(time_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".")
+            warning("could not figure out a time dimension based on `known_time_dim_or_var_names` = \"",
+                    paste(known_time_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".")
         }
         if (is.null(dims_of_vars[[vari]]$nodedim_ind)) {
-            stop("could not figure out a node dimension based on `node_dim_or_var_names` = \"",
-                 paste(node_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".\n",
-                 "add further names to check to `node_dim_or_var_names`.")
+            stop("could not figure out a node dimension based on `known_node_dim_or_var_names` = \"",
+                 paste(known_node_dim_or_var_names, collapse="\", \""), "\" for variable \"", varname_nc[vari], "\".\n",
+                 "add further names to check to `known_node_dim_or_var_names`.")
         }
         if (verbose > 0) {
             message(indent, "nc variable ", vari, "/", nvars, ": \"", varname_nc[vari], "\" dimension infos:")
@@ -1247,11 +1250,11 @@ if (nvars > 0) {
     } # for vari all varname_nc
     message(indent, "If something is wrong with these variable dimensions, adjust the known dimension/variable\n",
             indent, "names to correctly identify the time/node/depth/etc. dimensions by defining e.g.:\n",
-            indent, "   `time_dim_or_var_names <- c(\"", paste(time_dim_or_var_names, collapse="\", \""), 
+            indent, "   `known_time_dim_or_var_names <- c(\"", paste(known_time_dim_or_var_names, collapse="\", \""),
             "\", \"my_special_time_dimension_name\")`\n",
-            indent, "   `node_dim_or_var_names <- c(\"", paste(node_dim_or_var_names, collapse="\", \""), 
+            indent, "   `known_node_dim_or_var_names <- c(\"", paste(known_node_dim_or_var_names, collapse="\", \""),
             "\", \"my_special_node_dimension_name\")`\n",
-            indent, "   `depth_dim_or_var_names <- c(\"", paste(depth_dim_or_var_names, collapse="\", \""), 
+            indent, "   `known_depth_dim_or_var_names <- c(\"", paste(known_depth_dim_or_var_names, collapse="\", \""),
             "\", \"my_special_depth_dimension_name\")`\n",
             indent, "in the runscript.")
     # finished creating start and count vectors
@@ -1289,8 +1292,8 @@ if (nvars > 0) {
             time_var <- time_dim <- NULL
 
             # 1st try: check if there is time _variable_
-            if (any(!is.na(match(time_dim_or_var_names, var_names)))) { # there is a time variable
-                time_var <- var_names[match(time_dim_or_var_names, var_names)]
+            if (any(!is.na(match(known_time_dim_or_var_names, var_names)))) { # there is a time variable
+                time_var <- var_names[match(known_time_dim_or_var_names, var_names)]
                 if (any(is.na(time_var))) {
                     time_var <- time_var[-which(is.na(time_var))]
                 }
@@ -1312,8 +1315,8 @@ if (nvars > 0) {
                     }
                 } # ncdf4 or ncdf.tools
                 timeobj[[time_vari]] <- tmp
-             } else if (any(!is.na(match(time_dim_or_var_names, dim_names)))) { # 2nd try: check if there is time _dimension_
-                time_dim <- dim_names[match(time_dim_or_var_names, dim_names)]
+             } else if (any(!is.na(match(known_time_dim_or_var_names, dim_names)))) { # 2nd try: check if there is time _dimension_
+                time_dim <- dim_names[match(known_time_dim_or_var_names, dim_names)]
                 if (any(is.na(time_dim))) {
                     time_dim <- time_dim[-which(is.na(time_dim))]
                 }
@@ -1481,9 +1484,9 @@ if (nvars > 0) {
                             stop("not implemented yet")
                         }
                     } # if `frequency` was provided or not
-                    message(indent, "--> determined frequency is ", frequency, "; dt = ", attributes(frequency)$units,
-                            " --> if this is not correct, set `frequency <- \"<frequency>\"` in the runscript and rerun rfesom.\n",
-                            indent, "known `frequency`s are: \"", 
+                    message(indent, "--> determined frequency is ", frequency, "; dt = ", attributes(frequency)$units, "\n",
+                            indent, "--> if this is not correct, set `frequency <- \"<frequency>\"` in the runscript and rerun rfesom.\n",
+                            indent, "--> known `frequency`s are: \"", 
                             paste(c("daily", "monthly", "annual"), collapse="\", \""), "\"")
                 } # if fi == 1
 
@@ -1809,8 +1812,8 @@ if (nvars > 0) {
         }
     
         # 1st try: check if there is depth _variable_
-        if (any(!is.na(match(depth_dim_or_var_names, var_names)))) { # there is a depth variable
-            depth_var <- var_names[match(depth_dim_or_var_names, var_names)]
+        if (any(!is.na(match(known_depth_dim_or_var_names, var_names)))) { # there is a depth variable
+            depth_var <- var_names[match(known_depth_dim_or_var_names, var_names)]
             if (any(is.na(depth_var))) {
                 depth_var <- depth_var[-which(is.na(depth_var))]
             }
@@ -1835,8 +1838,8 @@ if (nvars > 0) {
         
         # 2nd try: check if there is depth _dimension_
         if (is.null(depthobj$depth)) {
-            if (any(!is.na(match(depth_dim_or_var_names, dim_names)))) { # there is a depth dimension
-                depth_dim <- dim_names[match(depth_dim_or_var_names, dim_names)]
+            if (any(!is.na(match(known_depth_dim_or_var_names, dim_names)))) { # there is a depth dimension
+                depth_dim <- dim_names[match(known_depth_dim_or_var_names, dim_names)]
                 if (any(is.na(depth_dim))) {
                     depth_dim <- depth_dim[-which(is.na(depth_dim))]
                 }
@@ -1919,8 +1922,8 @@ if (nvars > 0) {
                     dimids[dimi] == dimids[dims_of_vars[[vari]]$timedim_ind]) {
                     if (!is.na(counttmp[dimi])) {
                         stop("this is the second attempt to set a time dimension based on ",
-                             "`time_dim_or_var_names` = \"", 
-                              paste(time_dim_or_var_names, collapse="\", \""), 
+                             "`known_time_dim_or_var_names` = \"", 
+                              paste(known_time_dim_or_var_names, collapse="\", \""), 
                              "\". this means more than 1 dimensions were considered to be the time dimension.")
                     }
                     if (rec_tag) {
@@ -1937,8 +1940,8 @@ if (nvars > 0) {
                     if (fi == 1) { # node dim will not change between different files of same var
                         if (!is.na(counttmp[dimi])) {
                             stop("this is the second attempt to set a node dimension based on ",
-                                 "`node_dim_or_var_names` = \"", 
-                                  paste(node_dim_or_var_names, collapse="\", \""), 
+                                 "`known_node_dim_or_var_names` = \"", 
+                                  paste(known_node_dim_or_var_names, collapse="\", \""), 
                                  "\". this means more than 1 dimensions were considered to be the node dimension.")
                         }
                         starttmp[dimi] <- 1 # from first node
@@ -1972,16 +1975,11 @@ if (nvars > 0) {
                     if (fi == 1) { # depth dim will not change between different files of same var
                         if (!is.na(counttmp[dimi])) {
                             stop("this is the second attempt to set a depth dimension based on ",
-                                 "`depth_dim_or_var_names` = \"", 
-                                  paste(depth_dim_or_var_names, collapse="\", \""), 
+                                 "`known_depth_dim_or_var_names` = \"", 
+                                  paste(known_depth_dim_or_var_names, collapse="\", \""), 
                                  "\". this means more than 1 dimensions were considered to be the depth dimension.")
                         }
                         levelwise <- T
-                        # update dim_tag depending on levelwise
-                        if (levelwise && dim_tag == "2D") {
-                            message(indent, indent, "levelwise output detected --> change dim_tag from \"2D\" to \"3D\"") 
-                            dim_tag <- "3D"
-                        }
                     
                         # find depth inds to read from nc file
                         if (!exists("depths") || is.null(depths)) stop("this should not happen")
@@ -2027,13 +2025,17 @@ if (nvars > 0) {
                     } # if fi == 1 or not
                 } # if current dim is depth dim
             } # for dimi all dims of var
-               
+            
             if (fi == 1) {
-                if (is.null(dim_tag)) stop("dim_tag still null")
-                dims_of_vars[[vari]]$dim_tag <- dim_tag
                 if (is.null(levelwise)) stop("levelwise still null")
+                if (is.null(dim_tag)) stop("dim_tag still null")
+                if (levelwise && dim_tag == "2D") { # update dim_tag depending on levelwise
+                    message(indent, indent, "levelwise output detected --> change dim_tag from \"2D\" to \"3D\"") 
+                    dim_tag <- "3D"
+                }
+                dims_of_vars[[vari]]$dim_tag <- dim_tag
                 dims_of_vars[[vari]]$levelwise <- levelwise
-            }
+            } # if fi == 1
 
             files_list[[vari]][[fi]]$start <- starttmp
             files_list[[vari]][[fi]]$count <- counttmp
@@ -2608,7 +2610,7 @@ if (horiz_deriv_tag != F
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
     if (!exists("derivpath")) { # use default
-        derivpath <- paste0(postpath, "/meshes/", meshid, "/derivatives")
+        derivpath <- paste0(postpath, "/meshes/", model, "/", meshid, "/derivatives")
         message(indent, "No 'derivpath' is given for saving/reading horizontal ",
                 "derivative/cluster area/resolution matrices. Use default ",
                 "`postpath`/meshes/`meshid`/derivatives = \"", derivpath, "\"",
@@ -2627,8 +2629,8 @@ if (horiz_deriv_tag != F
         }
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
         message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
-        derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
-        message(indent, "   Use default `postpath`/meshes/`meshid`/derivatives = \"", derivpath, "\"",
+        derivpath <- paste0(rfesompath, "/mesh/", model, "/", meshid, "/derivatives")
+        message(indent, "   Use default `postpath`/meshes/`model`/`meshid`/derivatives = \"", derivpath, "\"",
                 indent, " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
     }
 
@@ -2684,10 +2686,10 @@ if (zave_method == 2 &&
             message(paste0(indent, indent, "'deriv_3d_fname' = ", deriv_3d_fname, " ..."))
         }
         if (!exists("derivpath")) { # use default
-            derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
+            derivpath <- paste0(rfesompath, "/mesh/", model, "/", meshid, "/derivatives")
             message(indent, "No 'derivpath' is given for saving result of horizontal derivative/cluster ",
                     "area and resolution matrix calculation.", 
-                    " Use default `rfesompath/mesh/`meshid`/derivatives = \"", derivpath, "\"",
+                    " Use default `rfesompath/mesh/`model`/`meshid`/derivatives = \"", derivpath, "\"",
                     " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
             derivpath <- suppressWarnings(normalizePath(derivpath))
@@ -2705,7 +2707,7 @@ if (zave_method == 2 &&
         } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
             derivpath <- paste0(rfesompath, "/mesh/", meshid, "/derivatives")
             message(indent, "You have no writing rights in 'derivpath' = ", derivpath,
-                    ". Use default `rfesompath/mesh/`meshid`/derivatives = \"", derivpath, "\"",
+                    ". Use default `rfesompath/mesh/`model`/`meshid`/derivatives = \"", derivpath, "\"",
                     " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
         }
 
@@ -2798,8 +2800,8 @@ if (any(regular_transient_out, regular_ltm_out)) {
 
         if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
             message("You have no writing rights in 'interppath' = ", interppath, " ...")
-            interppath <- paste0(postpath, "/meshes/", meshid, "/interp")
-            message("   Use default `postpath`/meshes/`meshid`/interp = ", interppath, 
+            interppath <- paste0(postpath, "/meshes/", model, "/", meshid, "/interp")
+            message("   Use default `postpath`/meshes/`model`/`meshid`/interp = ", interppath,
                     " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
         }
         dir.create(interppath, recursive=T, showWarnings=F)

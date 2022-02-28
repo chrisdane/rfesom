@@ -55,6 +55,12 @@ if (varname == "tos") { # fesom 1.4
     anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "sst"
 
+} else if (varname == "sss") { # fesom 2.0 
+    longname <- "Sea Surface Salinity"
+    units_out <- units_plot <- "psu"
+    var_label_plot <- expression(paste("SSS [psu"))
+    varname_nc <- "sss"
+
 } else if (any(varname == c("temp", "thetao"))) {
     longname <- "Potential Temperature"
     units_out <- units_plot <- "degC"
@@ -80,8 +86,7 @@ if (varname == "tos") { # fesom 1.4
     }
     typesuffix <- "oce."
     diagsuffix <- ""
-    #varname_nc <- "temp"
-    varname_nc <- "thetao"
+    varname_nc <- varname
 
 } else if (any(varname == c("salt", "so"))) {
     longname <- "Salinity"
@@ -108,8 +113,7 @@ if (varname == "tos") { # fesom 1.4
     }
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_nc <- "salt"
-    varname_nc <- "so"
+    varname_nc <- varname
 
 } else if (varname == "tob") { 
     longname <- "sea_water_potential_temperature_at_sea_floor"
@@ -4483,7 +4487,7 @@ if (varname == "tos") { # fesom 1.4
     longname <- "co2 concentration from ocean"
 
 } else {
-    stop("`varname` \"", varname, "\" not defined in namelist.var.r")
+    stop("`varname` = \"", varname, "\" not defined in namelist.var.r")
 }
 
 ## update units_out

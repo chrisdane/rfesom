@@ -160,7 +160,7 @@ if (F) {
     depths <- c(0, 200)
     regular_ltm_out <- T
 
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
     #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
@@ -347,12 +347,31 @@ if (F) {
     #out_mode <- "fldmean"
     #out_mode <- "depth"
 
+} else if (T) { # ying
+    workpath <- "/work/ollie/cdanek"
+    model <- "fesom2"
+    datainpaths <- "/work/ollie/yye/AWIESM_runs/PI_echamcold_test/outdata/fesom"
+    fpatterns <- "<varname_nc>.fesom.<YYYY>12.01.nc"
+    postprefix <- "awi-esm-2.0-lr_piControl"
+    meshid <- "core"
+    meshpath <- "/home/ollie/lniu/workollie/AWIESM/pool/mesh_core2/"
+    years <- 3110
+    #years <- 3110:3479
+    #years <- 3440:3450
+    varname <- "temp"
+    depths <- 10
+    #varname <- "sss"
+    regular_ltm_out <- T
+    transient_out <- F
+    out_mode <- "select"
+    #out_mode <- "fldmean"
+
 } # which setting
 
 postpath <- paste0(workpath, "/post/", model)
 plotpath <- paste0(workpath, "/plots/", model)
-derivpath <- paste0(workpath, "/mesh/", meshid, "/derivatives")
-interppath <- paste0(workpath, "/mesh/", meshid, "/interp")
+derivpath <- paste0(workpath, "/mesh/", model, "/", meshid, "/derivatives")
+interppath <- paste0(workpath, "/mesh/", model, "/", meshid, "/interp")
 
 ### do not change below this line
 if (interactive()) {

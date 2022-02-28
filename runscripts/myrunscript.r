@@ -37,8 +37,8 @@ if (F) { # awi-esm-1-1-lr deck
     meshpath <- paste0("/work/ab0995/a270046/meshes_default/", meshid)
     postpath <- "/work/ab0246/a270073/post/fesom"
     plotpath <- "/work/ab0246/a270073/plots/fesom"
-    derivpath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/derivatives")
-    interppath <- paste0("/work/ba0941/a270073/mesh/", meshid, "/interp")
+    derivpath <- paste0("/work/ba0941/a270073/mesh/", model, "/", meshid, "/derivatives")
+    interppath <- paste0("/work/ba0941/a270073/mesh/", model, "/", meshid, "/interp")
     if (F) {
         varname <- "MOCw"
         depths <- c(0, "max")
@@ -401,8 +401,8 @@ if (F) { # awi-esm-1-1-lr deck
     datainpaths <- paste0(workpath, "/out/", runid, "/", setting)
     meshpath   <- paste0(workpath, "/mesh/", meshid) # path of fesom mesh
     postpath <- paste0(workpath, "/post/", runid, "/", setting) # my old phd folder structure
-    derivpath  <- paste0(workpath, "/mesh/", meshid, "/derivatives") # path where to save derivative file if wanted
-    interppath <- paste0(workpath, "/mesh/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
+    derivpath  <- paste0(workpath, "/mesh/", model, "/", meshid, "/derivatives") # path where to save derivative file if wanted
+    interppath <- paste0(workpath, "/mesh/", model, "/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
     plotpath   <- paste0(workpath, "/plots/fesom") # path where to save plots if wanted
     if (meshid == "core") {
         rotate_mesh <- F
