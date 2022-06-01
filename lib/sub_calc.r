@@ -1501,7 +1501,7 @@ sub_calc <- function(data_node) {
         }
         if (any(varname == c("relvorti", "relvortisq", "RossbyNo",
                              "curlwind", "curltau",
-                             "ekmanP",
+                             "ekmanP", "ekmanP_ms",
                              "strain_shear", "strain", "okubo",
                              "HRS", "KmKe"))) {
             if (!is.null(dxinds)) {
@@ -1538,13 +1538,14 @@ sub_calc <- function(data_node) {
         }
 
         ## do stuff before horizontal derivative
-        if (varname == "ekmanP") {
+        if (any(varname == c("ekmanP", "ekmanP_ms"))) {
             if (verbose > 1) {
-                message(paste0(indent, varname, " = d(", varname_nc[2], "/f)",
-                             "dx - d(", varname_nc[1], "/f)dy ..."))
+                message(indent, varname, " = d(", varname_nc[2], "/f)", "dx - d(", varname_nc[1], "/f)dy ...")
             }
-            # divide through f
-            stop("nnottttt yettt")
+            # divide data through f
+            for (i in seq_len(nvars)) {
+                data_node[i,,,] <- data_node[i,,,]/coriolis_node
+            }
         }
 
         ## horizontal derivative in node-space (the correct way...)
@@ -1629,11 +1630,15 @@ sub_calc <- function(data_node) {
             #for (i in 1:aux3d_n) {
             for (i in 1:ndepths) {
                 for (j in 1:elem2d_n) {
-                    if (dim_tag == "3D") {
+                    if (all(dim_tag == "3D" & levelwise == F)) {
                         nds_surf <- elem2d[,j]
                         nds_layer <- aux3d[i,nds_surf]
-                    } else if (dim_tag == "2D") {
+                    } else if (all(dim_tag == "3D" & levelwise == T)) {
+                        stop("not yet")
+                    } else if (all(dim_tag == "2D")) {
                         nds_layer <- elem2d[,j]
+                    } else {
+                        stop("mixed 2D and 3D vars not implemented here")
                     }
                     if (all(nds_layer != -999)) {
 
@@ -2054,10 +2059,13 @@ sub_calc <- function(data_node) {
 
         if (any(varname == c("relvorti", "relvortisq", 
                              "curlwind", "curltau", 
-                             "ekmanP"))) {
-            message(paste0(indent, varname, " = ", dimnames(dvardx_node3d)[[1]],
-                         " - ", dimnames(dvardy_node3d)[[1]], " ..."))
+                             "ekmanP", "ekmanP_ms"))) {
+            message(indent, varname, " = ", dimnames(dvardx_node3d)[[1]], " - ", dimnames(dvardy_node3d)[[1]], " ...")
             data_node <- dvardx_node3d - dvardy_node3d
+            if (varname == "ekmanP_ms") {
+                message(indent, varname, " = ekmanP/rho0 = ekmanP/", rho0) 
+                data_node <- data_node/rho0
+            }
             dimnames(data_node)[[1]] <- varname
         }
         
@@ -3304,7 +3312,7 @@ sub_calc <- function(data_node) {
 
     } # "resolutionkm", "resolutiondeg", "mesharea", "fwflux", "iceextent", "icevol"
 
-    # overwrite global data_node with the result_data node from within this function
+    # overwrite global data_node with the result data_node from within this function
     assign('data_node', data_node, envir=.GlobalEnv)
 
 } # sub_calc function

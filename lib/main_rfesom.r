@@ -181,7 +181,7 @@ if (exists("fnames_user")) {
     fuser_tag <- T
     if (nvars != 0) { # variable like resolution in case of user provided file
         if (length(fnames_user) > 1) {
-            stop("not defined yet since ntime needs to be determined first!")
+            stop("not defined yet since ntime needs to be determined first")
         }
         nvars <- length(fnames_user)
     }
@@ -325,7 +325,7 @@ if (regular_ltm_out && !any(out_mode == c("select", "areadepth"))) {
 
 # check provided season
 if (!exists("known_time_dim_or_var_names")) known_time_dim_or_var_names <- c("time", "T", "ny") # add more here if necessary
-if (!exists("node_dim_or_var_names")) known_node_dim_or_var_names <- c("nod2", "nodes_2d", "nodes_3d", "nodes", "ncells", "nx")
+if (!exists("node_dim_or_var_names")) known_node_dim_or_var_names <- c("nod2", "nodes_2d", "nodes_3d", "nodes", "ncells", "nx", "x")
 if (!exists("known_depth_dim_or_var_names")) known_depth_dim_or_var_names <- c("nz1", "depth")
 days_per_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_per_month_leap <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
@@ -618,7 +618,7 @@ if (nvars > 0) {
     success <- load_package("ncdf.tools")
     if (!success) {
         ncdf.tools_tag <- F
-        message(indent, "note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get()")
+        message("note: ncdf.tools::readNcdf() may be faster than ncdf4::ncvar_get()")
     } else if (success) {
         ncdf.tools_tag <- T
     }
@@ -737,12 +737,12 @@ if (model == "fesom") {
 if (nvars > 0) {
     special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
     if (fuser_tag) {
-        if (verbose > 0) {
-            message(indent, "Input file names are given by user via `fnames_user`:")
-        }
+        if (verbose > 0) message(indent, "Input file names are given by user via `fnames_user`:")
         ht(fnames_user)
-        files_list <- list(fnames_user)
-
+        files_list <- vector("list", l=nvars)
+        names(files_list) <- varname_nc
+        files_list[[1]] <- list(list(files=fnames_user))
+    
     } else if (!fuser_tag) {
         if (verbose > 0) {
             message(indent, "Find input file names for ", length(varname_nc), 
@@ -1373,8 +1373,12 @@ if (nvars > 0) {
             # daily: 1956-01-02T00:00:00  1956-01-03T00:00:00  ...  1956-12-31T00:00:00  1957-01-01T00:00:00 
             # -> annual shifttime,-1a; monthly shifttime,-1mo; daily shifttime,-1d
             # -> general shifttime,-1dt
-            cmd <- paste0("cdo -s showtimestamp ", 
-                          attributes(ncids[[first_nc_with_time_ind[time_vari]]])$filename)
+            cmd <- paste0("cdo -s showtimestamp ") 
+            if (ncdf.tools_tag == T) {
+                cmd <- paste0(cmd, attributes(ncids[[first_nc_with_time_ind[time_vari]]])$filename)
+            } else if (ncdf.tools_tag == F) {
+                cmd <- paste0(cmd, ncids[[first_nc_with_time_ind[time_vari]]]$filename)
+            }
             message(indent, "   run `", cmd, "` ...")
             dates <- system(cmd, intern=T, ignore.stderr=T)
             dates <- strsplit(trimws(dates), "  ")[[1]]
@@ -1765,9 +1769,8 @@ if (nvars > 0) {
         if (season != "") timespan <- paste0(season, "_", timespan)
         if (nyears > 1) timespan <- paste0(timespan, "-", years[nyears])
         if (verbose > 0) {
-            message(indent, "--> timespan of complete data = \"", timespan, "\"\n",
-                    indent, "--> time range of all ", timeobj$ntime, " time points to read = ", 
-                        min(dates_all), " to ", max(dates_all))
+            message(indent, "--> time range of all ", timeobj$ntime, " time points to read = ", min(dates_all), " to ", max(dates_all), "\n",
+                    indent, "--> `timespan` = \"", timespan, "\"")
         }
 
         # decide for all data if rec_tag T or F
@@ -1870,14 +1873,16 @@ if (nvars > 0) {
         fesom_depths <- abs(depthobj$depth) # these are the model depths in m (positive downwards) 
         ndepths_all <- length(fesom_depths)
         depthobj$ndepths_all <- ndepths_all
-        deltaz_all <- rep(0, t=ndepths_all - 1)
-        deltaz_all[1] <- (fesom_depths[1] - fesom_depths[2])/2
-        deltaz_all[ndepths_all] <- (fesom_depths[ndepths_all - 1]- fesom_depths[ndepths_all])/2
-        for (n in 2:(ndepths_all - 1)) {
-            deltaz_all[n] <- (fesom_depths[n-1] - fesom_depths[n])/2 + (fesom_depths[n] - fesom_depths[n+1])/2
+        if (ndepths_all > 1) {
+            deltaz_all <- rep(0, t=ndepths_all - 1)
+            deltaz_all[1] <- (fesom_depths[1] - fesom_depths[2])/2
+            deltaz_all[ndepths_all] <- (fesom_depths[ndepths_all - 1]- fesom_depths[ndepths_all])/2
+            for (n in 2:(ndepths_all - 1)) {
+                deltaz_all[n] <- (fesom_depths[n-1] - fesom_depths[n])/2 + (fesom_depths[n] - fesom_depths[n+1])/2
+            }
+            depthobj$deltaz_all <- abs(deltaz_all)
         }
-        depthobj$deltaz_all <- abs(deltaz_all)
-        
+
         if (verbose > 0) {
             message(indent, "found ", ndepths_all, " depths from ", 
                     min(depthobj$depth), "-", max(depthobj$depth), " in units \"", 
@@ -2069,7 +2074,7 @@ if (nvars > 0) {
         print(levelwise)
     }
     if (any(dim_tag == "3D" & levelwise == T) && any(dim_tag == "3D" & levelwise == F)) {
-        stop("both old non-levelwise and new levelwise 3D fesom output simultaneously not defined")
+        stop("both non-levelwise 3D and levelwise 3D fesom output not allowed simultaneously")
     }
 
 } else if (nvars == 0) {
@@ -2214,7 +2219,7 @@ if (!restart || # ... not a restart run
         #nod_y <- nod3d_y
         #nod_z <- nod3d_z
         if (!exists("fesom_depths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
-            fesom_depths <- abs(unique(nod_z)) # model depths in m (positive downwards) 
+            fesom_depths <- abs(unique(nod3d_z)) # model depths in m (positive downwards) 
         }
         nod3d_check <- T
         if (verbose > 1) {
@@ -5281,11 +5286,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             ## choose data from area in node space
                             if (out_mode == "fldmean" && zave_method == 2) {
                                 
-                                if (verbose > 2) {
-                                    message(paste0(indent, "   using zave_method=2: cluster_vol_3d ..."))
-                                }
-                                nod3d_z_inds <- which(abs(nod_z) >= interpolate_depths[1] &
-                                                      abs(nod_z) <= interpolate_depths[ndepths])
+                                if (verbose > 2) message(indent, "   using zave_method=2: cluster_vol_3d ...")
+                                nod3d_z_inds <- which(abs(nod3d_z) >= interpolate_depths[1] &
+                                                      abs(nod3d_z) <= interpolate_depths[ndepths])
                                 datavec <- data_node[,nod3d_z_inds,,]
 
                             } else {
@@ -6304,9 +6307,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         if (dim(data_node)[2] != nod2d_n) stop("this should not happen?")
                         dims_ltm[2] <- nod2d_n # ltm is 2D
                         dims_ltm[3] <- dim(data_node)[3] # ndepths input not necessarily ndepths output
-                        dimnames_ltm$depth <- dimnames(data_node)$depth
+                        #dimnames_ltm$depth <- dimnames(data_node)$depth # why?
                         dims_ltm[4] <- maxnrecpf
-                        dimnames_ltm[[4]] <- NULL
+                        #dimnames_ltm[[4]] <- NULL # why?
                         if (verbose > 1) message(indent, "create data_node_ltm array with dims (", paste(dims_ltm, collapse=","), ") ...")
                         data_node_ltm <- array(0, 
                                                dim=dims_ltm,
@@ -8405,11 +8408,18 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     zlevels <- nlevels <- NULL
                 } else {
                     message(indent, "   Use provided ", varnamei, "_levels=\n",
-                            indent, "      ", paste0(round(zlevels, 4), collapse=","))
+                            indent, "      ", paste(round(zlevels, 5), collapse=","))
                     nlevels <- length(zlevels)
                 }
             }
-            
+
+            user_axis.labels_exist <- eval(parse(text=paste0("exists('", varnamei, "_axis.labels')")))
+            if (user_axis.labels_exist) { 
+                axis.labels <- eval(parse(text=paste0(varnamei, "_axis.labels")))
+                message(indent, "   Use provided ", varnamei, "_axis.labels=\n",
+                        indent, "      ", paste(round(axis.labels, 5), collapse=","))
+            }
+
             user_cols_exist <- eval(parse(text=paste0("exists('", varnamei, "_cols')")))
             if (user_cols_exist) {
                 cols <- eval(parse(text=paste0(varnamei, "_cols")))

@@ -20,6 +20,7 @@ __Table of Contents__<br/>
       * [Installing new R packages (= libraries)](#installing-new-r-packages--libraries)
          * [Missing header or config files](#missing-header-or-config-files)
          * [Unable to load shared library](#unable-to-load-shared-library)
+      * [Fesom help](#fesom-help)
    * [Contribute](#contribute)
    * [References](#references)
    * [Appendix: Available variables](#appendix-available-variables)
@@ -268,6 +269,11 @@ module load gcc/4.8.2 r ...
 module list ...
 Currently Loaded Modulefiles:
   1) gcc/4.8.2              2) r/3.5.3
+```
+
+## Fesom help
+```
+cdo -P $(nproc) -remapycon,global_0.25 -setgrid,/pool/data/AWICM/FESOM1/MESHES/core/griddes.nc $fin $fout
 ```
 
 # Contribute

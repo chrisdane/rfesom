@@ -203,25 +203,57 @@ if (F) {
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
-} else if (F) { # awi-esm-1-1-lr_kh800 historical2
+} else if (T) { # awi-esm-1-1-lr_kh800 historical historical2
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
     datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    #postprefix <- "awi-esm-1-1-lr_kh800_historical"
+    #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
     postprefix <- "awi-esm-1-1-lr_kh800_historical2"
     meshid <- "core"
-    meshpath <- "/work/ab0995/a270046/meshes_default/core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     years <- 1850:2014
-    varname <- "tos"
+    #varname <- "tos"
+    #varname <- "thetao"
+    #varname <- "mlotst"
+    varname <- "omldamax"
+    #varname <- "CO2f"
+    #varname <- "pCO2s"
+    #varname <- "dpCO2s"
+    #varname <- "bgc02" # dic
+    #varname <- "bgc03" # talk
     frequency_post <- "monmean"
     regular_ltm_out <- F
-    #regular_dx <- regular_dy <- 1
     transient_out <- T
     #out_mode <- "select"
-    out_mode <- "fldmean"
     #out_mode <- "fldint"
+    out_mode <- "fldmean"
     #out_mode <- "depth"
     #depths <- c(0, "max")
+
+} else if (F) { # awi-esm-1-1-lr_kh800 ssp126
+    workpath <- "/work/ba1103/a270073"
+    model <- "fesom"
+    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/fesom"
+    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    postprefix <- "awi-esm-1-1-lr_kh800_ssp126"
+    meshid <- "core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
+    years <- 2015:2100
+    #varname <- "tos"
+    #varname <- "mlotst"
+    varname <- "omldamax"
+    #varname <- "pCO2s"
+    #varname <- "dpCO2s"
+    #varname <- "bgc02" # dic
+    #varname <- "bgc03" # talk
+    frequency_post <- "monmean"
+    regular_ltm_out <- F
+    transient_out <- T
+    out_mode <- "fldmean"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp585
     workpath <- "/work/ba1103/a270073"
@@ -248,23 +280,44 @@ if (F) {
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
-    #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
-    #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
-    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/fesom"
-    postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_restartall"
+    if (F) {
+        datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2685_1m"
+    } else if (F) {
+        datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2685"
+    } else if (F) {
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2percatm/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
+    } else if (F) {
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
+    } else if (F) {
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_restartall"
+    } else if (F) {
+        datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl"
+    } else if (T) {
+        datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl2"
+    } else if (F) {
+        datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest"
+    }
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     meshid <- "core"
-    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core/"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #years <- 2686
-    years <- 2686:2688
+    #years <- 2686:2688
     #years <- 2686:2760
+    #years <- 3151:3156
+    years <- 3151:3168
     frequency <- "monthly"
-    varname <- "tos"
+    #varname <- "tos"
     #varname <- "thetao"
     #varname <- "CO2f"
+    varname <- "bgc02"
     regular_ltm_out <- F
     transient_out <- T
     #out_mode <- "select"
@@ -273,27 +326,44 @@ if (F) {
     #out_mode <- "depth"
     #depths <- c(0, "max")
 
-} else if (F) { # awi-esm-1-1-lr_kh800 historical
+} else if (F) { # mhw composite results
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
-    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
-    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
-    postprefix <- "awi-esm-1-1-lr_kh800_historical"
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
+    if (T) { # piControl    
+        if (T) { # mlotst/omldamax
+            #varname <- "mlotst"
+            varname <- "omldamax"
+            datainpaths <- paste0("/work/ba1103/a270073/post/heatwaveR/composite/", varname)
+            if (T) { # data
+                fpatterns <- paste0("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_", varname, "_data.nc")
+                postprefix <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_data"
+            } else if (F) { # seas
+                fpatterns <- paste0("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_", varname, "_seas.nc")
+                postprefix <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_seas"
+            }
+        } else if (F) { # tau/curltau/ekmanP
+            #varname <- "tau"
+            #varname <- "curltau"
+            #varname <- "ekmanP"
+            varname <- "ekmanP_ms"
+            datainpaths <- c("/work/ba1103/a270073/post/heatwaveR/composite/tauuo",
+                             "/work/ba1103/a270073/post/heatwaveR/composite/tauvo")
+            if (F) { # data
+                fpatterns <- c("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_tauuo_data.nc",
+                               "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_tauvo_data.nc")
+                postprefix <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_data"
+            } else if (T) { # seas
+                fpatterns <- c("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_tauuo_seas.nc",
+                               "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_tauvo_seas.nc")
+                postprefix <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_seas"
+            }
+        }
+    }
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
-    years <- 1850:1901
-    varname <- "tos"
-    #varname <- "thetao"
-    #varname <- "CO2f"
-    frequency_post <- "monmean"
-    regular_ltm_out <- F
-    transient_out <- T
-    #out_mode <- "select"
-    #out_mode <- "fldint"
-    out_mode <- "fldmean"
-    #out_mode <- "depth"
-    depths <- c(0, "max")
+    years <- 2842 # average over 2686-1-1 to 3000-12-31
+    regular_ltm_out <- T
+    out_mode <- "select"
 
 } else if (F) { # claudia hinrichs talk 
     workpath <- "/work/ba1103/a270073"
@@ -347,19 +417,37 @@ if (F) {
     #out_mode <- "fldmean"
     #out_mode <- "depth"
 
-} else if (T) { # ying
+} else if (F) { # ying
     workpath <- "/work/ollie/cdanek"
     model <- "fesom2"
     datainpaths <- "/work/ollie/yye/AWIESM_runs/PI_echamcold_test/outdata/fesom"
     fpatterns <- "<varname_nc>.fesom.<YYYY>12.01.nc"
     postprefix <- "awi-esm-2.0-lr_piControl"
     meshid <- "core"
-    meshpath <- "/home/ollie/lniu/workollie/AWIESM/pool/mesh_core2/"
+    meshpath <- "/home/ollie/lniu/workollie/AWIESM/pool/mesh_core2"
     years <- 3110
     #years <- 3110:3479
     #years <- 3440:3450
     varname <- "temp"
     depths <- 10
+    #varname <- "sss"
+    regular_ltm_out <- T
+    transient_out <- F
+    out_mode <- "select"
+    #out_mode <- "fldmean"
+
+} else if (F) { # jstreffing
+    workpath <- "/work/ab0246/a270073"
+    model <- "fesom2"
+    datainpaths <- "/mnt/lustre01/work/ab0246/a270092/download"
+    fpatterns <- "so_first_timestep_lvl1000.nc"
+    fnames_user <- "/mnt/lustre01/work/ab0246/a270092/download/so_first_timestep_lvl1000.nc"
+    postprefix <- "awi-cm3"
+    meshid <- "core"
+    meshpath <- "/mnt/lustre01/work/ab0246/a270092/input/fesom2/core2"
+    years <- 2049
+    varname <- "so"
+    depths <- 1000
     #varname <- "sss"
     regular_ltm_out <- T
     transient_out <- F

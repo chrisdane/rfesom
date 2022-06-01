@@ -114,6 +114,9 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- "oce."
     diagsuffix <- ""
     varname_nc <- varname
+    if (T) { # jstreffing problem
+        so_axis.labels <- round(c(27.7231216430664, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 39.4839744567871), 2) # psu
+    }
 
 } else if (varname == "tob") { 
     longname <- "sea_water_potential_temperature_at_sea_floor"
@@ -3554,24 +3557,26 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "tau") {
     longname <- "Norm of Wind Stress"
-    units_out <- "N m-2"
-    power_out <- 0
-    multfac_out <- base^power_out
+    units_out <- "N m-2" # N = kg m s-2; --> N m-2 = kg m-1 s-2
     var_label_plot <- expression(paste("Norm of Wind Stress [N m"^"-2","]"))
     if (out_mode == "fldint" || out_mode == "depthint") {
-        power_out <- 12
-        multfac_out <- base^-power_out
-        units_out <- paste0("N x 1e", power_out)
+        power_plot <- 12
+        multfac_plot <- base^-power_plot
+        units_plot <- paste0("N x 1e", power_plot)
     }
-    typesuffix <- c("forcing.", "forcing.")
-    diagsuffix <- c("diag.", "diag.")
-    varname_nc <- c("stress_x", "stress_y")
+    if (F) {
+        typesuffix <- c("forcing.", "forcing.")
+        diagsuffix <- c("diag.", "diag.")
+        varname_nc <- c("stress_x", "stress_y")
+    } else if (T) {
+        varname_nc <- c("tauuo", "tauvo")
+    }
     rotate_inds <- c(1, 2)
     vec <- T
 
 } else if (varname == "curltau") {
     longname <- "Wind Stress Curl"
-    units_out <- "N m-3"
+    units_out <- "N m-3" # N = kg m s-2; --> N m-3 = kg m-2 s-2
     power_plot <- 7
     multfac_plot <- base^power_plot
     units_plot <- paste0("N m-3 x ", multfac_plot)
@@ -3581,30 +3586,66 @@ if (varname == "tos") { # fesom 1.4
                                  list(var="m", base=base, 
                                       power_plot=power_plot))
     horiz_deriv_tag <- "geo"
-    typesuffix <- c("forcing.", "forcing.")
-    diagsuffix <- c("diag.", "diag.")
-    varname_nc <- c("stress_x", "stress_y")
+    if (F) {
+        typesuffix <- c("forcing.", "forcing.")
+        diagsuffix <- c("diag.", "diag.")
+        varname_nc <- c("stress_x", "stress_y")
+    } else if (T) {
+        varname_nc <- c("tauuo", "tauvo")
+    }
     rotate_inds <- c(1, 2)
-    curltau_levels <- seq(-2, 2, l=100)
-    curltau_palname <- "ncview_blu_red"
+    if (F) {
+        curltau_levels <- seq(-2, 2, l=100)
+        curltau_palname <- "ncview_blu_red"
+    }
 
 } else if (varname == "ekmanP") {
     longname <- "Ekman Pumping"
-    subtitle <- ">0 upwelling"
-    power_out <- 3
-    multfac_out <- base^power_out
-    multfac_out_plot <- base^-power_out
-    units_out <- paste0("kg s-1 m-2 x ", multfac_out_plot)
+    subtitle <- "<0 downwelling"
+    units_out <- "kg s-1 m-2"
+    power_plot <- 3
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("kg s-1 m-2 x ", multfac_plot)
     var_label_plot <- substitute(paste(bold(k), "" %.% "(", 
                                      bold(nabla), "" %*% "", bold(tau), "/f) ",
                                      "[kg ", var1^-1, " ", var2^-2, 
-                                     "] " %*% " ", base^power_out),
+                                     "] " %*% " ", base^power_plot),
                                list(var1="s", var2="m", 
-                                    base=base, power_out=-power_out))
+                                    base=base, power_plot=-power_plot))
+    coriolis_tag <- T
     horiz_deriv_tag <- "geo"
-    typesuffix <- c("forcing.", "forcing.")
-    diagsuffix <- c("diag.", "diag.")
-    varname_nc <- c("stress_x", "stress_y")
+    if (F) {
+        typesuffix <- c("forcing.", "forcing.")
+        diagsuffix <- c("diag.", "diag.")
+        varname_nc <- c("stress_x", "stress_y")
+    } else if (T) {
+        varname_nc <- c("tauuo", "tauvo")
+    }
+    rotate_inds <- c(1, 2)
+    vec <- F
+
+} else if (varname == "ekmanP_ms") {
+    longname <- "Ekman Pumping"
+    subtitle <- "<0 downwelling"
+    units_out <- "m s-1"
+    power_plot <- 6
+    multfac_plot <- base^power_plot
+    units_plot <- paste0("m s-1 x ", multfac_plot)
+    var_label_plot <- substitute(paste(rho^-1, " ", bold(k), "" %.% "(", 
+                                     bold(nabla), "" %*% "", bold(tau), "/f) ",
+                                     "[", var1^-1, " ", var2^-2, 
+                                     "] " %*% " ", base^power_plot),
+                               list(var1="m", var2="s", 
+                                    base=base, power_plot=-power_plot))
+    coriolis_tag <- T
+    horiz_deriv_tag <- "geo"
+    if (F) {
+        typesuffix <- c("forcing.", "forcing.")
+        diagsuffix <- c("diag.", "diag.")
+        varname_nc <- c("stress_x", "stress_y")
+    } else if (T) {
+        varname_nc <- c("tauuo", "tauvo")
+    }
     rotate_inds <- c(1, 2)
     vec <- F
 
@@ -4084,42 +4125,6 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- F
 
-} else if (varname == "dpCO2s") {
-    longname <- "Difference of oceanic pCO2 minus atmospheric pCO2"
-    units_out <- units_plot <- "µatm"
-    var_label_plot <- expression(paste(Delta, "pCO"[2], " [µatm]"))
-    varname_nc <- "dpCO2s"
-    if (out_mode == "fldint") {
-        units_out <- "µatm m"
-    }
-
-} else if (varname == "CO2f") {
-    longname <- "CO2-flux into the surface water"
-    units_out <- units_plot <- "mmolC/m2/d"
-    var_label_plot <- expression(paste("air-sea CO"[2], " flux [mmolC m"^"-2", " d"^"-1", "] (>0 into ocean)"))
-    varname_nc <- "CO2f"
-    if (out_mode == "fldint") {
-        units_out <- "mmolC/d"
-    }
-
-} else if (varname == "NPPd") {
-    longname <- "Mean NPP diatoms"
-    units_out <- units_plot <- "mmolC/m2/d"
-    var_label_plot <- expression(paste("NPP"[diatoms], " [mmolC m"^"-2", " d"^"-1", "]"))
-    varname_nc <- "NPPd"
-    if (out_mode == "fldint") {
-        units_out <- "mmolC/d"
-    }
-
-} else if (varname == "NPPn") {
-    longname <- "Mean NPP nanophytoplankton"
-    units_out <- units_plot <- "mmolC/m2/d"
-    var_label_plot <- expression(paste("NPP"[nanophytoplankton], " [mmolC m"^"-2", " d"^"-1", "]"))
-    varname_nc <- "NPPn"
-    if (out_mode == "fldint") {
-        units_out <- "mmolC/d"
-    }
-
 } else if (varname == "uice") {
     longname <- "Sea Ice Zonal Velocity"
     units_out <- "m s-1"
@@ -4354,12 +4359,6 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- c(1, 2) # u, v
     vec <- F
 
-} else if (varname == "bgc03") {
-    longname <- "Total Alkalinity"
-    units_out <- units_plot <- "mmol m-3"
-    var_label_plot <- expression(paste("Total Alkalinity [mmol m"^paste(-3), "]"))
-    varname_nc <- "bgc03"
-
 } else if (varname == "bathy") {
     longname <- "Bathymetry"
     units_out <- "m"
@@ -4470,6 +4469,65 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- F
     vec <- F
 
+# recom
+} else if (varname == "pCO2s") {
+    longname <- "Partial pressure of sea surface CO2"
+    units_out <- units_plot <- "µatm"
+    var_label_plot <- expression(paste("pCO"["2,sea"], " [µatm]"))
+    varname_nc <- "pCO2s"
+    if (out_mode == "fldint") {
+        units_out <- "µatm m"
+    }
+
+} else if (varname == "dpCO2s") {
+    longname <- "Difference of oceanic pCO2 minus atmospheric pCO2"
+    units_out <- units_plot <- "µatm"
+    var_label_plot <- expression(paste(Delta, "pCO"[2], " [µatm]"))
+    varname_nc <- "dpCO2s"
+    if (out_mode == "fldint") {
+        units_out <- "µatm m"
+    }
+
+} else if (varname == "CO2f") {
+    longname <- "CO2-flux into the surface water"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("air-sea CO"[2], " flux [mmolC m"^"-2", " d"^"-1", "] (>0 into ocean)"))
+    varname_nc <- "CO2f"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
+} else if (varname == "NPPd") {
+    longname <- "Mean NPP diatoms"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("NPP"[diatoms], " [mmolC m"^"-2", " d"^"-1", "]"))
+    varname_nc <- "NPPd"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
+} else if (varname == "NPPn") {
+    longname <- "Mean NPP nanophytoplankton"
+    units_out <- units_plot <- "mmolC/m2/d"
+    var_label_plot <- expression(paste("NPP"[nanophytoplankton], " [mmolC m"^"-2", " d"^"-1", "]"))
+    varname_nc <- "NPPn"
+    if (out_mode == "fldint") {
+        units_out <- "mmolC/d"
+    }
+
+} else if (varname == "bgc02") {
+    longname <- "Dissolved Inorganic Carbon"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("Dissolved Inorganic Carbon [mmolC m"^paste(-3), "]"))
+    varname_nc <- "bgc02"
+
+} else if (varname == "bgc03") {
+    longname <- "Total Alkalinity"
+    units_out <- units_plot <- "mmol m-3"
+    var_label_plot <- expression(paste("Total Alkalinity [mmol m"^paste(-3), "]"))
+    varname_nc <- "bgc03"
+
+# oasis
 } else if (varname == "sst_feom") {
     varname_nc <- "sst_feom"
     longname <- "SST from ocean"
