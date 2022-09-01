@@ -38,10 +38,9 @@ landborder_col <- land_col # "black"
 fill_ocean <- F # fill ocean with 'ocean_col' color?
 ocean_col <- land_col #"white"
 bg_col <- "white" #"transparent" ## bg color. if "transparent", choose "png" as 'plot_file'
-plot_grid <- T # add a grid to plot?
-grid_labels <- F # plot grid coordinate labels derived by built-in function map.grid()?
-                  # (default is false because this is pretty ugly...)
+plot_grid <- F # add a grid to plot?
 plot_title <- T # plot title?
+grid_labels <- NULL # todo
 xyaxis_labels <- T # "Longitude [°]" and "Latitude [°]" as axis labels?
 quiver_tag  <- F # plot u- and v- quivers in case of a vector variable
                   # note: if TRUE, 'uv_out' needs to set to TRUE as well
@@ -60,7 +59,8 @@ quiver_legend_velocity  <- 0.04 # [unit of variable]
 # --> for png, an invalid font will be ignored and the default will be used internally by png()
 # --> for pdf, an error occurs
 #font_family <- "sans" # default; on mistral R36, sans -> Helvetica is broken
-font_family <- "Nimbus Sans L"
+#font_family <- "Nimbus Sans L" # mistral
+font_family <- "Droid Sans" # levante
 #font_family <- "Droid Sans Mono"
 if (plot_file == "pdf") {
     font_avail <- names(grDevices::pdfFonts())

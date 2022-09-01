@@ -2,8 +2,9 @@
 deriv_2d_function <- function(elem2d, xcsur, ycsur,
                               meshid, mv, deriv_2d_fname) {
 
+    library(ncdf4)
     # all mesh resolutions/areas get their unit from this variable:
-    if (!is.finite("Rearth")) { # overwrite possibly wrong user input
+    if (!is.finite(Rearth)) { # overwrite possibly wrong user input
         Rearth <- 6367.5 * 10^3
         mesh_dist_unit <- "m"
     }
@@ -27,7 +28,7 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
                            indent=paste0("   ", indent)) # 5 " " for default message()
 
     # for every 2d element
-    for (i in 1:elem2d_n) {
+    for (i in seq_len(elem2d_n)) {
         
         #if (i %% 1e5 == 0) message(paste0(i, "/", elem2d_n))
 
@@ -71,10 +72,9 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         bafux_2d[,i] <- derivative_locbafu_x_2D[1,]
         bafuy_2d[,i] <- derivative_locbafu_x_2D[2,]
 
-        voltriangle[i] <- 1/2*abs(det(jacobian2D)) # in unit_of_Rearth^2
-
-        # mesh area
-        cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # in unit_of_Rearth^2
+        # mesh area in (unit of 'Rearth')^3
+        voltriangle[i] <- 1/2*abs(det(jacobian2D)) # elem-space
+        cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # node-space
 
         # mesh resolution in unit of 'Rearth'
         # from sein et al. 2017:
@@ -109,36 +109,26 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
 
     ## output
     message("todo: save elem2d")
-    ncdf4 <- T
-    if (ncdf4) { 
-        library(ncdf4)
-        node_per_elem_dim <- ncdim_def(paste0("nodes_per_element"), "", 1:3,
-                                          create_dimvar=F)
-        node_dim <- ncdim_def(paste0("mesh_", meshid, "_n2Dnod"), "",
-                                 1:length(xcsur), create_dimvar=F)
-        elem_dim <- ncdim_def(paste0("mesh_", meshid, "_n2Delem"), "",
-                                 1:dim(bafux_2d)[2], create_dimvar=F)
+    node_per_elem_dim <- ncdf4::ncdim_def("nodes_per_element", "", 1:3, create_dimvar=F)
+    node_dim <- ncdf4::ncdim_def("nod2d", "", seq_along(xcsur), create_dimvar=F)
+    elem_dim <- ncdf4::ncdim_def("elem2d", "", seq_along(resolution), create_dimvar=F)
 
-        bafux_2d_var <- ncvar_def("bafux_2d", paste0(mesh_dist_unit, "-1"), 
-                                     list(node_per_elem_dim, elem_dim), mv)
-        bafuy_2d_var <- ncvar_def("bafuy_2d", paste0(mesh_dist_unit, "-1"),
-                                     list(node_per_elem_dim, elem_dim), mv)
-        voltriangle_var <- ncvar_def("voltriangle", paste0(mesh_dist_unit, 2),
-                                     list(elem_dim), mv)
-        cluster_area_2d_var <- ncvar_def("cluster_area_2d", paste0(mesh_dist_unit, 2), node_dim, mv)
-        resolution_var <- ncvar_def("resolution", mesh_dist_unit, elem_dim, mv)
+    bafux_2d_var <- ncdf4::ncvar_def("bafux_2d", paste0(mesh_dist_unit, "-1"), list(node_per_elem_dim, elem_dim), mv)
+    bafuy_2d_var <- ncdf4::ncvar_def("bafuy_2d", paste0(mesh_dist_unit, "-1"), list(node_per_elem_dim, elem_dim), mv)
+    voltriangle_var <- ncdf4::ncvar_def("voltriangle", paste0(mesh_dist_unit, 2), list(elem_dim), mv)
+    cluster_area_2d_var <- ncdf4::ncvar_def("cluster_area_2d", paste0(mesh_dist_unit, 2), node_dim, mv)
+    resolution_var <- ncdf4::ncvar_def("resolution", mesh_dist_unit, elem_dim, mv)
 
-        nc <- nc_create(deriv_2d_fname,
-                        list(bafux_2d_var, bafuy_2d_var, voltriangle_var,
-                             cluster_area_2d_var, resolution_var),
-                        force_v4=force_v4)
-        ncvar_put(nc, bafux_2d_var, bafux_2d)
-        ncvar_put(nc, bafuy_2d_var, bafuy_2d)
-        ncvar_put(nc, voltriangle_var, voltriangle)
-        ncvar_put(nc, cluster_area_2d_var, cluster_area_2d)
-        ncvar_put(nc, resolution_var, resolution)
-        nc_close(nc)
-    }
+    nc <- ncdf4::nc_create(deriv_2d_fname,
+                    list(bafux_2d_var, bafuy_2d_var, voltriangle_var,
+                         cluster_area_2d_var, resolution_var),
+                    force_v4=force_v4)
+    ncdf4::ncvar_put(nc, bafux_2d_var, bafux_2d)
+    ncdf4::ncvar_put(nc, bafuy_2d_var, bafuy_2d)
+    ncdf4::ncvar_put(nc, voltriangle_var, voltriangle)
+    ncdf4::ncvar_put(nc, cluster_area_2d_var, cluster_area_2d)
+    ncdf4::ncvar_put(nc, resolution_var, resolution)
+    ncdf4::nc_close(nc)
 
     #return(list(bafux_2d=bafux_2d, 
     #            bafuy_2d=bafuy_2d, 

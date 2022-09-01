@@ -36,8 +36,7 @@ sub_vertical_average <- function(data_vert) {
                     # integrate over irregular depths
                     for (i in seq_len(ndepths)) {
                         if (verbose > 1) {
-                            z <- interpolate_depths[i]
-                            message(z, "m ", appendLF=ifelse(i == ndepths, T, F))
+                            message(interpolate_depths[i], "m ", appendLF=ifelse(i == ndepths, T, F))
                         }
                         if (F) { # without vari loop
                             aux <- data_vert[,,i,] # c(nvars,nod2d_n,ndepths,nrecspf)
@@ -64,38 +63,51 @@ sub_vertical_average <- function(data_vert) {
 
                 } # if dim_tag[vari] == "2D" or "3D"
             } # for vari nvars
+                
+            if (verbose > 0) message()
             
             #rm(dep_total, envir = .GlobalEnv) # if exported before
             rm(dep_total)
 
-        } else if (zave_method == 2) {
-
-            stop("update dim_tag")
+        } else if (F && zave_method == 2) { # not necessary here; done later in main_fesom.r
 
             tmp <- array(NA,
-                          dim=dim(data_vert),
-                          dimnames=dimnames(data_vert))
-
-            if (!exists("patch_vol")) { # only once
-                patch_vol <- cluster_vol_3d # dim = nod3d_n
-                patch_vol <- replicate(patch_vol, n=dim(data_node)[3]) # ndepths = 1
-                patch_vol <- replicate(patch_vol, n=dim(data_node)[4]) # nrecspf
-                patch_vol <- replicate(patch_vol, n=dim(data_node)[1]) # nvars
-                patch_vol <- aperm(patch_vol, c(4, 1, 2, 3)) # dim(patch_vol) = c(nvars,nod3d_n,ndepths=1,nrecspf)
-                nod3d_z_inds <- which(abs(nod_z) >= interpolate_depths[1] &
-                                      abs(nod_z) <= interpolate_depths[ndepths])
-                # total volume
-                volo <- sum(cluster_vol_3d[nod3d_z_inds])
-            }
-
-            # data*volume
-            tmp[,nod3d_z_inds,,] <- data_node[,nod3d_z_inds,,]*patch_vol[,nod3d_z_inds,,]
+                         dim=dim(data_vert),
+                         dimnames=dimnames(data_vert))
             
-            # sum and keep 1st (nvars), 3rd (ndepths=1) and 4th (nrecspf) dimensions
-            tmp <- apply(tmp, c(1, 3, 4), sum)
+            for (vari in seq_len(dim(tmp)[1])) { # for all vars; necessary to distinguish between 2D and 3D vars in data
+                
+                if (verbose > 0) message(indent, "   ", varname_nc[vari], ": ", appendLF=F)
+                
+                if (dim_tag[vari] == "2D") {
+                    if (verbose > 0) message("vertical average not necessary")
+                    tmp[vari,,,] <- data_vert[vari,,,]
+
+                } else if (dim_tag[vari] == "3D") {
+
+                    if (!exists("patch_vol")) { # only once
+                        patch_vol <- cluster_vol_3d # dim = nod3d_n
+                        patch_vol <- replicate(patch_vol, n=dim(data_node)[3]) # ndepths = 1
+                        patch_vol <- replicate(patch_vol, n=dim(data_node)[4]) # nrecspf
+                        patch_vol <- replicate(patch_vol, n=dim(data_node)[1]) # nvars
+                        patch_vol <- aperm(patch_vol, c(4, 1, 2, 3)) # dim(patch_vol) = c(nvars,nod3d_n,ndepths=1,nrecspf)
+                        nod3d_z_inds <- which(abs(nod3d_z) >= interpolate_depths[1] &
+                                              abs(nod3d_z) <= interpolate_depths[ndepths])
+                        volo <- sum(cluster_vol_3d[nod3d_z_inds]) # total volume
+                    }
+
+                    # data*volume
+                    tmp[vari,nod3d_z_inds,,] <- data_node[vari,nod3d_z_inds,,]*patch_vol[vari,nod3d_z_inds,,] # X*vol
+                    if (verbose > 0) message("ok")
+                
+                } # if dim_tag[vari] == "2D" or "3D"
+            } # for vari
+            
+            # sum over 2nd dim (nodes) and keep 1st (nvars), 3rd (ndepths=1) and 4th (nrecspf) dimensions
+            tmp <- apply(tmp, c(1, 3, 4), sum) # sum(X*vol)
             
             # divide through total volume
-            tmp <- tmp/volo 
+            tmp <- tmp/volo # sum(X*vol)/sum(vol)
 
         } # which zave_method
 

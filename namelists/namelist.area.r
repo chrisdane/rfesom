@@ -14,6 +14,9 @@
                      # plot in case of stereographic projection (does not have an effect 
                      # in case of rectangular or orthograhic projection)
 
+    map_geogr_lim_lon <- map_geogr_lim_lat <- 
+        poly_geogr_lim_lon <- poly_geogr_lim_lat <- NULL
+
     # default area selection
     if (!any(out_mode == c("csec_mean", "csec_depth", 
                            "moc_mean", "moc_depth"))) {
@@ -22,10 +25,7 @@
         if (projection == "rectangular") {
             geogr_lims <- T
             proj_lims <- F
-            if (area == "global") {
-                map_geogr_lim_lon <- c(-180, 180) # degree east 
-                map_geogr_lim_lat <- c(-90, 90) # degree north
-            } else if (area == "atlantic") {
+            if (area == "atlantic") {
                 map_geogr_lim_lon <- c(-90, 10)
                 map_geogr_lim_lat <- c(-40, 80)
             } else if (area == "atlantic1") {
@@ -317,9 +317,6 @@
             } else if (area == "GINmldh") {
                 map_geogr_lim_lon <- c(-10, 0)
                 map_geogr_lim_lat <- c(72.5, 76)
-            } else if (area == "arctic") {
-                map_geogr_lim_lon <- c(-180, 180)
-                map_geogr_lim_lat <- c(0, 90)
             } else if (area == "arc08") { # claudis Arc08
                 map_geogr_lim_lon <- c(-39.99900, 39.99623)
                 map_geogr_lim_lat <- c(72.00031, 86.99952)
@@ -412,8 +409,8 @@
                 map_geogr_lim_lon <- c(-40, 0)
                 map_geogr_lim_lat <- c(20, 50)
             } else if (area == "NH") {
-                map_geogr_lim_lon <- c(-180, 180) #c(-61, -49) #c(-62, 0) # c(6,10)
-                map_geogr_lim_lat <- c(0, 90) #c(37, 41) #c(38, 62) # c(52, 53)
+                map_geogr_lim_lon <- c(-180, 180)
+                map_geogr_lim_lat <- c(0, 90)
             } else if (area == "SH") {
                 map_geogr_lim_lon <- c(-180, 180) 
                 map_geogr_lim_lat <- c(-90, 0) 
@@ -429,11 +426,50 @@
             } else if (area == "wunsch97") {
                 map_geogr_lim_lon <- -20
                 map_geogr_lim_lat <- 47.4
+            } else if (area == "g19_NH-HL") { # val 1
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_1_poly_*_concavity_1.txt"), full.names=T)
+                map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
+                for (fi in seq_along(fs)) {
+                    polycoords <- read.table(fs[fi], header=T)
+                    map_geogr_lim_lon[[fi]] <- polycoords$x
+                    map_geogr_lim_lat[[fi]] <- polycoords$y
+                }
+            } else if (area == "g19_NH-ST") { # val 2
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_2_poly_*_concavity_1.txt"), full.names=T)
+                map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
+                for (fi in seq_along(fs)) {
+                    polycoords <- read.table(fs[fi], header=T)
+                    map_geogr_lim_lon[[fi]] <- polycoords$x
+                    map_geogr_lim_lat[[fi]] <- polycoords$y
+                }
+            } else if (area == "g19_EQU") { # val 3
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_3_poly_*_concavity_1.txt"), full.names=T)
+                map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
+                for (fi in seq_along(fs)) {
+                    polycoords <- read.table(fs[fi], header=T)
+                    map_geogr_lim_lon[[fi]] <- polycoords$x
+                    map_geogr_lim_lat[[fi]] <- polycoords$y
+                }
+            } else if (area == "g19_SH-ST") { # val 4
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_4_poly_*_concavity_1.txt"), full.names=T)
+                map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
+                for (fi in seq_along(fs)) {
+                    polycoords <- read.table(fs[fi], header=T)
+                    map_geogr_lim_lon[[fi]] <- polycoords$x
+                    map_geogr_lim_lat[[fi]] <- polycoords$y
+                }
+            } else if (area == "g19_SH-HL") { # val 5
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_5_poly_*_concavity_1.txt"), full.names=T)
+                map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
+                for (fi in seq_along(fs)) {
+                    polycoords <- read.table(fs[fi], header=T)
+                    map_geogr_lim_lon[[fi]] <- polycoords$x
+                    map_geogr_lim_lat[[fi]] <- polycoords$y
+                }
             }
-            if (area != "arctic") {
-                poly_geogr_lim_lon <- map_geogr_lim_lon
-                poly_geogr_lim_lat <- map_geogr_lim_lat
-            }
+
+            if (!is.null(map_geogr_lim_lon)) poly_geogr_lim_lon <- map_geogr_lim_lon
+            if (!is.null(map_geogr_lim_lat)) poly_geogr_lim_lat <- map_geogr_lim_lat
             
         # stereographic ("polar") projection
         } else if (projection == "stereographic") {
@@ -518,7 +554,7 @@
                 poly_geogr_lim_lat <- map_geogr_lim_lat
             }
             orient <- c(mean(map_geogr_lim_lat), mean(map_geogr_lim_lon), 0)
-            if (area == "arctic" || area == "nh") orient <- c(90, -35, 0)
+            if (area == "arctic" || area == "NH") orient <- c(90, -35, 0)
         
         # orthographic ("from space") projection
         } else if (projection == "orthographic") {
@@ -532,7 +568,7 @@
                 poly_geogr_lim_lat <- c(-90, 90)
                 orient <- c(45, -35, 0)
             } else {
-                stop(paste0("Error: orthographic projection only implemented for 'area'='atlantic'."))
+                stop("orthographic projection only implemented for `area` = \"atlantic\"")
             }
         
         } # which projection
@@ -545,6 +581,7 @@
             geogr_lims <- T
             proj_lims <- F
             projection <- "rectangular"
+            # here every entry is a vertex of a cross section
             if (area == "csec_DS") {
                 map_geogr_lim_lon <- c(-33.3, -25)
                 map_geogr_lim_lat <- c(67.2, 65.5)

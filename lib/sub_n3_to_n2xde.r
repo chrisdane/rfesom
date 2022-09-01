@@ -37,6 +37,7 @@ sub_n3_to_n2xde <- function(data_in) {
             
             # if !levelwise, rearrange from (n3) --> (n2,nd) for all needed depths and 
             # apply vertical interpolation coefficients if needed (for both levelwise and !levelwise)
+            
             if (ndepths == 1 && depths == "bottom") {
                 if (verbose > 1) message("bottom")
                 if (levelwise[vari]) {
@@ -56,8 +57,9 @@ sub_n3_to_n2xde <- function(data_in) {
                     inds <<- !is.na(indsurf[i,]) # only where are values (i.e. where aux3d is not -999)
                  
                     if (any(fesom_depths == z)) { # wanted level equals one of the fesom levels
-                        # --> if !levelwise, just rearrange from nod3d_n to ndepths x nod2d_n
-                        # --> if levelwise, do nothing
+                        
+                        # if !levelwise, just rearrange from nod3d_n to ndepths x nod2d_n
+                        # if levelwise, do nothing
                         
                         if (verbose > 1) message(msg, appendLF=F)
 
@@ -69,15 +71,16 @@ sub_n3_to_n2xde <- function(data_in) {
                             }
                         } else {
                             if (levelwise[vari]) {
-                                tmp[vari,pos[indsurf[i,inds]],i,] <<- data_in[vari,indsurf[i,inds],i,]
+                                tmp[vari,pos[indsurf[i,inds]],i,] <<- data_in[vari,indsurf[i,inds],i,] # nothing to do
                             } else if (!levelwise[vari]) {
                                 tmp[vari,pos[indsurf[i,inds]],i,] <<- data_in[vari,indlevel[i,inds],,]
                             }
                         }
                         
                     } else { # wanted level is between some fesom levels
-                        # --> apply vertical interpolation coefficients between user and model levels
-                        # --> if !levelwise, rearrange from nod3d_n to ndepths x nod2d_n
+                        
+                        # apply vertical interpolation coefficients between user and model levels
+                        # if !levelwise, rearrange from nod3d_n to ndepths x nod2d_n
                         
                         # replicate interpolation coefficients
                         if (F) { # without vari loop

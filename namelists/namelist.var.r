@@ -55,6 +55,12 @@ if (varname == "tos") { # fesom 1.4
     anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "sst"
 
+} else if (varname == "sos") { # fesom 1.4
+    longname <- "Sea Surface Salinity"
+    units_out <- units_plot <- "psu"
+    var_label_plot <- expression(paste("SSS [psu]"))
+    varname_nc <- "sos"
+
 } else if (varname == "sss") { # fesom 2.0 
     longname <- "Sea Surface Salinity"
     units_out <- units_plot <- "psu"
@@ -4475,18 +4481,18 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "µatm"
     var_label_plot <- expression(paste("pCO"["2,sea"], " [µatm]"))
     varname_nc <- "pCO2s"
-    if (out_mode == "fldint") {
-        units_out <- "µatm m"
-    }
 
 } else if (varname == "dpCO2s") {
     longname <- "Difference of oceanic pCO2 minus atmospheric pCO2"
     units_out <- units_plot <- "µatm"
     var_label_plot <- expression(paste(Delta, "pCO"[2], " [µatm]"))
     varname_nc <- "dpCO2s"
-    if (out_mode == "fldint") {
-        units_out <- "µatm m"
-    }
+
+} else if (varname == "pCO2a") { # calculated with dotfiles/functions/recom_calc_pCO2a.r
+    longname <- "Partial pressure of atmospheric CO2"
+    units_out <- units_plot <- "µatm"
+    var_label_plot <- expression(paste("pCO"["2,atm"], " [µatm]"))
+    varname_nc <- "pCO2a"
 
 } else if (varname == "CO2f") {
     longname <- "CO2-flux into the surface water"
@@ -4526,6 +4532,24 @@ if (varname == "tos") { # fesom 1.4
     units_out <- units_plot <- "mmol m-3"
     var_label_plot <- expression(paste("Total Alkalinity [mmol m"^paste(-3), "]"))
     varname_nc <- "bgc03"
+
+} else if (varname == "bgc22") {
+    longname <- "Oxygen"
+    units_out <- units_plot <- "mmolO m-3"
+    var_label_plot <- expression(paste("Dissolved Oxygen [mmolO m"^paste(-3), "]"))
+    varname_nc <- "bgc22"
+
+} else if (varname == "diags3d01") {
+    longname <- "NPP Nanophy"
+    units_out <- units_plot <- "mmolC m-3 day-1"
+    var_label_plot <- expression(paste("NPP"[nanophy], " [mmolC m"^paste(-3), " day"^paste(-1), "]"))
+    varname_nc <- "diags3d01"
+
+} else if (varname == "diags3d02") {
+    longname <- "NPP Dia"
+    units_out <- units_plot <- "mmolC m-3 day-1"
+    var_label_plot <- expression(paste("NPP"[dia], " [mmolC m"^paste(-3), " day"^paste(-1), "]"))
+    varname_nc <- "diags3d02"
 
 # oasis
 } else if (varname == "sst_feom") {

@@ -26,7 +26,6 @@ Rearth <- 6367.5*1e3 # earth radius; must have same unit as 'mesh_dist_unit'
 g <- 9.81 # [m s-2] acceleration due to gravity
 omega <- 2*pi/86400 # [s-1] angular frequency of earth 
 mv <- NA # missing value for netcdf output
-prec <- "double" # precision of nc output
 force_v4 <- T # T for saving as netcdf-4 (requieres R package ncdf4) or 
               # F for saving as netcdf-3 aka "classic"
 sd_method <- "default" # how to calculate standard deviation of a vector variable?
@@ -71,6 +70,9 @@ varname <- "tos"
 ## Where? (see namelist.area.r)
 area <- "global"
 
+## Exclude nodes with sea ice concentration > 0?
+exclude_sic <- F
+
 ## At what depth? [m]
 depths <- 0
 # e.g. depths = 0            # sea surface
@@ -93,8 +95,6 @@ snapshot      <- F # true for snapshot if available or false for mean data (.mea
                    # if snapshot not available
 all_recs      <- T # read all records of one fesom output file if possible 
                    # set to F if memory of computer is not big enough
-shifttime_minus1dt <- T # fesom1.4 bug: time values of nc files needs to get shifted by -1dt
-                        # this only applies if `model` = "fesom" (i.e. not "fesom2")
 
 ## Which postprocessing output? (see table below for availabe output types)
 # ltm (long term mean) -> output has no time dimension)
