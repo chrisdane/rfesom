@@ -2542,19 +2542,20 @@ sub_calc <- function(data_node) {
     ## Fsalt: upper boundary condition for salinity
     if (varname == "Fsalt") {
         if (verbose > 0) {
-            message(paste0(indent, "Fsalt = SSS/(1-SSS/1000)*(Evap - Snow - Rain - Runoff + ThdGr) + relax_salt_term ..."))
+            message(paste0(indent, "Fsalt = SSS/(1-SSS/1000)*(Evap - Snow - Rain - Runoff + ThdGr + ThdGrSn) + relax_salt_term ..."))
             message(paste0(indent, "   e.g. Josey (2003): doi:10.1029/2003JC001778"))
         }
-        EminusP <- data_node[which(varname_nc == "snow"),,,]*-1 +
+        EminusP <- data_node[which(varname_nc == "snow"),,,]*-1 +   # all in m s-1
                    data_node[which(varname_nc == "rain"),,,]*-1 +
-                   data_node[which(varname_nc == "evap"),,,] +
-                   data_node[which(varname_nc == "runoff"),,,]*-1 +
-                   data_node[which(varname_nc == "thdgr"),,,]
+                   data_node[which(varname_nc == "evap"),,,] +      
+                   data_node[which(varname_nc == "runoff"),,,]*-1 + 
+                   data_node[which(varname_nc == "thdgr"),,,] +     # thermodynamic growth rate of eff. ice thickness
+                   data_node[which(varname_nc == "thdgrsn"),,,]     # melting rate of snow thickness
 
         #denom <- 1 - data_node[which(varname_nc == "salt"),,,]/1e6 # /1e3 or /1e6 almost no diff
         denom <- 1
-        data_node <- data_node[which(varname_nc == "salt"),,,]*EminusP/denom +
-                     data_node[which(varname_nc == "relax_salt"),,,]
+        data_node <- data_node[which(varname_nc == "salt"),,,]*EminusP/denom + # psu m s-1
+                     data_node[which(varname_nc == "relax_salt"),,,] # psu m s-1
     } # Fsalt
 
     if (varname == "Fsalt2") {
@@ -2692,8 +2693,8 @@ sub_calc <- function(data_node) {
             # alpha beta
             if (sea_water == "EOS80") {
                 if (verbose > 1) {
-                    message(paste0(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K-1..."))
-                    message(paste0(indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu-1..."))
+                    message(indent, "alpha = sw_alpha(S,T,P,keyword='ptmp') in K-1 ...\n",
+                            indent, "beta = sw_beta(S,T,P,keyword='ptmp') in psu-1 ...")
                 }
                 alpha_node <- sw_alpha(S=data_node[saltind,,,],
                                         T=data_node[tempind,,,],
@@ -2704,8 +2705,8 @@ sub_calc <- function(data_node) {
             
             } else if (sea_water == "TEOS10") {
                 if (verbose > 1) {
-                    message(indent, "alpha = gsw_alpha(SA,CT,p) in K-1 ...")
-                    message(indent, "beta = gsw_beta(SA,CT,p) in psu-1 ...")
+                    message(indent, "alpha = gsw_alpha(SA,CT,p) in K-1 ...\n",
+                            indent, "beta = gsw_beta(SA,CT,p) in psu-1 ...")
                 }
                 SA_node <- array(NA, dim=dim(data_node[1,,,]),
                                  dimnames=dimnames(data_node[saltind,,,]))
@@ -2849,19 +2850,20 @@ sub_calc <- function(data_node) {
                                      "FrhoB", "FrhoBbudget"))) {
 
                     if (verbose > 0) {
-                        message(paste0(indent, "Fhaline = Ffac * (E - P) + relax_salt_term ..."))
-                        message(paste0(indent, "   with Ffac = rho * beta * SSS / (1 - SSS/1000)"))
-                        message(paste0(indent, "        E - P = -1*snow + -1*rain + evap + -1*runoff + thdgr"))
-                        message(paste0(indent, "        relax_salt_term = rho * beta * relax_salt"))
-                        message(paste0(indent, "        thdgr = thermodynamic growth rate of eff. sea ice thickness"))
-                        message(paste0(indent, "   from Josey (2003): doi:10.1029/2003JC001778"))
+                        message(indent, "Fhaline = Ffac * (E - P) + relax_salt_term ...\n",
+                                indent, "   with            Ffac = rho * beta * SSS / (1 - SSS/1000) = kg m-3 * psu-1 * psu\n",
+                                indent, "                  E - P = -1*snow + -1*rain + evap + -1*runoff + thdgr + thdgrsn (all in m s-1)\n",
+                                indent, "        relax_salt_term = rho * beta * relax_salt = kg m-3 * psu-1 * psu m s-1 = \n",
+                                indent, "                  thdgr = thermodynamic growth rate of eff. sea ice thickness\n",
+                                indent, "                thdgrsn = melting rate of snow thickness\n",
+                                indent, "   from Josey (2003): doi:10.1029/2003JC001778")
                     }
 
                     #FhalineFac_node <- rho_node * beta_node *  data_node[saltind,,,] / (1 -  data_node[saltind,,,]) # after Schmitt et al. 1989
                     FhalineFac_node <- rho_node * beta_node *  data_node[saltind,,,] / (1 - data_node[saltind,,,]/1000) # after Josey et al. 2003
                     dimnames(FhalineFac_node)[1] <- list(var="FhalineFac")
 
-                    relax_salt_ind <- which(varname_nc == "relax_salt")
+                    relax_salt_ind <- which(varname_nc == "relax_salt") # psu m s-1
                     if (is.na(relax_salt_ind)) stop("could not find variable relax_salt.")
 
                     salt_relax_term <- rho_node * beta_node * data_node[relax_salt_ind,,,]
@@ -2871,15 +2873,16 @@ sub_calc <- function(data_node) {
                     if (any(varname == c("Fhaline", "Frho",
                                          "FhalineB", "FrhoB"))) {
                         
-                        inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"), 
+                        inds <- match(c("snow", "rain", "evap", "runoff", "thdgr", "thdgrsn"), 
                                        varname_nc)
-                        if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
+                        if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr thdgrsn")
                         
-                        Fhaline_node <- data_node[which(varname_nc == "snow"),,,]*-1 +
+                        Fhaline_node <- data_node[which(varname_nc == "snow"),,,]*-1 + # all m s-1
                                          data_node[which(varname_nc == "rain"),,,]*-1 +
                                          data_node[which(varname_nc == "evap"),,,] +
                                          data_node[which(varname_nc == "runoff"),,,]*-1 +
-                                         data_node[which(varname_nc == "thdgr"),,,]
+                                         data_node[which(varname_nc == "thdgr"),,,] +
+                                         data_node[which(varname_nc == "thdgrsn"),,,]
                         Fhaline_node <- FhalineFac_node * Fhaline_node + salt_relax_term
 
                         if (varname == "Fhaline") {
@@ -2906,9 +2909,9 @@ sub_calc <- function(data_node) {
                 if (any(varname == c("Fhalinebudget", "Frhobudget",
                                      "FhalineBbudget", "FrhoBbudget"))) {
 
-                    inds <- match(c("snow", "rain", "evap", "runoff", "thdgr"),
+                    inds <- match(c("snow", "rain", "evap", "runoff", "thdgr", "thdgrsn"),
                                    varname_nc)
-                    if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr.")
+                    if (any(is.na(inds))) stop("could not find some variables of snow rain evap runoff thdgr thdgrsn")
                     
                     # apply sign convention
                     neg_inds <- match(c("snow", "rain", "runoff"),

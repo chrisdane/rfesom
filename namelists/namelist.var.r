@@ -3815,9 +3815,9 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("m3 s-1 psu")
     }
-    typesuffix <- c("oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", rep("diag.", t=6))
-    varname_nc <- c("salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "ice.", "ice.", rep("forcing.", t=5))
+    diagsuffix <- c("", rep("diag.", t=7))
+    varname_nc <- c("salt", "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -3902,9 +3902,9 @@ if (varname == "tos") { # fesom 1.4
         multfac_out <- base^power_out
         units_out <- paste0("kg s-1")
     }
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=5))
+    diagsuffix <- c("", "", rep("diag.", t=7))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -3920,9 +3920,9 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=5))
+    diagsuffix <- c("", "", rep("diag.", t=7))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -3941,9 +3941,9 @@ if (varname == "tos") { # fesom 1.4
     if (any(out_mode == c("fldint", "depthint"))) {
         units_out <- "kg s-1"
     }
-    varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=7))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=6))
+    diagsuffix <- c("", "", rep("diag.", t=8))
 
 } else if (varname == "Frho2") {
     longname <- "Density flux to ocean"
@@ -3981,13 +3981,13 @@ if (varname == "tos") { # fesom 1.4
     }
     typesuffix <- c("oce.", "oce.", # temp salt 
                      rep("forcing.", t=5), # swrd lwrd olwout osen olat
-                     "ice.", # thdgr
+                     "ice.", "ice.", # thdgr thdgrsn
                      rep("forcing.", t=5)) # snow rain evap runoff relax_salt
     diagsuffix <- c("", "", 
-                     rep("diag.", t=11))
+                     rep("diag.", t=12))
     varname_nc <- c("temp", "salt", 
-                        "swrd", "lwrd", "olwout", "osen", "olat",
-                        "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+                    "swrd", "lwrd", "olwout", "osen", "olat",
+                    "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
 
 } else if (varname == "FrhermalB") {
     longname <- "Thermal buoyancy flux to ocean"
@@ -4037,9 +4037,9 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=5))
+    diagsuffix <- c("", "", rep("diag.", t=7))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4055,9 +4055,9 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                               list(var1="m", var2="s", base=base,
                                    power_out=-power_out))
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=6))
-    varname_nc <- c("temp", "salt", "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=5))
+    diagsuffix <- c("", "", rep("diag.", t=7))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4073,9 +4073,9 @@ if (varname == "tos") { # fesom 1.4
                                      base^power_out),
                                  list(var1="m", var2="s", base=base,
                                       power_out=-power_out))
-    typesuffix <- c("oce.", "oce.", "ice.", rep("forcing.", t=6))
-    diagsuffix <- c("", "", rep("diag.", t=7))
-    varname_nc <- c("temp", "salt", "thdgr", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
+    typesuffix <- c("oce.", "oce.", "ice.", "ice.", rep("forcing.", t=6))
+    diagsuffix <- c("", "", rep("diag.", t=8))
+    varname_nc <- c("temp", "salt", "thdgr", "thdgrsn", "qnet", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
@@ -4121,13 +4121,13 @@ if (varname == "tos") { # fesom 1.4
     }
     typesuffix <- c("oce.", "oce.",
                      rep("forcing.", t=5),
-                     "ice.",
+                     "ice.", "ice.", # thdgr thdgrsn
                      rep("forcing.", t=5))
     diagsuffix <- c("", "",
-                     rep("diag.", t=11))
+                     rep("diag.", t=12))
     varname_nc <- c("temp", "salt",
-                        "swrd", "lwrd", "olwout", "osen", "olat",
-                        "thdgr", "snow", "rain", "evap", "runoff", "relax_salt")
+                    "swrd", "lwrd", "olwout", "osen", "olat",
+                    "thdgr", "thdgrsn", "snow", "rain", "evap", "runoff", "relax_salt")
     rotate_inds <- F
     vec <- F
 
