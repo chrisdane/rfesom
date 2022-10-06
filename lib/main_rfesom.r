@@ -12,13 +12,13 @@
 
 ## rfesom specs
 helppage <- "https://github.com/chrisdane/rfesom#installing-new-r-packages--libraries"
-rfesom_version <- c(1, 0, 0)
+rfesom_version <- base::numeric_version("1.0.0")
 
 message("\n",
-        "***********************************************************************\n",
-        "* rfesom v", paste(rfesom_version, collapse="."), " for processing FESOM1/2 output                        *\n",
-        "* https://github.com/chrisdane/rfesom                                 *\n",
-        "***********************************************************************")
+        "***************************************************************\n",
+        "*         rfesom ", rfesom_version, " for processing FESOM1/2 output        *\n",
+        "*         https://github.com/chrisdane/rfesom                 *\n",
+        "***************************************************************")
 
 ## close any open plot devices
 graphics.off()
@@ -52,8 +52,8 @@ rm(list=ws)
 opts <- options() # user-default options
 options(show.error.locations=T)
 #options(error=recover)
-options(warn=2) # stop on warnings 
-#options(warn=0) # default
+options(warn=0) # default
+#options(warn=2) # stop on warnings 
 
 ## vector/array element-selection: disable R's automatic squeeze
 ## to keep dimensions of length 1 
@@ -128,7 +128,7 @@ if (!exists("fesom_version")) stop("No 'fesom_version' provided (\"fesom\" or \"
 if (!any(fesom_version == c("fesom", "fesom2"))) {
     stop("`fesom_version` must be either \"fesom\" or \"fesom2\".")
 }
-if (!exists("model")) model <- fesom_version # default
+if (!exists("model")) stop("No 'model' provided (fesom, fesom2, recom)")
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
 if (!exists("postprefix")) stop("No 'postprefix' provided.")
 if (snapshot) {
@@ -152,7 +152,7 @@ if (!exists("cycl")) {
         cycl <- F
     }
 }
-if (global_mesh && !cycl || !global_mesh && cycl) {
+if (T && global_mesh && !cycl || !global_mesh && cycl) {
     stop("given `cycl`=", cycl, " and `global_mesh`=", global_mesh, ". this does not fit together.")
 }
 # fesom mesh rotation sanity checks
@@ -303,9 +303,11 @@ if (regular_transient_out &&
 
 # check area
 if (!is.null(map_geogr_lim_lon)) {
+    if (length(map_geogr_lim_lon) == 0) stop("provided map_geogr_lim_lon is of length 0")
     if (!is.list(map_geogr_lim_lon)) map_geogr_lim_lon <- list(map_geogr_lim_lon)
 }
 if (!is.null(map_geogr_lim_lat)) {
+    if (length(map_geogr_lim_lat) == 0) stop("provided map_geogr_lim_lat is of length 0")
     if (!is.list(map_geogr_lim_lat)) map_geogr_lim_lat <- list(map_geogr_lim_lat)
 }
 if (!is.null(poly_geogr_lim_lon)) {
@@ -401,7 +403,8 @@ if (regular_ltm_out && !any(out_mode == c("select", "areadepth"))) {
 # valid values
 if (!exists("known_time_dim_or_var_names")) known_time_dim_or_var_names <- c("time", "T", "ny") # add more here if necessary
 if (!exists("node_dim_or_var_names")) known_node_dim_or_var_names <- c("nod2", "nodes_2d", "nodes_3d", "nodes", "ncells", "nx", "x")
-if (!exists("known_depth_dim_or_var_names")) known_depth_dim_or_var_names <- c("nz1", "depth")
+if (!exists("known_depth_dim_or_var_names")) known_depth_dim_or_var_names <- c("nz", "depth")
+if (!exists("known_middepth_dim_or_var_names")) known_middepth_dim_or_var_names <- c("nz1", "nz_1")
 days_per_month <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 days_per_month_leap <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 months_plot <- month.abb # Jan, Feb, ...
@@ -1048,8 +1051,10 @@ if (nvars > 0) {
                 #to_ind <- which.min(abs(years_filenames - as.integer(tos[i])))
                 #to_ind <- to_ind[length(to_ind)]
                 from_ind <- which(years_filenames == as.integer(years[1]))[1]
+                if (length(from_ind) == 0 || is.na(from_ind)) stop("this should not happen")
                 to_ind <- which(years_filenames == as.integer(years[length(years)]))
                 to_ind <- to_ind[length(to_ind)]
+                if (length(to_ind) == 0 || is.na(to_ind)) stop("this should not happen")
                 years_wanted <- years_filenames[from_ind:to_ind]
                 message("--> found filename years from inds ", from_ind, " to ", to_ind, 
                         " (from total 1 to ", length(years_wanted), "): ",
@@ -1249,10 +1254,12 @@ if (nvars > 0) {
     # finised get all dimensions of all wanted variables of provided files
     
     # find time/node/depth dimensions of all wanted variables
+    depthdim_ind <- middepthdim_ind <- NULL
     for (vari in seq_len(nvars)) { # all varname_nc
         dims_of_vars[[vari]]$timedim_ind <- dims_of_vars[[vari]]$timedim_name <- NULL
         dims_of_vars[[vari]]$nodedim_ind <- dims_of_vars[[vari]]$nodedim_name <- NULL
         dims_of_vars[[vari]]$depthdim_ind <- dims_of_vars[[vari]]$depthdim_name <- NULL
+        dims_of_vars[[vari]]$middepthdim_ind <- dims_of_vars[[vari]]$middepthdim_name <- NULL
         # add further special dimensions here
         dimids <- dims_of_vars[[vari]]$dimids
         for (dimi in seq_along(dimids)) {
@@ -1295,6 +1302,20 @@ if (nvars > 0) {
                 depthdim_name <- dims_of_vars[[vari]][[dimids[dimi]]]$name
                 dims_of_vars[[vari]]$depthdim_ind <- depthdim_ind
                 dims_of_vars[[vari]]$depthdim_name <- depthdim_name
+            
+            # find middepth dimension
+            } else if (any(dims_of_vars[[vari]][[dimi]]$name == known_middepth_dim_or_var_names)) { 
+                if (!is.null(dims_of_vars[[vari]]$middepthdim_ind)) {
+                    stop("this is the second attempt to set a middepth dimension based on ",
+                         "`known_middepth_dim_or_var_names` = \"", 
+                          paste(known_middepth_dim_or_var_names, collapse="\", \""), 
+                         "\". this means more than 1 dimensions were considered to be the middepth dimension.")
+                }
+                middepthdim_ind <- dimi
+                middepthdim_name <- dims_of_vars[[vari]][[dimids[dimi]]]$name
+                dims_of_vars[[vari]]$middepthdim_ind <- middepthdim_ind
+                dims_of_vars[[vari]]$middepthdim_name <- middepthdim_name
+            
             }
             
         } # for dimi all dims of var
@@ -1320,6 +1341,8 @@ if (nvars > 0) {
                     message(" --> this is the node dim")
                 } else if (!is.null(depthdim_ind) && di == depthdim_ind) {
                     message(" --> this is the depth dim")
+                } else if (!is.null(middepthdim_ind) && di == middepthdim_ind) {
+                    message(" --> this is the middepth dim")
                 } else {
                     message()
                 }
@@ -1334,6 +1357,8 @@ if (nvars > 0) {
             "\", \"my_special_node_dimension_name\")`\n",
             indent, "   `known_depth_dim_or_var_names <- c(\"", paste(known_depth_dim_or_var_names, collapse="\", \""),
             "\", \"my_special_depth_dimension_name\")`\n",
+            indent, "   `known_middepth_dim_or_var_names <- c(\"", paste(known_middepth_dim_or_var_names, collapse="\", \""),
+            "\", \"my_special_middepth_dimension_name\")`\n",
             indent, "in the runscript.")
     # finished creating start and count vectors
 
@@ -1583,7 +1608,7 @@ if (nvars > 0) {
                     } # if fi == 1
 
                     if (fi == 1 && verbose > 0) {
-                        message(indent, "   --> shift ", length(dates), " dates\n",
+                        message(indent, "--> shift ", length(dates), " dates\n",
                                 paste(head(dates), collapse=", "), " ... ", 
                                 paste(tail(dates), collapse=", "), "\n",
                                 indent, "   by -1 dt = -1 ", attributes(frequency)$units, 
@@ -1779,7 +1804,7 @@ if (nvars > 0) {
                 }
 
                 # add special cases
-                if (frequency == "annual") {
+                if (class(frequency) != "function" && frequency == "annual") {
                     seasoni <- "annual"
                 }
                 if (exists("frequency_post")) {
@@ -1826,10 +1851,15 @@ if (nvars > 0) {
             timeobj[[time_vari]]$ntime <- length(dates_all)
             timeobj[[time_vari]]$frequency <- frequency
             if (exists("frequency_post")) timeobj[[time_vari]]$frequency_post <- frequency_post
-            if (length(unique(seasonvec)) != 1) {
-                stop("todo: recs yield different seasons. this should only happen in DJF case?")
-            } else {
-                seasoni <- unique(seasonvec)
+            seasoni <- unique(seasonvec)
+            if (length(seasoni) == 1) { # case: all data from one month
+                # nothing to do
+            } else if (length(seasoni) == 2) {
+                seasoni <- paste0(seasoni, collapse="") # e.g. JanFeb
+            } else if (length(seasoni) >= 3 & length(seasoni) <= 11) {
+                seasoni <- paste(substr(seasoni, 1, 1), collapse="") # e.g. JFM
+            } else if (length(seasoni) == 12) { # case: Jan-Dec
+                seasoni <- "Jan-Dec"
             }
             timeobj[[time_vari]]$season <- seasoni
             timeobj[[time_vari]]$timestamp <- timestampvec
@@ -1992,6 +2022,106 @@ if (nvars > 0) {
     } # if !is.null(nc_with_depth_ind)
     # finished depth stuff
 
+    # try to obtain middepth from nc file
+    # --> do this only once for the first found file that has a middepth dim
+    middepthobj <- list(middepth=NULL, units="") # default: no middepth
+    nc_with_middepth_ind <- NULL
+    for (vari in seq_len(nvars)) {
+        if (!is.null(dims_of_vars[[vari]]$middepthdim_ind)) { 
+            # get middepth information of first file that has a variable with a middepth dimension 
+            nc_with_middepth_ind <- vari
+            break
+        }
+    }
+    if (!is.null(nc_with_middepth_ind)) {
+        if (verbose > 0) {
+            message("\nGet middepth information once from variable \"", varname_nc[nc_with_middepth_ind], "\" ...")
+        }
+        if (ncdf.tools_tag == T) {
+            dim_names <- ncdf.tools::infoNcdfDims(ncids[[var_nc_inds[nc_with_middepth_ind]]])$name
+            var_names <- ncdf.tools::infoNcdfVars(ncids[[var_nc_inds[nc_with_middepth_ind]]])$name
+        } else if (ncdf.tools_tag == F) {
+            dim_names <- names(ncids[[var_nc_inds[nc_with_middepth_ind]]]$dim)
+            var_names <- names(ncids[[var_nc_inds[nc_with_middepth_ind]]]$var)
+        }
+    
+        # 1st try: check if there is middepth _variable_
+        if (any(!is.na(match(known_middepth_dim_or_var_names, var_names)))) { # there is a middepth variable
+            middepth_var <- var_names[match(known_middepth_dim_or_var_names, var_names)]
+            if (any(is.na(middepth_var))) {
+                middepth_var <- middepth_var[-which(is.na(middepth_var))]
+            }
+            if (length(middepth_var) > 1) {
+                stop("found ", length(middepth_var), " middepth vars: ",
+                     paste(middepth_var, collapse=", "), ". not implemented.")
+            }
+            # read middepth variable
+            if (ncdf.tools_tag == F) {
+                middepthobj$middepth <- ncdf4::ncvar_get(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_var)
+                middepthobj <- c(middepthobj, ncdf4::ncatt_get(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_var))
+            } else if (ncdf.tools_tag == T) {
+                middepthobj$middepth <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_var)
+                middepth_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_var)$natts
+                for (atti in seq_len(middepth_natts)) {
+                    attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_var, attribute=atti-1)$name
+                    middepthobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], 
+                                                                  middepth_var, attribute=atti-1)
+                }
+            } # ncdf4 or ncdf.tools
+        } # if there is middepth var
+        
+        # 2nd try: check if there is middepth _dimension_
+        if (is.null(middepthobj$middepth)) {
+            if (any(!is.na(match(known_middepth_dim_or_var_names, dim_names)))) { # there is a middepth dimension
+                middepth_dim <- dim_names[match(known_middepth_dim_or_var_names, dim_names)]
+                if (any(is.na(middepth_dim))) {
+                    middepth_dim <- middepth_dim[-which(is.na(middepth_dim))]
+                }
+                if (length(middepth_dim) > 1) {
+                    stop("found ", length(middepth_dim), " middepth dims: ",
+                         paste(middepth_dim, collapse=", "), ". not implemented.")
+                }
+                if (ncdf.tools_tag == F) { # use ncdf4 package
+                    middepthobj$middepth <- ncids[[var_nc_inds[nc_with_middepth_ind]]]$dim[[middepth_dim]]$vals
+                    middepthobj$units <- ncids[[var_nc_inds[nc_with_middepth_ind]]]$dim[[middepth_dim]]$units
+                } else if (ncdf.tools_tag == T) { # use ncdf.tools package
+                    middepthobj$middepth <- RNetCDF::var.get.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_dim)
+                    middepth_natts <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], middepth_dim)$natts
+                    for (atti in seq_len(middepth_natts)) { # dimid does not work here
+                        attname <- RNetCDF::att.inq.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], 
+                                                       middepth_dim, attribute=atti-1)$name
+                        middepthobj[[attname]] <- RNetCDF::att.get.nc(ncids[[var_nc_inds[nc_with_middepth_ind]]], 
+                                                                      middepth_dim, attribute=atti-1)
+                    }
+                }
+            } # if there is middepth var
+        } # if no middepth var was found
+        
+        # fesom depths levels and dz
+        fesom_middepths <- abs(middepthobj$middepth) # these are the model middepths in m (positive downwards) 
+        nmiddepths_all <- length(fesom_middepths)
+        middepthobj$nmiddepths_all <- nmiddepths_all
+        if (nmiddepths_all > 1) {
+            deltazmid_all <- rep(0, t=nmiddepths_all - 1)
+            deltazmid_all[1] <- (fesom_middepths[1] - fesom_middepths[2])/2
+            deltazmid_all[nmiddepths_all] <- (fesom_middepths[nmiddepths_all - 1]- fesom_middepths[nmiddepths_all])/2
+            for (n in 2:(nmiddepths_all - 1)) {
+                deltazmid_all[n] <- (fesom_middepths[n-1] - fesom_middepths[n])/2 + (fesom_middepths[n] - fesom_middepths[n+1])/2
+            }
+            middepthobj$deltazmid_all <- abs(deltazmid_all)
+        }
+
+        if (verbose > 0) {
+            message(indent, "found ", nmiddepths_all, " middepths from ", 
+                min(middepthobj$middepth), "-", max(middepthobj$middepth), " in units \"", 
+                    middepthobj$units, "\":\n",
+                    indent, indent, paste(fesom_middepths, collapse=", "))
+        }
+
+    } # if !is.null(nc_with_middepth_ind)
+    # finished middepth stuff
+
+
     # create start and count vectors for reading only a time- and, if possible, depth-subset 
     # of the nc files for every wanted variable
     # there are 4 cases of variables:
@@ -2013,7 +2143,7 @@ if (nvars > 0) {
             dimids <- dims_of_vars[[vari]]$dimids
             
             # check all dimensions of current variable of current file
-            dim_tag <- levelwise <- NULL # initialize
+            dim_tag <- levelwise_from_node_dim <- levelwise_from_depth_dim <- levelwise_from_middepth_dim <- NULL # initialize
             for (dimi in seq_along(dimids)) {
               
                 # default: from 1 to length of dim 
@@ -2053,21 +2183,21 @@ if (nvars > 0) {
                         if (dims_of_vars[[vari]][[dimids[dimi]]]$len == 1) {
                             message(indent, indent, "node dim equals 1 --> set dim_tag to \"1D\"")
                             dim_tag <- "1D"
-                            levelwise <- F
+                            levelwise_from_node_dim <- F
                         } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod2d_n) {
                             message(indent, indent, "node dim equals nod2d_n = ", nod2d_n, " --> set dim_tag to \"2D\"")
                             dim_tag <- "2D"
-                            levelwise <- F # default; may be overwritten later
+                            levelwise_from_node_dim <- F # default; may be overwritten later
                         } else if (dims_of_vars[[vari]][[dimids[dimi]]]$len == nod3d_n) {
                             message(indent, indent, "node dim equals nod3d_n = ", nod3d_n, " --> set dim_tag to \"3D\"")
                             dim_tag <- "3D"
-                            levelwise <- F # default; may be overwritten later
+                            levelwise_from_node_dim <- F # default; may be overwritten later
                         } else {
                             stop("the input node dimension is neither of length ", nod2d_n,
                                  " (=`nod2d_n`), ", nod3d_n, " (=`nod3d_n`), nor 1")
                         }
                     
-                    } else { # repeat from first file for all other files
+                    } else { # repeat dim_tag / levelwise from first file for all other files
                         starttmp[dimi] <- files_list[[vari]][[1]]$start[dimi]
                         counttmp[dimi] <- files_list[[vari]][[1]]$count[dimi]
                     }
@@ -2083,7 +2213,7 @@ if (nvars > 0) {
                                   paste(known_depth_dim_or_var_names, collapse="\", \""), 
                                  "\". this means more than 1 dimensions were considered to be the depth dimension.")
                         }
-                        levelwise <- T
+                        levelwise_from_depth_dim <- T
                     
                         # find depth inds to read from nc file
                         if (!exists("depths") || is.null(depths)) stop("this should not happen")
@@ -2128,11 +2258,73 @@ if (nvars > 0) {
                     
                     } # if fi == 1 or not
                 } # if current dim is depth dim
+        
+                # find middepth dimension; if found, fesom data is saved levelwise (result will be the same for all files)
+                if (!is.null(dims_of_vars[[vari]]$middepthdim_ind) &&
+                    dimids[dimi] == dimids[dims_of_vars[[vari]]$middepthdim_ind]) {
+                    if (fi == 1) { # middepth dim will not change between different files of same var
+                        if (!is.na(counttmp[dimi])) {
+                            stop("this is the second attempt to set a middepth dimension based on ",
+                                 "`known_middepth_dim_or_var_names` = \"", 
+                                  paste(known_middepth_dim_or_var_names, collapse="\", \""), 
+                                 "\". this means more than 1 dimensions were considered to be the middepth dimension.")
+                        }
+                        levelwise_from_middepth_dim <- T
+                    
+                        # find middepth inds to read from nc file
+                        if (!exists("depths") || is.null(depths)) stop("this should not happen")
+                        message(indent, indent, "provided `depths` = ", paste(depths, collapse=" to "), appendLF=F)
+                        if (min(depths) < min(fesom_middepths)) {
+                            stop("min of provided depth ", min(depths), " ", middepthobj$units, 
+                                 " < min of fesom middepths (", min(fesom_middepths), " ", middepthobj$units, ")")
+                        }
+                        if (max(depths) > max(fesom_middepths)) {
+                            stop("max of provided depth ", max(depths), " ", middepthobj$units, 
+                                 " > max of fesom middepths (", max(fesom_middepths), " ", middepthobj$units, ")")
+                        }
+                        middepthinds <- rep(NA, t=length(depths))
+                        if (any(depths %in% fesom_middepths)) { # case 1: user middepth same as some fesom middepth, e.g. 0, 10 or 5900
+                            middepthinds <- match(depths, fesom_middepths)
+                        }
+                        if (any(is.na(middepthinds))) { # case 2: some user levels between fesom middepths, e.g. 5, 42 or 1337
+                            nainds <- which(is.na(middepthinds))
+                            middepthinds[nainds] <- findInterval(depths[nainds], fesom_middepths) # gets shallower levels
+                            # include one additional deeper level so that the lower user level is completely within
+                            if (max(middepthinds) < length(fesom_middepths)) {
+                                middepthinds <- c(middepthinds, max(middepthinds) + 1) 
+                            }
+                        }
+                        middepthinds <- unique(range(middepthinds)) # combine case 1 and 2 
+                        middepthinds_fromto <- middepthinds
+                        if (length(middepthinds) == 2) middepthinds <- middepthinds[1]:middepthinds[2] 
+                        message(" --> load ", length(middepthinds), " fesom middepths = ", 
+                                paste(fesom_middepths[middepthinds_fromto], collapse=" to "), 
+                                " ", middepthobj$units, " (inds ", paste(middepthinds_fromto, collapse=" to "), ")")
+                        #counttmp[dimi] <- dims_of_vars[[vari]][[dimids[dimi]]]$len # old --> load all middepth levels
+                        starttmp[dimi] <- middepthinds_fromto[1]
+                        if (length(middepthinds_fromto) == 1) {
+                            counttmp[dimi] <- 1
+                        } else if (length(middepthinds_fromto) == 2) {
+                            counttmp[dimi] <- length(middepthinds)
+                        }
+                        
+                    } else { # repeat from first file for all other files
+                        starttmp[dimi] <- files_list[[vari]][[1]]$start[dimi]
+                        counttmp[dimi] <- files_list[[vari]][[1]]$count[dimi]
+                    
+                    } # if fi == 1 or not
+                } # if current dim is middepth dim
+
             } # for dimi all dims of var
             
             if (fi == 1) {
-                if (is.null(levelwise)) stop("levelwise still null")
+                if (is.null(levelwise_from_node_dim)) stop("levelwise_from_node_dim still null")
                 if (is.null(dim_tag)) stop("dim_tag still null")
+                if (!is.null(levelwise_from_depth_dim) || !is.null(levelwise_from_middepth_dim)) { # variable has a depth dim
+                    levelwise <- T
+                } else {
+                    levelwise <- levelwise_from_node_dim
+                }
                 if (levelwise && dim_tag == "2D") { # update dim_tag depending on levelwise
                     message(indent, indent, "levelwise output detected --> change dim_tag from \"2D\" to \"3D\"") 
                     dim_tag <- "3D"
@@ -2295,59 +2487,125 @@ if (!restart || # ... not a restart run
     
     # read nod3d.out (not fixed width)
     if (any(dim_tag == "3D")) {
-        fid <- paste0(meshpath, "/nod3d.out")
-        nod3d_n <- as.numeric(readLines(fid, n=1))
-        if (verbose > 1) {
-            message(indent, "read ", nod3d_n, " 3D nodes from nod3d.out with ", appendLF=F)
-            if (!fread_tag) message("base::scan ...")
-            if (fread_tag) message("data.table::fread ...")
-        }
-        if (!fread_tag) {
-            tmp <- base::scan(fid, skip=1, quiet=T)
-            nod3d <- matrix(tmp, nrow=nod3d_n, byrow=T)
-        } else if (fread_tag) {
-            tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
-            nod3d <- as.matrix(tmp)
-        }
-        if (any(dim_tag == "3D" & !levelwise)) {
-            nod3d_x <- drop(nod3d[,2])
-            nod3d_y <- drop(nod3d[,3])
-        }
-        nod3d_z <- drop(nod3d[,4])
-        #nod_x <- nod3d_x
-        #nod_y <- nod3d_y
-        #nod_z <- nod3d_z
-        if (!exists("fesom_depths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
-            fesom_depths <- abs(unique(nod3d_z)) # model depths in m (positive downwards) 
-        }
-        nod3d_check <- T
-        if (verbose > 1) {
-            if (any(dim_tag == "3D" & !levelwise)) {
-                message(indent, "--> min/max nod3d_x = ", min(nod3d_x), "/", max(nod3d_x), "\n",
-                        indent, "--> min/max nod3d_y = ", min(nod3d_y), "/", max(nod3d_y))
-            }
-            message(indent, "--> min/max nod3d_z = ", min(nod3d_z), "/", max(nod3d_z))
-        }
-        rm(tmp, nod3d)
     
-        # read aux3d.out (not fixed width)
-        fid <- paste0(meshpath, "/aux3d.out")
-        aux3d_n <- as.numeric(readLines(fid, n=1))
-        if (verbose > 1) {
-            message(indent, "read ", aux3d_n*nod2d_n, " nod3d indices vs depth from aux3d.out with ", appendLF=F)
-            if (!fread_tag) message("base::scan ...")
-            if (fread_tag) message("data.table::fread ...")
-        }
-        if (!fread_tag) {
-            tmp <- base::scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
-            aux3d <- matrix(tmp, nrow=aux3d_n, ncol=nod2d_n)
-        } else if (fread_tag) {
-            tmp <- data.table::fread(fid, skip=1, nrows=aux3d_n*nod2d_n, 
-                                     showProgress=ifelse(verbose > 1, T, F))
-            aux3d <- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
-        }
-        if (verbose > 1) message(indent, "--> min/max = ", min(aux3d), "/", max(aux3d))
-        rm(tmp)
+        if (fesom_version == "fesom") { 
+            
+            # read aux3d.out (not fixed width)
+            fid <- paste0(meshpath, "/aux3d.out")
+            aux3d_n <- as.numeric(readLines(fid, n=1))
+            if (verbose > 1) {
+                message(indent, "read ", aux3d_n, "*", nod2d_n, " = ", aux3d_n*nod2d_n, 
+                        " nod3d indices vs depth from aux3d.out with ", appendLF=F)
+                if (!fread_tag) message("base::scan ...")
+                if (fread_tag) message("data.table::fread ...")
+            }
+            if (!fread_tag) {
+                tmp <- base::scan(fid, skip=1, nlines=aux3d_n*nod2d_n, quiet=T)
+                aux3d <- matrix(tmp, nrow=aux3d_n, ncol=nod2d_n)
+            } else if (fread_tag) {
+                tmp <- data.table::fread(fid, skip=1, nrows=aux3d_n*nod2d_n, 
+                                         showProgress=ifelse(verbose > 1, T, F))
+                aux3d <- matrix(tmp$V1, nrow=aux3d_n, ncol=nod2d_n)
+            }
+            if (verbose > 1) message(indent, "--> min/max = ", min(aux3d), "/", max(aux3d))
+            rm(tmp)
+        
+            # read nod3d.out
+            fid <- paste0(meshpath, "/nod3d.out")
+            nod3d_n <- as.numeric(readLines(fid, n=1))
+            if (verbose > 1) {
+                message(indent, "read ", nod3d_n, " 3D nodes from nod3d.out with ", appendLF=F)
+                if (!fread_tag) message("base::scan ...")
+                if (fread_tag) message("data.table::fread ...")
+            }
+            if (!fread_tag) {
+                tmp <- base::scan(fid, skip=1, quiet=T)
+                nod3d <- matrix(tmp, nrow=nod3d_n, byrow=T)
+            } else if (fread_tag) {
+                tmp <- data.table::fread(fid, skip=1, showProgress=ifelse(verbose > 1, T, F))
+                nod3d <- as.matrix(tmp)
+            }
+            if (any(dim_tag == "3D" & !levelwise)) {
+                nod3d_x <- drop(nod3d[,2])
+                nod3d_y <- drop(nod3d[,3])
+            }
+            nod3d_z <- drop(nod3d[,4])
+            #nod_x <- nod3d_x
+            #nod_y <- nod3d_y
+            #nod_z <- nod3d_z
+            if (!exists("fesom_depths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
+                fesom_depths <- abs(unique(nod3d_z)) # model depths in m (positive downwards) 
+            }
+            nod3d_check <- T
+            if (verbose > 1) {
+                if (any(dim_tag == "3D" & !levelwise)) {
+                    message(indent, "--> min/max nod3d_x = ", min(nod3d_x), "/", max(nod3d_x), "\n",
+                            indent, "--> min/max nod3d_y = ", min(nod3d_y), "/", max(nod3d_y))
+                }
+                message(indent, "--> min/max nod3d_z = ", min(nod3d_z), "/", max(nod3d_z))
+            }
+            rm(tmp, nod3d)
+        
+        } else if (fesom_version == "fesom2") {
+            
+            # read aux3d.out
+            fid <- paste0(meshpath, "/aux3d.out")
+            aux3d_n <- as.numeric(readLines(fid, n=1))
+            if (!exists("fesom_depths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
+                fesom_depths <- as.numeric(readLines(fid, n=aux3d_n+1))[2:(aux3d_n+1)] # for variables on nz
+            }
+            if (!exists("fesom_middepths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
+                fesom_middepths <- (fesom_depths[1:(aux3d_n-1)] + fesom_depths[2:aux3d_n])/2 # for variables on nz1, nz_1
+            }
+            if (verbose > 1) {
+                message(indent, "get maximum depth at ", nod2d_n, " surface nodes from aux3d.out with ", appendLF=F)
+                if (!fread_tag) message("base::scan ...")
+                if (fread_tag) message("data.table::fread ...")
+            }
+            if (!fread_tag) {
+                aux3d <- base::scan(fid, skip=aux3d_n+1, nlines=nod2d_n, quiet=T)
+            } else if (fread_tag) {
+                aux3d <- data.table::fread(fid, skip=aux3d_n+1, nrows=nod2d_n, 
+                                           showProgress=ifelse(verbose > 1, T, F))$V1
+            }
+            if (verbose > 1) message(indent, "--> min/max = ", min(aux3d), "/", max(aux3d))
+            
+            # read nlvls.out
+            fid <- paste0(meshpath, "/nlvls.out")
+            if (verbose > 1) {
+                message(indent, "get nlevels at ", nod2d_n, " surface nodes from nlvls.out with ", appendLF=F)
+                if (!fread_tag) message("base::scan ...")
+                if (fread_tag) message("data.table::fread ...")
+            }
+            if (!fread_tag) {
+                nlvls <- base::scan(fid, nlines=nod2d_n, quiet=T)
+            } else if (fread_tag) {
+                nlvls <- data.table::fread(fid, nrows=nod2d_n, showProgress=ifelse(verbose > 1, T, F))$V1
+            }
+            if (T) { # check
+                nlvls <- nlvls - 1
+            }
+            if (verbose > 1) message(indent, "--> min/max = ", min(nlvls), "/", max(nlvls))
+            
+            # read elvls.out
+            fid <- paste0(meshpath, "/elvls.out")
+            if (verbose > 1) {
+                message(indent, "get nlevels at ", elem2d_n, " surface elements from elvls.out with ", appendLF=F)
+                if (!fread_tag) message("base::scan ...")
+                if (fread_tag) message("data.table::fread ...")
+            }
+            if (!fread_tag) {
+                elvls <- base::scan(fid, nlines=elem2d_n, quiet=T)
+            } else if (fread_tag) {
+                elvls <- data.table::fread(fid, nrows=elem2d_n, showProgress=ifelse(verbose > 1, T, F))$V1
+            }
+            if (T) { # check
+                elvls <- elvls - 1
+            }
+            if (verbose > 1) message(indent, "--> min/max = ", min(elvls), "/", max(elvls))
+            
+        } # which fesom_versio
+    
     } # if any(dim_tag == "3D")
             
     # plot depth levels
@@ -2357,7 +2615,7 @@ if (!restart || # ... not a restart run
              ylim=rev(range(fesom_depths)), 
              xlab="nlevels", ylab="km", yaxt="n")
         axis(2, at=pretty(fesom_depths, n=10), labels=pretty(fesom_depths, n=10)/1000, las=2)
-        legend("bottomleft", c("mesh '", meshid, "'"), 
+        legend("bottomleft", paste0("mesh '", meshid, "'"), 
                col=c("blue"), lty=1, pch=1, lwd=1,
                x.intersp=0.2, bty="n")
         box()
@@ -2404,10 +2662,12 @@ if (!restart || # ... not a restart run
                 nod2d_x[inds] <- nod2d_x[inds] + 360
             }
             if (any(dim_tag == "3D" & !levelwise)) {
-                inds <- which(nod3d_x > 180)
-                nod3d_x[inds] <- nod3d_x[inds] - 360
-                inds <- which(nod3d_x < -180)
-                nod3d_x[inds] <- nod3d_x[inds] + 360
+                if (fesom_version == "fesom") {
+                    inds <- which(nod3d_x > 180)
+                    nod3d_x[inds] <- nod3d_x[inds] - 360
+                    inds <- which(nod3d_x < -180)
+                    nod3d_x[inds] <- nod3d_x[inds] + 360
+                }
             }
         }
 
@@ -2426,11 +2686,13 @@ if (!restart || # ... not a restart run
             rm(rotated_coords)
         }
         if (any(dim_tag == "3D" & !levelwise)) {
-            rotated_coords <- grid_rotate_r2g(Ealpha, Ebeta, Egamma, nod3d_x, nod3d_y)
-            nod3d_x <- rotated_coords$glon
-            nod3d_y <- rotated_coords$glat
-            rot_mat <- rotated_coords$rot_mat
-            rm(rotated_coords)
+            if (fesom_version == "fesom") {
+                rotated_coords <- grid_rotate_r2g(Ealpha, Ebeta, Egamma, nod3d_x, nod3d_y)
+                nod3d_x <- rotated_coords$glon
+                nod3d_y <- rotated_coords$glat
+                rot_mat <- rotated_coords$rot_mat
+                rm(rotated_coords)
+            }
         }
 
         if (cycl) {
@@ -2462,9 +2724,13 @@ if (!restart || # ... not a restart run
                 } # if there is a cyclic element
             }
             if (any(dim_tag == "3D" & !levelwise)) {
-                inds <- which(abs(nod3d_x[elem2d[,3]] - nod3d_x[elem2d[,2]]) > 170 |
-                              abs(nod3d_x[elem2d[,2]] - nod3d_x[elem2d[,1]]) > 170 |
-                              abs(nod3d_x[elem2d[,3]] - nod3d_x[elem2d[,1]]) > 170) 
+                if (fesom_version == "fesom") {
+                    inds <- which(abs(nod3d_x[elem2d[,3]] - nod3d_x[elem2d[,2]]) > 170 |
+                                  abs(nod3d_x[elem2d[,2]] - nod3d_x[elem2d[,1]]) > 170 |
+                                  abs(nod3d_x[elem2d[,3]] - nod3d_x[elem2d[,1]]) > 170)
+                } else if (fesom_version == "fesom2") {
+                    stop("not implemented")
+                }
                 if (length(inds) > 0) { # if there is a cyclic element
                     auxelem <- elem2d[inds,]
                     elem2d <- elem2d[-inds,]
@@ -2578,11 +2844,15 @@ if (!restart || # ... not a restart run
             yc[,i] <- nod2d_y[elem2d[,i]]
         }
     } else {
-        xcsur <- nod3d_x[seq_len(nod2d_n)]
-        ycsur <- nod3d_y[seq_len(nod2d_n)]
-        for (i in 1:3) {
-            xc[,i] <- nod3d_x[elem2d[,i]]
-            yc[,i] <- nod3d_y[elem2d[,i]]
+        if (fesom_version == "fesom") {
+            xcsur <- nod3d_x[seq_len(nod2d_n)]
+            ycsur <- nod3d_y[seq_len(nod2d_n)]
+            for (i in 1:3) {
+                xc[,i] <- nod3d_x[elem2d[,i]]
+                yc[,i] <- nod3d_y[elem2d[,i]]
+            }
+        } else if (fesom_version == "fesom2") {
+            stop("not implemented")
         }
     }
     
@@ -2592,7 +2862,7 @@ if (!restart || # ... not a restart run
         poly_geogr_lim_lon <- map_geogr_lim_lon
         poly_geogr_lim_lat <- map_geogr_lim_lat
     }
-    
+
     if (!cycl) {
         xc <- t(xc)
         yc <- t(yc)
@@ -2619,9 +2889,11 @@ if (!restart || # ... not a restart run
             nod_y_save_2d <- nod2d_y
         } 
         if (any(dim_tag == "3D" & !levelwise)) {
-            nod_x_save_3d <- nod3d_x
-            nod_y_save_3d <- nod3d_y
-            nod_z_save_3d <- nod3d_z
+            if (fesom_version == "fesom") { 
+                nod_x_save_3d <- nod3d_x
+                nod_y_save_3d <- nod3d_y
+                nod_z_save_3d <- nod3d_z
+            }
             aux3d_save_3d <- aux3d
             deltaz_all_save <- deltaz_all
         }
@@ -2648,8 +2920,10 @@ if (!restart || # ... not a restart run
         nod2d_y <- nod_y_save_2d
     }
     if (any(dim_tag == "3D" & !levelwise)) {
-        nod3d_x <- nod_x_save_3d
-        nod3d_y <- nod_y_save_3d
+        if (fesom_version == "fesom") {
+            nod3d_x <- nod_x_save_3d
+            nod3d_y <- nod_y_save_3d
+        }
         aux3d <- aux3d_save_3d
     }
     xcsur <- xcsur_save
@@ -2762,7 +3036,8 @@ if (horiz_deriv_tag != F
 
 } # if horiz_deriv_tag
  
-if (zave_method == 2 &&
+if (fesom_version == "fesom" &&
+    zave_method == 2 &&
     (transient_out || regular_transient_out) &&
     out_mode == "fldmean") {
  
@@ -2791,7 +3066,8 @@ if (zave_method == 2 &&
                 " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
     }
     
-    deriv_3d_fname <- paste0(derivpath, "/mesh_", meshid, "_deriv_3d_", out_coords, ".nc")
+    deriv_3d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_3d_",
+                              out_coords, ifelse(cycl, "_cycl", ""), ".nc")
     
     if (!file.exists(deriv_3d_fname)) {
         
@@ -2799,7 +3075,7 @@ if (zave_method == 2 &&
         fid <- paste0(meshpath, "/elem3d.out")
         elem3d_n <- as.numeric(readLines(fid, n=1))
         if (verbose > 1) {
-            message(indent, "   read ", elem3d_n, " 3D elements from elem3d.out with ", appendLF=F)
+            message(indent, "Read ", elem3d_n, " 3D elements from elem3d.out with ", appendLF=F)
             if (!fread_tag) message("base::scan ...")
             if (fread_tag) message("data.table::fread ...")
         }
@@ -2840,7 +3116,7 @@ if (zave_method == 2 &&
     cluster_vol_3d <- ncdf4::ncvar_get(deriv_3d_nc, "cluster_vol_3d")
     ncdf4::nc_close(deriv_3d_nc)
     rm(deriv_3d_nc)
-} # if zave_method == 2 && out_mode == "fldmean"
+} # if fesom_version == fesom && zave_method == 2 && out_mode == "fldmean"
 
 
 ## Interpolate irregular mesh to regular
@@ -3226,7 +3502,8 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
             #poly_node_inds_geogr <- elem2d[,poly_node_inds_geogr] # from element to nodes # old
             xpsur <- xcsur[poly_node_inds_geogr]
             ypsur <- ycsur[poly_node_inds_geogr]
-            if (zave_method == 2 &&
+            if (fesom_version == "fesom" &&
+                zave_method == 2 &&
                 (transient_out || regular_transient_out) &&
                 out_mode == "fldmean") {
                 poly_node_inds_geogr_3d <- which(nod3d_x >= min(xpsur) &
@@ -4311,8 +4588,11 @@ if (nvars > 0) {
     
     } else { # some 3D variable
 
-        if (any(dim_tag == "3D" & levelwise) ||
-            any(dim_tag == "3D" & !levelwise)) { # those two are all possible cases
+        # fesom2: do_select_levidx; do_comp_sel_levidx; do_depth_arithmetic
+
+        if (any(dim_tag == "3D")) { # if any variable is 3D
+        #if (any(dim_tag == "3D" & levelwise) ||
+        #    any(dim_tag == "3D" & !levelwise)) { # those two are all possible cases
 
             ## In case of restart, reload vertical interpolation coefficients...
             if (restart && all(dim_tag == dim_old) && all(depths == depth_old)) {
@@ -4353,24 +4633,45 @@ if (nvars > 0) {
                         }
                         depths_plot <- depths
                         interpolate_depths <- depths
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            if (depths < min(fesom_middepths) || depths > max(fesom_middepths)) {
+                                stop("Choose a middepth level between ", min(fesom_middepths), "-", max(fesom_middepths), " m.")
+                            }
+                            middepths_plot <- depths
+                            interpolate_middepths <- depths
+                        }
 
                     } else if (depths == "max") {
                         depths_plot <- fesom_depths[length(fesom_depths)]
                         interpolate_depths <- depths_plot
-                    
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- fesom_middepths[length(fesom_middepths)]
+                            interpolate_middepths <- depths_plot
+                        }
+
                     } else if (depths == "bottom") {
                         depths_plot <- "bottom"
                         interpolate_depths <- NA
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- "bottom"
+                            interpolate_middepths <- NA
+                        }
 
                     } else {
-                        stop(paste0("'depths='", depths, " not defined ..."))
+                        stop("'depths='", depths, " not defined ...")
                     }
 
                 } else if (length(depths) == 2) {
-
+                        
                     if (depths[1] < min(fesom_depths) || depths[1] > max(fesom_depths)) {
                         stop("Choose depth levels between ",
                              min(fesom_depths), "-", max(fesom_depths), " m")
+                    }
+                    if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                        if (depths[1] < min(fesom_middepths) || depths[1] > max(fesom_middepths)) {
+                            stop("Choose depth levels between ",
+                                 min(fesom_middepths), "-", max(fesom_middepths), " m")
+                        }
                     }
 
                     if (!any(depths[2] == c("max", "MLD"))) {
@@ -4379,29 +4680,52 @@ if (nvars > 0) {
                             stop("Choose depth levels between ",
                                  min(fesom_depths), "-", max(fesom_depths), " m")
                         }
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            if (depths[2] < min(fesom_middepths) || depths[2] > max(fesom_middepths)) {
+                                stop("Choose depth levels between ",
+                                     min(fesom_middepths), "-", max(fesom_middepths), " m")
+                            }
+                        }
 
                         depths_plot <- paste0(depths[1], "-", depths[2])
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- paste0(depths[1], "-", depths[2])
+                        }
 
                         # find model depths within user depths
                         interpolate_depths <- fesom_depths[fesom_depths >= depths[1] & 
                                                            fesom_depths <= depths[2]]
-                        
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            interpolate_middepths <- fesom_middepths[fesom_middepths >= depths[1] & 
+                                                                     fesom_middepths <= depths[2]]
+                        }
+
                         # both user depths are in the same model depth interval (e.g. 2-8 m)
                         if (length(interpolate_depths) == 0) {
                             interpolate_depths <- depths
-
                         } else {
-                           
                             # upper user depth is on in different fesom_depths intervals
                             if (interpolate_depths[1] != depths[1]) {
                                 interpolate_depths <- c(depths[1], interpolate_depths)
                             }
-                         
                             # lower depths are in different fesom_depths intervals
                             if (interpolate_depths[length(interpolate_depths)] != depths[2]) {
                                 interpolate_depths <- c(interpolate_depths, depths[2])
                             }
-
+                        }
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            if (length(interpolate_middepths) == 0) {
+                                interpolate_middepths <- depths
+                            } else {
+                                # upper user depth is on in different fesom_depths intervals
+                                if (interpolate_middepths[1] != depths[1]) {
+                                    interpolate_middepths <- c(depths[1], interpolate_middepths)
+                                }
+                                # lower depths are in different fesom_depths intervals
+                                if (interpolate_middepths[length(interpolate_middepths)] != depths[2]) {
+                                    interpolate_middepths <- c(interpolate_middepths, depths[2])
+                                }
+                            }
                         }
                         
                     } else if (any(depths[2] == c("max", "MLD"))) {
@@ -4412,6 +4736,16 @@ if (nvars > 0) {
                         # upper user depth is on in different fesom_depths intervals
                         if (interpolate_depths[1] != as.numeric(depths[1])) {
                             interpolate_depths <- c(as.numeric(depths[1]), interpolate_depths)
+                        }
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- paste0(depths[1], "-", fesom_middepths[length(fesom_middepths)])
+                            interpolate_middepths <- fesom_middepths[fesom_middepths >= as.numeric(depths[1]) &
+                                                                     fesom_middepths <= fesom_middepths[length(fesom_middepths)]]
+                           
+                            # upper user depth is on in different fesom_middepths intervals
+                            if (interpolate_middepths[1] != as.numeric(depths[1])) {
+                                interpolate_middepths <- c(as.numeric(depths[1]), interpolate_middepths)
+                            }
                         }
                        
                     } # if depths[2] == "max" or not
@@ -4424,18 +4758,34 @@ if (nvars > 0) {
                 } else {
                     depths_fname <- paste0("_", depths_plot, "m")
                 }
+                if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                    nmiddepths <- length(interpolate_middepths)
+                    if (length(depths) == 1 && depths == "bottom") {
+                        middepths_fname <- paste0("_", middepths_plot)
+                    } else {
+                        middepths_fname <- paste0("_", middepths_plot, "m")
+                    }
+                }
 
                 if (integrate_depth) {
                     if (length(depths) == 2 && depths[2] == "MLD") {
                         depths_plot <- paste0("int", depths[1], "-MLD")
                         depths_fname <- paste0("_", depths_plot)
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- paste0("int", depths[1], "-MLD")
+                            middepths_fname <- paste0("_", middepths_plot)
+                        }
                     } else {
                         depths_plot <- paste0("int", depths_plot)
                         depths_fname <- paste0("_", depths_plot, "m")
+                        if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                            middepths_plot <- paste0("int", middepths_plot)
+                            middepths_fname <- paste0("_", middepths_plot, "m")
+                        }
                     }
                 }
 
-                ## this deltaz is used for vertical average between specifiec depth levels `depths`
+                ## this deltaz is used for vertical average between specific depth levels `depths`
                 if (ndepths >= 3) {
                     ndepths <- length(interpolate_depths)
                     deltaz <- rep(0, t=ndepths - 1)
@@ -4447,120 +4797,135 @@ if (nvars > 0) {
                     }
                     deltaz <- abs(deltaz) # positive dz values
                     depthobj$deltaz <- deltaz
-
-                    # test
-                    if (F) {
-                        deltaz2 <- rep(0, t=ndepths-1)
-                        middepths <- deltaz2
-                        for (i in 1:(ndepths-1)) {
-                            deltaz2[i] <- -interpolate_depths[i+1] - -interpolate_depths[i]
-                            middepths[i] <- (-interpolate_depths[i+1] + -interpolate_depths[i])/2
-                        }
-                    }
                 } else if (ndepths == 2) {
                     deltaz <- c(1, 1)
                 } else if (ndepths == 1) {
                     deltaz <- 1
                 }
-
-                ## find vertical average coefficients
-                ## Here, only the case (cycl && rotate_mesh) is implemented.
-                ## In the Matlab code, there is also the (cycl && !rotate_mesh) case.
-                de <- aux3d 
-                rnd <- which(aux3d > -999, arr.ind=T)
-                # fesom depth levels (positive downward) in (ndepths_all x nod2d_n) dimensions:
-                de[rnd] <- abs(nod3d_z[aux3d[rnd]]) 
-                # its possible that length(fesom_depths) != aux3d_n
-                # --> this might be the case because no nodes exist in the 
-                #     bottom layer of aux3d (--> all(aux3d[aux3d_n,] == -999) is true)
-                
-                ## find vertical interplation coefficients if necessary
-                if (length(depths) == 1 && depths == "bottom") {
-                   
-                    indbottom <- indsurf <- array(NA, c(ndepths, nod2d_n))
-                    for (k in seq_len(nod2d_n)) {
-                        ## index of last 3d node above -999:
-                        indbottom[1,k] <- aux3d[which(aux3d[,k] == -999)[1] - 1,k]
-                        indsurf[1,k] <- aux3d[1,k] 
+                if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
+                    if (nmiddepths >= 3) {
+                        nmiddepths <- length(interpolate_middepths)
+                        deltazmid <- rep(0, t=nmiddepths - 1)
+                        deltazmid[1] <- (interpolate_middepths[1] - interpolate_middepths[2])/2
+                        deltazmid[nmiddepths] <- (interpolate_middepths[nmiddepths - 1]- interpolate_middepths[nmiddepths])/2
+                        for (n in 2:(nmiddepths - 1)) {
+                            deltazmid[n] <- (interpolate_middepths[n-1] - interpolate_middepths[n])/2 + 
+                                            (interpolate_middepths[n] - interpolate_middepths[n+1])/2
+                        }
+                        deltazmid <- abs(deltazmid) # positive dz values
+                        middepthobj$deltazmid <- deltazmid
+                    } else if (nmiddepths == 2) {
+                        deltazmid <- c(1, 1)
+                    } else if (nmiddepths == 1) {
+                        deltazmid <- 1
                     }
+                }
 
-                # if not (ndepths == 1 && depths == "bottom")
-                } else {
-                   
-                    indupper <- indcoef <- indlower <- indsurf <- indlevel <- array(NA, c(ndepths, nod2d_n)) 
-                    for (l in seq_len(ndepths)) {
-                        z <- interpolate_depths[l]
-                        if (verbose > 1) {
-                            if (ndepths > 1) {
-                                if (l == 1) message(indent, "   ", appendLF=F)
-                                message(z, "m ", appendLF=F)
-                                if (l == ndepths) message("") 
-                            } else if (ndepths == 1) {
-                                message(indent, "   ", z, "m")
-                            }
+                if (fesom_version == "fesom") {
+                    ## find vertical average coefficients
+                    ## Here, only the case (cycl && rotate_mesh) is implemented.
+                    ## In the Matlab code, there is also the (cycl && !rotate_mesh) case.
+                    de <- aux3d 
+                    rnd <- which(aux3d > -999, arr.ind=T)
+                    # fesom depth levels (positive downward) in (ndepths_all x nod2d_n) dimensions:
+                    de[rnd] <- abs(nod3d_z[aux3d[rnd]]) 
+                    # its possible that length(fesom_depths) != aux3d_n
+                    # --> this might be the case because no nodes exist in the 
+                    #     bottom layer of aux3d (--> all(aux3d[aux3d_n,] == -999) is true)
+                    
+                    ## find vertical interplation coefficients if necessary
+                    if (length(depths) == 1 && depths == "bottom") {
+                       
+                        indbottom <- indsurf <- array(NA, c(ndepths, nod2d_n))
+                        for (k in seq_len(nod2d_n)) {
+                            ## index of last 3d node above -999:
+                            indbottom[1,k] <- aux3d[which(aux3d[,k] == -999)[1] - 1,k]
+                            indsurf[1,k] <- aux3d[1,k] 
                         }
 
-                        # wanted user depth is on model level
-                        if (any(fesom_depths == z)) {
-                            de_ind <- which(fesom_depths == z)
-                            no_boundary_inds <- which(aux3d[de_ind,] != -999)
-                            indsurf[l,no_boundary_inds] <- aux3d[1,no_boundary_inds]
-                            indlevel[l,no_boundary_inds] <- aux3d[de_ind,no_boundary_inds]
-                             
-                        # wanted user level is not on model levels
-                        } else {
+                    # if not (ndepths == 1 && depths == "bottom")
+                    } else {
+                       
+                        indupper <- indcoef <- indlower <- indsurf <- indlevel <- array(NA, c(ndepths, nod2d_n)) 
+                        for (l in seq_len(ndepths)) {
+                            z <- interpolate_depths[l]
+                            if (verbose > 1) {
+                                if (ndepths > 1) {
+                                    if (l == 1) message(indent, "   ", appendLF=F)
+                                    message(z, "m ", appendLF=F)
+                                    if (l == ndepths) message("") 
+                                } else if (ndepths == 1) {
+                                    message(indent, "   ", z, "m")
+                                }
+                            }
 
-                            ## get vertical interpolation coefficient for wanted vertical depth levels:
-                            # 1 .
-                            # 2 'u'pper layer
-                            # 3 .
-                            # 4 .
-                            # 5 x <-- wanted user depth
-                            # 6 .
-                            # 7 'l'ower layer
-                            # 8 .
-                            # --> x = u + c(l - u)
+                            # wanted user depth is on model level
+                            if (any(fesom_depths == z)) {
+                                de_ind <- which(fesom_depths == z)
+                                no_boundary_inds <- which(aux3d[de_ind,] != -999)
+                                indsurf[l,no_boundary_inds] <- aux3d[1,no_boundary_inds]
+                                indlevel[l,no_boundary_inds] <- aux3d[de_ind,no_boundary_inds]
+                                 
+                            # wanted user level is not on model levels
+                            } else {
 
-                            # upper and lower nodes
-                            for (k in seq_len(nod2d_n)) {
-                                rnd <- which(de[,k] >= z)
-                                if (length(rnd) >= 1) {
-                                    if ((rnd[1] - 1) < 1) { # first found model depth for wanted depth z is < 1 m --> no node below
-                                        next # 2d node
-                                    }
-                                    indsurf[l,k] <- aux3d[1,k]
-                                    indupper[l,k] <- aux3d[(rnd[1]-1),k]
-                                    indlower[l,k] <- aux3d[rnd[1],k]
-                                    indcoef[l,k] <- (interpolate_depths[l] - de[(rnd[1]-1),k]) /
-                                                    (de[rnd[1],k] - de[(rnd[1]-1),k])
-                                    # indcoef <- (interpolate_depths[l] - fesom_depths[l-1]) / 
-                                    #            (fesom_depths[l] - fesom_depths[l-1])
-                                    #if (l == ndepths) stop("add")
-                                } # if not column of -999
-                            } # for k nod2d_n
+                                ## get vertical interpolation coefficient for wanted vertical depth levels:
+                                # 1 .
+                                # 2 'u'pper layer
+                                # 3 .
+                                # 4 .
+                                # 5 x <-- wanted user depth
+                                # 6 .
+                                # 7 'l'ower layer
+                                # 8 .
+                                # --> x = u + c(l - u)
 
-                        } # if any(fesom_depths == z) or not
+                                # upper and lower nodes
+                                for (k in seq_len(nod2d_n)) {
+                                    rnd <- which(de[,k] >= z)
+                                    if (length(rnd) >= 1) {
+                                        if ((rnd[1] - 1) < 1) { # first found model depth for wanted depth z is < 1 m --> no node below
+                                            next # 2d node
+                                        }
+                                        indsurf[l,k] <- aux3d[1,k]
+                                        indupper[l,k] <- aux3d[(rnd[1]-1),k]
+                                        indlower[l,k] <- aux3d[rnd[1],k]
+                                        indcoef[l,k] <- (interpolate_depths[l] - de[(rnd[1]-1),k]) /
+                                                        (de[rnd[1],k] - de[(rnd[1]-1),k])
+                                        # indcoef <- (interpolate_depths[l] - fesom_depths[l-1]) / 
+                                        #            (fesom_depths[l] - fesom_depths[l-1])
+                                        #if (l == ndepths) stop("add")
+                                    } # if not column of -999
+                                } # for k nod2d_n
+
+                            } # if any(fesom_depths == z) or not
+                        
+                        } # for l ndepths
+
+                        if (F) {
+                            indlower_save <- indlower
+                            indupper_save <- indupper
+                            indsurf_save <- indsurf
+                            indcoef_save <- indcoef
+                            indlevel_save <- indlevel
+                            deltaz_save <- deltaz
+                        }
+
+                        rm(rnd, de)
+
+                    } # if depths == "bottom" or not
+
+                    # restore to global
+                    if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
+                        aux3d <- aux3d_global
+                        nod2d_n <- dim(aux3d)[2]
+                    } # if csec
                     
-                    } # for l ndepths
+                } else if (fesom_version == "fesom2") {
+                    
+                    stop("continue")
 
-                    if (F) {
-                        indlower_save <- indlower
-                        indupper_save <- indupper
-                        indsurf_save <- indsurf
-                        indcoef_save <- indcoef
-                        indlevel_save <- indlevel
-                        deltaz_save <- deltaz
-                    }
-
-                    rm(rnd, de)
-
-                } # if depths == "bottom" or not
-
-                # restore to global
-                if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
-                    aux3d <- aux3d_global
-                    nod2d_n <- dim(aux3d)[2]
-                } # if csec
+                } # which fesom_version
                 
                 #stop("asd")
 
@@ -4643,7 +5008,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 message(indent, "   `frequency_post` = \"", frequency_post, "\"")
                 if (cdo_temporalmean != "") {
                     message(indent, "   `cdo_temporalmean` = \"", cdo_temporalmean, "\"")
-                    fout <- paste0(postpath, "/", frequency_post, "_", basename(fnames_unique[vari]))
+                    fout <- paste0(postpath, "/", basename(fnames_unique[vari]), "_", frequency_post, "_", Sys.getpid())
                     cmd <- paste0(cdo_temporalmean, " ", fnames_unique[vari], " ", fout)
                     message(indent, "   run `", cmd, "` ...")
                     system(cmd)
@@ -4777,6 +5142,12 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 # time dimension of the original fesom file, e.g. if a monthly fesom file 
                 # (ntime = 12) was read in but JJA is wanted (recs = c(6,7,8)), then the
                 # length of the raw_data's time dimension equals 3.
+            
+                # special: add 42 to doc
+                if (T && varname_nc[vari] == "bgc12") {
+                    message("special: add 42 to bgc12 = DOC ...")
+                    raw_data <- raw_data + 42
+                }
                 
                 # test
                 if (ssh_aviso_correct) {
@@ -4784,8 +5155,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     ind <- which(ssh_aviso_correct_data$time == time[total_rec + 1])
                     if (length(ind) == 1) {
                         if (verbose > 1) {
-                            message(paste0(indent, "Special! Do SSH aviso correction: add ", 
-                                         ssh_aviso_correct_data$h_mean[ind], "m to fesom data ..."))
+                            message(indent, "Special! Do SSH aviso correction: add ", 
+                                    ssh_aviso_correct_data$h_mean[ind], "m to fesom data ...")
                         }
                         raw_data <- raw_data + ssh_aviso_correct_data$h_mean[ind]
                     }
@@ -4812,7 +5183,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     data_node[vari,seq_len(count[dims_of_vars[[vari]]$nodedim_ind]),,] <- raw_data
                 }
 
-            } # for file nvars per time step
+            } # for vari nvars per time step
             rm(raw_data)
             
             # close nc
@@ -4837,7 +5208,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             
             # finished reading all needed variables per year and time step (if rec_tag = F) or 
             # all time steps per year (if rec_tag = T)
-                
+
             # separate mld/sic/... data from data array
             remove_inds <- c()
             if (any(depths == "MLD")) {
@@ -5033,16 +5404,16 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                 ## Check data so far
                 if (verbose > 2) {
-                    for (i in 1:dim(data_node)[1]) {
-                        message(paste0(indent, "   min/max data_node[", i, ":", 
-                                       dimnames(data_node)[[1]][i], ",,,] = ",
-                                       paste0(range(data_node[i,,,], na.rm=T), collapse="/")))
+                    for (i in seq_len(dim(data_node)[1])) {
+                        message(indent, "   min/max data_node[", i, ":", 
+                                dimnames(data_node)[[1]][i], ",,,] = ",
+                                paste(range(data_node[i,,,], na.rm=T), collapse="/"))
                     }
                 }
                 
                 ## Change to proper units if wanted
                 if (multfac_out != 1) {
-                    for (i in 1:dim(data_node)[1]) {
+                    for (i in seq_len(dim(data_node)[1])) {
                         if (verbose > 0) {
                             message(indent, "Multiply data_node[", i, ":",
                                     dimnames(data_node)[[1]][i], ",,,] by multfac_out=",
@@ -5211,25 +5582,24 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                             ## Check data so far
                             if (verbose > 2) {
-                                for (i in 1:dim(data_elem)[1]) {
-                                    message(paste0(indent, "   min/max data_elem[", i, ":", 
-                                                 dimnames(data_elem)[[1]][i], ",,,,] = ",
-                                                 paste0(range(data_elem[i,,,,], na.rm=T), collapse="/")))
+                                for (i in seq_len(dim(data_elem)[1])) {
+                                    message(indent, "   min/max data_elem[", i, ":", 
+                                            dimnames(data_elem)[[1]][i], ",,,,] = ",
+                                            paste(range(data_elem[i,,,,], na.rm=T), collapse="/"))
                                 }
                             } 
 
                             ## Interpolation of transient data on regular grid
                             if (regular_transient_out) {
-                                if (all(total_rec == 0) && di == 1) { # initialize matrices
-                                    datamat_reg <- array(NA, 
-                                                         dim=c(dim(data_vert)[1],              # nvars
-                                                               nxi, nyi,   # x, y of _area_
-                                                               dim(data_vert)[3:4]),           # ndepths, nrecspf
-                                                         dimnames=c(dimnames(data_vert)[1],
-                                                                    list(xi=round(xi, 3), 
-                                                                         yi=round(yi, 3)),
-                                                                    dimnames(data_vert)[3:4]))
-                                } # if all(total_rec == 0)
+                                if (di == 1) {
+                                    dims <- c(dim(data_vert)[1],   # nvars
+                                              nxi, nyi,            # x, y of _area_
+                                              dim(data_vert)[3:4]) # ndepths nrecs
+                                    dimnames <- c(dimnames(data_vert)[1],
+                                                  list(xi=round(xi, 3), yi=round(yi, 3)),
+                                                  dimnames(data_vert)[3:4])
+                                    datamat_reg <- array(NA, dim=dims, dimnames=dimnames)
+                                } # if di == 1
                                
                                 ## interpolate on regular grid
                                 # progress bar of case 2: only one depth but more than 1 vars; max = nvars
@@ -5239,10 +5609,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                                            indent=paste0("   ", indent)) # 5 " " for default message()
                                 }
 
-                                for (i in 1:dim(data_elem)[1]) { # nvars
+                                for (i in seq_len(dim(data_elem)[1])) { # nvars
                                     if (dim(data_elem)[1] > 1 && verbose > 2) {
-                                        message(paste0(indent, "   var = ", 
-                                                     dimnames(data_elem)[[1]][i], " ..."))
+                                        message(indent, "   var = ", dimnames(data_elem)[[1]][i], " ...")
                                     }
                                 
                                     # progress bar of case 3: only one depth and only 1 var but several nrecspf; max = nrecspf
@@ -5251,10 +5620,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                                                char=pb_char, width=pb_width,
                                                                indent=paste0("   ", indent)) # 5 " " for default message()
                                     }
-                                    for (j in 1:dim(data_elem)[5]) { # nrecspf
+                                    for (j in seq_len(dim(data_elem)[5])) { # nrecspf
                                         if (dim(data_elem)[5] > 1 && verbose > 2) {
-                                            message(paste0(indent, "      time = ",
-                                                         dimnames(data_elem)[[5]][j], " ..."))
+                                            message(indent, "      time = ", dimnames(data_elem)[[5]][j], " ...")
                                         }
                                   
                                         # set values outside "area" to NA before interp
@@ -5283,14 +5651,16 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     } # for j nrecspf
                                     
                                     # update progress bar case 2
-                                    if (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) setTxtProgressBar(pb, i)
+                                    if (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) {
+                                        setTxtProgressBar(pb, i)
+                                    }
 
                                 } # for i nvars
                                 rm(tmp)
                                 
                                 ## Check data so far
                                 if (verbose > 2) {
-                                    for (i in 1:dim(datamat_reg)[1]) {
+                                    for (i in seq_len(dim(datamat_reg)[1])) {
                                         if (!all(is.na(datamat_reg[i,,,di,]))) {
                                             message(paste0(indent, "   min/max datamat_reg[", i, ":", 
                                                          dimnames(datamat_reg)[[1]][i], ",,,", di, ",] = ",
@@ -5331,8 +5701,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 for (i in 1:dim(datamat)[1]) {
                                     if (!all(is.na(datamat[i,,,di,]))) {
                                         message(paste0(indent, "   min/max datamat[", i, ":", 
-                                                     dimnames(datamat)[[1]][i], ",,,", di, ",] = ",
-                                                     paste0(range(datamat[i,,,di,], na.rm=T), collapse="/")))
+                                                       dimnames(datamat)[[1]][i], ",,,", di, ",] = ",
+                                                       paste(range(datamat[i,,,di,], na.rm=T), collapse="/")))
                                     }
                                 }
                             }
@@ -5347,7 +5717,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         # close progress bar
                         if (dim(data_vert)[3] > 1 || # case 1
                             (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) || # case 2
-                            (dim(data_vert)[3] == 1 && dim(data_elem)[1] == 1 && dim(data_elem)[5] > 1)) { # case
+                            (dim(data_vert)[3] == 1 && dim(data_elem)[1] == 1 && dim(data_elem)[5] > 1)) { # case 3
                             close(pb)
                         }
 
@@ -5694,7 +6064,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                                       create_dimvar=F)
                                 elem_dim <- ncdim_def(name="nelements", 
                                                       units="", 
-                                                      vals=1:dim(datamat)[3],
+                                                      vals=seq_len(dim(datamat)[3]),
                                                       create_dimvar=F)
 
                                 xp_var <- ncvar_def(name="xp", units="degrees_east", 
@@ -5776,30 +6146,6 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             # Prepare regular output file
                             if (all(total_rec == 0)) {
                                
-                                if (rec_tag) {
-                                    if (out_mode == "select") {
-                                        transient_count_reg <- c(nxi, nyi,
-                                                                 dim(datamat_reg)[5]) # nrecs
-                                        names(transient_count_reg) <- c("lon", "lat", "time")
-                                    } else if (out_mode == "areadepth") {
-                                        transient_count_reg <- c(nxi, nyi,
-                                                                 dim(datamat_reg)[4], # ndepths
-                                                                 dim(datamat_reg)[5]) # nrecs
-                                        names(transient_count_reg) <- c("lon", "lat", "depth", "time")
-                                    } 
-                                } else {
-                                    if (out_mode == "select") {
-                                        transient_count_reg <- c(nxi, nyi,
-                                                                 1) # nrecs
-                                        names(transient_count_reg) <- c("lon", "lat", "time")
-                                    } else if (out_mode == "areadepth") {
-                                        transient_count_reg <- c(nxi, nyi, 
-                                                                 dim(datamat_reg)[4], # ndepths
-                                                                 1) # nrecs
-                                        names(transient_count_reg) <- c("lon", "lat", "depth", "time")
-                                    }
-                                }
-
                                 if (F) { # old nameing
                                     outname_reg <- paste0(reg_transient_outpath, "/", 
                                                           postprefix, "_", 
@@ -5815,18 +6161,15 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                                           "_dy", sprintf("%.3f", regular_dy), 
                                                           p_ref_suffix, fname_suffix, 
                                                           "_", model, "_", out_mode, "_",
-                                                          varname, depths_fname,  
-                                                          timespan_fname, "_", area, ".nc") 
+                                                          varname, depths_fname, "_",  
+                                                          area, timespan_fname, ".nc") 
                                 }
                                 
                                 # remove already existing data to avoid ncdf error:
                                 # Error in R_nc4_create: Permission denied (creation mode was 4096)
-                                if (T) {
-                                    system(paste0("rm ", outname_reg), ignore.stderr=T) # silent
-                                }
+                                if (file.exists(outname_reg)) invisible(file.remove(outname_reg))
              
-                                time_dim <- ncdim_def(name="time", units=timeobj$units, 
-                                                      vals=timeobj$time)                          
+                                time_dim <- ncdim_def(name="time", units=timeobj$units, vals=timeobj$time)                          
                                 lon_dim <- ncdim_def(name="lon", units="degree_east", vals=xi)
                                 lat_dim <- ncdim_def(name="lat", units="degree_north", vals=yi)
 
@@ -5842,7 +6185,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 data_reg_var <- vector("list", l=dim(datamat_reg)[1]) # nvars
                                 if (out_mode == "select") {
 
-                                    for (i in 1:length(data_reg_var)) {
+                                    for (i in seq_along(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
                                         data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
                                                                        dim=list(lon_dim, lat_dim, time_dim),
@@ -5857,7 +6200,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 
                                 } else if (out_mode == "areadepth") {
 
-                                    for (i in 1:length(data_reg_var)) {
+                                    for (i in seq_along(data_reg_var)) {
                                         name <- dimnames(datamat_reg)[[1]][i]
                                         data_reg_var[[i]] <- ncvar_def(name=name, units=units_out,
                                                                        dim=list(lon_dim, lat_dim, depth_dim, time_dim),
@@ -5888,13 +6231,15 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     ncatt_put(outnc_reg, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
                                 }
                             } # if all(total_rec == 0)
-                            
+                    
                             if (out_mode == "select") {
-                                transient_start_reg <- c(1, 1, sum(total_rec) + 1) # lon, lat, depth, time
-                                names(transient_start_reg) <- c("lon", "lat", "time")
+                                transient_start_reg <- c(1, 1, sum(total_rec) + 1) # lon, lat, time
+                                transient_count_reg <- c(nxi, nyi, dim(datamat_reg)[5]) # nrecs
+                                names(transient_start_reg) <- names(transient_count_reg) <- c("lon", "lat", "time")
                             } else if (out_mode == "areadepth") {
                                 transient_start_reg <- c(1, 1, 1, sum(total_rec) + 1) # lon, lat, depth, time
-                                names(transient_start_reg) <- c("lon", "lat", "depth", "time")
+                                transient_count_reg <- c(nxi, nyi, dim(datamat_reg)[4:5]) # ndepths nrecs
+                                names(transient_start_reg) <- names(transient_count_reg) <- c("lon", "lat", "depth", "time")
                             }
 
                             if (verbose > 1) {
@@ -5918,7 +6263,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 message("")
                             } # verbose
                             
-                            for (i in 1:length(data_reg_var)) {
+                            for (i in seq_along(data_reg_var)) {
                                 if (out_mode == "select") {
                                     ncvar_put(nc=outnc_reg, varid=data_reg_var[[i]],
                                               vals=drop(datamat_reg[i,,,1,]), # 1st depth (only placeholder)
@@ -6386,7 +6731,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         dims_ltm <- dim(data_node)
                         dimnames_ltm <- dimnames(data_node)
                         dims_ltm[4] <- maxnrecpf
-                        if (verbose > 1) message(indent, "create data_node_ltm array with dims (", paste(dims_ltm, collapse=","), ") ...")
+                        dimnames_ltm[[4]] <- NULL
+                        if (verbose > 1) message(indent, "fi == 1 --> create data_node_ltm array with dims (", 
+                                                 paste(dims_ltm, collapse=","), ") ...")
                         data_node_ltm <- array(0, 
                                                dim=dims_ltm,
                                                dimnames=dimnames_ltm) # c(nvar,nnod,ndepths=1,maxnrecspf)
@@ -6485,6 +6832,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         dimnames_ltm <- dimnames(data_node)
                         dims_ltm[4] <- maxnrecpf
                         dimnames_ltm[[4]] <- NULL
+                        if (verbose > 1) message(indent, "fi == 1 --> create data_node_ltm array with dims (", 
+                                                 paste(dims_ltm, collapse=","), ") ...")
                         data_node_ltm <- array(0, 
                                                dim=dims_ltm,
                                                dimnames=dimnames_ltm) # c(nvar,nnod,ndepths=1,nrecspf)
@@ -7685,10 +8034,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
-        if (file.exists(outname)) {
-            #system(paste0("rm ", outname), ignore.stderr=T) # silent
-            invisible(file.remove(outname))
-        }
+        if (file.exists(outname)) invisible(file.remove(outname))
 
         ## nc out
         if (verbose > 1) {
@@ -7747,7 +8093,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             if (output_type == "elems") {
                 ncvar_put(outnc, data_var[[i]], drop(datamat_ltm[i,,,1,1]))
             } else if (output_type == "nodes") {
-                ncvar_put(outnc, data_var[[i]], drop(datamar_ltm[i,,1,1]))
+                ncvar_put(outnc, data_var[[i]], drop(datamat_ltm[i,,1,1]))
             } # if output_type
         }
 
@@ -7869,8 +8215,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
 
         moc_outname <- paste0(ltmpath, "/", postprefix, 
                               p_ref_suffix, fname_suffix, 
-                              "_", out_mode, "_", varname, "_", area, timespan_fname, depths_fname,
-                              ".nc")
+                              "_", out_mode, "_", varname, depths_fname, "_", area, 
+                              timespan_fname, ".nc")
 
         ## remove already existing data to avoid ncdf error:
         ## Error in R_nc4_create: Permission denied (creation mode was 4096)
@@ -8397,12 +8743,17 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 }
             }
             if (is.null(zlevels)) { # set default zlevels
+                quant_probs <- c(0, 0.1, 0.9, 1) # *100 -> % of values 
                 if (plot_type == "interp") {
-                    qn <- quantile(inter$z, probs=c(0, 0.1, 0.9, 1), na.rm=T)
+                    qn <- quantile(inter$z, probs=quant_probs, na.rm=T)
                 } else if (plot_type == "const") {
-                    qn <- quantile(z, probs=c(0, 0.1, 0.9, 1), na.rm=T)
+                    qn <- quantile(z, probs=quant_probs, na.rm=T)
                 }
-                zlevels <- unname(c(zlim[1], pretty(c(qn["10%"], qn["90%"]), n=11), zlim[2]))
+                zlevels <- pretty(c(qn["10%"], qn["90%"]), n=11)
+                if (any(zlevels < zlim[1])) zlevels <- zlevels[-which(zlevels < zlim[1])]
+                if (any(zlevels > zlim[2])) zlevels <- zlevels[-which(zlevels > zlim[2])]
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
             }
 
             user_axis.labels_exist <- eval(parse(text=paste0("exists('", varnamei, "_axis.labels')")))

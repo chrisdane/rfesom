@@ -4,10 +4,11 @@
 #########################################
 
 rfesompath <- "~/scripts/r/rfesom" 
-fesom_version <- "fesom" # default: fesom1
+fesom_version <- "fesom" # default: fesom (=fesom1)
 
 # any variable already defined in rfesom/namelists/namelist.config.r can be overwritten here
-if (F) {
+
+if (F) { # lackermann
     workpath <- "/work/ab0246/a270073"
     model <- "fesom"
     datainpaths <- "/work/ab0246/a270124/esm-experiments/awicm_pism/LIG01/outdata/fesom"
@@ -159,7 +160,8 @@ if (F) {
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl
     workpath <- "/work/ba1103/a270073"
-    model <- "fesom"
+    #model <- "fesom"
+    model <- "recom"
     #datainpaths <- "/mnt/lustre02/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
     #datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
     #fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
@@ -169,54 +171,72 @@ if (F) {
     #fpatterns <- "o2a_flux_<YYYY>0101-<YYYY>231"
     postprefix <- "awi-esm-1-1-lr_kh800_piControl"
     meshid <- "core"
-    meshpath <- "/work/ab0995/a270046/meshes_default/core"
+    #meshpath <- "/work/ab0995/a270046/meshes_default/core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #years <- 1950:1951
     #years <- 1950:2029 # chunk 1: 1950:2029
     #years <- 2030:2685 # chunk 2: 2030:2685
     #years <- 2586:2685 # last 100 years chunk 2
     #years <- 2676:2685 # last 10 years chunk 2
+    #years <- 2686
+    years <- 2901:3000
     #years <- 2686:3000 # chunk 3: 2686:3000
-    years <- 2686
     #years <- 3000
     #varname <- "tos"
     #varname <- "thetao"
+    #varname <- "bgc02" # dic
     #varname <- "bgc03" # alkalinity
+    #varname <- "bgc05" # phyc intracellular carbon concentration in small phytoplankton
+    #varname <- "bgc08" # detc carbon concentration in detritus
+    varname <- "bgc12" # doc
+    #varname <- "bgc14" # diac intracellular carbon concentration in diatoms
+    #varname <- "bgc20" # phycal calcite associated with nanophytoplankton
+    #varname <- "bgc21" # detcal calcite associated with detritus
     #varname <- "CO2f"
     #varname <- "NPPd"
     #varname <- "NPPn"
-    varname <- "dpCO2s"
+    #varname <- "dpCO2s"
+    #varname <- "benC"
+    #varname <- "benCalc"
     # oasis:
     #varname <- "heat_oce"
     #varname <- "co2c_oce" # co2 concentration from the atmosphere
     #varname <- "sst_feom"
     #varname <- "co2_feom"
-    frequency_post <- "monmean"
-    regular_ltm_out <- T
-    #regular_dx <- regular_dy <- 1
-    transient_out <- F
-    out_mode <- "select"
+    #frequency_post <- "monmen"
+    transient_out <- T
+    regular_ltm_out <- F
+    regular_transient_out <- F
+    #out_mode <- "select"
     #out_mode <- "fldmean"
-    #out_mode <- "fldint"
+    out_mode <- "fldint"
     #out_mode <- "depth"
-    #depths <- c(0, "max")
+    #out_mode <- "areadepth"
+    #depths <- 0
+    depths <- c(0, "max")
+    integrate_depth <- T
 
-} else if (F) { # awi-esm-1-1-lr_kh800 historical historical2
+} else if (T) { # awi-esm-1-1-lr_kh800 historical historical2
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
+    #model <- "recom"
+    #datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/", model)
     datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
+    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/recom"
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
-    postprefix <- "awi-esm-1-1-lr_kh800_historical"
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical2"
+    #postprefix <- "awi-esm-1-1-lr_kh800_historical"
+    postprefix <- "awi-esm-1-1-lr_kh800_historical2"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
+    #cycl <- F
     #years <- 2013:2014
-    years <- 1995:2014
+    #years <- 1995:2014
     #years <- 1850:2014
+    years <- 1982:2014
     #years <- 1995:2014 # last 20 years
-    #varname <- "tos"
+    #years <- 2014
+    varname <- "tos"
     #varname <- "thetao"
     #varname <- "mlotst"
     #varname <- "omldamax"
@@ -225,22 +245,28 @@ if (F) {
     #varname <- "dpCO2s"
     #varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
+    #varname <- "bgc12" # doc
     #varname <- "bgc22" # oxygen
-    varname <- "diags3d01" # npp by nanophytoplankton
+    #varname <- "diags3d01" # npp by nanophytoplankton
     #varname <- "diags3d02" # npp by diatoms
+    #frequency <- "monthly"
     #frequency_post <- "yearmean"
-    #frequency_post <- "monmean"
+    frequency_post <- "monmean"
     regular_ltm_out <- F
-    transient_out <- F
-    regular_transient_out <- T
-    regular_dx <- regular_dy <- 1
-    out_mode <- "select"
+    transient_out <- T
+    regular_transient_out <- F
+    #out_mode <- "select"
     #out_mode <- "fldint"
-    #out_mode <- "fldmean"
+    out_mode <- "fldmean"
     #out_mode <- "depth"
     #out_mode <- "areadepth"
-    integrate_depth <- T
-    depths <- c(0, "max")
+    #integrate_depth <- T
+    #depths <- c(0, "max")
+    #area <- "g19_NH-HL"
+    #area <- "g19_NH-ST"
+    area <- "g19_EQU"
+    #area <- "g19_SH-ST"
+    #area <- "g19_SH-HL"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp126
     workpath <- "/work/ba1103/a270073"
@@ -261,11 +287,10 @@ if (F) {
     #frequency_post <- "monmean"
     regular_ltm_out <- F
     transient_out <- F
-    regular_dx <- regular_dy <- 1
     out_mode <- "select"
     #out_mode <- "fldmean"
 
-} else if (T) { # awi-esm-1-1-lr_kh800 ssp585
+} else if (F) { # awi-esm-1-1-lr_kh800 ssp585
     workpath <- "/work/ba1103/a270073"
     model <- "fesom"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585b/outdata/fesom"
@@ -278,25 +303,26 @@ if (F) {
     years <- 2015:2016
     #years <- 2015:2019
     #years <- 2081:2100
-    varname <- "tos"
+    #varname <- "tos"
+    varname <- "thetao"
     #varname <- "diags3d01" # npp by nanophytoplankton
     #varname <- "diags3d02" # npp by diatoms
     #frequency_post <- "monmean"
-    transient_out <- F
-    regular_ltm_out <- T
+    transient_out <- T
+    regular_ltm_out <- F
     regular_transient_out <- F
-    regular_dx <- regular_dy <- 1
-    out_mode <- "select"
+    #out_mode <- "select"
     #out_mode <- "fldmean"
     #out_mode <- "fldint"
-    #out_mode <- "depth"
+    out_mode <- "depth"
+    #out_mode <- "areadepth"
     integrate_depth <- F
-    #depths <- c(0, "max")
+    depths <- c(0, "max")
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
     workpath <- "/work/ba1103/a270073"
-    #model <- "fesom"
-    model <- "recom"
+    model <- "fesom"
+    #model <- "recom"
     if (F) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2685_1m"
@@ -324,42 +350,57 @@ if (F) {
     } else if (T) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2"
+        #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/neg_co2_3879_monthly_restart/outdata/fesom"
+        #fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
     }
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
+    #cycl <- F # test
     #years <- 2686
     #years <- 2686:2688
     #years <- 2686:2760
     #years <- 3151:3156
     #years <- 3151:3168
     #years <- 3151:3227
-    years <- 3208
+    #years <- 3208
     #years <- 3208:3590
     #years <- 3496:3497
+    years <- 3498:3878
+    #years <- 3591:3800
+    #years <- 3801:3850
     #frequency <- "monthly"
-    #varname <- "tos"
+    varname <- "tos"
     #varname <- "sos"
     #varname <- "thetao"
     #varname <- "siarean"
     #varname <- "CO2f"
     #varname <- "pCO2s"
     #varname <- "dpCO2s"
-    varname <- "pCO2a"
-    #varname <- "bgc02"
-    #varname <- "bgc03"
+    #varname <- "pCO2a"
+    #varname <- "bgc02" # dic
+    #varname <- "bgc03" # talk
+    #varname <- "bgc05" # phyc intracellular carbon concentration in small phytoplankton
+    #varname <- "bgc08" # detc carbon concentration in detritus
+    #varname <- "bgc12" # doc
+    #varname <- "bgc14" # diac intracellular carbon concentration in diatoms
+    #varname <- "bgc20" # phycal calcite associated with nanophytoplankton
+    #varname <- "bgc21" # detcal calcite associated with detritus
+    #varname <- "benC"
+    #varname <- "benCalc"
     #frequency <- "annual"
     #frequency_post <- "yearmean"
-    transient_out <- F
-    regular_ltm_out <- T
+    transient_out <- T
+    regular_ltm_out <- F
     regular_transient_out <- F
-    regular_dx <- regular_dy <- 1
-    out_mode <- "select"
+    #regular_dx <- regular_dy <- 1/4
+    #out_mode <- "select"
     #out_mode <- "fldint"
-    #out_mode <- "fldmean"
+    out_mode <- "fldmean"
     #out_mode <- "depth"
     #depths <- 0
     #depths <- c(0, "max")
+    #integrate_depth <- T
     #area <- "NH"
     #area <- "SH"
     #area <- "g19_NH-HL"
@@ -432,7 +473,6 @@ if (F) {
     regular_ltm_out <- T
     transient_out <- F
     out_mode <- "select"
-    #out_mode <- "timmean"
     #out_mode <- "fldint"
     #out_mode <- "fldmean"
     #out_mode <- "depth"
@@ -464,23 +504,43 @@ if (F) {
     #out_mode <- "depth"
 
 } else if (F) { # ying
-    workpath <- "/work/ollie/cdanek"
     fesom_version <- "fesom2"
-    datainpaths <- "/work/ollie/yye/AWIESM_runs/PI_echamcold_test/outdata/fesom"
-    fpatterns <- "<varname_nc>.fesom.<YYYY>12.01.nc"
-    postprefix <- "awi-esm-2.0-lr_piControl"
-    meshid <- "core"
-    meshpath <- "/home/ollie/lniu/workollie/AWIESM/pool/mesh_core2"
-    years <- 3110
+    model <- "fesom2"
+    #model <- "recom"
+    if (F) {
+        workpath <- "/work/ollie/cdanek"
+        datainpaths <- "/work/ollie/yye/AWIESM_runs/PI_echamcold_test/outdata/fesom"
+        postprefix <- "awi-esm-2.0-lr_piControl"
+        fpatterns <- "<varname_nc>.fesom.<YYYY>12.01.nc"
+        meshid <- "core2"
+        meshpath <- "/home/ollie/lniu/workollie/AWIESM/pool/mesh_core2"
+    } else if (T) {
+        workpath <- "/work/ba1103/a270073"
+        datainpaths <- "/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/fesom"
+        fpatterns <- "<varname_nc>.fesom.<YYYY>01.01.nc"
+        postprefix <- "awi-esm-2.1-recom-par-tracers_piControl"
+        meshid <- "core2"
+        meshpath <- "/work/k20200/k202138/bb1029/AWIESM2.1-EXP/mesh_core2"
+    }
+    rotate_mesh <- F 
+    #years <- 2001:3505
+    #years <- 3110
     #years <- 3110:3479
-    #years <- 3440:3450
-    varname <- "temp"
-    depths <- 10
+    years <- 3440:3500
+    #years <- 3400:3505
+    #years <- 3505
+    varname <- "sst"
     #varname <- "sss"
-    regular_ltm_out <- T
+    #varname <- "temp"
+    #varname <- "CO2f"
+    #varname <- "DOC"
+    frequency_post <- "yearmean"
     transient_out <- F
+    regular_ltm_out <- T
     out_mode <- "select"
     #out_mode <- "fldmean"
+    #out_mode <- "fldint"
+    #depths <- 2.5
 
 } else if (F) { # jstreffing
     workpath <- "/work/ab0246/a270073"

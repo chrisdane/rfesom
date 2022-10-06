@@ -427,7 +427,7 @@
                 map_geogr_lim_lon <- -20
                 map_geogr_lim_lat <- 47.4
             } else if (area == "g19_NH-HL") { # val 1
-                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_1_poly_*_concavity_1.txt"), full.names=T)
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5_concavehull_val_1_poly_*_concavity_1.txt"), full.names=T)
                 map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
                 for (fi in seq_along(fs)) {
                     polycoords <- read.table(fs[fi], header=T)
@@ -435,7 +435,7 @@
                     map_geogr_lim_lat[[fi]] <- polycoords$y
                 }
             } else if (area == "g19_NH-ST") { # val 2
-                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_2_poly_*_concavity_1.txt"), full.names=T)
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5_concavehull_val_2_poly_*_concavity_1.txt"), full.names=T)
                 map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
                 for (fi in seq_along(fs)) {
                     polycoords <- read.table(fs[fi], header=T)
@@ -443,7 +443,7 @@
                     map_geogr_lim_lat[[fi]] <- polycoords$y
                 }
             } else if (area == "g19_EQU") { # val 3
-                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_3_poly_*_concavity_1.txt"), full.names=T)
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5_concavehull_val_3_poly_*_concavity_1.txt"), full.names=T)
                 map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
                 for (fi in seq_along(fs)) {
                     polycoords <- read.table(fs[fi], header=T)
@@ -451,7 +451,7 @@
                     map_geogr_lim_lat[[fi]] <- polycoords$y
                 }
             } else if (area == "g19_SH-ST") { # val 4
-                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_4_poly_*_concavity_1.txt"), full.names=T)
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5_concavehull_val_4_poly_*_concavity_1.txt"), full.names=T)
                 map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
                 for (fi in seq_along(fs)) {
                     polycoords <- read.table(fs[fi], header=T)
@@ -459,7 +459,7 @@
                     map_geogr_lim_lat[[fi]] <- polycoords$y
                 }
             } else if (area == "g19_SH-HL") { # val 5
-                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_-179.5_concavehull_val_5_poly_*_concavity_1.txt"), full.names=T)
+                fs <- list.files("/work/ba1103/a270073/mesh/lsm/gregor_etal_2019", glob2rx("gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5_concavehull_val_5_poly_*_concavity_1.txt"), full.names=T)
                 map_geogr_lim_lon <- map_geogr_lim_lat <- vector("list", l=length(fs))
                 for (fi in seq_along(fs)) {
                     polycoords <- read.table(fs[fi], header=T)

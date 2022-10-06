@@ -18,10 +18,10 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
     resolution <- voltriangle # m
     cluster_area_2d <- rep(0, t=length(xcsur)) # m2
 
-    derivative_stdbafu_x_2D <- array(0, c(2,3))
-    derivative_stdbafu_x_2D[,1]= -1
-    derivative_stdbafu_x_2D[1,2]= 1
-    derivative_stdbafu_x_2D[2,3]= 1
+    derivative_stdbafu_x_2D <- array(0, c(2, 3))
+    derivative_stdbafu_x_2D[,1] <- -1
+    derivative_stdbafu_x_2D[1,2] <- 1
+    derivative_stdbafu_x_2D[2,3] <- 1
 
     pb <- mytxtProgressBar(min=0, max=elem2d_n, style=pb_style,
                            char=pb_char, width=pb_width,
@@ -39,16 +39,11 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         local_cart[2,] <- ycsur[node]*rad*Rearth
 
         # transformation matrix Xl(k) = jacobian(j,k)*Xs(i)
-        # old:
-        #jacobian2D <- array(0, c(2,3))
-        #jacobian2D <- local_cart[,2:3] - cbind(local_cart[,1], local_cart[,1])
-        # new:
         jacobian2D <- array(0, c(2, 2))
-
-        # check cyclic boundary
-        for (j in 1:2) {
+        for (j in seq_len(2)) { 
             jacobian2D[,j] <- local_cart[,j+1] - local_cart[,1]
-            if (jacobian2D[1,j] > domain_len/2.0) {
+            # check cyclic boundary
+            if (jacobian2D[1,j] > domain_len/2.0) { 
                 jacobian2D[1,j] <- jacobian2D[1,j] - domain_len
             }
             if (jacobian2D[1,j] < -domain_len/2.0) {
@@ -68,11 +63,12 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         jacobian2D_inv <- solve(jacobian2D)
 
         # derivaive of local basis function
-        derivative_locbafu_x_2D <- t(t(derivative_stdbafu_x_2D)%*%jacobian2D_inv)
+        derivative_locbafu_x_2D <- t(t(derivative_stdbafu_x_2D) %*% jacobian2D_inv)
         bafux_2d[,i] <- derivative_locbafu_x_2D[1,]
         bafuy_2d[,i] <- derivative_locbafu_x_2D[2,]
 
-        # mesh area in (unit of 'Rearth')^3
+        # mesh area in unit of `Rearth`^3
+        # earth global sum = 361e6 km2 = 361e12 m2 = 3.61e14 m2
         voltriangle[i] <- 1/2*abs(det(jacobian2D)) # elem-space
         cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # node-space
 

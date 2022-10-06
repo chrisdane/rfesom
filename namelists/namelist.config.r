@@ -104,7 +104,7 @@ regular_ltm_out       <- T # regular (i.e. interpolated) time-average output
 transient_out         <- F # transient output defined via 'out_mode' (see table at the bottom)
 regular_transient_out <- F # regular (i.e. interpolated) transient output (see table at the bottom)
 out_mode              <- "select" # what kind of ouptut (see table at the bottom) 
-regular_dx            <- 1/4 # resolution of interpolated data on regular grid [degree] 
+regular_dx            <- 1 # resolution of interpolated data on regular grid [degree] 
 regular_dy            <- regular_dx # can be different than regular_dx
 uv_out                <- T # save horizontal components of vector variable
 rms_out               <- F # calc and save root mean square = sqrt( E[x^2] )

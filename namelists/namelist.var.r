@@ -4523,21 +4523,171 @@ if (varname == "tos") { # fesom 1.4
 
 } else if (varname == "bgc02") {
     longname <- "Dissolved Inorganic Carbon"
-    units_out <- units_plot <- "mmolC m-3"
-    var_label_plot <- expression(paste("Dissolved Inorganic Carbon [mmolC m"^paste(-3), "]"))
+    var_label_plot <- expression(paste("DIC [mmolC m"^paste(-3), "]"))
     varname_nc <- "bgc02"
+    units_out <- units_plot <- "mmolC m-3"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
 
 } else if (varname == "bgc03") {
     longname <- "Total Alkalinity"
     units_out <- units_plot <- "mmol m-3"
     var_label_plot <- expression(paste("Total Alkalinity [mmol m"^paste(-3), "]"))
     varname_nc <- "bgc03"
+    if (integrate_depth) {
+        units_out <- "mmol m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmol"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmol m-1"
+        }
+    }
+
+} else if (varname == "bgc05") {
+    longname <- "Carbon concentration in small phytoplankton"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("C"["phyto,small"], " [mmolC m"^paste(-3), "]"))
+    varname_nc <- "bgc05"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
+
+} else if (varname == "bgc08") {
+    longname <- "Carbon concentration in detritus"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("C"["detritus"], " [mmolC m"^paste(-3), "]"))
+    varname_nc <- "bgc08"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
+
+} else if (varname == "DOC") {
+    longname <- "Dissolved Organic Carbon"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("DOC [mmolC m"^paste(-3), "]"))
+    varname_nc <- "DOC"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
+
+} else if (varname == "bgc12") {
+    longname <- "Dissolved Organic Carbon"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("DOC [mmolC m"^paste(-3), "]"))
+    varname_nc <- "bgc12"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
+
+} else if (varname == "bgc14") {
+    longname <- "Carbon concentration in diatoms"
+    units_out <- units_plot <- "mmolC m-3"
+    var_label_plot <- expression(paste("C"["diatom"], " [mmolC m"^paste(-3), "]"))
+    varname_nc <- "bgc14"
+    if (integrate_depth) {
+        units_out <- "mmolC m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+        }
+    }
+
+} else if (varname == "bgc20") {
+    longname <- "Calcite associated with nanophytoplankton"
+    units_out <- units_plot <- "mmolCaCO3 m-3"
+    var_label_plot <- expression(paste("CaCO3"["phyto,small"], " [mmolCaCO"[3], " m"^paste(-3), "]"))
+    varname_nc <- "bgc20"
+    if (integrate_depth) {
+        units_out <- "mmolCaCO3 m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolCaCO3"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolCaCO3 m-1"
+        }
+    }
+
+} else if (varname == "bgc21") {
+    longname <- "Calcite associated with detritus"
+    units_out <- units_plot <- "mmolCaCO3 m-3"
+    var_label_plot <- expression(paste("CaCO3"["detritus"], " [mmolCaCO"[3], " m"^paste(-3), "]"))
+    varname_nc <- "bgc21"
+    if (integrate_depth) {
+        units_out <- "mmolCaCO3 m-2"
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolCaCO3"
+        }
+    } else {
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolCaCO3 m-1"
+        }
+    }
 
 } else if (varname == "bgc22") {
     longname <- "Oxygen"
     units_out <- units_plot <- "mmolO m-3"
     var_label_plot <- expression(paste("Dissolved Oxygen [mmolO m"^paste(-3), "]"))
     varname_nc <- "bgc22"
+
+} else if (varname == "benC") {
+    longname <- "Benthic carbon"
+    units_out <- units_plot <- "mmolC m-2"
+    var_label_plot <- expression(paste("Benthic Carbon [mmolC m"^paste(-2), "]"))
+    varname_nc <- "benC"
+    if (any(out_mode == c("fldint", "depthint"))) {
+        units_out <- "mmolC"
+    }
+
+} else if (varname == "benCalc") {
+    longname <- "Benthic calcite"
+    units_out <- units_plot <- "mmolCaCO3 m-2"
+    var_label_plot <- expression(paste("Benthic Calcite [mmolCaCO"[3], " m"^paste(-2), "]"))
+    varname_nc <- "benCalc"
+    if (any(out_mode == c("fldint", "depthint"))) {
+        units_out <- "mmolCaCO3"
+    }
 
 } else if (varname == "diags3d01") {
     longname <- "NPP Nanophy"

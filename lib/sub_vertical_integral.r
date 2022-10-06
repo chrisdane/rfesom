@@ -5,7 +5,7 @@ sub_vertical_integral <- function(data_nod3) {
     ## input: dim(data_nod3) = c(nvars,nod3d_n,ndepths=1,nrecspf)
     ## output: dim(tmp) = c(nvars,nod2d_n,ndepths=1,nrecspf)
 
-    stop("update dim_tag (and zave?)")
+    #stop("update dim_tag (and zave?)")
 
     tmp <<- array(0, 
                   dim=c(dim(data_nod3)[1], nod2d_n, dim(data_nod3)[3:4]),
