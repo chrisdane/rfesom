@@ -11,7 +11,7 @@ p_ref <- 0 # positive number such as 0, 42, 1338, 4000 [dbar]
            # rho = gsw_rho(SA,CT,p=p_ref) --> potential density
            # You can overwrite this default value also in namelist.var.r
            # in the respective variable specifications.
-cp <- 3991.86795711963 # [m2 s-2 K-1] specific heat capacity of water 
+cp <- 3991.86795711963 # [J kg-1 K-1] = [m2 s-2 K-1] (J = kg m2 s-2); specific heat capacity of water 
                        # 1) finite numeric, e.g. 3991.86795711963 for standard ocean with 
                        #    reference salinity 35.16504 g kg-1 = 35 u_PS 
                        #    (standard ocean practical salinity) and

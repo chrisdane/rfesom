@@ -1,4 +1,4 @@
-## R
+# r
 
 sub_n3_to_n2xde <- function(data_in) {
 
@@ -26,12 +26,12 @@ sub_n3_to_n2xde <- function(data_in) {
     ## Rearrange to chosen depth levels (variable 'depths')
     for (vari in seq_len(dim(tmp)[1])) {
         
-        if (verbose > 1) message(indent, "   ", varname_nc[vari], ": ", appendLF=F)
+        if (verbose > 1) message(indent, "   ", dimnames(data_in)[[1]][vari], ": ", appendLF=F)
         
         if (dim_tag[vari] == "2D") {
             
-            if (verbose > 1) message("nothing to do")
-            tmp[vari,,1,] <<- data_in[vari,,,] # nothing happens
+            if (verbose > 1) message("nothing to do", appendLF=F)
+            tmp[vari,,1,] <<- data_in[vari,seq_len(nod2d_n),,] # nothing happens
 
         } else if (dim_tag[vari] == "3D") {
             

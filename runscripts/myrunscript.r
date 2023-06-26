@@ -1,8 +1,11 @@
-## Host options
+# myrunscript.r
 
 rfesompath <- "~/scripts/r/rfesom" 
+hostname <- Sys.info()["nodename"]
 
 ############################################################
+
+fesom_version <- "fesom" # default: fesom (=fesom1)
 
 if (F) { # awi-esm-1-1-lr deck
     model <- "fesom"
@@ -79,15 +82,15 @@ if (F) { # awi-esm-1-1-lr deck
     setting <- "hu_svn471_ollie" # 2000:2363 (model years 1:364), 2803:2859 (model years 804:860)
     #setting <- "pi" # 2020:2700 (model years 862:1542)
     if (setting == "hu_svn471_ollie") {
-        if (machine_tag == "ollie") {
+        if (grepl("ollie", hostname)) {
             datainpaths <- "/work/ollie/cdanek/awicm-CMIP6/hu_svn471_ollie/" # 2000:2363 (model years 1:364), 2803:2859 (model years 804:860) 
-        } else if (machine_tag == "mistral") {
+        } else if (grepl("mistral", hostname)) {
             stop("not")
         }
     } else if (setting == "hu_svn477_ollie") {
-        if (machine_tag == "ollie") {
+        if (grepl("ollie", hostname)) {
             datainpaths <- "/work/ollie/ukrebska/AWI_CM/pi477_u/cpl_output/" # 2020:2700 (model years 862:1542)
-        } else if (machine_tag == "mistral") {
+        } else if (grepl("mistral", hostname)) {
             datainpaths <- "/work/ab0246/a270073/awicm-CMIP6_hu/hu_svn477_ollie/" # 2700 only
         }
     }
@@ -121,10 +124,9 @@ if (F) { # awi-esm-1-1-lr deck
     runid <- "awicm-CMIP6_lars" # 1850:1980
     meshid <- "core"
     setting <- "htrans02"
-    if (machine_tag == "ollie") {
+    if (grepl("ollie", hostname)) {
+        #datainpaths <- "/work/ollie/lackerma/awicm_tests/htrans02/outdata/fesom/"
         datainpaths <- paste0("/work/ollie/cdanek/", runid, "/", setting, "/")
-    } else {
-        datainpaths <- "/work/ollie/lackerma/awicm_tests/htrans02/outdata/fesom/"
     }
 
 } else if (F) {
@@ -397,19 +399,24 @@ if (F) { # awi-esm-1-1-lr deck
         global_mesh <- F 
         cycl <- F
     }
-    workpath <- "/work/ba0941/a270073"
-    datainpaths <- paste0(workpath, "/out/", runid, "/", setting)
-    meshpath   <- paste0(workpath, "/mesh/", meshid) # path of fesom mesh
-    postpath <- paste0(workpath, "/post/", runid, "/", setting) # my old phd folder structure
+
+    workpath <- "/work/ba1103/a270073"
+    datainpaths <- paste0(workpath, "/out/fesom-1.4/", runid, "/", setting)
+    workpath <- "/work/ab0246/a270073"
+    meshpath   <- paste0(workpath, "/mesh/", model, "/", meshid) # path of fesom mesh
     derivpath  <- paste0(workpath, "/mesh/", model, "/", meshid, "/derivatives") # path where to save derivative file if wanted
     interppath <- paste0(workpath, "/mesh/", model, "/", meshid, "/interp") # path where to save regular interpolateion matrix if needed
     plotpath   <- paste0(workpath, "/plots/fesom") # path where to save plots if wanted
+    workpath <- "/work/ba1103/a270073"
+    
     if (meshid == "core") {
         rotate_mesh <- F
-        if (machine_tag == "ollie") {
+        if (grepl("ollie", hostname)) {
             meshpath <- "/work/ollie/pool/FESOM/meshes_default/core"
-        } else if (machine_tag == "mistral") {
+        } else if (grepl("mistral", hostname)) {
             meshpath <- "/work/ab0995/a270046/meshes_default/core"
+        } else if (grepl("levante", hostname)) {
+            meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
         }
     }
     if (runid == "bold" && setting == "cpl_output_01") {
@@ -434,7 +441,7 @@ if (F) { # awi-esm-1-1-lr deck
     }
     if (any(runid == c("Arc22_daily", "Arc22_sub_daily", 
                            "Arc22_sub", "Arc22_sub_small"))) {
-        if (machine_tag == "ollie") {
+        if (grepl("ollie", hostname)) {
             datainpaths <- paste0("/work/ollie/cwekerle/result/", runid)
             meshpath <- paste0("/work/ollie/cwekerle/mesh/", meshid)
         }
@@ -451,15 +458,14 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "potdens"
     #fpatterns <- paste0(runid, ".<YYYY>.", c("oce", "oce"), ".mean.nc") 
     #varname <- "zossq"
-    #varname <- "hvel"
     #varname <- "vertvel"
     #varname <- "tke"
     #varname <- "mke"
     #varname <- "eke"
-    varname <- "mixlay"
+    #varname <- "mixlay"
     #varname <- "Nsquared"
     #varname <- "gradB"
-    #varname <- "FeKe"
+    varname <- "FeKe"
     #varname <- "HRS"
     #varname <- "VRS"
     #varname <- "PmPe"
@@ -468,6 +474,8 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "divuv"
     #varname <- "divuvt"
     #varname <- "divuvteddy"
+    #varname <- "uv_bott_force_mean"
+    #varname <- "uv_bott_force_eddy"
     #varname <- "tob"
     #varname <- "sob"
     #varname <- "opottempmint"
@@ -475,10 +483,10 @@ if (F) { # awi-esm-1-1-lr deck
     #varname <- "transport"
     #varname <- "sic"
     #varname <- "iceextent"
-
+    
     #area <- "global"
-    area <- "lsea"
-    #area <- "LS30l2"
+    #area <- "lsea"
+    area <- "LS30l2"
     #area <- "LS30l"
     #area <- "LS20to30l"
     #area <- "LS20to30h"
@@ -488,19 +496,20 @@ if (F) { # awi-esm-1-1-lr deck
     #area <- "csec_S30"
     #area <- "csec_N74"
 
-    #depths <- 0
+    depths <- 0
     #depths <- 113
     #depths <- c(0, 100)
     #depths <- c(0, 1400)
     #depths <- c(0, "MLD")
-    depths <- c(0, "max")
+    #depths <- c(0, "max")
+    #depths <- "bottom"
 
     integrate_depth <- F
-    integrate_depth <- T
+    #integrate_depth <- T
 
-    #years <- 1948
+    years <- 1948
     #years <- 1948:1949
-    years <- 1948:2009
+    #years <- 1948:2009
     #years <- 1961:2009
     #years <- 1993:2009
 
@@ -516,35 +525,36 @@ if (F) { # awi-esm-1-1-lr deck
 
     regular_ltm_out <- F
     #regular_ltm_out <- T
-    #rms_out <- T
-    #sd_out <- T
+    regular_transient_out <- F
+    #regular_transient_out <- T
     regular_dx <- regular_dy <- 1/4
-    regular_dx <- regular_dy <- 1/10
-
+    #regular_dx <- regular_dy <- 1/10
     transient_out <- F
     transient_out <- T
     #out_mode <- "select"
-    out_mode <- "fldmean"
+    #out_mode <- "fldmean"
     #out_mode <- "meanint"
-    #out_mode <- "fldint"
+    out_mode <- "fldint"
     #out_mode <- "depth"
     #out_mode <- "csec_depth"
     #out_mode <- "csec_mean"
     #out_mode <- "area"
+    #rms_out <- T
+    #sd_out <- T
    
     verbose <- 2
     #verbose <- 3
 
     # for new rfresom version 
     postprefix <- paste0(runid, "_", setting)
-    postpath   <- paste0(workpath, "/post/fesom")
-    # my old directory structure /mode/area/var/ instead of new /mode/var/
-    # for backwards compatibility
-    if (F) {
+    if (F) { # old directory structure /mode/area/var/ instead of new /mode/var/
+        postpath <- paste0(workpath, "/post/old/", runid, "/", setting) # my old phd folder structure
         transientpath <- paste0(postpath, "/", out_mode, "/", area, "/", varname)
         ltmpath <- paste0(postpath, "/ltm/", area, "/", varname)
         reg_transient_outpath <- paste0(postpath, "/regular_grid/", out_mode, "/", area, "/", varname)
         reg_ltm_outpath <- paste0(postpath, "/regular_grid/ltm/", out_mode, "/", area, "/", varname)
+    } else if (T) { # new
+        postpath   <- paste0(workpath, "/post/fesom")
     }
 
 } # my phd stuff

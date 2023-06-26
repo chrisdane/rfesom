@@ -86,8 +86,12 @@ sub_calc <- function(data_node) {
 
         tmp <- sqrt(data_node[varinds[1],,,]^2 + data_node[varinds[2],,,]^2)
         if (uv_out || horiz_deriv_tag != F) {
-            data_node <- abind(data_node, tmp, along=1, use.dnns=T)  
+            data_node <- abind(data_node, tmp, along=1, use.dnns=T)
             dimnames(data_node)[[1]][3] <- varname
+            dim_tag[length(dim_tag)+1] <- dim_tag[1]
+            names(dim_tag)[length(dim_tag)] <- varname
+            levelwise[length(levelwise)+1] <- levelwise[1]
+            names(levelwise) <- names(dim_tag)
         } else {
             data_node <- tmp
             dimnames(data_node)[[1]] <- varname
@@ -876,9 +880,9 @@ sub_calc <- function(data_node) {
     if (varname == "eke") {
         
         varinds <- c(which(vars == "uu" | vars == "u2o"),
-                      which(vars == "u" | vars == "uo"),
-                      which(vars == "vv" | vars == "v2o"),
-                      which(vars == "v" | vars == "vo"))
+                     which(vars == "u" | vars == "uo"),
+                     which(vars == "vv" | vars == "v2o"),
+                     which(vars == "v" | vars == "vo"))
         if (any(is.na(varinds))) stop("Could not find data.")
         if (verbose > 1) {
             message(paste0(indent, "EKE = 1/2 [ mean(",
@@ -969,10 +973,10 @@ sub_calc <- function(data_node) {
                              ") + ", vars[varinds[6]], " - mean(", vars[varinds[2]], 
                              ")*mean(", vars[varinds[4]], ") ... (Waterhouse et al. 2014)"))
             } else if (varname == "FeKe") {
-                message(paste0(indent, varname, "= 1/rho0 * (", vars[varinds[5]], " - mean(",
-                             vars[varinds[1]], ")*mean(", vars[varinds[3]],
-                             ") + ", vars[varinds[6]], " - mean(", vars[varinds[2]],
-                             ")*mean(", vars[varinds[4]], ") ... (Renault et al. 2016)"))
+                message(indent, varname, " = 1/rho0 * (", vars[varinds[5]], " - mean(",
+                        vars[varinds[1]], ")*mean(", vars[varinds[3]],
+                        ") + ", vars[varinds[6]], " - mean(", vars[varinds[2]],
+                        ")*mean(", vars[varinds[4]], ") ... (Renault et al. 2016)")
             }
         }
 
@@ -988,14 +992,36 @@ sub_calc <- function(data_node) {
     } # "ewindenergy", "FeKe"
 
     if (varname == "uv_bott_force_mean") {
-        stop("update")
-        data_node <- C_d * (data[1,,,]^2 + data[2,,,]^2) *
-                      sqrt(data[1,,,]^2 + data[2,,,]^2)
-    }
+        
+        # mean bottom drag -Cd|u|u \cdot u
+        varinds <- c(which(vars == "u" | vars == "uo"),
+                     which(vars == "v" | vars == "vo"))
+        if (length(varinds) != 2) stop("could not find all necessary vars")
+        message(indent, "uv_bott_force_mean = -C_d * |\\vec{u}_h| * \\vec{u}_h \\cdot \\vec{u}_h = -C_d * ",
+                "sqrt[mean(", vars[varinds[1]], ")^2 + mean(", vars[varinds[2]], ")^2] * ",
+                "(mean(", vars[varinds[1]], ")^2 + mean(", vars[varinds[2]], ")^2)")
+        tmp <- -C_d*sqrt(data_node[varinds[1],,,]^2 + data_node[varinds[2],,,]^2)  # -C_d*|u|
+        data_node <- tmp * (data_node[varinds[1],,,]^2 + data_node[varinds[2],,,]) # -C_d*|u| u \cdot u
+        rm(tmp)
+
+    } # uv_bott_force_mean
 
     if (varname == "uv_bott_force_eddy") {
-        stop("implement uv_bott_force_eddy")
-    }
+        
+        # eddy bottom drag -Cd|u|u \cdot u
+        varinds <- c(which(vars == "uu" | vars == "u2o"),
+                     which(vars == "u" | vars == "uo"),
+                     which(vars == "vv" | vars == "v2o"),
+                     which(vars == "v" | vars == "vo"))
+        if (length(varinds) != 4) stop("could not find all necessary vars")
+        message(indent, "uv_bott_force_eddy = -C_d * |\\vec{u}_h'| * \\vec{u}_h' \\cdot \\vec{u}_h' = -C_d * ",
+                "sqrt[mean(", vars[varinds[1]], ") - mean(", vars[varinds[2]], ")^2 + mean(", vars[varinds[3]], ") - mean(", vars[varinds[4]], ")^2] * ",
+                "(mean(", vars[varinds[1]], ") - mean(", vars[varinds[2]], ")^2 + mean(", vars[varinds[3]], ") - mean(", vars[varinds[4]], ")^2)")
+        tmp <- -C_d*sqrt(data_node[varinds[1],,,] - data_node[varinds[2],,,]^2 + data_node[varinds[3],,,] - data_node[varinds[4],,,]^2)    # -C_d*|u'|
+        data_node <- tmp * (data_node[varinds[1],,,] - data_node[varinds[2],,,]^2 + data_node[varinds[3],,,] - data_node[varinds[4],,,]^2) # -C_d*|u'| u' \cdot u'
+        rm(tmp)
+
+    } # uv_bott_force_eddy
 
     ## vertical mean flux divergence
     if (any(varname == c("dzwt", "dzws", "dzwrho", "dzwb"))) {
@@ -1003,7 +1029,7 @@ sub_calc <- function(data_node) {
         # vertical derivative needs 'data_node'
         if (varname == "dzwt") {
             varinds <- c(which(vars == "w" | vars == "wo"),
-                          which(vars == "temp" | vars == "thetao"))
+                         which(vars == "temp" | vars == "thetao"))
         } else if (varname == "dzws") {
             varinds <- c(which(vars == "w" | vars == "wo"),
                           which(vars == "salt" | vars == "so"))
@@ -1356,6 +1382,8 @@ sub_calc <- function(data_node) {
 
     # at this point, data_node needs to be well defined
     # with the variables in the first dim: c(var,node,depth,rec)
+    
+    # define variables to calc horizontal derivative from
     if (horiz_deriv_tag != F) {
 
         if (verbose > 2) {
@@ -1528,7 +1556,7 @@ sub_calc <- function(data_node) {
 
     } # if (horiz_deriv_tag != F) {
 
-    ## horizontal derivative
+    ## calc horizontal derivative
     if (horiz_deriv_tag != F && 
         (!is.null(dxinds) || !is.null(dyinds))) {
 
@@ -3315,8 +3343,21 @@ sub_calc <- function(data_node) {
 
     } # "resolutionkm", "resolutiondeg", "mesharea", "fwflux", "iceextent", "icevol"
 
+    ## recom
+    if (varname == "NPPtot") {
+
+        inds <- match(varname_nc, c("diags3d01", "diags3d02"))
+        if (anyNA(inds)) stop("did not find varnames \"diags3d01\" and \"diags3d02\" in `varname_nc`")
+        message(indent, "Calc ", varname, " = ", varname_nc[inds[1]], " + ", varname_nc[inds[2]], " ...")
+        data_node <- data_node[inds[1],,,] + data_node[inds[2],,,]
+        dimnames(data_node)[[1]] <- list(varname)
+
+    } # NPPtot
+
     # overwrite global data_node with the result data_node from within this function
     assign('data_node', data_node, envir=.GlobalEnv)
+    assign('dim_tag', dim_tag, envir=.GlobalEnv)
+    assign('levelwise', levelwise, envir=.GlobalEnv)
 
 } # sub_calc function
 

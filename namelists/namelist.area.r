@@ -221,8 +221,9 @@
                 map_geogr_lim_lon <- polycoords$x
                 map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS30l2") {
-                polycoords <- read.table("~/scripts/r/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_6.1_cms-1_chull.txt",
-                                   header=F, col.names=c("x", "y"))
+                polycoords <- read.table(
+                                         "/work/ba1103/a270073/post/old/polygon_coords/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_6.1_cms-1_chull.txt",
+                                         header=F, col.names=c("x", "y"))
                 map_geogr_lim_lon <- polycoords$x
                 map_geogr_lim_lat <- polycoords$y
             } else if (area == "LS20to30l") {
@@ -268,7 +269,7 @@
                 map_geogr_lim_lon <- c(-48, -30)
                 map_geogr_lim_lat <- c(40, 52)
             } else if (area == "wgc") {
-                area <- "wgc"
+                stop("asdas")
             } else if (area == "CLS") {
                 map_geogr_lim_lon <- c(-55, -48)
                 map_geogr_lim_lat <- c(56, 59.5)
@@ -466,6 +467,12 @@
                     map_geogr_lim_lon[[fi]] <- polycoords$x
                     map_geogr_lim_lat[[fi]] <- polycoords$y
                 }
+            } else if (area == "nino34") {
+                map_geogr_lim_lon <- c(-170, -120) 
+                map_geogr_lim_lat <- c(-5, 5) 
+            } else if (area == "S60") {
+                map_geogr_lim_lon <- c(-180, 180) 
+                map_geogr_lim_lat <- c(-90, -60) 
             }
 
             if (!is.null(map_geogr_lim_lon)) poly_geogr_lim_lon <- map_geogr_lim_lon

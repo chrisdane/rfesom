@@ -16,7 +16,7 @@ rfesom_version <- base::numeric_version("1.0.0")
 
 message("\n",
         "***************************************************************\n",
-        "*         rfesom ", rfesom_version, " for processing FESOM1/2 output        *\n",
+        "*         rfesom ", rfesom_version, " for processing FESOM1/2 output         *\n",
         "*         https://github.com/chrisdane/rfesom                 *\n",
         "***************************************************************")
 
@@ -128,6 +128,7 @@ if (!exists("fesom_version")) stop("No 'fesom_version' provided (\"fesom\" or \"
 if (!any(fesom_version == c("fesom", "fesom2"))) {
     stop("`fesom_version` must be either \"fesom\" or \"fesom2\".")
 }
+if (!exists("workpath")) stop("No 'workpath' provided.")
 if (!exists("model")) stop("No 'model' provided (fesom, fesom2, recom)")
 if (!exists("meshpath")) stop("No 'meshpath' provided.")
 if (!exists("postprefix")) stop("No 'postprefix' provided.")
@@ -247,18 +248,14 @@ if (fuser_tag) {
         datainpaths <- dirname(fnames_user[1])
     }
 } else if (!fuser_tag) {
-    if (!exists("datainpaths")) {
-        stop("No 'datainpaths' provided.")
-    } else {
-        datainpaths <- suppressWarnings(normalizePath(datainpaths))
-    }
+    if (!exists("datainpaths")) stop("No 'datainpaths' provided.")
+    datainpaths <- suppressWarnings(normalizePath(datainpaths))
     if (nvars > 0) {
-        special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
         if (!exists("fpatterns") || length(fpatterns) != nvars) {
             stop("according to the \"namelist.var.r\"-entry of provided `varname` = \"", varname, 
-                 "\" the variable", ifelse(nvars > 1, "s", ""), "\n",
+                 "\" the ", nvars, " variable", ifelse(nvars > 1, "s", ""), "\n",
                  "   `varname_nc` = \"", paste0(varname_nc, collapse="\", \""), "\"\n",
-                 "are needed. so you must provide `fpatterns` as e.g.\n", 
+                 "are needed. so you must provide `fpatterns` of same length (", nvars, ") as e.g.\n", 
                  "   `fpatterns <- \"Exp01_fesom_<varname_nc>_<YYYY>0101.nc\"`\n",
                  "or e.g.\n",
                  "   `fpatterns <- ", ifelse(nvars > 1, "c(", ""), "\"", 
@@ -466,9 +463,8 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         moc_ltm_out, csec_ltm_out)) {
 
     if (!exists("postpath")) {
-        stop("No `postpath` given for saving any post processed data.")
-    } else {
-        postpath <- suppressWarnings(normalizePath(postpath))
+        postpath <- paste0(workpath, "/post/", model)
+        message("No `postpath` provided for saving any post processed data --> use default: ", postpath)
     }
     if (file.access(postpath, mode=0) == -1) { # mode=0: existing, -1: no success
         message("Try to create `postpath` = ", postpath, " ... ", appendLF=F)
@@ -479,9 +475,11 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
         } else {
             message("done")
         }
+    # no writing rights to postpath
     } else if (file.access(postpath, mode=2) == -1) { # mode=2: writing, -1: no success
         stop("You have no writing rights in 'postpath' = ", postpath)
     }
+    postpath <- normalizePath(postpath)
 
     # make dirs in postpath. at this point, writing rights of postpath were already checked
     if (transient_out) { # irregular
@@ -490,8 +488,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             message("No 'transientpath' is given for saving output of this script. ",
                     "Use default `postpath`/`out_mode`/`varname = ", transientpath,
                     " (you can set `transientpath <- \"/path/with/writing/rights\"` in the runscript)")
-        } else {
-            transientpath <- suppressWarnings(normalizePath(transientpath))
         }
         if (file.access(transientpath, mode=0) == -1) { # mode=0: existing, -1: no success
             message("Try to create 'transientpath' = ", transientpath, " ... ", appendLF=F)
@@ -502,7 +498,11 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             } else {
                 message("done.")
             }
+        # no writing rights to transientpath
+        } else if (file.access(transientpath, mode=2) == -1) { # mode=2: writing, -1: no success
+            stop("You have no writing rights in 'transientpath' = ", transientpath)
         }
+        transientpath <- normalizePath(transientpath)
     }
     
     if (any(ltm_out, moc_ltm_out, csec_ltm_out)) {
@@ -512,7 +512,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                     "Use default `postpath`/timmean/`varname` = ", ltmpath, 
                     " (you can set `ltmpath <- \"/path/with/writing/rights\"` in the runscript)")
         } else {
-            ltmpath <- suppressWarnings(normalizePath(ltmpath))
         }
         if (file.access(ltmpath, mode=0) == -1) { # mode=0: existing, -1: no success
             message("Try to create 'ltmpath' = ", ltmpath, " ... ", appendLF=F)
@@ -523,7 +522,11 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             } else {
                 message("done.")
             }
-        }            
+        # no writing rights to ltmpath
+        } else if (file.access(ltmpath, mode=2) == -1) { # mode=2: writing, -1: no success
+            stop("You have no writing rights in 'ltmpath' = ", ltmpath)
+        }
+        ltmpath <- normalizePath(ltmpath)
     }
 
     # if regular interpolation is needed
@@ -547,8 +550,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                             "Use default `postpath`/`out_mode`/`varname` = ", reg_transient_outpath,
                             " (you can set `reg_transient_outpath <- \"/path/with/writing/rights\"` in the runscript)")
                 }
-            } else {
-                reg_transient_outpath <- suppressWarnings(normalizePath(reg_transient_outpath))
             }
             if (file.access(reg_transient_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
                 message("Try to create 'reg_transient_outpath' = ", reg_transient_outpath, " ... ", appendLF=F)
@@ -559,8 +560,14 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                 } else {
                     message("done.")
                 }
+            # no writing rights to reg_transient_outpath
+            } else if (file.access(reg_transient_outpath, mode=2) == -1) { # mode=2: writing, -1: no success
+                stop("You have no writing rights in 'reg_transient_outpath' = ", reg_transient_outpath)
             }
+            reg_transient_outpath <- normalizePath(reg_transient_outpath)
+        
         } # regular_transient_out
+        
         if (regular_ltm_out) {
             if (!exists("reg_ltm_outpath")) {
                 if (F) { # old naming
@@ -574,8 +581,6 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                             "Use default `postpath`/timmean/`varname` = ", reg_ltm_outpath, 
                             " (you can set `reg_ltm_outpath <- \"/path/with/writing/rights\"` in the runscript)")
                 }
-            } else {
-                reg_ltm_outpath <- suppressWarnings(normalizePath(reg_ltm_outpath))
             }
             if (file.access(reg_ltm_outpath, mode=0) == -1) { # mode=0: existing, -1: no success
                 message("Try to create 'reg_ltm_outpath' = ", reg_ltm_outpath, " ... ", appendLF=F)
@@ -586,15 +591,18 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
                 } else {
                     message("done.")
                 }
+            # no writing rights to reg_ltm_outpath
+            } else if (file.access(reg_ltm_outpath, mode=2) == -1) { # mode=2: writing, -1: no success
+                stop("You have no writing rights in 'reg_ltm_outpath' = ", reg_ltm_outpath)
             }
+            reg_ltm_outpath <- normalizePath(reg_ltm_outpath)
         } # regular_ltm_out
+        
         if (!exists("interppath")) {
-            interppath <- paste0(postpath, "/meshes/", fesom_version, "/", meshid, "/interp") # use default
+            interppath <- paste0(workpath, "/mesh/", fesom_version, "/", meshid, "/interp") # use default
             message("No 'interppath' is given for saving/reading regular interpolation matrix. ",
-                    "Use default `postpath`/meshes/`fesom_version`/`meshid`/interp = ", interppath,
+                    "Use default `workpath`/mesh/`fesom_version`/`meshid`/interp = ", interppath,
                     " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
-        } else {
-            interppath <- suppressWarnings(normalizePath(interppath))
         }
         if (file.access(interppath, mode=0) == -1) { # mode=0: existing, -1: no success
             message("Try to create 'interppath' = ", interppath, " ... ", appendLF=F)
@@ -605,7 +613,12 @@ if (any(ltm_out, regular_ltm_out, transient_out, regular_transient_out,
             } else {
                 message("done.")
             }
+        # no writing rights to interppath
+        } else if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
+            stop("You have no writing rights in `interppath` = ", interppath)
         }
+        interppath <- normalizePath(interppath)
+
     } # if regular_transient_out regular_ltm_out
 
 } # if ltm_out, regular_ltm_out, transient_out, regular_transient_out, moc_ltm_out, csec_ltm_out
@@ -613,9 +626,8 @@ if (plot_map || plot_csec
     || any(out_mode == c("moc_mean", "moc_depth"))) {
     
     if (!exists("plotpath")) {
-        stop("No `plotpath` given.")
-    } else {
-        plotpath <- suppressWarnings(normalizePath(plotpath))
+        plotpath <- paste0(workpath, "/plots/", model)
+        message("No `plotpath` provided for saving plots --> use default: ", plotpath)
     }
     if (file.access(plotpath, mode=0) == -1) { # mode=0: existing, -1: no success
         message("Try to create `plotpath` = ", plotpath, " ... ", appendLF=F)
@@ -630,6 +642,8 @@ if (plot_map || plot_csec
     } else if (file.access(plotpath, mode=2) == -1) { # mode=2: writing, -1: no success
         stop("You have no writing rights in `plotpath` = ", plotpath)
     }
+    plotpath <- normalizePath(plotpath)
+
 } # check paths if plot_mat || plot_csec
 
 
@@ -822,6 +836,7 @@ if (fesom_version == "fesom") {
 }
 
 # find fesom filenames if nc-variables are wanted (i.e. not resolution etc.)
+special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
 if (nvars > 0) {
     if (fuser_tag) {
         if (verbose > 0) message(indent, "Input file names are given by user via `fnames_user`:")
@@ -859,14 +874,15 @@ if (nvars > 0) {
                     pattern <- substr(fpatterns[vari], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
                     sub_list[[pati]]$pattern <- pattern
                     sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
-                    # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                    # special patterns: replace <YYYY*>, <MM*>, etc. with "?"
                     if (pattern %in% special_patterns) {
-                        message(indent, "replace special pattern \"", pattern, "\" by \"*\"")
-                        sub_list[[pati]]$replacement <- "*"
+                        message(indent, "replace special pattern \"", pattern, "\" by \"?\"")
                         if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
                             sub_list[[pati]]$replacement_length <- 4
+                            sub_list[[pati]]$replacement <- "????"
                         } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
                             sub_list[[pati]]$replacement_length <- 2
+                            sub_list[[pati]]$replacement <- "??"
                         }
                     # all other patterns: replace <pattern> by value of object in the current work space named `pattern`
                     } else { 
@@ -1482,22 +1498,25 @@ if (nvars > 0) {
             }
             message(indent, "   run `", cmd, "` ...")
             dates <- system(cmd, intern=T, ignore.stderr=T)
-            dates <- strsplit(trimws(dates), "  ")[[1]]
-            if (length(dates) != 0 && all(dates == "0000-00-00T00:00:00")) {
-                timevalue_strat <- "old" # construct times based on YYYY from filenames
-            } else if (length(dates) == 0 && !is.null(time_var)) {
+            if (length(dates) == 0 && !is.null(time_var)) { # my ncl sub results
                 timevalue_strat <- "sub" # construct times based on YYYY from filenames
-            } else if (length(dates) == 0 && !is.null(time_dim)) {
-                timevalue_strat <- "oasis" # construct times based on YYYY from filenames
             } else {
-                timevalue_strat <- "new" # use result of `cdo showtimestamp`
+                dates <- strsplit(trimws(dates), "  ")[[1]]
+                if (length(dates) != 0 && all(dates == "0000-00-00T00:00:00")) {
+                    timevalue_strat <- "old" # construct times based on YYYY from filenames
+                } else if (length(dates) == 0 && !is.null(time_dim)) {
+                    timevalue_strat <- "oasis" # construct times based on YYYY from filenames
+                } else {
+                    timevalue_strat <- "new" # use result of `cdo showtimestamp`
+                }
             }
-            
+
             # get input times of all files to read 
             for (fi in seq_along(files_list[[first_nc_with_time_ind[time_vari]]])) {
                 
                 if (any(timevalue_strat == c("old", "sub", "oasis"))) { 
                     # construct time based on filename years and number of time points; assume that dt is constant in time
+                    if (verbose > 0 && fi == 1) message(indent, "`timevalue_strat` = \"", timevalue_strat, "\":")
                     if (timevalue_strat == "old") {
                         cmd <- paste0("cdo -s ntime ",
                                       files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
@@ -1505,7 +1524,7 @@ if (nvars > 0) {
                         ntimepf <- as.integer(ntimepf)
                     } else if (timevalue_strat == "sub") {
                         cmd <- paste0("ncdump -v ", time_var, " ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
-                        message(indent, "   run `", cmd, "` ...")
+                        if (verbose > 0 && fi == 1) message(indent, "   run `", cmd, "` ...")
                         ntimepf <- system(cmd, intern=T) 
                         ntimepf <- ntimepf[(which(ntimepf == "data:")+2):(length(ntimepf)-1)]
                         ntimepf <- sub("time = ", "", ntimepf)
@@ -1584,9 +1603,11 @@ if (nvars > 0) {
                                     }
                                 }
                             } # if ntimepf == 1 or not
+                        } else {
+                            message(indent, "`frequency` was provided ...")
                         } # if `frequency` not provided by user
 
-                        message(indent, "`frequency` = ", frequency)
+                        message(indent, "--> `frequency` = ", frequency)
                         if (frequency == "annual") {
                             attributes(frequency)$units <- "year"
                             cdo_shifttime <- "-shifttime,-1year"
@@ -2981,13 +3002,11 @@ if (horiz_deriv_tag != F
         (interp_dlon_plot == "auto" || interp_dlon_plot == "auto"))) {
 
     if (!exists("derivpath")) { # use default
-        derivpath <- paste0(postpath, "/meshes/", fesom_version, "/", meshid, "/derivatives")
+        derivpath <- paste0(workpath, "/mesh/", fesom_version, "/", meshid, "/derivatives")
         message(indent, "No 'derivpath' is given for saving/reading horizontal ",
                 "derivative/cluster area/resolution matrices. Use default ",
-                "`postpath`/meshes/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
+                "`workpath`/mesh/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
                 " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
-    } else {
-        derivpath <- suppressWarnings(normalizePath(derivpath))
     }
     if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
         message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -2998,12 +3017,11 @@ if (horiz_deriv_tag != F
         } else {
             message("done.")
         }
+    # no writing rights to derivpath
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        message(indent, "You have no writing rights in 'derivpath' = ", derivpath, " ...")
-        derivpath <- paste0(rfesompath, "/mesh/", fesom_version, "/", meshid, "/derivatives")
-        message(indent, " Use default `postpath`/meshes/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
-                indent, " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
+        stop("You have no writing rights in `derivpath` = ", derivpath)
     }
+    derivpath <- normalizePath(derivpath)
 
     deriv_2d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_2d_",
                               out_coords, ifelse(cycl, "_cycl", ""), ".nc")
@@ -3042,13 +3060,11 @@ if (fesom_version == "fesom" &&
     out_mode == "fldmean") {
  
     if (!exists("derivpath")) { # use default
-        derivpath <- paste0(rfesompath, "/mesh/", fesom_version, "/", meshid, "/derivatives")
+        derivpath <- paste0(workpath, "/mesh/", fesom_version, "/", meshid, "/derivatives")
         message(indent, "No 'derivpath' is given for saving result of horizontal derivative/cluster ",
                 "area and resolution matrix calculation. ", 
-                "Use default `rfesompath/mesh/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
+                "Use default `workpath/mesh/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
                 " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
-    } else {
-        derivpath <- suppressWarnings(normalizePath(derivpath))
     }
     if (file.access(derivpath, mode=0) == -1) { # mode=0: existing, -1: no success
         message(paste0(indent, "Try to create 'derivpath' = ", derivpath, " ... "), appendLF=F)
@@ -3059,12 +3075,11 @@ if (fesom_version == "fesom" &&
         } else {
             message("done.")
         }
+    # no writing rights to derivpath
     } else if (file.access(derivpath, mode=2) == -1) { # mode=2: writing, -1: no success
-        derivpath <- paste0(rfesompath, "/mesh/", fesom_version, "/", meshid, "/derivatives")
-        message(indent, "You have no writing rights in 'derivpath' = ", derivpath,
-                ". Use default `rfesompath/mesh/`fesom_version`/`meshid`/derivatives = \"", derivpath, "\"",
-                " (you can set `derivpath <- \"/path/with/writing/rights\"` in the runscript)")
+        stop("You have no writing rights in `derivpath` = ", derivpath)
     }
+    derivpath <- normalizePath(derivpath)
     
     deriv_3d_fname <-  paste0(derivpath, "/mesh_", meshid, "_deriv_3d_",
                               out_coords, ifelse(cycl, "_cycl", ""), ".nc")
@@ -3166,13 +3181,6 @@ if (any(regular_transient_out, regular_ltm_out)) {
             }
         } # if global_mesh
 
-        if (file.access(interppath, mode=2) == -1) { # mode=2: writing, -1: no success
-            message("You have no writing rights in 'interppath' = ", interppath, " ...")
-            interppath <- paste0(postpath, "/meshes/", fesom_version, "/", meshid, "/interp")
-            message("  Use default `postpath`/meshes/`fesom_version`/`meshid`/interp = ", interppath,
-                    " (you can set `interppath <- \"/path/with/writing/rights\"` in the runscript)")
-        }
-        dir.create(interppath, recursive=T, showWarnings=F)
         source(paste0(subroutinepath, "/sub_calc_load_regular_IMAT.r"))
         message(indent, "Run sub_calc_load_regular_IMAT.r ...")
         sub_calc_load_regular_IMAT(regular_dx=regular_dx, regular_dy=regular_dy,
@@ -4965,17 +4973,18 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 } else if (nvars > 0) { # read data from nc files
     if (verbose > 0) {
         message("5) Read variable", ifelse(nvars > 1, "s", ""), " \"", 
-                paste0(varname_nc, collapse="\",\""), "\" (= `varname_nc`) for `varname` = \"", 
-                varname, "\" (`longname` = \"", longname, "\") ...")
+                paste0(varname_nc, collapse="\",\""), "\" (= `varname_nc`) for\n",
+                "     `varname` = \"", varname, "\" (`longname` = \"", longname, "\")")
         if (!all_recs) { # decided by user
-            message("   `all_recs`=F --> read one time record after another per file")
+            message("     `all_recs`=F --> read one time record after another per file")
         } else if (all_recs && !rec_tag) {
-            message("   `all_recs`=T but needed time records to read are not consecutive ",
+            message("     `all_recs`=T but needed time records to read are not consecutive ",
                     "--> read one time record after another per file")
         } else if (all_recs && rec_tag) {
-            message("   `all_recs`=T --> read all time records per file at once")
+            message("     `all_recs`=T --> read all time records per file at once")
         }
-    }
+        message("     on machine ", Sys.info()["nodename"], " ...") 
+    } # verbose
 
     ## Data read loop preparation
     # Note: built-in functions such as mean() or apply()
@@ -5008,10 +5017,14 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 message(indent, "   `frequency_post` = \"", frequency_post, "\"")
                 if (cdo_temporalmean != "") {
                     message(indent, "   `cdo_temporalmean` = \"", cdo_temporalmean, "\"")
-                    fout <- paste0(postpath, "/", basename(fnames_unique[vari]), "_", frequency_post, "_", Sys.getpid())
+                    fout <- paste0(postpath, "/", basename(fnames_unique[vari]), "_", frequency_post, "_pid", 
+                                   Sys.getpid(), "_", format(Sys.time(), "%Y-%m-%d_%H%M%S"))
+                    if (file.exists(fout)) stop("tmp file ", fout, " already exists. this should not happen")
                     cmd <- paste0(cdo_temporalmean, " ", fnames_unique[vari], " ", fout)
                     message(indent, "   run `", cmd, "` ...")
-                    system(cmd)
+                    check <- system(cmd)
+                    if (check != 0) stop("cdo cmd failed")
+                    if (!file.exists(fout)) stop("cdo result ", fout, " does not exist but should")
                     # replace original file input by temporal time-reduced cdo output
                     inds <- which(fnames == fnames_unique[vari])
                     fnames[inds] <- fout
@@ -5117,8 +5130,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                 if (verbose > 1) {
                     message(indent, "get \"", varname_nc[vari], "\" from ", fnames[vari], "\n",
-                            indent, "   start = ", paste(paste0(names(start), ": ", start), collapse=", "), 
-                            "; count = ", paste(paste0(names(count), ": ", count), collapse=", "))
+                            indent, "   start = (", paste(paste0(names(start), ": ", start), collapse=", "), 
+                            "); count = (", paste(paste0(names(count), ": ", count), collapse=", "), ")")
                 }
 
                 ## read fesom data
@@ -5144,7 +5157,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 # length of the raw_data's time dimension equals 3.
             
                 # special: add 42 to doc
-                if (T && varname_nc[vari] == "bgc12") {
+                if (F && varname_nc[vari] == "bgc12") {
                     message("special: add 42 to bgc12 = DOC ...")
                     raw_data <- raw_data + 42
                 }
@@ -7361,14 +7374,29 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                             varname_nc[inds[2]],
                             " back to geographic coordinates ... ")
                 }
-                rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod_x, nod_y,
-                                                 data_node_ltm[inds[1],,,],
-                                                 data_node_ltm[inds[2],,,], 1)
-                data_node_ltm[inds[1],,1,1] <- rotated_coords$u
-                data_node_ltm[inds[2],,1,1] <- rotated_coords$v
+                for (k in seq_along(dim(data_node_ltm)[3])) { # depth
+                    if (k == 1) message(indent, appendLF=F)
+                    message(" ", k, appendLF=F)
+                    if (k == dim(data_node_ltm)[3]) message()
+                    if (all(dim_tag[inds] == "2D") || 
+                        all(dim_tag[inds] == "3D" & levelwise[inds])) {
+                        rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod2d_x, nod2d_y,
+                                                         data_node_ltm[inds[1],,,],
+                                                         data_node_ltm[inds[2],,,], 1)
+                    } else if (all(dim_tag[inds] == "3D" & !levelwise[inds])) {
+                        # ndepths=1 --> k is always 1
+                        rotated_coords <- vec_rotate_r2g(Ealpha, Ebeta, Egamma, nod3d_x, nod3d_y,
+                                                         data_node_ltm[inds[1],,,],
+                                                         data_node_ltm[inds[2],,,], 1)
+                    } else {
+                        stop("this should not happen")
+                    }
+                    data_node_ltm[inds[1],,k,] <- rotated_coords$u
+                    data_node_ltm[inds[2],,k,] <- rotated_coords$v
+                } # for k in depth 
                 rm(rotated_coords)
-            }
-        }
+            } # for i
+        } # if rotate
 
         ## Preparations1 before calculations
         if (verbose > 1) {
@@ -8712,7 +8740,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     zlim <- range(z, na.rm=T)
                 }
                 if (verbose > 1) {
-                    message(indent, "   min/max of z = ", paste0(zlim, collapse="/"), " ", units_plot)
+                    message(indent, "   min/max of z = ", paste0(zlim, collapse="/"))
                 }
             } # if multfac_plot != 1
 
@@ -8819,8 +8847,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
             #source("~/scripts/r/mylevels.r")
 
             if (verbose > 1) {
-                message(paste0(indent, "   min/max of color levels = ",
-                               paste0(range(ip$levels), collapse="/"), " ", units_plot))
+                message(indent, "   min/max of color levels = ", paste(range(ip$levels), collapse="/"))
             }
             
             ## Add fesom data to plot
@@ -9247,14 +9274,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 cex.axis <- 1
             }
             if (!horizontal) {
-                mtext(side=4, line=7,
-                      var_label_plot, cex=cex.axis)
                 legend.mar <- par("mar")[4] + 0.1
+                mtext(side=4, line=7, var_label, cex=cex.axis)
             } else {
                 line_colorbar_text <- 7.5
                 legend.mar <- par("mar")[1] - 5
-                mtext(side=1, line=line_colorbar_text,
-                      var_label_plot, cex=cex.axis)
+                mtext(side=1, line=line_colorbar_text, var_label, cex=cex.axis)
             }
 
 
