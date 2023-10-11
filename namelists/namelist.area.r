@@ -415,6 +415,9 @@
             } else if (area == "SH") {
                 map_geogr_lim_lon <- c(-180, 180) 
                 map_geogr_lim_lat <- c(-90, 0) 
+            } else if (area == "NH_66") {
+                map_geogr_lim_lon <- c(-180, 180)
+                map_geogr_lim_lat <- c(66, 90)
             } else if (area == "mldWeddel") {
                 map_geogr_lim_lon <- c(-62.05, -6.45)
                 map_geogr_lim_lat <- c(-80, -63)
@@ -670,10 +673,6 @@
             geogr_lims <- T
             proj_lims <- F
             projection <- "rectangular"
-            
-            # default
-            moc_mask_file <- paste0(postmeshpath, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
-            moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
         
         } # which non-default area selection
         

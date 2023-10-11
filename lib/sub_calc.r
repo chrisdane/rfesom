@@ -165,11 +165,11 @@ sub_calc <- function(data_node) {
         if (any(is.na(varinds))) stop("Could not find data.")
        
         if (verbose > 1) {
-            message(paste0(indent, "Calc ",
+            message(indent, "Calc ",
                          vars[1], " times ", vars[3], " = ",
                          vars[varinds[1]], "*", vars[varinds[3]], ", ",
                          vars[2], " times ", vars[3], " = ",
-                         vars[varinds[2]], "*", vars[varinds[3]], " ..."))
+                         vars[varinds[2]], "*", vars[varinds[3]], " ...")
         }
 
         utmp <- data_node[varinds[1],,,]*data_node[varinds[3],,,]
@@ -3106,20 +3106,19 @@ sub_calc <- function(data_node) {
                                         char=pb_char, width=pb_width,
                                         indent=paste0("   ", indent)) 
 
-                for (i in 1:elem2d_n) {
+                for (i in seq_len(elem2d_n)) {
                 #for (i in c(1, elem2d_n)) {
                     elnodes <- elem2d[,i]
                     m <- moc_mask[elnodes] # 1=inside, 0=outside
                     
-                    if (!all(m == 0)) { # element is in area for moc calculation
+                    if (any(m == 1)) { # element is in area for moc calculation
                         #stop("asd")
                         #x <- mean(xcsur[elnodes]) # not needed
                         y <- mean(ycsur[elnodes])
                         vol <- voltriangle[i] # area of i-th 2d-element in `mesh_dist_unit`^2 (default: m^2)
                         yind <- which(moc_reg_lat_global > y)[1] # first index within latitude bin from south
-                        if (is.na(yind)) {
-                            # find closest
-                            yind <- which(abs(moc_reg_lat_global - y)==min(abs(moc_reg_lat_global - y)))
+                        if (is.na(yind)) { # find closest
+                            yind <- which(abs(moc_reg_lat_global - y) == min(abs(moc_reg_lat_global - y)))
                         }
                         #for (di in 1:aux3d_n) { # calculate in aux3d space
                         for (di in 1:ndepths) {
@@ -3130,7 +3129,7 @@ sub_calc <- function(data_node) {
                                     vel <- data_node[,elnode3,,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
                                     m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
                                     # mean over 3 3d-nodes; keep time dim4
-                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3 --> Sv
+                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3/s --> Sv
                                     if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
                                 } # if element has no -999 entries in aux3d
                             } else if (levelwise == T) {
@@ -3139,7 +3138,7 @@ sub_calc <- function(data_node) {
                                     vel <- data_node[,elnodes,di,] # dim(vel)=c(nvar=1,nodes=3,depth=1,nrecspf)
                                     m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
                                     # mean over 3 3d-nodes; keep time dim4
-                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3 --> Sv 
+                                    moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3/s --> Sv 
                                     if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
                                 }
                             }
@@ -3353,6 +3352,22 @@ sub_calc <- function(data_node) {
         dimnames(data_node)[[1]] <- list(varname)
 
     } # NPPtot
+
+    if (varname == "export_detC_100m") {
+
+        # data is already interpolated to 100 m depths
+        if (ndepths != 1) stop("rerun with `depths <- 100`")
+        if (depths != 100) stop("rerun with `depths <- 100`")
+
+        # sinking velocity detritus as a function of depth
+        vdet_m_day <- 20 + 0.0288*depths # m day-1 at 100 m depth
+
+        # carbon export by detritus 
+        if (verbose > 1) message(indent, "Calc ", varname, " = ", varname_nc, "(z=", depths, " m) * vdet(z=", depths, " m)\n",
+                                 indent, "   with vdet = 20 m day-1 + 0.0288 day-1 * ", depths, " m = ", vdet_m_day, " m day-1 ...")
+        data_node <- data_node * vdet_m_day # mmolC m-3 * m day-1 = mmolC m-2 day-1
+
+    } # export_detC_100m
 
     # overwrite global data_node with the result data_node from within this function
     assign('data_node', data_node, envir=.GlobalEnv)

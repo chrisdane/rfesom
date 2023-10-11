@@ -119,44 +119,61 @@ if (F) { # lackermann
 } else if (F) { # awi-cm-1-1-mr
     workpath <- "/work/ab0246/a270073"
     model <- "fesom"
-    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Oday/omldamax/gn/v20181218"
-    #fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/mlotst/gn/v20181218"
-    #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/uo/gn/v20181218",
-                     "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/vo/gn/v20181218")
-    fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
-                   "vo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
-    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Omon/mlotst/gn/v20181218"
-    #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Oday/omldamax/gn/v20181218"
-    #fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/mlotst/gn/v20181218"
-    #fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    #datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/uo/gn/v20181218",
-    #                 "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/vo/gn/v20181218")
-    #fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
-    #               "vo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
-    postprefix <- "awi-cm-1-1-mr_piControl"
+    correct_dates <- F # cmorized data does not need date correction
+    if (F) {
+        datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Oday/omldamax/gn/v20181218"
+        fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
+    } else if (F) {
+        datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/mlotst/gn/v20181218"
+        fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    } else if (F) {
+        datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/uo/gn/v20181218",
+                         "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Omon/vo/gn/v20181218")
+        fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
+                       "vo_Omon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
+    } else if (F) {
+        datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Omon/mlotst/gn/v20181218"
+        fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    } else if (F) {
+        datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Oday/omldamax/gn/v20181218"
+        fpatterns <- "omldamax_Oday_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
+    } else if (F) {
+        datainpaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/mlotst/gn/v20181218"
+        fpatterns <- "mlotst_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    } else if (F) {
+        datainpaths <- c("/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/uo/gn/v20181218",
+                         "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Omon/vo/gn/v20181218")
+        fpatterns <- c("uo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc",
+                       "vo_Omon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc")
+    } else if (T) {
+        datainpaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Omon/tos/gn/v20181218"
+        fpatterns <- "tos_Omon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    }
+    #postprefix <- "awi-cm-1-1-mr_piControl"
     #postprefix <- "awi-cm-1-1-mr_piControl_monmax"
-    #postprefix <- "awi-cm-1-1-mr_historical"
+    postprefix <- "awi-cm-1-1-mr_historical"
     #postprefix <- "awi-cm-1-1-mr_1pctCO2_monmax"
     #postprefix <- "awi-cm-1-1-mr_1pctCO2"
     meshid <- "glob"
     meshpath <- paste0("/pool/data/AWICM/FESOM1/MESHES/", meshid)
     #years <- 2710:2712
-    years <- 2710:2730 # awi-cm-1-1-mr piControl-2710:2730 = deck-1910:1930
+    #years <- 2710:2730 # awi-cm-1-1-mr piControl-2710:2730 = deck-1910:1930
+    years <- 1850
     #years <- 1910:1912
     #years <- 1910:1930 # tcr mean
     #season <- "FMA" # "SON" "FMA"
+    #frequency_post <- "monmax" # calc monthly means before any other stuff
+    varname <- "tos"
     #varname <- "mlotst" # MLD by sigma_theta
     #varname <- "omldamax" # MLD by mixing scheme
-    #frequency_post <- "monmax" # calc monthly means before any other stuff
     #varnme <- "siextentn"
     #varname <- "uo"
-    varname <- "hvel"
-    depths <- c(0, 200)
-    regular_ltm_out <- T
+    #varname <- "hvel"
+    #depths <- c(0, 200)
+    regular_transient_out <- F
+    regular_ltm_out <- F
+    transient_out <- T
+    out_mode <- "fldmean"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl
     workpath <- "/work/ba1103/a270073"
@@ -225,7 +242,8 @@ if (F) { # lackermann
     model <- "recom"
     datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/", model)
     #datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/", model)
-    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    #fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
     #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
     #postprefix <- "awi-esm-1-1-lr_kh800_historical"
     postprefix <- "awi-esm-1-1-lr_kh800_historical2"
@@ -234,7 +252,8 @@ if (F) { # lackermann
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #cycl <- F
     #years <- 1850:1851
-    years <- 1850:2014
+    #years <- 1850:2014
+    years <- 1970:2014
     #years <- 1981:2014
     #years <- 1982:2014
     #years <- 1995:2014
@@ -247,7 +266,7 @@ if (F) { # lackermann
     #varname <- "CO2f"
     #varname <- "pCO2s"
     #varname <- "dpCO2s"
-    #varname <- "bgc02" # dic
+    varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
     #varname <- "bgc06" # phytoplankton chlorophyll
     #varname <- "bgc12" # doc
@@ -255,96 +274,85 @@ if (F) { # lackermann
     #varname <- "bgc16" # silicate in diatoms
     #varname <- "bgc17" # silicate in detritus
     #varname <- "bgc18" # dissolved silicic acid
-    varname <- "benSi" # benthic silicate
+    #varname <- "benSi" # benthic silicate
     #varname <- "bgc22" # oxygen
     #varname <- "diags3d01" # npp by nanophytoplankton
     #varname <- "diags3d02" # npp by diatoms
+    #varname <- "export_detC_100m"
     #frequency <- "monthly"
     #frequency_post <- "yearmean"
     #frequency_post <- "monmean"
     regular_ltm_out <- F
     transient_out <- T
     regular_transient_out <- F
-    #out_mode <- "select"
-    out_mode <- "fldint"
+    out_mode <- "select"
+    #out_mode <- "fldint"
     #out_mode <- "fldmean"
     #out_mode <- "depth"
     #out_mode <- "areadepth"
-    #integrate_depth <- T
+    integrate_depth <- T
     #depths <- 0
     #depths <- 100
-    #depths <- c(0, "max")
+    depths <- c(0, "max")
     #area <- "g19_NH-HL"
     #area <- "g19_NH-ST"
     #area <- "g19_EQU"
     #area <- "g19_SH-ST"
     #area <- "g19_SH-HL"
     #area <- "nino34"
+    #area <- "NH_66"
 
-} else if (F) { # awi-esm-1-1-lr_kh800 ssp126
+} else if (F) { # awi-esm-1-1-lr_kh800 ssp126 ssp245 ssp534-over ssp585
     workpath <- "/work/ba1103/a270073"
-    model <- "fesom"
-    #model <- "recom"
-    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/recom"
-    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
-    postprefix <- "awi-esm-1-1-lr_kh800_ssp126"
+    #model <- "fesom"
+    model <- "recom"
+    if (T) { # ssp126
+        datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_ssp126"
+    } else if (F) { # ssp245
+        datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp245/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_ssp245"
+    } else if (F) { # ssp534-over
+        datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp534-over/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_ssp534-over"
+    } else if (F) { # ssp585
+        datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_ssp585"
+    }
+    fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     years <- 2015:2019
     #years <- 2015:2100
-    varname <- "tos"
+    #varname <- "tos"
     #varname <- "mlotst"
     #varname <- "omldamax"
     #varname <- "pCO2s"
     #varname <- "dpCO2s"
-    #varname <- "bgc02" # dic
+    varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
     #varname <- "bgc06"
     #varname <- "bgc15"
-    frequency_post <- "monmean"
+    #varname <- "NPPtot" # total npp = diags3d01 + diags3d02
+    #varname <- "export_detC_100m"
+    #frequency_post <- "monmean"
     regular_ltm_out <- F
-    transient_out <- F
-    regular_transient_out <- T
+    transient_out <- T
+    regular_transient_out <- F
     out_mode <- "select"
     #out_mode <- "fldmean"
+    #out_mode <- "fldint"
+    integreate_depth <- T
     #depths <- 0
-    #depths <- c(0, "max")
+    #depths <- 100
+    depths <- c(0, "max")
     #area <- "g19_NH-HL"
     #area <- "g19_NH-ST"
     #area <- "g19_EQU"
     #area <- "g19_SH-ST"
     #area <- "g19_SH-HL"
     #area <- "nino34"
-
-} else if (F) { # awi-esm-1-1-lr_kh800 ssp585
-    workpath <- "/work/ba1103/a270073"
-    model <- "fesom"
-    #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585b/outdata/fesom"
-    #postprefix <- "awi-esm-1-1-lr_kh800_ssp585b"
-    datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/fesom"
-    postprefix <- "awi-esm-1-1-lr_kh800_ssp585"
-    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
-    meshid <- "core"
-    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
-    years <- 2015:2016
-    #years <- 2015:2019
-    #years <- 2081:2100
-    #varname <- "tos"
-    varname <- "thetao"
-    #varname <- "diags3d01" # npp by nanophytoplankton
-    #varname <- "diags3d02" # npp by diatoms
-    #frequency_post <- "monmean"
-    transient_out <- T
-    regular_ltm_out <- F
-    regular_transient_out <- F
-    #out_mode <- "select"
-    #out_mode <- "fldmean"
-    #out_mode <- "fldint"
-    out_mode <- "depth"
-    #out_mode <- "areadepth"
-    integrate_depth <- F
-    depths <- c(0, "max")
+    #area <- "NH_66"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl_LUtrans1850
     workpath <- "/work/ba1103/a270073"
@@ -393,11 +401,13 @@ if (F) { # lackermann
     #out_mode <- "fldmean"
     #out_mode <- "fldint"
 
-} else if (T) { # awi-esm-1-1-lr_kh800 esm-piControl
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
     workpath <- "/work/ba1103/a270073"
     #model <- "fesom"
     model <- "recom"
-    fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
+    #fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
+    fpatterns <- "<varname_nc>_fesom_<YYYY><MM>01.nc"
+    #fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
     if (F) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685_1m/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_2685_1m"
@@ -420,21 +430,18 @@ if (F) { # lackermann
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest"
         fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
-    } else if (T) {
+    } else if (F) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2"
         #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/neg_co2_3879_monthly_restart/outdata/fesom"
-        #fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
         #datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_start3870/outdata/", model)
         #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_start3870"
-        #fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
     } else if (F) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl2"
-    } else if (F) {
+    } else if (T) {
         datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_nobio_spinup"
-        #fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
     }
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
@@ -447,37 +454,48 @@ if (F) { # lackermann
     #years <- 3151:3168
     #years <- 3151:3207
     #years <- 3151:3227
-    years <- 3208:3323
-    #years <- 3208:3221
+    #years <- 3208
+    #years <- 3208:3210
+    #years <- 3208:3264 # part 1/2 nobio stupid monthly runs
+    #years <- 3208:3265 
     #years <- 3208:3309
     #years <- 3208:3323
+    #years <- 3208:3377
+    #years <- 3208:3393
     #years <- 3208:3590
-    #years <- 3208:3878 # part 1/2 stupid monthly runs of year 3879
+    #years <- 3208:3878 # part 1/2 esm-piControl_wout_talk_rest2 stupid monthly runs of year 3879
     #years <- 3208:3945
     #years <- 3222:3265
+    years <- 3266:3945 # part 2/2 nobio stupid monthly runs
     #years <- 3310:3323
     #years <- 3496:3497
     #years <- 3498:3878
+    #years <- 3517:3536
+    #years <- 3537:3945
     #years <- 3591:3800
+    #years <- 3591:3945
     #years <- 3801:3850
+    #years <- 3851:3945
     #years <- 3871:3878
-    #years <- 3877:3881
+    #years <- 3877:3881 # test stupid annual (3877, 3878), monthly (3879), annual (3880, 3881) chunks
     #years <- 3879:3945
     #years <- 3880:3945 # part 2/2 stupid monthly runs of year 3879
+    #years <- 3926:3945
     #varname <- "tos"
     #varname <- "sos"
     #varname <- "thetao"
     #varname <- "siarean"
+    #varname <- "MOCw"
     #varname <- "CO2f"
     #varname <- "pCO2s"
     #varname <- "dpCO2s"
     #varname <- "pCO2a"
-    #varname <- "bgc02" # dic
+    varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
     #varname <- "bgc05" # phyc intracellular carbon concentration in small phytoplankton
     #varname <- "bgc08" # detc carbon concentration in detritus
     #varname <- "bgc10" # carbon concentration in heterotrophs
-    varname <- "bgc12" # doc
+    #varname <- "bgc12" # doc
     #varname <- "bgc14" # diac intracellular carbon concentration in diatoms
     #varname <- "bgc16" # silicate diatom
     #varname <- "bgc17" # silicate det
@@ -498,13 +516,15 @@ if (F) { # lackermann
     regular_transient_out <- F
     #regular_dx <- regular_dy <- 1/4
     #out_mode <- "select"
-    out_mode <- "fldint"
+    #out_mode <- "fldint"
     #out_mode <- "fldmean"
-    #out_mode <- "depth"
+    out_mode <- "depth"
     #out_mode <- "depthint"
+    #out_mode <- "moc_depth"
+    #moc_mask_file <- "/work/ba1103/a270073/mesh/fesom/core/moc_mask_area_mocNA_mesh_core.txt"
     #depths <- 0
     depths <- c(0, "max")
-    integrate_depth <- T
+    #integrate_depth <- T
     #area <- "NH"
     #area <- "SH"
     #area <- "g19_NH-HL"
@@ -512,10 +532,74 @@ if (F) { # lackermann
     #area <- "g19_EQU"
     #area <- "g19_SH-ST"
     #area <- "g19_SH-HL"
+    #area <- "mocNA"
     exclude_sic <- F
     sic_varname <- "sic"
     sic_datainpath <- paste0(datainpaths[1], "/../fesom")
     sic_fpattern <- "sic_fesom_<YYYY>0101.nc"
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-hist
+    workpath <- "/work/ba1103/a270073"
+    #model <- "fesom"
+    model <- "recom"
+    #fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
+    fpatterns <- "<varname_nc>_fesom_<YYYY><MM>01.nc"
+    #fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
+    datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist/outdata/", model)
+    postprefix <- "awi-esm-1-1-lr_kh800_esm-hist"
+    meshid <- "core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
+    #years <- 2014
+    years <- 1970:2014
+    #varname <- "NPPtot" # total npp = diags3d01 + diags3d02
+    varname <- "export_detC_100m"
+    transient_out <- T
+    regular_ltm_out <- F
+    #out_mode <- "select"
+    out_mode <- "fldint"
+    #depths <- 0
+    depths <- 100
+    #depths <- c(0, "max")
+    #integrate_depth <- T
+    area <- "NH_66"
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp126 esm-ssp245 esm-ssp370 esm-ssp534os esm-ssp585
+    workpath <- "/work/ba1103/a270073"
+    #model <- "fesom"
+    model <- "recom"
+    if (F) { # esm-ssp126
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp126/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-ssp126"
+    } else if (F) { # esm-ssp245
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-ssp245"
+    } else if (F) { # esm-ssp370
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp370/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-ssp370"
+    } else if (F) { # esm-ssp534os
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp534os/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-ssp534os"
+    } else if (T) { # esm-ssp585
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_esm-ssp585"
+    }
+    #fpatterns <- "<varname>_fesom_<YYYY><MM>01.nc"
+    fpatterns <- "<varname_nc>_fesom_<YYYY><MM>01.nc"
+    #fpatterns <- rep("<varname_nc>_fesom_<YYYY><MM>01.nc", t=2)
+    meshid <- "core"
+    meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
+    years <- 2015:2100
+    #varname <- "NPPtot" # total npp = diags3d01 + diags3d02
+    varname <- "export_detC_100m"
+    transient_out <- T
+    regular_ltm_out <- F
+    #out_mode <- "select"
+    out_mode <- "fldint"
+    #depths <- 0
+    depths <- 100
+    #depths <- c(0, "max")
+    #integrate_depth <- T
+    area <- "NH_66"
 
 } else if (F) { # mhw composite results
     workpath <- "/work/ba1103/a270073"
@@ -688,7 +772,7 @@ if (F) { # lackermann
     #out_mode <- "fldint"
     #depths <- 2.5
 
-} else if (F) { # anne moree
+} else if (T) { # anne moree
     workpath <- "/work/ab1095/a270073"
     if (T) { # piControl2
         datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl2/outdata/fesom"
@@ -700,7 +784,9 @@ if (F) { # lackermann
         #years <- 1880:1945
         #years <- 1880:1970
         #years <- 1946:1970
-        years <- 1961:1970
+        #years <- 1948:1967
+        years <- 1951:1970
+        #years <- 1961:1970
     } else if (F) { # historical3
         datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_historical3"
@@ -714,13 +800,16 @@ if (F) { # lackermann
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #varname <- "tos"
+    varname <- "thetao"
+    #varname <- "so"
     #varname <- "sos"
-    #varname <- "thetao"
-    varname <- "virtual_salt"
+    #varname <- "virtual_salt"
     #varname <- "wnet"
+    #varname <- "runoff"
     #depths <- 100
     #depths <- 580
-    #frequency_post <- "monmean"
+    depths <- 2000
+    frequency_post <- "monmean"
     #frequency_post <- "yearmean"
     regular_ltm_out <- T
     transient_out <- F
@@ -733,40 +822,62 @@ if (F) { # lackermann
 
 } else if (F) { # sofia
     workpath <- "/work/ab1095/a270073"
-    if (T) { # 0.1sv
-        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/ant_01sv/outdata/fesom"
+    if (F) { # 0.1sv = landice
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/ant_01sv/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_ant_01sv"
-    } else if (F) { # 0.1sv no corr
-        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/ant_01sv_nocorr/outdata/fesom"
+    } else if (F) { # 0.1sv no corr = landice no corr
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/ant_01sv_nocorr/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_ant_01sv_nocorr"
-    } else if (F) { # 0.1sv paleo
-        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/antwater/outdata/fesom"
+    } else if (F) { # 0.1sv paleo 
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/antwater/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_antwater"
     } else if (F) { # 1sv paleo
-        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/antwater_1sv/outdata/fesom"
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/antwater_1sv/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_antwater_1sv"
     } else if (F) { # 10sv paleo
-        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/antwater_10sv/outdata/fesom"
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/antwater_10sv/outdata/fesom"
         postprefix <- "awi-esm-1-1-lr_kh800_antwater_10sv"
+    } else if (F) { # ptr
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/wrong_restart/ptr_01/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_ptr_01"
+    } else if (T) { # fwf
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/fwf_01/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_fwf_01"
+    } else if (F) { # runoff
+        datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/sofia/runoff_01/outdata/fesom"
+        postprefix <- "awi-esm-1-1-lr_kh800_runoff_01"
     }
     fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #years <- 1870:1879
+    #years <- 1870:1899
     #years <- 1870:1917
+    #years <- 1870:1967
     #years <- 1870:1970
-    years <- 1880:1917
+    #years <- 1880:1917
+    #years <- 1880:1967
+    #years <- 1900:1967
     #years <- 1880:1970
+    #years <- 1918:1970
+    #years <- 1948:1967
+    years <- 1951:1970
     #years <- 1961:1970
+    #years <- 1968:1970
+    varname <- "thetao"
+    #varname <- "so"
     #varname <- "sos"
+    #varname <- "runoff"
     #varname <- "virtual_salt"
-    varname <- "wnet"
-    regular_ltm_out <- F
-    transient_out <- T
-    #frequency_post <- "monmean" # calc monthly means before any other stuff
-    #out_mode <- "select"
+    #varname <- "virtual_salt_fwf"
+    #varname <- "wnet"
+    depths <- 2000
+    regular_ltm_out <- T
+    transient_out <- F
+    frequency_post <- "monmean" # calc monthly means before any other stuff
+    out_mode <- "select"
     #out_mode <- "fldmean"
-    out_mode <- "fldint"
+    #out_mode <- "fldint"
     #area <- "S60"
 
 } else if (F) { # jstreffing

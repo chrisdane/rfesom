@@ -361,9 +361,10 @@ if (transient_out && any(out_mode == c("moc_mean", "moc_depth"))) {
     regular_transient_out <- F
     regular_ltm_out <- F
 }
-if (regexpr("MOC", varname) != -1) plot_map <- F 
-if (moc_ltm_out && regexpr("MOC", varname) == -1) {
-    moc_ltm_out <- F # calc MOC only when varname is MOCx
+if (regexpr("^MOC", varname) == 1) { # if MOC
+    plot_map <- F
+} else {
+    if (moc_ltm_out) moc_ltm_out <- F
 }
 #if (transient_out && any(out_mode == c("csec_mean", "csec_depth")) &&
 #    varname != "transport") {
@@ -840,7 +841,7 @@ special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>",
 if (nvars > 0) {
     if (fuser_tag) {
         if (verbose > 0) message(indent, "Input file names are given by user via `fnames_user`:")
-        ht(fnames_user)
+        ht(fnames_user, n=25)
         files_list <- vector("list", l=nvars)
         names(files_list) <- varname_nc
         files_list[[1]] <- list(list(files=fnames_user))
@@ -949,7 +950,7 @@ if (nvars > 0) {
             # show found files
             if (verbose > 0) {
                 message("\nfound ", length(files), " file", ifelse(length(files) > 1, "s", ""), ":")
-                ht(t(df))
+                ht(df, n=25)
             }
             
             # identify years/months/etc. of found files based on <YYYY*>, <MM*>, 
@@ -982,7 +983,7 @@ if (nvars > 0) {
                     } else {
                         message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pattern_list), 
                                 " times and the values differ from each other:")
-                        for (patj in seq_along(pattern_list)) ht(pattern_list[[patj]])
+                        for (patj in seq_along(pattern_list)) ht(pattern_list[[patj]], n=25, transpose=T)
                         stop("dont know how to interpret this. maybe changing to one of \"", 
                              paste(special_patterns, collapse="\", \""), "\" helps")
                     }
@@ -1005,7 +1006,7 @@ if (nvars > 0) {
                         dates <- strsplit(dates, " ")[[1]]
                         if (verbose) {
                             message("\n", length(dates), " cdo dates of this file:")
-                            ht(dates)
+                            ht(dates, n=25, transpose=T)
                         }
                         years_filenames[[fi]] <- substr(dates, 1, 4)
                     }
@@ -1018,7 +1019,7 @@ if (nvars > 0) {
             if (verbose > 0) {
                 message("\nfound years months etc. based on ", length(files), " file", 
                         ifelse(length(files) > 1, "s", ""), ":")
-                ht(t(df))
+                ht(df, n=25)
             }
             
             # special treatment: if only YYYY_from and YYYY_to were provided, but not YYYY, derive `years_filenames` now
@@ -1035,7 +1036,7 @@ if (nvars > 0) {
                     stop("this is not implemented yet")
                 }
                 message("derived ", length(years_filenames), " years:")
-                ht(years_filenames)
+                ht(years_filenames, n=25, transpose=T)
             } # if years_filenames does not exist
             
             # todo: same as above with months_filenames
@@ -1043,10 +1044,10 @@ if (nvars > 0) {
             # verbose
             if (verbose > 0) {
                 message("\nfinal ", length(years_filenames), " `years_filenames`:")
-                ht(years_filenames)
+                ht(years_filenames, n=25, transpose=T)
                 if (grepl("<MM>", fpatterns[i])) {
                     message("\nfinal ", length(months_filenames), " `months_filenames`:")
-                    ht(months_filenames)
+                    ht(months_filenames, n=25, transpose=T)
                 }
             }
         
@@ -1099,7 +1100,7 @@ if (nvars > 0) {
                     if (verbose > 0) {
                         message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                                 " remaining:")
-                        ht(t(df))
+                        ht(df, n=25)
                     } 
             
                 # case b) several years per file
@@ -1140,7 +1141,7 @@ if (nvars > 0) {
                         if (verbose > 0) {
                             message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                                     " remaining:")
-                            ht(t(df))
+                            ht(df, n=25)
                         } 
                     } # case b1 or case b2
                     cdoselyear <- paste0("-selyear,", years[1], "/", years[length(years)]) # for case b1 and b2
@@ -1573,9 +1574,8 @@ if (nvars > 0) {
                     
                 # get dt in sec and check for time prob 3
                 if (fi == 1) cdo_shifttime <- "" # default: apply no shifttime
-                if (fesom_version == "fesom" && timevalue_strat == "new") { # newer fesom1 data has wrong dates (see time prob 3 above)
-                    # check if output frequency is monthly or daily if not provided
-                    if (fi == 1) {
+                if (correct_dates && fesom_version == "fesom" && timevalue_strat == "new") { # newer fesom1 data has wrong dates (see time prob 3 above)
+                    if (fi == 1) { # get dt once
                         message(indent, "output is from newer fesom1 --> get dt to shift time by -dt ...")
                         if (!exists("frequency") ||
                             (exists("frequency") && class(frequency) == "function")) { # frequency not provided 
@@ -1655,7 +1655,8 @@ if (nvars > 0) {
                                 paste(tail(dates), collapse=", "), "\n",
                                 indent, "   for all files ...")
                     }
-                } # if (fesom_version == "fesom" && timevalue_strat == "new") { # monthly and daily new fesom1 data has wrong dates (see time prob 3 above) 
+                } # if correct_dates && fesom_version == "fesom" && timevalue_strat == "new"
+                  # monthly and daily new fesom1 data has wrong dates (see time prob 3 above) 
               
                 # save (potentially corrected) dates
                 files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$dates <- dates
@@ -1768,7 +1769,7 @@ if (nvars > 0) {
                         # e.g. if more than one year saved per file and `recs` define only the months of the first year
                         month_inds_out_of_recs <- which(!(wanted_months_in_data %in% recs))
                         message(indent, "given `recs` (n=", length(recs), "):")
-                        ht(recs)
+                        ht(recs, n=25, transpose=T)
                         message(indent, "these recs indicate season \"", seasoni, "\" is wanted. however, ",
                                 "the given `recs` cover only a subset of all available \"", seasoni, 
                                 "\" inds of the nc file.\n", 
@@ -1783,7 +1784,7 @@ if (nvars > 0) {
                     } else {
                         if (verbose > 0 && fi == 1) {
                             message(indent, indent, "based on wanted `recs` (n=", length(recs), "):")
-                            ht(recs)
+                            ht(recs, n=25, transpose=T)
                             message(indent, indent, "`season` = \"", seasoni, "\"")
                         }
                     }
@@ -1802,13 +1803,13 @@ if (nvars > 0) {
                     if (length(recs_should_be) != length(recs) ||
                         length(recs_should_be) == length(recs) && recs_should_be != recs) {
                         message(indent, "wanted `recs` (n=", length(recs), "):")
-                        ht(recs)
+                        ht(recs, n=25, transpose=T)
                         message(indent, " and wanted `season` = \"", season, 
                                 "\" do not fit to each other.",
                                 " based on the time information of ",
                                 "the input file, `recs` of season \"", season, 
                                 "\" should be these ", length(recs_should_be), ":")
-                        ht(recs_should_be)
+                        ht(recs_should_be, n=25, transpose=T)
                         stop("rerun the script with `season <- \"", season, 
                              "\"` and without `recs` defined if you want all data of this season or\n", 
                              "rerun the script with `recs` defined as they are but `season` undefined.")
@@ -1870,7 +1871,7 @@ if (nvars > 0) {
             timeobj[[time_vari]]$units <- "seconds since 1970-1-1"
             timeobj[[time_vari]]$dates <- dates_all
             timeobj[[time_vari]]$ntime <- length(dates_all)
-            timeobj[[time_vari]]$frequency <- frequency
+            if (class(frequency) != "function") timeobj[[time_vari]]$frequency <- frequency
             if (exists("frequency_post")) timeobj[[time_vari]]$frequency_post <- frequency_post
             seasoni <- unique(seasonvec)
             if (length(seasoni) == 1) { # case: all data from one month
@@ -1881,6 +1882,16 @@ if (nvars > 0) {
                 seasoni <- paste(substr(seasoni, 1, 1), collapse="") # e.g. JFM
             } else if (length(seasoni) == 12) { # case: Jan-Dec
                 seasoni <- "Jan-Dec"
+            } else if (length(seasoni) == 13) { # case: Jan-Dec and all single months; happens when some files have e.g. monthly Jan-Dec data and some files only have one month  
+                if (any(seasoni == "Jan-Dec")) {
+                    seasoni <- "Jan-Dec"
+                } else {
+                    stop("imeplement")
+                }
+            } else {
+                message("`seasoni:`")
+                print(seasoni)
+                stop("implement this `seasoni`-case")
             }
             timeobj[[time_vari]]$season <- seasoni
             timeobj[[time_vari]]$timestamp <- timestampvec
@@ -2406,12 +2417,12 @@ if (timespan == "") {
 if (verbose > 0) message("==============================================")
 
 
-## Further checks with dim_tag
-if (transient_out && integrate_depth && any(dim_tag == "3D") &&
-    (out_mode != "fldmean" && out_mode != "fldint")) {
-    stop("Output should be integrated over depth ('integrate_depth'=T) but out_mode=", out_mode, ".\n",
-         "Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else.")
-}
+## checks with dim_tag
+#if (transient_out && integrate_depth && any(dim_tag == "3D") && # irregular
+#    (out_mode != "fldmean" && out_mode != "fldint")
+#    stop("Output should be integrated over depth ('integrate_depth'=T) but out_mode=", out_mode, ".\n",
+#         "Switch variable 'out_mode' to 'mean' or 'mean_int' or do something else.")
+#}
 if (!exists("average_depth")) { # potentially set by user in namelist.var
     if (all(dim_tag == "2D")
         || integrate_depth  
@@ -4450,35 +4461,36 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
     moc_reg_lat_global <- seq(-90+regular_dy_moc/2, 90-regular_dy_moc/2, b=regular_dy_moc)
     
     ## mask for MOC calculation
-    # moc_mask must be 0 (outside) or 1 (inside). NOT T or F
-    if (exists("moc_mask_file")
-        && file.access(moc_mask_file, mode=4) == 0) {
-        # if moc file was provided
+    # moc_mask must be 0 (outside) or 1 (inside) and not T or F
+    if (exists("moc_mask_file")) { # if moc file was provided
+        if (file.access(moc_mask_file, mode=4) == -1) { # if not existing
+            stop(indent, "provided", "\n",
+                 indent, "   `moc_mask_file` = ", moc_mask_file, "\n",
+                 indent, " does not exist")
+        }
+        if (file.access(moc_mask_file, mode=4) == 1) { # if not readable
+            stop(indent, "provided", "\n",
+                 indent, "   `moc_mask_file` = ", moc_mask_file, "\n",
+                 indent, " not readable")
+        }
         if (verbose > 0) {
-            message(indent, "read provided `moc_mask_file` = ", moc_mask_file, " ...")
+            message(indent, "read provided `moc_mask_file` = ", moc_mask_file, " with `data.table::fread()` ...")
         }
         moc_mask_inds <- data.table::fread(moc_mask_file)$V1
         moc_mask_inds <- moc_mask_inds[2:moc_mask_inds[1]] # remove first line of dimas mask file
-        moc_mask <- rep(0, t=nod2d_n)
-        moc_mask[moc_mask_inds] <- 1
-   
-    # moc file was not proivided
-    } else {
-        if (exists("moc_mask_file") 
-            && file.access(moc_mask_file, mode=4) == -1) {
-            message(indent, "warn: provided", "\n",
-                    indent, "   `moc_mask_file` = ", moc_mask_file, "\n",
-                    indent, " is not readable!")
-        }
+
+    } else { # no `moc_mask_file` provided
         
+        message("No 'moc_mask_file' is given that provides surface nodes for MOC calculation --> create a new one\n",
+                "(you can set `moc_mask_file <- \"/path/to/moc_mask_file\"` in the runscript)")
+   
         if (area == "global") { # global moc
             if (verbose > 0) {
                 message(indent, "`area` = ", area, " --> use all nodes for MOC calculation ...")
             }
-            moc_mask <- rep(1, t=nod2d_n)
+            moc_mask_inds <- seq_len(nod2d_n) # all nodes
         
-        } else { # make new moc mask 
-            moc_mask_file <- paste0(meshpath, "/moc_mask_", area, "_area_", meshid, "_mesh.txt")
+        } else { # other region
             message(indent, "`area` = \"", area, "\" is not \"global\" AND no readable moc mask file ",
                     "`moc_mask_file` is given", "\n",
                     indent, "--> find moc mask now in an interactive plot", "\n",
@@ -4488,24 +4500,22 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
             
             # select MOC area in interactive session
             if (!capabilities("X11")) {
-                stop("capabilities(\"X11\") = ", capabilities("X11"), " --> cannot open plot device")
+                stop("`capabilities(\"X11\")` = false --> cannot open plot device")
             }
-            X11(width=14, height=14) # inch
-            plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]",
-                 pch=".", xaxt="n", yaxt="n")
+            grDevices::X11(width=14, height=14) # inch
+            base::plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]",
+                       pch=".", xaxt="n", yaxt="n")
             axis(1, at=pretty(xcsur, n=20))
             axis(2, at=pretty(ycsur, n=20), las=2)
             abline(v=pretty(xcsur, n=20), lwd=0.5)
             abline(h=pretty(ycsur, n=20), lwd=0.5)
-            title(paste0("Select MOC mask area '", area, "' for mesh '", meshid, "'"))
+            title(paste0("Select MOC mask area '", area, "' for mesh '", meshid, "' (no need to close polygon)"))
             mtext("(Wait for the next click until coursor is a cross symbol)")
-            source(paste0(subroutinepath, "/functions/mylocator.r"))
             moc_mask_coords <- mylocator()
             
             # check user coords
-            if (length(moc_mask_coords) == 0 || 
-                length(moc_mask_coords) > 0 && length(moc_mask_coords$x) < 4) {
-                stop("Rerun script and provide at least 3 surface points for MOC mask for MOC area '", area, "'.")
+            if (is.null(moc_mask_coords) || length(moc_mask_coords$x) < 2) {
+                stop("Rerun script and provide at least 2 surface points for MOC mask for MOC area '", area, "'.")
             }
             moc_mask_coords <- cbind(moc_mask_coords$x, moc_mask_coords$y)
             
@@ -4520,32 +4530,44 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
                                                   pol.y=moc_mask_coords[,2])
             moc_mask_inds <- which(moc_mask_inds == 1 | 
                                    moc_mask_inds == 2 | 
-                                   moc_mask_inds == 3) # inside/on edge/on vertex of polygon
-            moc_mask <- rep(0, t=nod2d_n)
-            moc_mask[moc_mask_inds] <- 1
+                                   moc_mask_inds == 3) # inside/on edge/on vertex of polygon 
             
-            # show surface nodes if there is an open plot
-            if (!is.null(dev.list())) {
-                points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
+            points(xcsur[moc_mask_inds], ycsur[moc_mask_inds], col="blue", pch=".")
+            
+            if (utils::askYesNo("Close plot to continue?")) {
+                dev.off()
+            } else {
+                stop("stop here")
             }
 
-            # save mask file in Dimas format
-            if (verbose > 0) {
-                message(indent, "Save surface indices of `area` = \"", area, 
-                        "\" for MOC calculation to file", "\n",
-                        indent, "   `moc_mask_file` = \"", moc_mask_file, "\" ...")
-            }
-            write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
+        } # which region 
         
-            # close moc polygon selection plot
-            dev.off()
-
-        } # if mask file not given AND not global moc is wanted
-
+        # save mask file in fpost1.4 format
+        if (file.access(meshpath, mode=2) == 0) { # write permission
+            moc_mask_file <- meshpath
+        } else {
+            message(indent, "No write permission in `meshpath` ", meshpath, " --> use `postpath` ", postpath, " instead ...")
+            moc_mask_file <- postpath
+        }
+        moc_mask_file <- paste0(moc_mask_file, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
+        if (verbose > 0) {
+            message(indent, "Save surface indices of `area` = \"", area, "\" for MOC calculation to file", "\n",
+                    indent, "   `moc_mask_file` = \"", moc_mask_file, "\" ...")
+        }
+        write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
+    
     } # if exists("moc_mask_file")
+    
+    if (verbose > 0) {
+        message(indent, "--> ", length(moc_mask_inds), " indices in `moc_mask_inds` from ", 
+                min(moc_mask_inds), " to ", max(moc_mask_inds))
+    }
+    moc_mask <- rep(0, t=nod2d_n)
+    moc_mask[moc_mask_inds] <- 1
 
     # save moc area if wanted
     if (plot_moc_mask) {
+        moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
         if (verbose > 0) {
             message(indent, "`plot_moc_mask` = T --> save", "\n",
                     indent, "   `moc_mask_plotname` = ", moc_mask_plotname, " ...")
@@ -4557,20 +4579,18 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
         axis(2, at=pretty(ycsur, n=20), las=2)
         abline(v=pretty(xcsur, n=20), lwd=0.5)
         abline(h=pretty(ycsur, n=20), lwd=0.5)
-        points(xcsur[moc_mask == 1], ycsur[moc_mask == 1], col="blue", pch=".")
+        points(xcsur[moc_mask_inds], ycsur[moc_mask_inds], col="blue", pch=".")
         title(paste0("MOC mask area \"", area, "\" for mesh \"", meshid, "\""))
         dev.off()
     } # if plot_moc_mask
 
-    map_geogr_lim_lon <- list(range(xcsur[which(moc_mask == 1)]))
-    map_geogr_lim_lat <- list(range(ycsur[which(moc_mask == 1)]))
+    map_geogr_lim_lon <- list(range(xcsur[moc_mask_inds]))
+    map_geogr_lim_lat <- list(range(ycsur[moc_mask_inds]))
     poly_geogr_lim_lon <- map_geogr_lim_lon
     poly_geogr_lim_lat <- map_geogr_lim_lat
     if (verbose > 1) {
-        message(indent, "   min/max lon for MOC calc = ", 
-                min(map_geogr_lim_lon), "/", max(map_geogr_lim_lon))
-        message(indent, "   min/max lat for MOC calc = ", 
-                min(map_geogr_lim_lat), "/", max(map_geogr_lim_lat))
+        message(indent, "   min/max lon for MOC calc = ", paste(range(map_geogr_lim_lon), collapse="/"))
+        message(indent, "   min/max lat for MOC calc = ", paste(range(map_geogr_lim_lat), collapse="/"))
     }
 
     if (verbose > 0) {
@@ -5506,10 +5526,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     } # all(total_rec == 0)
                    
                     ## Arrange datavector level-wise
-                    if ((transient_out && out_mode == "select") ||
-                        (transient_out && out_mode == "areadepth") ||
-                        (regular_transient_out && out_mode == "select") ||
-                        (regular_transient_out && out_mode == "areadepth")) {
+                    if (any(transient_out, regular_transient_out) && 
+                        any(out_mode == c("select", "areadepth"))) {
 
                         if (!average_depth && !integrate_depth) {
                             if (any(dim_tag == "3D" & !levelwise)) {
@@ -5535,24 +5553,25 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
                         } # if !average_depth && !integrate_depth
 
-                        if (verbose > 1) {
-                            message(indent, "For regular interpolation rearrange data_vert from (nod2d_n=", nod2d_n, 
-                                    " x ndepths=", dim(data_vert)[3], ") to (3 x elem2d_n=", 
-                                    elem2d_n, " x ndepths=", dim(data_vert)[3], ") ...") 
-                        }
-
-                        # save regular interpolated data in area
-                        datamat <- array(NA, 
-                                         dim=c(dim(data_vert)[1],           # nvars
-                                               3,                           # 3 nodes per element
-                                               length(poly_inds_geogr),     # 2d-elems in area
-                                               dim(data_vert)[3:4]),        # ndepths,nrecspf
-                                         dimnames=c(dimnames(data_vert)[1],
-                                                    list(node=1:3,
-                                                         elem=NULL),
-                                                    dimnames(data_vert)[3:4]))
-
                         if (regular_transient_out) {
+
+                            if (verbose > 1) {
+                                message(indent, "Rearrange data_vert from (nod2d_n=", nod2d_n, 
+                                        " x ndepths=", dim(data_vert)[3], ") to (3 x elem2d_n=", 
+                                        elem2d_n, " x ndepths=", dim(data_vert)[3], ") ...") 
+                            }
+
+                            # save regular interpolated data in area
+                            datamat <- array(NA, 
+                                             dim=c(dim(data_vert)[1],           # nvars
+                                                   3,                           # 3 nodes per element
+                                                   length(poly_inds_geogr),     # 2d-elems in area
+                                                   dim(data_vert)[3:4]),        # ndepths,nrecspf
+                                             dimnames=c(dimnames(data_vert)[1],
+                                                        list(node=1:3,
+                                                             elem=NULL),
+                                                        dimnames(data_vert)[3:4]))
+
                             if (verbose > 1) {
                                 message(indent, "Interpolate on regular grid ('regular_dx'=",
                                         sprintf("%.3f", regular_dx), " deg,'regular_dy'=",
@@ -5564,46 +5583,44 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                         round(range(map_geogr_lim_lat)[1], 2), " to ",
                                         round(range(map_geogr_lim_lat)[2], 2), " deg latitude ...")
                             }
-                        }
 
-                        # create progress bar case 1: more than 1 depth; max = ndepths
-                        if (dim(data_vert)[3] > 1) {
-                            pb <- mytxtProgressBar(min=0, max=dim(data_vert)[3], style=pb_style,
-                                                   char=pb_char, width=pb_width,
-                                                   indent=paste0("   ", indent)) # 5 " " for default message()
-                        }
+                            # create progress bar case 1: more than 1 depth; max = ndepths
+                            if (dim(data_vert)[3] > 1) {
+                                pb <- mytxtProgressBar(min=0, max=dim(data_vert)[3], style=pb_style,
+                                                       char=pb_char, width=pb_width,
+                                                       indent=paste0("   ", indent)) # 5 " " for default message()
+                            }
 
-                        for (di in seq_len(dim(data_vert)[3])) { # ndepths
+                            for (di in seq_len(dim(data_vert)[3])) { # ndepths
 
-                            # old:
-                            #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
-                            #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
-                            #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
-                            time_data_elem <- system.time({
-                                data_elem <- array(data_vert[,pos[elem2d],di,], 
-                                                   dim=c(dim(data_vert)[1],    # nvars
-                                                         3,                    # 3 nodes per element
-                                                         elem2d_n,             # elem2d_n
-                                                         1,                    # 1 depth
-                                                         dim(data_vert)[4]),   # nrecspf
-                                                   dimnames=c(dimnames(data_vert)[1],
-                                                              list(node=1:3, 
-                                                                   elem=NULL,
-                                                                   depth=dimnames(data_vert)[[3]][di]),
-                                                              dimnames(data_vert)[4]))
-                            })
+                                # old:
+                                #datamat[1,,,] <- data[,pos[elem2d[1,]],,]
+                                #datamat[2,,,] <- data[,pos[elem2d[2,]],,]
+                                #datamat[3,,,] <- data[,pos[elem2d[3,]],,]
+                                time_data_elem <- system.time({
+                                    data_elem <- array(data_vert[,pos[elem2d],di,], 
+                                                       dim=c(dim(data_vert)[1],    # nvars
+                                                             3,                    # 3 nodes per element
+                                                             elem2d_n,             # elem2d_n
+                                                             1,                    # 1 depth
+                                                             dim(data_vert)[4]),   # nrecspf
+                                                       dimnames=c(dimnames(data_vert)[1],
+                                                                  list(node=1:3, 
+                                                                       elem=NULL,
+                                                                       depth=dimnames(data_vert)[[3]][di]),
+                                                                  dimnames(data_vert)[4]))
+                                })
 
-                            ## Check data so far
-                            if (verbose > 2) {
-                                for (i in seq_len(dim(data_elem)[1])) {
-                                    message(indent, "   min/max data_elem[", i, ":", 
-                                            dimnames(data_elem)[[1]][i], ",,,,] = ",
-                                            paste(range(data_elem[i,,,,], na.rm=T), collapse="/"))
-                                }
-                            } 
+                                ## Check data so far
+                                if (verbose > 2) {
+                                    for (i in seq_len(dim(data_elem)[1])) {
+                                        message(indent, "   min/max data_elem[", i, ":", 
+                                                dimnames(data_elem)[[1]][i], ",,,,] = ",
+                                                paste(range(data_elem[i,,,,], na.rm=T), collapse="/"))
+                                    }
+                                } 
 
-                            ## Interpolation of transient data on regular grid
-                            if (regular_transient_out) {
+                                # declare
                                 if (di == 1) {
                                     dims <- c(dim(data_vert)[1],   # nvars
                                               nxi, nyi,            # x, y of _area_
@@ -5681,10 +5698,25 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                         }
                                     }
                                 }
+                                
+                                # update progress bar case 1
+                                if (dim(data_vert)[3] > 1) setTxtProgressBar(pb, di)
+                            
+                            } # for di
 
-                            } # if regular_transient_out
+                            #stop("asd")
 
-                            ## Pick data from plot area irregular part
+                            # close progress bar
+                            if (dim(data_vert)[3] > 1 || # case 1
+                                (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) || # case 2
+                                (dim(data_vert)[3] == 1 && dim(data_elem)[1] == 1 && dim(data_elem)[5] > 1)) { # case 3
+                                close(pb)
+                            }
+
+                        } # if regular_transient_out
+                        
+                        ## Pick data from plot area irregular part
+                        if (F) { # old
                             if (projection != "orthographic") {
                                 if (proj_lims) {
                                     if (length(poly_inds_geogr) > 0) {
@@ -5713,31 +5745,26 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             if (verbose > 2) {
                                 for (i in 1:dim(datamat)[1]) {
                                     if (!all(is.na(datamat[i,,,di,]))) {
-                                        message(paste0(indent, "   min/max datamat[", i, ":", 
-                                                       dimnames(datamat)[[1]][i], ",,,", di, ",] = ",
-                                                       paste(range(datamat[i,,,di,], na.rm=T), collapse="/")))
+                                        message(indent, "   min/max datamat[", i, ":", 
+                                                dimnames(datamat)[[1]][i], ",,,", di, ",] = ",
+                                                paste(range(datamat[i,,,di,], na.rm=T), collapse="/"))
                                     }
                                 }
                             }
-
-                            # update progress bar case 1
-                            if (dim(data_vert)[3] > 1) setTxtProgressBar(pb, di)
-
-                            #stop("asd")
-
-                        } # di dim(data_node)[3] # ndepths
-
-                        # close progress bar
-                        if (dim(data_vert)[3] > 1 || # case 1
-                            (dim(data_vert)[3] == 1 && dim(data_elem)[1] > 1) || # case 2
-                            (dim(data_vert)[3] == 1 && dim(data_elem)[1] == 1 && dim(data_elem)[5] > 1)) { # case 3
-                            close(pb)
+                        } else { # new
+                            if (area != "global") {
+                                if (verbose > 0) {
+                                    message(indent, "Select ", length(poly_node_inds_geogr), " surface nodes from transient irregular data ...")
+                                }
+                                data_vert <- data_vert[,poly_node_inds_geogr,,] # var, nod2d, depth, time
+                            }
                         }
 
-                        rm(data_elem)
+                        if (regular_transient_out) rm(data_elem)
 
-                    } # if plot || out_mode == "area" 
-                   
+                    } # if (any(transient_out, regular_transient_out) && 
+                      #     any(out_mode == c("select", "areadepth"))) {
+                    
                     #stop("asd")
 
                     ## Calc transient mean, depth, etc.
@@ -5885,7 +5912,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                         if (Rcpp_tag) {
                                             #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
                                             dll <- paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so")
-                                            if (verbose > 0) message(indent, "Load dynamic lib base::dyn.load(", dll, ") ...")
+                                            if (verbose > 0) message(indent, "Load dynamic lib base::dyn.load(\"", dll, "\") ...")
                                             tmp <- base::dyn.load(paste0(subroutinepath, "/sourceCpp/sub_e2_to_n2.so"))
                                             if (verbose > 0) message(indent, "Run Rcpp:::sourceCppFunction(sourceCpp_1_sub_e2_to_n2) ...")
                                             sub_e2_to_n2 <- Rcpp:::sourceCppFunction(function(elem2d, data_elem2d, nod2d_n) {}, 
@@ -6043,15 +6070,9 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             }
 
                         ## Save transient area output
-                        } else if (out_mode == "select") { # on irregular mesh
+                        } else if (out_mode == "select") { # on irregular mesh; levelwise
                             
                             if (all(total_rec == 0)) { # prepare output
-                                if (rec_tag) {
-                                    transient_count <- c(3, dim(datamat)[3], dim(datamat)[5]) # c(elements, nodes, time)
-                                } else {
-                                    transient_count <- c(3, dim(datamat)[3], 1)
-                                }
-
                                 if (F) { # old naming
                                     outname <- paste0(transientpath, "/", postprefix, "_", model, 
                                                       "_", out_mode, "_", varname, "_", area, timespan_fname, 
@@ -6060,58 +6081,51 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 } else if (T) { # new naming
                                     outname <- paste0(transientpath, "/", postprefix, 
                                                       p_ref_suffix, fname_suffix, 
-                                                      "_", model, out_mode, "_", varname, depths_fname, 
+                                                      "_", model, "_", out_mode, "_", varname, depths_fname, 
                                                       "_", area, timespan_fname, ".nc") 
                                 }
                                 ## remove already existing data to avoid ncdf error:
                                 ## Error in R_nc4_create: Permission denied (creation mode was 4096)
                                 if (file.exists(outname)) invisible(file.remove(outname))
 
+                                transient_count <- dim(data_vert)[2:4] # c(nodes2d, depth, time)
+                                if (!rec_tag) transient_count[3] <- 1 # ntime=1
+
                                 time_dim <- ncdim_def(name="time",
                                                       units=timeobj$units,
                                                       vals=timeobj$time,
                                                       create_dimvar=T)
-                                node_dim <- ncdim_def(name="nodes_per_element", 
-                                                      units="", 
-                                                      vals=1:3, 
+                                node_dim <- ncdim_def(name="nod2d",
+                                                      units="",
+                                                      vals=poly_node_inds_geogr, 
                                                       create_dimvar=F)
-                                elem_dim <- ncdim_def(name="nelements", 
-                                                      units="", 
-                                                      vals=seq_len(dim(datamat)[3]),
-                                                      create_dimvar=F)
-
-                                xp_var <- ncvar_def(name="xp", units="degrees_east", 
-                                                    dim=list(node_dim, elem_dim), missval=mv)
-                                yp_var <- ncvar_def(name="yp", units="degrees_north", 
-                                                    dim=list(node_dim, elem_dim), missval=mv)
-                                data_var <- vector("list", l=dim(datamat)[1]) 
-                                for (i in seq_len(length(data_var))) {
-                                    name <- dimnames(datamat)[[1]][i]
-                                    data_var[[i]] <- ncvar_def(name=varname, units=units_out, 
-                                                               dim=list(node_dim, elem_dim, time_dim), missval=mv, 
-                                                               longname=paste0(longname, 
-                                                                               ifelse(subtitle == "", "", paste0(", ", subtitle))))
+                                if (dim(data_vert)[3] > 1) {
+                                    depth_dim <- ncdim_def(name="depth", units="m", vals=-interpolate_depths)
+                                } else {
+                                    transient_count <- transient_count[c(1, 3)] # nodes2d, time
                                 }
-                                outnc <- nc_create(outname, 
-                                                   vars=c(data_var, list(xp_var, yp_var)), 
-                                                   force_v4=force_v4)
-                                
-                                ncvar_put(outnc, xp_var, xp)
-                                ncvar_put(outnc, yp_var, yp)
-
+                                data_var <- vector("list", l=dim(data_vert)[1]) 
+                                for (i in seq_len(length(data_var))) {
+                                    name <- dimnames(data_vert)[[1]][i]
+                                    if (dim(data_vert)[3] > 1) { # with depth dim
+                                        data_var[[i]] <- ncvar_def(name=varname, units=units_out, 
+                                                                   dim=list(node_dim, depth_dim, time_dim), missval=mv, 
+                                                                   longname=paste0(longname, 
+                                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))))
+                                    } else {
+                                        data_var[[i]] <- ncvar_def(name=varname, units=units_out, 
+                                                                   dim=list(node_dim, time_dim), missval=mv, 
+                                                                   longname=paste0(longname, 
+                                                                                   ifelse(subtitle == "", "", paste0(", ", subtitle))))
+                                    }
+                                } # for i
+                                outnc <- nc_create(outname, vars=data_var, force_v4=force_v4)
                                 ncatt_put(outnc, 0, "datapath", paste(unique(datainpaths), collapse=", "))
                                 ncatt_put(outnc, 0, "fpatterns", paste(unique(fpatterns), collapse=", "))
                                 ncatt_put(outnc, 0, "meshpath", meshpath)
                                 ncatt_put(outnc, 0, "area", area)
                                 ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon))
                                 ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat))
-                                if (add_res_to_nc) {
-                                    ncatt_put(outnc, 0, paste0("resolution_min_", res_node_unit), res_node_min)
-                                    ncatt_put(outnc, 0, paste0("resolution_max_", res_node_unit), res_node_max)
-                                    ncatt_put(outnc, 0, paste0("resolution_median_", res_node_unit), res_node_median)
-                                    ncatt_put(outnc, 0, paste0("resolution_mean_", res_node_unit), res_node_mean)
-                                    if (area == "global") ncatt_put(outnc, 0, paste0("resolution_global_nominal_", res_node_unit), res_node_nominal)
-                                }
                                 if (any(dim_tag == "3D")) ncatt_put(outnc, 0, "depths_m", depths_plot)
                                 if (p_ref_suffix != "") {
                                     ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
@@ -6124,12 +6138,13 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 if (length(timei) > 3) message(", ..., ", timei[length(timei)-1], ", ", 
                                                                timei[length(timei)], appendLF=F)
                                 if (depths_fname != "") message("in ", depths_plot, " m depths", appendLF=F)
-                                message(" in ", area, " area to nc file ...")
+                                message(" in ", area, " area to irregular nc file ...")
                             }
 
-                            transient_start <- c(1, 1, sum(total_rec) + 1) # lon, lat, time
-                            for (i in 1:length(data_var)) { # for nvars
-                                ncvar_put(outnc, data_var[[i]], drop(datamat[i,,,1,]), # 3 nodes, elems, time 
+                            transient_start <- c(1, 1, sum(total_rec) + 1) # nod2d, depth, time
+                            if (dim(data_vert)[3] == 1) transient_start <- transient_start[c(1, 3)] # nod2d, time
+                            for (i in seq_along(data_var)) { # for nvars
+                                ncvar_put(outnc, data_var[[i]], drop(data_vert[i,,,]), # nod2d, depth, time 
                                           start=transient_start, 
                                           count=transient_count)
                             }
@@ -7212,7 +7227,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             ncatt_put(outnc, 0, "longitude_lims_deg", range(poly_geogr_lim_lon))
             ncatt_put(outnc, 0, "latitude_lims_deg", range(poly_geogr_lim_lat))
             if (any(dim_tag == "3D")) ncatt_put(outnc, 0, "depths_m", depths_plot)
-            if (add_res_to_nc) {
+            if (exists("res_node_min")) {
                 ncatt_put(outnc, 0, paste0("resolution_min_", res_node_unit), res_node_min)
                 ncatt_put(outnc, 0, paste0("resolution_max_", res_node_unit), res_node_max)
                 ncatt_put(outnc, 0, paste0("resolution_median_", res_node_unit), res_node_median)

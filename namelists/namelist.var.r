@@ -3334,19 +3334,21 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("tair")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "runoff") {
     longname <- "Runoff"
     units_out <- "m a-1"
     var_label <- expression(paste("Runoff [m a"^"-1","]"))
     multfac_out <- 86400*365 # m/s --> m/a
+    if (out_mode == "fldint" || out_mode == "depthint") {
+        power_out <- -6
+        multfac_out <- base^power_out
+        #units_out <- paste0("m3 s-1 x ", multfac_out)
+        units_out <- "Sv"
+    }
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("runoff")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "fwflux") {
     longname <- "Freshwater Flux"
@@ -3357,8 +3359,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("runoff")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "shum") {
     longname <- "Air Specific Humidity"
@@ -3368,8 +3368,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("shum")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "swrd") {
     longname <- "Atmosphere Shortwave Radiation"
@@ -3380,8 +3378,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("swrd")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "lwrd") {
     longname <- "Atmosphere Longwave Radiation"
@@ -3392,8 +3388,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("lwrd")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "olat") {
     longname <- "Latent Heat Flux To Ocean"
@@ -3404,8 +3398,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("olat")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "osen") {
     longname <- "Sensible Heat Flux To Ocean"
@@ -3416,8 +3408,6 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("osen")
-    rotate_inds <- F
-    vec <- F
 
 } else if (varname == "qnet") {
     longname <- "Net heat flux to ocean"
@@ -3656,9 +3646,6 @@ if (varname == "tos") { # fesom 1.4
                               list(var="s", 
                                    base=base, power_plot=power_plot))
     if (out_mode == "fldint") {
-        #power_out <- 0
-        #multfac_out <- base^power_out
-        #units_out <- paste0("m3 s-1 psu")
         power_out <- -6
         multfac_out <- base^power_out
         units_out <- "Sv psu"
@@ -3688,6 +3675,25 @@ if (varname == "tos") { # fesom 1.4
     varname_nc <- c("relax_salt")
     rotate_inds <- F
     vec <- F
+
+} else if (varname == "virtual_salt_fwf") {
+    longname <- "Virtual Salt due to freshwater forcing"
+    subtitle <- ">0 increases salinity"
+    units_out <- "psu m s-1"
+    power_plot <- 5
+    multfac_plot <- base^power_plot
+    var_label <- substitute(paste("Freshwater Virtual Salt [psu m ", var^-1, 
+                                     "] " %*% " ", base^-power_plot),
+                              list(var="s", 
+                                   base=base, power_plot=power_plot))
+    if (out_mode == "fldint") {
+        power_out <- -6
+        multfac_out <- base^power_out
+        units_out <- "Sv psu"
+    }
+    typesuffix <- c("forcing.")
+    diagsuffix <- c("diag.")
+    varname_nc <- c("virtual_salt_fwf")
 
 } else if (varname == "cdrag") {
     longname <- "Drag Coefficient"
@@ -4730,7 +4736,7 @@ if (varname == "tos") { # fesom 1.4
     }
 
 } else if (varname == "NPPtot") {
-    longname <- "NPP Tot"
+    longname <- "NPP tot = NPP from nanophytoplankton + NPP from diatoms"
     units_out <- "mmolC m-3 day-1"
     var_label <- expression(paste("NPP"[tot], " [mmolC m"^paste(-3), " day"^paste(-1), "]"))
     varname_nc <- c("diags3d01", "diags3d02")
@@ -4741,6 +4747,14 @@ if (varname == "tos") { # fesom 1.4
     } else {
         if (integrate_depth) units_out <- "mmolC m-2 day-1"
     }
+
+} else if (varname == "export_detC_100m") {
+    longname <- "Carbon export of detritus at 100m depth"
+    units_out <- "mmolC m-2 d-1"
+    var_label <- expression(paste("Export"[C[det]], " [mmolC m"^paste(-2), " d"^paste(-1), "]"))
+    varname_nc <- "bgc08"
+    if (integrate_depth) stop("export is defined on a specific depth level")
+    if (any(out_mode == c("fldint", "depthint"))) units_out <- "mmolC d-1"
 
 # oasis
 } else if (varname == "sst_feom") {

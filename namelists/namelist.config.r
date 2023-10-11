@@ -64,6 +64,11 @@ nominal_res_df <- data.frame(greater_equal=c(0   , 0.72, 1.6, 3.6, 7.2, 16, 36, 
                              less_than=    c(0.72, 1.6 , 3.6, 7.3, 16 , 36, 72, 160, 360, 720, 1600, 3600, 7200, Inf),
                              nominal_res=  c(0.5 , 1   , 2.5, 5  , 10 , 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000))
 
+## Correct dates?
+# old fesom1 has broken time dim
+# new fesom1 has ok time dim but all time dim vals need shifttime,-1dt
+correct_dates <- T
+
 ## Which variable? (see namelist.var.r)
 varname <- "tos"
 

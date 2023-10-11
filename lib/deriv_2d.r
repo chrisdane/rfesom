@@ -5,7 +5,7 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
     library(ncdf4)
     # all mesh resolutions/areas get their unit from this variable:
     if (!is.finite(Rearth)) { # overwrite possibly wrong user input
-        Rearth <- 6367.5 * 10^3
+        Rearth <- 6367.5 * 1e3
         mesh_dist_unit <- "m"
     }
 
@@ -77,10 +77,11 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         #   "The mesh resolution, defined as the square root of twice the area of the triangles ..."
         #   res=sqrt(2*vol)
         # from oce_rhs_tra.F90:
-        #   res2=voltriangle(elem2)*1.73e-6
+        #   res2=voltriangle(elem2)*1.73e-6 # factor 1.73 = sqrt(3); factor 1e-6 from km2 --> m2
         #   res=sqrt(res2)  !in km 
         #   res=sqrt(sqrt(3)*vol)
-        #   h(i)=sqrt(voltriangle(i)*sqrt(3))/1000; # from c. wekerle: 
+        # from c. wekerle: 
+        #   h(i)=sqrt(voltriangle(i)*sqrt(3))/1000; 
         # from patrick scholz:
         #   x_kart=Rearth*1000.*cosd(aux_yc).*cosd(aux_xc);
         #   y_kart=Rearth*1000.*cosd(aux_yc).*sind(aux_xc);

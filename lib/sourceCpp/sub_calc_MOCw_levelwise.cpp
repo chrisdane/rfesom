@@ -7,9 +7,14 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-NumericVector sub_calc_MOCw_levelwise(IntegerMatrix elem2d, NumericVector voltriangle, NumericVector ycsur, 
-                                      NumericVector moc_reg_lat_global, NumericVector moc_mask, IntegerMatrix moc_topo,
-                                      NumericVector data_node, int total_rec) {
+NumericVector sub_calc_MOCw_levelwise(IntegerMatrix elem2d,
+                                      NumericVector voltriangle, 
+                                      NumericVector ycsur, 
+                                      NumericVector moc_reg_lat_global, 
+                                      NumericVector moc_mask, 
+                                      IntegerMatrix moc_topo,
+                                      NumericVector data_node, 
+                                      int total_rec) {
     
     int elem2d_n = elem2d.ncol(); // number of 2d elements
     int ei, e123, di, elnode;
