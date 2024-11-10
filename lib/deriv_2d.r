@@ -67,22 +67,20 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         bafux_2d[,i] <- derivative_locbafu_x_2D[1,]
         bafuy_2d[,i] <- derivative_locbafu_x_2D[2,]
 
-        # mesh area in unit of `Rearth`^3
+        # area in unit of `Rearth`^2
         # earth global sum = 361e6 km2 = 361e12 m2 = 3.61e14 m2
         voltriangle[i] <- 1/2*abs(det(jacobian2D)) # elem-space
         cluster_area_2d[node] <- cluster_area_2d[node] + 1/3*voltriangle[i] # node-space
 
-        # mesh resolution in unit of 'Rearth'
-        # from sein et al. 2017:
-        #   "The mesh resolution, defined as the square root of twice the area of the triangles ..."
-        #   res=sqrt(2*vol)
+        # resolution based on area in unit of `Rearth`
+        # fesom1:
         # from oce_rhs_tra.F90:
         #   res2=voltriangle(elem2)*1.73e-6 # factor 1.73 = sqrt(3); factor 1e-6 from km2 --> m2
         #   res=sqrt(res2)  !in km 
-        #   res=sqrt(sqrt(3)*vol)
-        # from c. wekerle: 
+        #   --> res=sqrt(sqrt(3)*vol)
+        # from cwekerle: 
         #   h(i)=sqrt(voltriangle(i)*sqrt(3))/1000; 
-        # from patrick scholz:
+        # from pscholz:
         #   x_kart=Rearth*1000.*cosd(aux_yc).*cosd(aux_xc);
         #   y_kart=Rearth*1000.*cosd(aux_yc).*sind(aux_xc);
         #   z_kart=Rearth*1000.*sind(aux_yc);
@@ -94,8 +92,28 @@ deriv_2d_function <- function(elem2d, xcsur, ycsur,
         #   resol=[sqrt(vek1(1,:).^2 + vek1(2,:).^2 + vek1(3,:).^2);...
         #          sqrt(vek2(1,:).^2 + vek2(2,:).^2 + vek2(3,:).^2);...  
         #          sqrt(vek3(1,:).^2 + vek3(2,:).^2 + vek3(3,:).^2)];
-        resolution[i] <- sqrt(voltriangle[i]*sqrt(3)) #sqrt(3)=1.73 # in unit_of_Rearth
-            
+        # fesom2:
+        # from oce_mesh.F90:
+        #   do n=1,myDim_nod2d+eDim_nod2D
+        #     mesh%mesh_resolution(n)=sqrt(mesh%areasvol(mesh%ulevels_nod2d(n),n)/pi)*2._WP
+        #   --> res_node = 2*sqrt(areavol/pi)
+        # from tripyview:
+        #   self.n_resol = np.sqrt(self.n_area[0,:]/np.pi)*2.0
+        #   --> res_node = 2*sqrt(area_node/pi) 
+        #   self.e_resol = jacobian.mean(axis=1)
+        #   --> res_elem = mean_over_vertices_of_element(sqrt(dx^2+dy^2))
+        # from sein et al. 2017:
+        #   "The mesh resolution, defined as the square root of twice the area of the triangles ..."
+        #   --> res=sqrt(2*vol)
+        # from danilov 2022:
+        #   "A rather good estimate is provided by the square root of the area of unit
+        #    cell (twice the triangle area or area of the dual cell) which is only 9% coarser than the real resolution."
+        #   --> res=sqrt(area_node)
+        #   --> res=sqrt(2*area_elem)
+        
+        #resolution[i] <- sqrt(voltriangle[i]*sqrt(3)) # sqrt(3)=1.73
+        resolution[i] <- sqrt(2*voltriangle[i])
+        
         # update progress bar
         setTxtProgressBar(pb, i)
 

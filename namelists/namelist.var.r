@@ -24,6 +24,7 @@ potdens_tag <- buoyancy_potdens_tag <- buoyancy_frequency_potdens_tag <- F
 coriolis_tag <- F
 fname_suffix <- ""
 p_ref_suffix <- ""
+sic_cond <- sic_thr <- NULL
 # todo: diagsuffix and typesuffix are not used anymore
 diagsuffix <- ""
 typesuffix <- ""
@@ -33,34 +34,40 @@ csec_cond_vals <- NULL
 csec_cond_units <- NULL
 
 ## Overwrite defaults with variable-specific info
-if (varname == "tos") { # fesom 1.4
+if (varname == "rsdo") {
+    longname <- "Downwelling Shortwave Radiation in Sea Water"
+    units_out <- "W m-2"
+    var_label <- expression(paste("Q"["sw,down"], " [W m"^"-2","]"))
+    varname_nc <- "rsdo"
+
+} else if (varname == "tos") { # fesom1
     longname <- "Sea Surface Temperature"
     units_out <- "degC"
     var_label <- expression(paste("SST [", degree, "C]"))
     anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "tos"
 
-} else if (varname == "tso") { # fesom 1.4
+} else if (varname == "tso") { # fesom1
     longname <- "Sea Surface Temperature snapshot"
     units_out <- "degC"
     var_label <- expression(paste("SST snapshot [", degree, "C]"))
     anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "tso"
 
-} else if (varname == "sst") { # fesom 2.0 
+} else if (varname == "sst") { # fesom2 
     longname <- "Sea Surface Temperature"
     units_out <- "degC"
     var_label <- expression(paste("SST [", degree, "C]"))
     anom_colorbar <- F # dont make blue and red out of <0 and >0 temp values
     varname_nc <- "sst"
 
-} else if (varname == "sos") { # fesom 1.4
+} else if (varname == "sos") { # fesom1
     longname <- "Sea Surface Salinity"
     units_out <- "psu"
     var_label <- expression(paste("SSS [psu]"))
     varname_nc <- "sos"
 
-} else if (varname == "sss") { # fesom 2.0 
+} else if (varname == "sss") { # fesom2 
     longname <- "Sea Surface Salinity"
     units_out <- "psu"
     var_label <- expression(paste("SSS [psu"))
@@ -3422,8 +3429,6 @@ if (varname == "tos") { # fesom 1.4
     longname <- "Net freshwater flux to ocean"
     subtitle <- ">0 into ocean"
     units_out <- "m s-1"
-    power_out <- 0
-    multfac_out <- base^power_out
     var_label <- expression(paste("Wnet [m s"^"-1","]"))
     if (out_mode == "fldint" || out_mode == "depthint") {
         power_out <- -6
@@ -3434,8 +3439,29 @@ if (varname == "tos") { # fesom 1.4
     typesuffix <- c("forcing.")
     diagsuffix <- c("diag.")
     varname_nc <- c("wnet")
-    rotate_inds <- F
-    vec <- F
+
+} else if (varname == "wfo") {
+    longname <- "water flux into the ocean divided by the area of the ocean portion of the grid cell"
+    subtitle <- ">0 into ocean"
+    units_out <- "kg m-2 s-1"
+    var_label <- expression(paste("wfo [kg m"^"-2"," s"^"-1","]"))
+    if (out_mode == "fldint" || out_mode == "depthint") {
+        units_out <- "kg s-1"
+    }
+    varname_nc <- c("wfo")
+
+} else if (varname == "fwf") {
+    longname <- "Additional Freshwater flux to ocean"
+    subtitle <- ">0 into ocean"
+    units_out <- "m s-1"
+    var_label <- expression(paste("FWF [m s"^"-1","]"))
+    if (out_mode == "fldint" || out_mode == "depthint") {
+        power_out <- -6
+        multfac_out <- base^power_out
+        #units_out <- paste0("m3 s-1 x ", multfac_out)
+        units_out <- "Sv"
+    }
+    varname_nc <- c("fwf")
 
 } else if (varname == "wind") {
     longname <- "Wind Speed"
@@ -4091,10 +4117,12 @@ if (varname == "tos") { # fesom 1.4
     rotate_inds <- c(1, 2)
     vec <- T
 
-} else if (varname == "sic") {
+} else if (any(varname == c("area", "sic"))) { # old and new naming convention
+    varname_nc <- varname
     longname <- "Sea Ice Concentration"
-    sic_thr <- 0.15 # same units_out as FESOM sea ice concentration variable ('area')
+    units_out <- "1.0" # as in fesom1
     sic_cond <- ">"
+    sic_thr <- 0.15 # same units_out as sea ice concentration variable
     #subtitle <- paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
     nsidc_iceedge <- F
     if (nsidc_iceedge) {
@@ -4102,37 +4130,43 @@ if (varname == "tos") { # fesom 1.4
         nsidc_thr <- 15 # [%]
         subtitle <- paste0("NSIDC sea ice concentration > ", nsidc_thr, "% climatology")
     }
-    power_out <- 2 
-    multfac_out <- base^power_out # # [0,1] --> [0,100]
-    units_out <- "%"
+    if (F) {
+        power_out <- 2 
+        multfac_out <- base^power_out # [0,1] --> [0,100]
+        units_out <- "%"
+    }
+    power_plot <- 2
+    multfac_plot <- base^power_plot # [0,1] --> [0,100]
     var_label <- expression(paste("Sea Ice concentration [%]"))
     typesuffix <- c("ice.")
     diagsuffix <- c("")
-    varname_nc <- c("area")
-    fpatterns <- "<runid>.<YYYY>.ice.mean.nc"
-    #varname_nc <- "sic"
+    
+# sia = sea ice area [m2]   = concentration [] * area [m2]
+# sie = sea ice extent [m2] = δ_i * area [m2]
+#   with δ_i = 1 if concentration at grid point i is >= threshold
+#   with δ_i = 0 if concentration at grid point i is < threshold
+# matthews et al. 2020
+} else if (varname == "siarea") {
+    units_out <- paste0(mesh_dist_unit, "2")
+    longname <- "Sea ice area"
+    #varname_nc <- "area"
+    varname_nc <- "sic"
+    horiz_deriv_tag <- "geo"
+    if (T) { # m2 --> km2
+        power_plot <- 6 
+        multfac_plot <- base^-power_plot
+        var_label <- substitute(paste("Sea ice area [km"^2, "]"))
+    }
 
-} else if (varname == "hice") {
-    longname <- "Sea Ice Thickness"
-    units_out <- "m"
-    var_label <- expression(paste("Effective Sea Ice Thickness [m]"))
-    multfac_out <- 1
-    typesuffix <- c("ice.")
-    diagsuffix <- c("")
-    varname_nc <- c("hice")
-    rotate_inds <- F
-    vec <- F
-
-} else if (varname == "iceextent") {
+} else if (varname == "siextent") {
     longname <- "Sea Ice Extent"
+    sic_cond <- ">="
     sic_thr <- 0.15 # same units_out as FESOM sea ice concentration variable ('area') 
-    sic_cond <- ">"
-    sic_cond_fname <- "gt" ## "gt" "ge" "st" "se"
-    subtitle <- paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
+    subtitle <- paste0("sic ", sic_cond, " ", round(100*sic_thr), "%")
     power_out <- 6 # [m^2] --> [km^2]
     multfac_out <- base^-power_out
     units_out <- "km2"
-    var_label <- substitute(paste("Sea Ice Extent [", units_out^2, "]"),
+    var_label <- substitute(paste("Sea ice extent [", units_out^2, "]"),
                                  list(units_out="km"))
     horiz_deriv_tag <- "geo"
     typesuffix <- c("ice.")
@@ -4154,16 +4188,28 @@ if (varname == "tos") { # fesom 1.4
                                  list(units_out="km"))
 
 } else if (varname == "siarean") {
-    var_label <- substitute(paste("Arctic sea ice extent [Mio ", units_out^2, "]"),
+    var_label <- substitute(paste("NH sea ice extent [Mio ", units_out^2, "]"),
                                  list(units_out="km"))
     varname_nc <- "siarean"
 
+} else if (varname == "siareas") {
+    var_label <- substitute(paste("SH sea ice extent [Mio ", units_out^2, "]"),
+                                 list(units_out="km"))
+    varname_nc <- "siareas"
+
+} else if (varname == "hice") {
+    longname <- "Sea Ice Thickness"
+    units_out <- "m"
+    var_label <- expression(paste("Effective Sea Ice Thickness [m]"))
+    multfac_out <- 1
+    typesuffix <- c("ice.")
+    diagsuffix <- c("")
+    varname_nc <- c("hice")
+    rotate_inds <- F
+    vec <- F
+
 } else if (varname == "icevol") {
     longname <- "Sea Ice Volume"
-    sic_thr <- NULL #0.15 # same units_out as FESOM sea ice concentration variable ('area')
-    sic_cond <- NULL #">" # choose: ">", ">=", "<", "<="
-    sic_cond_fname <- NULL
-    #subtitle <- paste0("sic ", sic_cond, " ", 100*sic_thr, " %")
     power_out <- 9 # [m^3] --> [km^3]
     multfac_out <- base^-power_out
     units_out <- paste0("km3")
@@ -4202,6 +4248,21 @@ if (varname == "tos") { # fesom 1.4
     varname_nc <- c("thdgr")
     rotate_inds <- F
     vec <- F
+
+} else if (varname == "ptr01") { # depends on implementation
+    if (T) { # fwf sofia
+        longname <- "freshwater forcing as passive tracer"
+        units_out <- "psu m s-1"
+        var_label <- expression(paste("F"["FW"], " [mmolC m"^paste(-3), "]"))
+        varname_nc <- "bgc08"
+        if (integrate_depth) var_label <- expression(paste("C"["det"], " [mmolC m"^paste(-2), "]"))
+        if (any(out_mode == c("fldint", "depthint"))) {
+            units_out <- "mmolC m-1"
+            if (integrate_depth) units_out <- "mmolC"
+        } else {
+            if (integrate_depth) units_out <- "mmolC m-2"
+        }
+    }
 
 } else if (varname == "transport") {
 
@@ -4748,11 +4809,21 @@ if (varname == "tos") { # fesom 1.4
         if (integrate_depth) units_out <- "mmolC m-2 day-1"
     }
 
+# carbon export production
+# from py_f2recom NPP_timeseries_python3.py:
+## Carbon export, DetC:units = "[mmol/m3]"
+#DetC1 = pf.get_data(resultpath, "DetC", years, mesh, how=None, compute=False, runid=self.runname, silent=True)
+#DetC2 = pf.get_data(resultpath, "idetz2c", years, mesh, how=None, compute=False, runid=self.runname, silent=True)
+#Vdet1 = 0.0288 * 100. + 20. ## sinking velocity
+#Vdet2 = 0.0288 * 100. + 200. ## sinking velocity
+#detc1 = 365. * DetC1[:,:,i_ep_depth] * 12.01 * Vdet1 /1e18 # [mmol/m3] => [mg/m2/yr] => [Pg C/yr]
+#detc2 = 365. * DetC2[:,:,i_ep_depth] * 12.01 * Vdet2 /1e18 # [mmol/m3] => [mg/m2/yr] => [Pg C/yr]
+#detct = detc1 + detc2
 } else if (varname == "export_detC_100m") {
-    longname <- "Carbon export of detritus at 100m depth"
+    longname <- "Carbon export of detritus at 100m depth = detritus carbon at 100 m depth * (20 + 0.0288*100) m day-1"
     units_out <- "mmolC m-2 d-1"
     var_label <- expression(paste("Export"[C[det]], " [mmolC m"^paste(-2), " d"^paste(-1), "]"))
-    varname_nc <- "bgc08"
+    varname_nc <- "bgc08" # detC [mmolC m-3]
     if (integrate_depth) stop("export is defined on a specific depth level")
     if (any(out_mode == c("fldint", "depthint"))) units_out <- "mmolC d-1"
 

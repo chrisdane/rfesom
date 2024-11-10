@@ -175,6 +175,7 @@ if (meshid == "CORE2_lgmf" ||
         stop("meshid is \"", meshid, "\" but `rotate_mesh` is false. i think this is not correct?")
     }
 }
+if (!any(mesh_dist_unit == c("m", "km"))) stop("`mesh_dist_unit` must be either \"m\" or \"km\"")
 
 # check depths
 if (!any(length(depths) == c(1, 2))) {
@@ -226,7 +227,10 @@ if (exclude_sic) {
     }
     fpatterns <- c(fpatterns, sic_fpattern)
 } # if exclude_sic
- 
+
+if (!is.null(sic_cond)) if (is.null(sic_thr)) stop("`sic_cond` = ", sic_cond, " but `sic_thr` is not given")
+if (!is.null(sic_thr)) if (is.null(sic_cond)) stop("`sic_thr` = ", sic_thr, " but `sic_cond` is not given")
+
 if (is.null(varname_nc)) { # non-netcdf variables like resolution
     nvars <- 0
 } else { # all other variables to be read from netcdf files
@@ -1499,6 +1503,8 @@ if (nvars > 0) {
             }
             message(indent, "   run `", cmd, "` ...")
             dates <- system(cmd, intern=T, ignore.stderr=T)
+            message("-->")
+            cat(capture.output(str(dates)), sep="\n")
             if (length(dates) == 0 && !is.null(time_var)) { # my ncl sub results
                 timevalue_strat <- "sub" # construct times based on YYYY from filenames
             } else {
@@ -1511,6 +1517,7 @@ if (nvars > 0) {
                     timevalue_strat <- "new" # use result of `cdo showtimestamp`
                 }
             }
+            message("--> timevalue_strat = ", timevalue_strat)
 
             # get input times of all files to read 
             for (fi in seq_along(files_list[[first_nc_with_time_ind[time_vari]]])) {
@@ -1560,18 +1567,36 @@ if (nvars > 0) {
                     }
                 
                 } else if (timevalue_strat == "new") { # `cdo showtimestamp` successful
-                    cmd <- paste0("cdo -s showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
-                    dates <- system(cmd, intern=T, ignore.stderr=T)
-                    if (all(dates == "")) {
-                        stop("cdo showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files,
-                             " was not successful")
+                    if (F) { # cdo showtimestamp too slow
+                        cmd <- paste0("cdo -s showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
+                        dates <- system(cmd, intern=T)
+                        if (all(dates == "")) {
+                            stop("cdo showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files,
+                                 " was not successful")
+                        }
+                        dates <- strsplit(trimws(dates), "  ")[[1]]
+                        dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
+                    } else if (T) {    
+                        cmd <- paste0("ncdump -ci ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
+                        dates <- system(cmd, intern=T)
+                        ind <- grep(" time = \"", dates) 
+                        if (length(ind) != 1) stop("this should not happen")
+                        dates <- dates[ind:(length(dates)-1)]
+                        dates <- trimws(sub(" time = ", "", dates))
+                        dates <- gsub("\"", "", dates)
+                        dates <- sub(" ;", "", dates)
+                        dates <- unlist(strsplit(dates, ", "))
+                        if (all(grepl("T", dates))) { # `ncdump -ci` returned complete datetime 
+                            dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
+                        } else { # `ncdump -ci` returned only date
+                            dates <- strptime(dates, format="%Y-%m-%d", tz="UTC") # = posixlt object
+                        }
                     }
-                    dates <- strsplit(trimws(dates), "  ")[[1]]
-                    dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
                     ntimepf <- length(dates)
                     
                 } # which timevalue_strat
-                    
+                if (F) message("fi ", fi)
+
                 # get dt in sec and check for time prob 3
                 if (fi == 1) cdo_shifttime <- "" # default: apply no shifttime
                 if (correct_dates && fesom_version == "fesom" && timevalue_strat == "new") { # newer fesom1 data has wrong dates (see time prob 3 above)
@@ -1664,7 +1689,7 @@ if (nvars > 0) {
                 if (fi == 1) {
                     message(indent, "Get time information of ", nfiles, " ", varname_nc[first_nc_with_time_ind], 
                             " file", ifelse(nfiles > 1, "s", ""), 
-                            ifelse(nfiles > 1, ". this may take some time", ""), " ...") 
+                            ifelse(nfiles > 1, ". This may take some time", ""), " ...") 
                 }
 
             } # for fi
@@ -1684,7 +1709,7 @@ if (nvars > 0) {
                 for (fi in seq_along(files_list[[first_nc_with_time_ind[time_vari]]])) {
                     dates <- files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$dates # posixlt
                     years_in <- unique(dates$year + 1900)
-                    if (grepl("^mon", frequency_post)) { # e.g. -monmean, monmax
+                    if (grepl("^mon", frequency_post)) { # e.g. -monmean, -monmax, -monsum
                         # --> monthly timepoints
                         dates_new <- rep(dates[1], t=12*length(years_in))
                         for (yi in seq_along(years_in)) {
@@ -1698,7 +1723,7 @@ if (nvars > 0) {
                                 dates_new[newind] <- mean(dates[yinds][minds])
                             } # for mi
                         } # for yi
-                    } else if (grepl("^year", frequency_post)) { # e.g. -yearmean, -yearmax
+                    } else if (grepl("^year", frequency_post)) { # e.g. -yearmean, -yearmax, -yearsum
                         # --> annual timepoints
                         dates_new <- rep(dates[1], t=length(years_in))
                         for (yi in seq_along(years_in)) {
@@ -1839,7 +1864,7 @@ if (nvars > 0) {
                 files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$time <- as.numeric(dates)
                 files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$recs <- recsi
                 if (fi == 1) {
-                    files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$total_recs <- recsi
+                    files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$total_recs <- seq_along(recsi)
                 } else {
                     files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$total_recs <- 
                         (max(files_list[[first_nc_with_time_ind[time_vari]]][[fi-1]]$total_recs)+1):
@@ -4567,20 +4592,26 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
     # save moc area if wanted
     if (plot_moc_mask) {
-        moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
+        #moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".png")
+        moc_mask_plotname <- paste0(plotpath, "/moc_mask_area_", area, "_mesh_", meshid, ".pdf")
         if (verbose > 0) {
             message(indent, "`plot_moc_mask` = T --> save", "\n",
                     indent, "   `moc_mask_plotname` = ", moc_mask_plotname, " ...")
         }
-        png(moc_mask_plotname, width=2666, height=2666, res=dpi)
-        plot(xcsur, ycsur, xlab="Longitude [°]", ylab="Latitude [°]", 
-             xaxt="n", yaxt="n", pch=".")
+        if (tools::file_ext(moc_mask_plotname) == "png") {
+            png(moc_mask_plotname, width=2666, height=2666, res=dpi, family="sans")
+        } else if (tools::file_ext(moc_mask_plotname) == "pdf") {
+            pdf(moc_mask_plotname, family="sans")
+        }
+        plot(xcsur, ycsur, t="n", xlab="Longitude [°]", ylab="Latitude [°]", xaxt="n", yaxt="n")
         axis(1, at=pretty(xcsur, n=20))
         axis(2, at=pretty(ycsur, n=20), las=2)
         abline(v=pretty(xcsur, n=20), lwd=0.5)
         abline(h=pretty(ycsur, n=20), lwd=0.5)
-        points(xcsur[moc_mask_inds], ycsur[moc_mask_inds], col="blue", pch=".")
-        title(paste0("MOC mask area \"", area, "\" for mesh \"", meshid, "\""))
+        points(xcsur, ycsur, pch=16, cex=0.2)
+        points(xcsur[moc_mask_inds], ycsur[moc_mask_inds], col="blue", pch=16, cex=0.2)
+        title(paste0("MOC mask area ", area, " mesh ", meshid, ""))
+        mtext(paste0(length(moc_mask_inds), "/", nod2d_n, " surface nodes"))
         dev.off()
     } # if plot_moc_mask
 
@@ -5003,7 +5034,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
         } else if (all_recs && rec_tag) {
             message("     `all_recs`=T --> read all time records per file at once")
         }
-        message("     on machine ", Sys.info()["nodename"], " ...") 
+        message("     on node ", Sys.info()["nodename"], " ...") 
     } # verbose
 
     ## Data read loop preparation
@@ -5488,7 +5519,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             
                             if (verbose > 1) message(indent, "First time step -> allocate `data_funi` ... ", appendLF=F)
                             
-                            if (any(out_mode == c("fldmean", "fldint", "sum", "max", "max3D", "min"))) {
+                            if (any(out_mode == c("fldmean", "fldint", "fldsum", "fldmax", "max3D", "fldmin"))) {
                                 data_funi <- array(NA, 
                                                    dim=c(dim(data_node)[1], timeobj$ntime, 1), # c(nvars,ntime,ndepths=1)
                                                    dimnames=c(dimnames(data_node)[1],
@@ -5945,7 +5976,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                             res_node_unit <- resolution_unit
                                         } # if resolution_unit != "km"
 
-                                        ## Calc different resolution properties 
+                                        ## Calc different resolution properties
+                                        # todo: get min from res_elem (Danilov 2022)
                                         res_node_min <- min(res_node, na.rm=T)
                                         res_node_max <- max(res_node, na.rm=T)
                                         res_node_median <- median(res_node, na.rm=T)
@@ -6032,7 +6064,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     data_funi[,time_inds,] <- area_int
                                 }
 
-                            } else if (out_mode == "sum") {
+                            } else if (out_mode == "fldsum") {
                                 # sum over nodes
                                 data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), sum, na.rm=T)[,seq_along(time_inds),]
                                 # For Hu Yang: sum only where wind curl is negative
@@ -6043,7 +6075,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 #datavec2[datavec2 <= 0] = 0
                                 #data_funi[time_inds,] <- apply(datavec2, c(3, 4), sum, na.rm=T)
                             
-                            } else if (any(out_mode == c("max", "max3D", "depthmax"))) {
+                            } else if (any(out_mode == c("fldmax", "max3D", "depthmax"))) {
                                 tmp <- apply(datavec, c(1, 3, 4), max, na.rm=T) # var, time, depths
                                 tmp[tmp == -Inf] <- NA
                                 
@@ -6055,7 +6087,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                     data_funi_depths[,time_inds,1] <- interpolate_depths[apply(tmp, c(1, 2), which.max)]
                                 }
                             
-                            } else if (out_mode == "min") {
+                            } else if (out_mode == "fldmin") {
                                 data_funi[,time_inds,] <- apply(datavec, c(1, 3, 4), min, na.rm=T)[,seq_along(time_inds),]
                             }
                            
@@ -6689,7 +6721,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                         
                             if (zave_method == 1) { # level-wise dz                        
                                 if (verbose > 1) {
-                                    message(indent, "For ltm/plot Apply vertical interpolation coefficients to `data_node`", appendLF=F)
+                                    message(indent, "For ltm/plot apply vertical interpolation coefficients to `data_node`", appendLF=F)
                                     if (any(dim_tag == "3D" & !levelwise)) {
                                         message(" and rearrange from (nod3d_n=", nod3d_n, ") on (nod2d_n=", 
                                                 nod2d_n, " x ndepths=", ndepths, ")", appendLF=F)
@@ -6955,7 +6987,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
             # nc name
             outname <- paste0(transientpath, "/", postprefix)
-            if (any(varname == c("iceextent", "icevol"))) {
+            if (any(varname == c("siextent", "icevol"))) {
                 if (!is.null(sic_cond_fname)) {
                     outname <- paste0(outname, "_sic.", sic_cond_fname, ".", sic_thr*100)
                 }
@@ -7058,7 +7090,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 depth_var <- data_fun_var
             }
 
-            if (any(out_mode == c("fldmean", "fldint", "sum", "max", "max3D", "min"))) {
+            if (any(out_mode == c("fldmean", "fldint", "fldsum", "fldmax", "max3D", "fldmin"))) {
 
                 for (i in 1:length(data_fun_var)) {
                     name <- dimnames(data_funi)[[1]][i]
@@ -7083,7 +7115,8 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                 for (i in 1:length(data_fun_var)) {
                     name <- dimnames(data_funi)[[1]][i]
                     data_fun_var[[i]] <- ncvar_def(name=name, units=units_out,
-                                                   dim=list(time_dim, depth_dim),
+                                                   #dim=list(time_dim, depth_dim), # old: wrong order for cdo
+                                                   dim=list(depth_dim, time_dim),
                                                    missval=mv,
                                                    longname=paste0(longname, 
                                                                    ifelse(subtitle == "", "", paste0(", ", subtitle))))
@@ -7112,7 +7145,6 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     } else {
                         unit <- units_out
                     }
-
                 
                     name <- paste0(dimnames(data_funi)[[1]][i], "_", out_mode)
                     if (out_mode == "csec_mean") {
@@ -7141,7 +7173,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             } # moc_depth
 
             ## Create nc file
-            if (any(out_mode == c("fldmean", "fldint", "sum", "max", "min"))) {
+            if (any(out_mode == c("fldmean", "fldint", "fldsum", "fldmax", "fldmin"))) {
                 outnc <- nc_create(filename=outname, vars=data_fun_var,
                                    force_v4=force_v4)
             }
@@ -7184,7 +7216,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             }
 
             if (out_mode == "max3D") {
-                for (i in 1:length(depth_var)) {
+                for (i in seq_along(depth_var)) {
                      ncvar_put(outnc, depth_var[[i]], -data_funi_depths[i,,1])
                 }
             }
@@ -7203,7 +7235,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             }
 
             ## Put data to nc file
-            for (i in 1:length(data_fun_var)) {
+            for (i in seq_along(data_fun_var)) {
                 
                 if (out_mode == "csec_mean") {
                     ncvar_put(outnc, data_fun_var[[i]], data_funi[i,])
@@ -7212,7 +7244,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     ncvar_put(outnc, data_fun_var[[i]], data_funi[i,,,])
                 
                 } else { # mean sum max min etc
-                    ncvar_put(outnc, data_fun_var[[i]], data_funi[i,,])
+                    ncvar_put(outnc, data_fun_var[[i]], t(drop(data_funi[i,,]))) # transpose to get dimensions in right order for cdo
                 
                 }
 
@@ -7240,7 +7272,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             if (p_ref_suffix != "") {
                 ncatt_put(outnc, 0, paste0("p_ref", ifelse(p_ref != "in-situ", "_dbar", "")), p_ref)
             }
-            if (any(varname == c("iceextent", "icevol"))) {
+            if (any(varname == c("siextent", "icevol"))) {
                 if (!is.null(sic_cond_fname)) ncatt_put(outnc, 0, paste0("sic_thr_", sic_cond_fname, "_%"), sic_thr*100)
             }
             if (any(out_mode == c("csec_mean", "csec_depth"))) {
@@ -7427,7 +7459,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         if (nvars == 0) {
             if (!exists("data_node_ltm")) {
                 #message(indent, "Prepare matrix ...")
-                stop("update")
+                #stop("update")
                 # placeholder needed?
                 dims <- c(1, 
                           ifelse(any(dim_tag == "3D" & !levelwise), nod3d_n, nod2d_n), 

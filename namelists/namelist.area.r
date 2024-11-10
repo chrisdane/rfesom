@@ -8,6 +8,7 @@
 #if (rotate_mesh || !rotate_mesh) {
 
     projection <- "rectangular" ## "rectangular", "stereographic", "orthographic"
+    #projection <- "stereographic"
     geogr_lims <- T # define plot borders in geographical coordinates, i.e. make normal plot 
                      # in xy-plane in case of e.g. stereographic projection
     proj_lims  <- F # define plot borders in projected coordinates, i.e. make "pizza piece" 
@@ -294,7 +295,7 @@
             } else if (area == "IceSea1") {
                 map_geogr_lim_lon <- c(-20, -10)
                 map_geogr_lim_lat <- c(57.5, 61.5)
-            } else if (area == " IceSea2") {
+            } else if (area == "IceSea2") {
                 map_geogr_lim_lon <- c(-30, -20)
                 map_geogr_lim_lat <- c(50, 60)
             } else if (area == "IceSea3") {
@@ -415,7 +416,13 @@
             } else if (area == "SH") {
                 map_geogr_lim_lon <- c(-180, 180) 
                 map_geogr_lim_lat <- c(-90, 0) 
-            } else if (area == "NH_66") {
+            } else if (area == "NH60") {
+                map_geogr_lim_lon <- c(-180, 180)
+                map_geogr_lim_lat <- c(60, 90)
+            } else if (area == "NH65-30W120E") {
+                map_geogr_lim_lon <- c(-30, 120)
+                map_geogr_lim_lat <- c(65, 90)
+            } else if (area == "NH66") {
                 map_geogr_lim_lon <- c(-180, 180)
                 map_geogr_lim_lat <- c(66, 90)
             } else if (area == "mldWeddel") {
@@ -560,6 +567,11 @@
             } else if (area == "NH") {
                 map_geogr_lim_lon <- c(-180, 180) #c(-61, -49) #c(-62, 0) # c(6,10)
                 map_geogr_lim_lat <- c(0, 90) #c(37, 41) #c(38, 62) # c(52, 53)
+                poly_geogr_lim_lon <- map_geogr_lim_lon
+                poly_geogr_lim_lat <- map_geogr_lim_lat
+            } else if (area == "SH") {
+                map_geogr_lim_lon <- c(-180, 180) #c(-61, -49) #c(-62, 0) # c(6,10)
+                map_geogr_lim_lat <- c(-90, -70) #c(37, 41) #c(38, 62) # c(52, 53)
                 poly_geogr_lim_lon <- map_geogr_lim_lon
                 poly_geogr_lim_lat <- map_geogr_lim_lat
             }

@@ -20,7 +20,13 @@ cp <- 3991.86795711963 # [J kg-1 K-1] = [m2 s-2 K-1] (J = kg m2 s-2); specific h
                        # or
                        # 2) "gsw_cp_t_exact" from
                        #    http://www.teos-10.org/pubs/gsw/html/gsw_cp_t_exact.html
-rho0 <- 1027 # [kg m-3] a mean density
+rho0 <- 1035 # [kg m-3] a mean density
+             # griffies et al. 2016:
+             # As noted on page 47 of Gill (1982), with the exception of
+             # only a small percentage of the ocean, in situ density in the
+             # World Ocean varies by no more than 2 % from 1035 kg m−3.
+             # Hence, ρo = 1035 kg m-3 is a sensible choice for the ref-
+             # erence density used in a Boussinesq ocean climate model.
 mesh_dist_unit <- "m" # for mesh settings, let "m" to obtain SI units
 Rearth <- 6367.5*1e3 # earth radius; must have same unit as 'mesh_dist_unit'
 g <- 9.81 # [m s-2] acceleration due to gravity
@@ -136,10 +142,10 @@ add_res_to_nc         <- T
 #       if out_mode == 
 #           "fldmean"       xy_mean( z_*mean/int*(X) )  1: ntime
 #           "fldint"        xy_int( z_*mean/int*(X) )   1: ntime
-#           "sum"           xy_sum( z_*mean/int*(X) )   1: ntime
-#           "max"           xy_max( z_*mean/int*(X) )   1: ntime
+#           "fldsum"        xy_sum( z_*mean/int*(X) )   1: ntime
+#           "fldmax"        xy_max( z_*mean/int*(X) )   1: ntime
 #           "max3D"         xyz_max(X)                  1: ntime
-#           "min"           xy_min( z_*mean/int*(X) )   1: ntime
+#           "fldmin"        xy_min( z_*mean/int*(X) )   1: ntime
 #           "depth"         xy_mean(X)                  2: ndepth x ntime
 #           "depthint"      xy_int(X)                   2: ndepth x ntime
 #           "depthmax"      xy_max(X)                   2: ndepth x ntime

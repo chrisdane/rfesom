@@ -79,9 +79,9 @@ sub_calc <- function(data_node) {
 
         varinds <- c(1, 2)
         if (verbose > 1) {
-            message(paste0(indent, varname, " = sqrt(",
-                         vars[varinds[1]], "^2 + ",
-                         vars[varinds[2]], "^2) ..."))
+            message(indent, varname, " = sqrt(",
+                    vars[varinds[1]], "^2 + ",
+                    vars[varinds[2]], "^2) ...")
         }
 
         tmp <- sqrt(data_node[varinds[1],,,]^2 + data_node[varinds[2],,,]^2)
@@ -3055,7 +3055,7 @@ sub_calc <- function(data_node) {
                             #aux3d_n, # todo: ndepths or aux3d_n here?
                             ndepths,
                             dim(data_node)[4])) # c(nvars,nreg_lat,ndepths,ntime)
-        if (total_rec == 0) {
+        if (all(total_rec == 0)) {
             moc_topo <- array(1, 
                                dim=c(length(moc_reg_lat_global), 
                                      #aux3d_n
@@ -3121,7 +3121,7 @@ sub_calc <- function(data_node) {
                             yind <- which(abs(moc_reg_lat_global - y) == min(abs(moc_reg_lat_global - y)))
                         }
                         #for (di in 1:aux3d_n) { # calculate in aux3d space
-                        for (di in 1:ndepths) {
+                        for (di in seq_len(ndepths)) {
                             if (levelwise == F) {
                                 elnode3 <- aux3d[di,elnodes]
                                 if (all(elnode3 > 0)) { 
@@ -3130,7 +3130,7 @@ sub_calc <- function(data_node) {
                                     m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
                                     # mean over 3 3d-nodes; keep time dim4
                                     moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3/s --> Sv
-                                    if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
+                                    if (all(total_rec == 0)) moc_topo[yind,di] <- NA # = 1 at land and NA at water
                                 } # if element has no -999 entries in aux3d
                             } else if (levelwise == T) {
                                 if (all(!is.na(data_node[,elnodes,di,]))) { 
@@ -3139,7 +3139,7 @@ sub_calc <- function(data_node) {
                                     m <- array(moc_mask[elnodes], dim(vel)) # repeat mask in time dim
                                     # mean over 3 3d-nodes; keep time dim4
                                     moc[1,yind,di,] <- moc[1,yind,di,] + vol*apply(vel*m, 4, mean)*1.e-6 # m3/s --> Sv 
-                                    if (total_rec == 0) moc_topo[yind,di] <- NA # = 1 at land and NA at water
+                                    if (all(total_rec == 0)) moc_topo[yind,di] <- NA # = 1 at land and NA at water
                                 }
                             }
                         } # for di aux3d_n/ndepths
@@ -3160,17 +3160,17 @@ sub_calc <- function(data_node) {
         # cumsum meridionally: from north-south / south-north
         # dim(moc) = c(1,nregy,ndepths,nrecspf)
         moc_save <- moc
-        if (area != "global") {
+        if (area == "global_ocean") { # global moc
+            for (i in 2:length(moc_reg_lat_global)) { 
+                moc[1,i,,] <- moc[1,i,,] + moc[1,i-1,,]
+            }
+        } else {
             #moc <- apply(moc, 2, cumsum)
             for (i in (length(moc_reg_lat_global) - 1):1) {
                 if (varname == "MOCw") moc[1,i,,] <- -moc[1,i,,] + moc[1,i+1,,]
                 if (varname == "MOCv") moc[1,i,,] <- moc[1,i,,] + moc[1,i+1,,]
             }
-        } else if (area == "global") { # global moc
-            for (i in 2:length(moc_reg_lat_global)) { 
-                moc[1,i,,] <- moc[1,i,,] + moc[1,i-1,,]
-            }
-        } # if use_mask
+        } # if global moc or not
         
         data_node <- moc
         dimnames(data_node)[2:4] <- list(lat=moc_reg_lat_global, 
@@ -3183,24 +3183,19 @@ sub_calc <- function(data_node) {
     ## variables that need cluster area
     if (any(varname == c("resolutionkm", "resolutiondeg", "mesharea",
                          "fwflux", 
-                         "iceextent", "icevol"))) {
+                         "siarea", "siextent", "icevol"))) {
         
         # dim(cluster_area_2d) = nod2d_n  
-        if (any(varname == c("fwflux", "iceextent", "icevol"))) {
-            cluster_area_2d_vert <- replicate(cluster_area_2d, n=1) # nvars
-            cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=dim(data_node)[3]) # ndepths
-            cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=dim(data_node)[4]) # nrecspf
-            cluster_area_2d_vert <- aperm(cluster_area_2d_vert, c(2, 1, 3, 4)) 
-            # dim(cluster_area_2d_vert) = c(nvars,nod2d_n,ndepths=1,nrecspf)
-
-        } else if (varname == "mesharea") {
-            cluster_area_2d_vert <- replicate(cluster_area_2d, n=1) # nvars
+        cluster_area_2d_vert <- replicate(cluster_area_2d, n=1) # nvars
+        if (varname == "mesharea") {
             cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=1) # nrecs
             cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=1) # ndepths
-            cluster_area_2d_vert <- aperm(cluster_area_2d_vert, c(2, 1, 3, 4))
-            # dim(cluster_area_2d_vert) = c(nvars,nod2d_n,ndepths=1,nrecspf=1)
-        
+        } else {
+            cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=dim(data_node)[3]) # ndepths
+            cluster_area_2d_vert <- replicate(cluster_area_2d_vert, n=dim(data_node)[4]) # nrecspf
         }
+        cluster_area_2d_vert <- aperm(cluster_area_2d_vert, c(2, 1, 3, 4)) 
+        # dim(cluster_area_2d_vert) = c(nvars,nod2d_n,ndepths=1,nrecspf)
 
         if (varname == "mesharea") {
             data_node <- cluster_area_2d_vert
@@ -3280,25 +3275,26 @@ sub_calc <- function(data_node) {
 
             } # "resolutiondeg"
 
-        } else if (any(varname == c("iceextent", "icevol"))) {
-
-            if (varname == "iceextent") {
-                varinds <- which(vars == "area" | vars == "sic")
+        } else if (any(varname == c("siarea", "siextent", "icevol"))) {
+            if (any(varname == c("siarea", "siextent"))) {
+                varinds <- c("siconc"=which(vars == "area" | vars == "sic"))
             } else if (varname == "icevol") {
-                varinds <- c(which(vars == "area" | vars == "sic"),
-                              which(vars == "hice" | vars == "sithick"))
+                varinds <- c("siconc"=which(vars == "area" | vars == "sic"),
+                             "sithick"=which(vars == "hice" | vars == "sithick"))
             }
             if (any(is.na(varinds))) stop("Could not find data.")
 
             if (verbose > 1) {
-                if (varname == "iceextent") {
-                    message(paste0(indent, varname, " = ", vars[varinds[1]], " ..."))
+                if (varname == "siarea") {
+                    message(indent, varname, " = ", vars[varinds["siconc"]], " * cluster_area_2d ...")
+                } else if (varname == "siextent") {
+                    message(indent, varname, " = cluster_area_2d(", vars[varinds["siconc"]], " thr) ...")
                 } else if (varname == "icevol") {
-                    message(paste0(indent, varname, " = ", vars[varinds[1]], " * ", vars[varinds[2]], " ..."))
+                    message(indent, varname, " = ", vars[varinds["siconc"]], " * ", vars[varinds["sithick"]], " * cluster_area_2d ...")
                 }
                 if (!is.null(sic_cond)) {
-                    message(paste0(indent, "   with sea ice concentration ", sic_cond, 
-                                   " (='sic_cond') ", sic_thr, " (='sic_thr')."))
+                    message(indent, "   with sea ice concentration ", sic_cond, 
+                            " (='sic_cond') ", sic_thr, " (='sic_thr').")
                     message(indent, "   Change these variables to 'NULL' in namelist.var.r if you dont want a threshold ...")
                 }
             } # verbose
@@ -3306,7 +3302,7 @@ sub_calc <- function(data_node) {
             si_area <- cluster_area_2d_vert
             if (!is.null(sic_cond)) {
                 if (sic_cond == ">") {
-                    sic_inds <- data_node[varinds[1],,,] > sic_thr
+                    sic_inds <- data_node[varinds["siconc"],,,] > sic_thr
                     sic_cond_fname <- "gt"
                 
                 } else if (sic_cond == ">=") {
@@ -3322,25 +3318,28 @@ sub_calc <- function(data_node) {
                     sic_cond_fname <- "le"
                 
                 } else {
-                    stop(paste0(indent, "Error: sea ice concentration condition '", sic_cond, 
-                                 "' not defined. Choose among '>', '>=', '<', '<=' !"))
+                    stop(indent, "sea ice concentration condition '", sic_cond, 
+                         "' not defined. Choose among '>', '>=', '<', or '<='")
                 }
                 si_area[!sic_inds] <- 0
             } # !is.null(sic_cond) 
 
-            if (varname == "iceextent") {
+            if (varname == "siarea") {
+                data_node <- si_area * data_node[varinds["siconc"],,,]
+                
+            } else if (varname == "siextent") {
                 data_node <- si_area
 
             } else if (varname == "icevol") {
-                data_node <- si_area * data_node[varinds[2],,,]
+                data_node <- si_area * data_node[varinds["sithick"],,,]
 
             }
         
-        } # "iceextent", "icevol"
+        } # "siarea", "siextent", "icevol"
         
         dimnames(data_node)[[1]] <- list(varname)
 
-    } # "resolutionkm", "resolutiondeg", "mesharea", "fwflux", "iceextent", "icevol"
+    } # "resolutionkm", "resolutiondeg", "mesharea", "fwflux", "siarea", "siextent", "icevol"
 
     ## recom
     if (varname == "NPPtot") {
@@ -3355,7 +3354,7 @@ sub_calc <- function(data_node) {
 
     if (varname == "export_detC_100m") {
 
-        # data is already interpolated to 100 m depths
+        # data is already interpolated to 100 m depth
         if (ndepths != 1) stop("rerun with `depths <- 100`")
         if (depths != 100) stop("rerun with `depths <- 100`")
 
