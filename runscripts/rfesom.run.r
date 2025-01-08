@@ -881,12 +881,20 @@ if (F) { # lackermann
     #out_mode <- "depth"
 
 } else if (T) { # ogurses
-    workpath <- "/work/ba1103/a270073"
-    datainpaths <- "/scratch/a/a270094/MOC/wo"
-    postprefix <- ""
+    if (F) {
+        workpath <- "/work/ba1103/a270073"
+        datainpaths <- "/scratch/a/a270094/MOC/wo"
+        postprefix <- "fesom1.4-recom2_bold_simA"
+        meshid <- "bold"
+        meshpath <- "/scratch/a/a270094/MOC/Bold"
+    } else if (T) {
+        workpath <- "/albedo/work/user/cdanek"
+        datainpaths <- "/albedo/scratch/user/ogurses/reccap_A_varCO2_varclim_1958_2019"
+        postprefix <- "fesom1.4-recom2_core_simA"
+        meshid <- "core"
+        meshpath <- "/albedo/pool/FESOM/meshes_default/core"
+    }
     fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
-    meshid <- "bold"
-    meshpath <- "/scratch/a/a270094/MOC/Bold"
     years <- 2000:2018
     #frequency_post <- "yearmean"
     varname <- "MOCw"

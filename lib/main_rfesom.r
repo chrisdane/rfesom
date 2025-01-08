@@ -1576,7 +1576,7 @@ if (nvars > 0) {
                         }
                         dates <- strsplit(trimws(dates), "  ")[[1]]
                         dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
-                    } else if (T) { # ncdump faster than cdo showtimestamp 
+                    } else if (T) { # ncdump faster than cdo showtimestamp
                         cmd <- paste0("ncdump -ci ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
                         dates <- system(cmd, intern=T)
                         ind <- grep(" time = \"", dates)
@@ -2060,7 +2060,7 @@ if (nvars > 0) {
         } # if no depth var was found
         
         # fesom depths levels and dz
-        fesom_depths <- abs(depthobj$depth) # these are the model depths in m (positive downwards) 
+        fesom_depths <- abs(depthobj$depth) # these are the model depths in m (positive downwards)
         ndepths_all <- length(fesom_depths)
         depthobj$ndepths_all <- ndepths_all
         if (ndepths_all > 1) {
