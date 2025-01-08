@@ -11,7 +11,8 @@ submit_via_nohup <- F
 submit_via_sbatch <- T # uses account resources!!!
 dry <- F # do not submit final jobs
 
-myrunscript_fname <- "~/scripts/r/rfesom/runscripts/myrunscript.r"
+#myrunscript_fname <- "~/scripts/r/rfesom/runscripts/myrunscript.r"
+myrunscript_fname <- "~/scripts/r/rfesom/runscripts/rfesom.run.r"
 
 if (F) {
     replace_string <- list(string=" years <- ", between_lines=c(51, 56))
@@ -30,7 +31,7 @@ if (F) {
     #replace_by <- apply(cbind(c(1842, seq(1850, 1930, b=10), 1940),
     #                          c(1849, seq(1859, 1939, b=10), 1941)),
     #                    1, paste, collapse=":")
-} else if (T) { # phd
+} else if (F) { # phd
     replace_string <- list(string=" years <- ", between_lines=c(501, 501))
     replace_by <- c("1948:1957",
                     "1958:1967",
@@ -39,6 +40,9 @@ if (F) {
                     "1988:1997",
                     "1998:2007",
                     "2008:2009")
+} else if (T) {
+    replace_string <- list(string=" years <- ", between_lines=c(890, 890))
+    replace_by <- 2001:2018
 }
 
 ##### user input end #####
@@ -71,7 +75,7 @@ for (jobi in seq_len(njobs)) {
     ms <- format(as.numeric(Sys.time())*1000, digits=10) # some unique number for log file name
     suffix <- paste0(gsub("[:punct:]", "_", replace_by[jobi]), collapse="_")
     if (jobi == 1) {
-        tmppath <- normalizePath("tmp")
+        tmppath <- "tmp"
         dir.create(tmppath, recursive=T, showWarnings=F)
     }
     myrunscripttmp_fname <- paste0(tmppath, "/", basename(myrunscript_fname), 
@@ -101,11 +105,13 @@ for (jobi in seq_len(njobs)) {
                  "#SBATCH --partition=shared     # Specify partition name",
                  #"#SBATCH --partition=prepost     # Specify partition name",
                  #"#SBATCH --ntasks=1             # Specify max. number of tasks to be invoked",
+                 "#SBATCH --time=04:00:00        # Set a limit on the total run time",
                  #"#SBATCH --time=08:00:00        # Set a limit on the total run time",
-                 "#SBATCH --time=36:00:00        # Set a limit on the total run time",
+                 #"#SBATCH --time=36:00:00        # Set a limit on the total run time",
                  #"#SBATCH --mail-type=FAIL       # Notify user by email in case of job failure",
                  #"#SBATCH --account=ab0246       # Charge resources on this project account",
-                 "#SBATCH --account=ba0989       # Charge resources on this project account",
+                 "#SBATCH --account=ab1095       # Charge resources on this project account",
+                 #"#SBATCH --account=ba0989       # Charge resources on this project account",
                  # memory:
                  #"#SBATCH --mem=0                    # 0 = use all mem",
                  "#SBATCH --mem=15000M                    # 0 = use all mem",

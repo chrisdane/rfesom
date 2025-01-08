@@ -240,15 +240,17 @@ if (F) { # lackermann
     workpath <- "/work/ba1103/a270073"
     #model <- "fesom"
     model <- "recom"
-    datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/", model)
-    #datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/", model)
+    if (T) {
+        datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_historical2"
+        #postprefix <- "awi-esm-1-1-lr_kh800_historical2_day"
+    } else if (F) {
+        datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/", model)
+        postprefix <- "awi-esm-1-1-lr_kh800_historical3"
+    }
     #fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
     #fpatterns <- rep("<varname_nc>_fesom_<YYYY>0101.nc", t=2)
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical_day"
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical"
-    postprefix <- "awi-esm-1-1-lr_kh800_historical2"
-    #postprefix <- "awi-esm-1-1-lr_kh800_historical3"
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #cycl <- F
@@ -256,7 +258,8 @@ if (F) { # lackermann
     #years <- 1850:2014
     #years <- 1970:2014
     #years <- 1981:2014
-    years <- 1982:2014
+    #years <- 1982:2014
+    years <- 1982:1994
     #years <- 1995:2014
     #years <- 1995:2014 # last 20 years
     #years <- 2010:2014
@@ -270,8 +273,8 @@ if (F) { # lackermann
     #varname <- "omldamax"
     #varname <- "sic"
     #varname <- "siarea"
-    varname <- "CO2f"
-    #varname <- "pCO2s"
+    #varname <- "CO2f"
+    varname <- "pCO2s"
     #varname <- "dpCO2s"
     #varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
@@ -315,7 +318,7 @@ if (F) { # lackermann
     #area <- "NH65-30W120E"
     #area <- "NH66"
 
-} else if (T) { # awi-esm-1-1-lr_kh800 ssp126 ssp245 ssp534-over ssp585
+} else if (F) { # awi-esm-1-1-lr_kh800 ssp126 ssp245 ssp534-over ssp585
     workpath <- "/work/ba1103/a270073"
     #model <- "fesom"
     model <- "recom"
@@ -328,7 +331,7 @@ if (F) { # lackermann
     } else if (F) { # ssp534-over
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp534-over/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_ssp534-over"
-    } else if (T) { # ssp585
+    } else if (F) { # ssp585
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_ssp585"
     }
@@ -350,8 +353,8 @@ if (F) { # lackermann
     #varname <- "sic"
     #varname <- "siarea"
     #varname <- "MOCw"
-    varname <- "CO2f"
-    #varname <- "pCO2s"
+    #varname <- "CO2f"
+    varname <- "pCO2s"
     #varname <- "dpCO2s"
     #varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
@@ -470,17 +473,17 @@ if (F) { # lackermann
         #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/neg_co2_3879_monthly_restart/outdata/fesom"
         #datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_start3870/outdata/", model)
         #postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_start3870"
-    } else if (T) {
+    } else if (F) {
         datainpaths <- paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl2"
-    } else if (F) {
+    } else if (T) {
         datainpaths <- paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/", model)
         postprefix <- "awi-esm-1-1-lr_kh800_esm-piControl_nobio_spinup"
     }
     meshid <- "core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #cycl <- F # test
-    years <- 1850:2100
+    #years <- 1850:2100
     #years <- 2686
     #years <- 2686:2688
     #years <- 2686:2760
@@ -492,17 +495,18 @@ if (F) { # lackermann
     #years <- 3208
     #years <- 3208:3210
     #years <- 3208:3253
-    #years <- 3208:3264 # part 1/2 nobio stupid monthly runs
+    #years <- 3208:3264 # part 1/3 nobio stupid monthly runs
     #years <- 3208:3265 
     #years <- 3208:3309
     #years <- 3208:3323
     #years <- 3208:3377
     #years <- 3208:3393
     #years <- 3208:3590
-    #years <- 3208:3878 # part 1/2 esm-piControl_wout_talk_rest2 stupid monthly runs of year 3879
+    #years <- 3208:3878 # part 1/3 esm-piControl_wout_talk_rest2 stupid monthly runs of year 3879
     #years <- 3208:3945
     #years <- 3222:3265
-    #years <- 3266:3945 # part 2/2 nobio stupid monthly runs
+    #years <- 3266:3945 # part 2/3 nobio stupid monthly runs
+    #years <- 3266:4427 # part 2/3 nobio stupid monthly runs
     #years <- 3310:3323
     #years <- 3496:3497
     #years <- 3498:3878
@@ -514,11 +518,10 @@ if (F) { # lackermann
     #years <- 3851:3945
     #years <- 3871:3878
     #years <- 3877:3881 # test stupid annual (3877, 3878), monthly (3879), annual (3880, 3881) chunks
-    #years <- 3879:3945
-    #years <- 3880:3945 # part 2/2 stupid monthly runs of year 3879
+    #years <- 3880:3945 # part 2/3 esm-piControl_wout_talk_rest2 stupid monthly runs of year 3879
+    #years <- 3880:4427 # part 2/3 esm-piControl_wout_talk_rest2 stupid monthly runs of year 3879
     #years <- 3926:3945
-    #years <- 3946:4427 # 4427 last year of spinup output
-    #years <- 4428:4527 # 4428 first year of production output
+    years <- 4428:4527 # production output of last 100 years
     #varname <- "tos"
     #varname <- "sos"
     #varname <- "thetao"
@@ -528,12 +531,12 @@ if (F) { # lackermann
     #varname <- "pCO2s"
     #varname <- "dpCO2s"
     #varname <- "pCO2a"
-    varname <- "bgc02" # dic
+    #varname <- "bgc02" # dic
     #varname <- "bgc03" # talk
     #varname <- "bgc05" # phyc intracellular carbon concentration in small phytoplankton
     #varname <- "bgc08" # detc carbon concentration in detritus
     #varname <- "bgc10" # carbon concentration in heterotrophs
-    #varname <- "bgc12" # doc
+    varname <- "bgc12" # doc
     #varname <- "bgc14" # diac intracellular carbon concentration in diatoms
     #varname <- "bgc16" # silicate diatom
     #varname <- "bgc17" # silicate det
@@ -547,7 +550,7 @@ if (F) { # lackermann
     #varname <- "diags3d02" # npp by diatoms
     #varname <- "NPPtot" # total npp = diags3d01 + diags3d02
     #frequency <- "daily"
-    #frequency <- "monthly"
+    frequency <- "monthly"
     #frequency <- "annual"
     #frequency_post <- "monmean"
     frequency_post <- "yearmean"
@@ -876,6 +879,22 @@ if (F) { # lackermann
     out_mode <- "fldint"
     #out_mode <- "fldmean"
     #out_mode <- "depth"
+
+} else if (T) { # ogurses
+    workpath <- "/work/ba1103/a270073"
+    datainpaths <- "/scratch/a/a270094/MOC/wo"
+    postprefix <- ""
+    fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
+    meshid <- "bold"
+    meshpath <- "/scratch/a/a270094/MOC/Bold"
+    years <- 2000:2018
+    #frequency_post <- "yearmean"
+    varname <- "MOCw"
+    regular_ltm_out <- F
+    transient_out <- T
+    out_mode <- "moc_depth"
+    depths <- c(0, 5900)
+    plot_moc_mask <- F
 
 } else if (F) { # ying
     fesom_version <- "fesom2"

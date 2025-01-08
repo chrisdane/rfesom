@@ -3078,8 +3078,7 @@ sub_calc <- function(data_node) {
                 }
             }
             
-            # Rcpp routine not yet finished!
-            Rcpp_tag <- F
+            Rcpp_tag <- F # Rcpp routine not yet finished!
             if (Rcpp_tag == T) {
                 #ttime <- system.time({sourceCpp("lib/sub_e2_to_n2.cpp", cacheDir=subroutinepath)}) # 18 sec!!! 
                 if (levelwise == T) {

@@ -106,13 +106,13 @@ colors_script <- paste0(subroutinepath, "/functions/colors/color_function.r")
 message("\nLoad default options from \"", rfesompath, "/namelists/namelist.config.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.config.r")) 
 
-## Load user options
-message("Overwrite default options with user options from \"", user_runscript_filename, "\" ...")
-source(textConnection(user_runscript)) # here the runscript of the user is finally loaded
-
 ## Load plot options
 message("Get plot options based on user options from \"", rfesompath, "/namelists/namelist.plot.r\" ...")
 source(paste0(rfesompath, "/namelists/namelist.plot.r")) 
+
+## Load user options
+message("Overwrite default options with user options from \"", user_runscript_filename, "\" ...")
+source(textConnection(user_runscript)) # here the runscript of the user is finally loaded
 
 ## Load variable options
 message("Get variable options based on user options from \"", rfesompath, "/namelists/namelist.var.r\" ...")
@@ -1576,12 +1576,15 @@ if (nvars > 0) {
                         }
                         dates <- strsplit(trimws(dates), "  ")[[1]]
                         dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
-                    } else if (T) {    
+                    } else if (T) { # ncdump faster than cdo showtimestamp 
                         cmd <- paste0("ncdump -ci ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
                         dates <- system(cmd, intern=T)
-                        ind <- grep(" time = \"", dates) 
+                        ind <- grep(" time = \"", dates)
                         if (length(ind) != 1) stop("this should not happen")
                         dates <- dates[ind:(length(dates)-1)]
+                        ind <- grep(";", dates)[1]
+                        if (length(ind) != 1) stop("this should not happen")
+                        dates <- dates[seq_len(ind)]
                         dates <- trimws(sub(" time = ", "", dates))
                         dates <- gsub("\"", "", dates)
                         dates <- sub(" ;", "", dates)
@@ -2052,6 +2055,7 @@ if (nvars > 0) {
                                                                    depth_dim, attribute=atti-1)
                     }
                 }
+                depthobj$depth <- as.vector(depthobj$depth)
             } # if there is depth var
         } # if no depth var was found
         
@@ -2275,6 +2279,7 @@ if (nvars > 0) {
                         # find depth inds to read from nc file
                         if (!exists("depths") || is.null(depths)) stop("this should not happen")
                         message(indent, indent, "provided `depths` = ", paste(depths, collapse=" to "), appendLF=F)
+                        if (class(depths) != "numeric") stop("todo need to implement this non-numeric case here")
                         if (min(depths) < min(fesom_depths)) {
                             stop("min of provided depth ", min(depths), " ", depthobj$units, 
                                  " < min of fesom depths (", min(fesom_depths), " ", depthobj$units, ")")
@@ -2591,7 +2596,7 @@ if (!restart || # ... not a restart run
             #nod_y <- nod3d_y
             #nod_z <- nod3d_z
             if (!exists("fesom_depths")) { # potentially already loaded for (dim_tag = "3D" & levelwise) vars
-                fesom_depths <- abs(unique(nod3d_z)) # model depths in m (positive downwards) 
+                fesom_depths <- as.vector(abs(unique(nod3d_z))) # model depths in m (positive downwards) 
             }
             nod3d_check <- T
             if (verbose > 1) {
@@ -4571,8 +4576,8 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
         if (file.access(meshpath, mode=2) == 0) { # write permission
             moc_mask_file <- meshpath
         } else {
-            message(indent, "No write permission in `meshpath` ", meshpath, " --> use `postpath` ", postpath, " instead ...")
-            moc_mask_file <- postpath
+            message(indent, "No write permission in `meshpath` ", meshpath, " --> use `dirname(derivpath)` = ", dirname(derivpath), " instead ...")
+            moc_mask_file <- dirname(derivpath)
         }
         moc_mask_file <- paste0(moc_mask_file, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
         if (verbose > 0) {

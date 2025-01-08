@@ -3311,6 +3311,7 @@ if (varname == "rsdo") {
     varname_nc <- c("u", "v", "uu", "vv")
     #varname_nc <- c("uo", "vo", "u2o", "v2o")
 
+# moc: merge mocs of different basins: `~/bin/mycat_moc.r`
 } else if (varname == "MOCw") {
     longname <- "MOCw"
     regular_dy_moc <- 1/2 # degree
@@ -3319,8 +3320,8 @@ if (varname == "rsdo") {
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_nc <- "w"
-    varname_nc <- "wo"
+    varname_nc <- "w" # old
+    varname_nc <- "wo" # new
 
 } else if (varname == "MOCv") {
     longname <- "MOCv"
@@ -3330,8 +3331,8 @@ if (varname == "rsdo") {
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_nc <- "v"
-    varname_nc <- "vo"
+    varname_nc <- "v" # old
+    varname_nc <- "vo" # new
 
 } else if (varname == "Tair") {
     longname <- "Air Temperature 2m"
