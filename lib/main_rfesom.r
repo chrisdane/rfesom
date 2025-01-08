@@ -43,7 +43,7 @@ message("Given `rfesompath` = \"", rfesompath, "\"")
 
 ## clear work space
 ws <- ls()
-ws <- ws[-which(ws == "rfesom_version" | ws == "rfesompath" | 
+ws <- ws[-which(ws == "rfesom_version" | ws == "rfesompath" | ws == "helppage" |
                 ws == "user_runscript_filename" | ws == "user_runscript")]
 message("Clear work space ...")
 rm(list=ws)

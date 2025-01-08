@@ -41,8 +41,8 @@ if (F) {
                     "1998:2007",
                     "2008:2009")
 } else if (T) {
-    replace_string <- list(string=" years <- ", between_lines=c(890, 890))
-    replace_by <- 2001:2018
+    replace_string <- list(string=" years <- ", between_lines=c(898, 898))
+    replace_by <- 2000:2018
 }
 
 ##### user input end #####
@@ -102,16 +102,19 @@ for (jobi in seq_len(njobs)) {
         # ollie partition limits: https://swrepo1.awi.de/plugins/mediawiki/wiki/hpc/index.php/SLURM#Partitions
         cmd <- c("#!/bin/bash",
                  paste0("#SBATCH --job-name=loop", suffix, "      # Specify job name"),
-                 "#SBATCH --partition=shared     # Specify partition name",
+                 #"#SBATCH --partition=shared     # Specify partition name",
                  #"#SBATCH --partition=prepost     # Specify partition name",
+                 "#SBATCH --partition=smp     # Specify partition name",
                  #"#SBATCH --ntasks=1             # Specify max. number of tasks to be invoked",
                  "#SBATCH --time=04:00:00        # Set a limit on the total run time",
                  #"#SBATCH --time=08:00:00        # Set a limit on the total run time",
                  #"#SBATCH --time=36:00:00        # Set a limit on the total run time",
+                 "#SBATCH --qos=12h",
                  #"#SBATCH --mail-type=FAIL       # Notify user by email in case of job failure",
                  #"#SBATCH --account=ab0246       # Charge resources on this project account",
-                 "#SBATCH --account=ab1095       # Charge resources on this project account",
+                 #"#SBATCH --account=ab1095       # Charge resources on this project account",
                  #"#SBATCH --account=ba0989       # Charge resources on this project account",
+                 "#SBATCH --account=nwg_maresys.nwg_maresys       # Charge resources on this project account",
                  # memory:
                  #"#SBATCH --mem=0                    # 0 = use all mem",
                  "#SBATCH --mem=15000M                    # 0 = use all mem",

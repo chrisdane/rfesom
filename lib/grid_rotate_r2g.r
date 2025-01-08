@@ -40,7 +40,7 @@ zg <- drop(rotate_matrix[3,1])*xr + drop(rotate_matrix[3,2])*yr + drop(rotate_ma
 # Geographical coordinates:
 glat <- asin(zg)
 glon <- atan2(yg,xg)
-a <- which(yg==0 && xg==0)
+a <- which(yg==0 & xg==0)
 glon[a] <- 0
 
 glat <- glat/rad
