@@ -1484,7 +1484,7 @@ if (varname == "rsdo") {
     var_label <- expression(paste("Squared SSH [m"^"2", "]"))
     varname_nc <- "zossq"
 
-} else if (varname == "mixlay") {
+} else if (varname == "mixlay") { # fesom1: 0.125
     longname <- "Mixed Layer Depth"
     units_out <- "m"
     var_label <- eval(substitute(expression(paste("MLD"[sigma[theta]], " [m]"))))
@@ -1493,7 +1493,7 @@ if (varname == "rsdo") {
     varname_nc <- "mixlay"
     fpatterns <- paste0(runid, ".<YYYY>.oce.diag.nc")
 
-} else if (varname == "mlotst") {
+} else if (varname == "mlotst") { # fesom1: 0.125
     longname <- "mean Mixed Layer Depth by sigma theta"
     units_out <- "m"
     var_label <- eval(substitute(expression(paste("MLD"[sigma[theta]], " [m]"))))
@@ -1516,6 +1516,28 @@ if (varname == "rsdo") {
     units_out <- "m"
     var_label <- eval(substitute(expression(paste("MLD"["MS"], " max [m]"))))
     varname_nc <- "omldamax"
+
+} else if (varname == "MLD1") { # fesom2 
+    # oce_ale_pressure_bv.F90:
+    # ! define MLD following Large et al. 1997
+    # ! MLD is the shallowest depth where the local buoyancy gradient matches the maximum buoyancy gradient
+    # ! between the surface and any discrete depth within the water column.
+    longname <- "Mixed Layer Depth"
+    units_out <- "m"
+    var_label <- eval(substitute(expression(paste("MLD"["L97"], " [m]"))))
+    varname_nc <- varname
+
+} else if (varname == "MLD2") { # fesom2: 0.125 kg m-3
+    longname <- "Mixed Layer Depth"
+    units_out <- "m"
+    var_label <- eval(substitute(expression(paste("MLD"[paste(sigma[theta], "=0.125")], " [m]"))))
+    varname_nc <- varname
+
+} else if (varname == "MLD3") { # fesom2: 0.03 kg m-3
+    longname <- "Mixed Layer Depth"
+    units_out <- "m"
+    var_label <- eval(substitute(expression(paste("MLD"[paste(sigma[theta], "=0.03")], " [m]"))))
+    varname_nc <- varname
 
 } else if (varname == "Nsquared") {
     longname <- "Buoyancy Frequency Squared"
@@ -3320,8 +3342,8 @@ if (varname == "rsdo") {
     horiz_deriv_tag <- T # for cluster vol 
     typesuffix <- "oce."
     diagsuffix <- ""
-    varname_nc <- "w" # old
-    varname_nc <- "wo" # new
+    if (fesom_version == "fesom") varname_nc <- "wo" # new fesom1
+    if (fesom_version == "fesom2") varname_nc <- "w" # old fesom1 and fesom2
 
 } else if (varname == "MOCv") {
     longname <- "MOCv"

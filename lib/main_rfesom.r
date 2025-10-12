@@ -135,6 +135,9 @@ if (!exists("postprefix")) stop("No 'postprefix' provided.")
 if (snapshot) {
     postprefix <- paste0(postprefix, "_snapshot")
 }
+if (file.access(workpath, mode=0) == -1) { # does not exist
+    stop("workpath = ", workpath, " does not exist.")
+}
 if (file.access(meshpath, mode=0) == -1) { # does not exist
     stop("meshpath = ", meshpath, " does not exist.")
 }
@@ -274,7 +277,7 @@ if (fuser_tag) {
                 # repeat input path (assume that all needed files are in same dir
                 message("`datainpaths` is of length ", length(datainpaths), " but nvars = ", nvars,
                         " --> repeat first datainpath ", nvars, " times ...")
-                datainpaths <- rep(datainpaths[1], t=nvars)
+                datainpaths <- rep(datainpaths[1], times=nvars)
             } else {
                 stop("`datainpaths` is of length ", length(datainpaths), " but must be of length ", 
                      nvars, " (one for each `varname_nc`) or 1")
@@ -846,7 +849,7 @@ if (nvars > 0) {
     if (fuser_tag) {
         if (verbose > 0) message(indent, "Input file names are given by user via `fnames_user`:")
         ht(fnames_user, n=25)
-        files_list <- vector("list", l=nvars)
+        files_list <- vector("list", length=nvars)
         names(files_list) <- varname_nc
         files_list[[1]] <- list(list(files=fnames_user))
     
@@ -856,7 +859,7 @@ if (nvars > 0) {
                     " given `varname_nc` = \"", 
                     paste(varname_nc, collapse="\", \""), "\" ...")
         }
-        files_list <- vector("list", l=nvars) # all annual files per variable (e.g. temp and salt)
+        files_list <- vector("list", length=nvars) # all annual files per variable (e.g. temp and salt)
         names(files_list) <- varname_nc
         indent <- "      "
         for (vari in seq_len(nvars)) { # nvars=2 if e.g. temp and salt are needed per time (e.g. year)
@@ -874,7 +877,7 @@ if (nvars > 0) {
                          length(pattern_inds_closed), " closing brackets \">\". there must be a \"<\" for every \">\".")
                 }
                 n_patterns_per_file <- length(pattern_inds_open)
-                sub_list <- vector("list", l=n_patterns_per_file)
+                sub_list <- vector("list", length=n_patterns_per_file)
                 for (pati in seq_len(n_patterns_per_file)) {
                     pattern <- substr(fpatterns[vari], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
                     sub_list[[pati]]$pattern <- pattern
@@ -965,7 +968,7 @@ if (nvars > 0) {
                 special_patterns_in_filenames <- special_patterns[which(special_patterns %in% sapply(sub_list, "[[", "pattern"))]
                 for (pati in seq_along(special_patterns_in_filenames)) {
                     pattern_inds <- which(sapply(sub_list, "[[", "pattern") == special_patterns_in_filenames[pati])
-                    pattern_list <- vector("list", l=length(pattern_inds))
+                    pattern_list <- vector("list", length=length(pattern_inds))
                     for (patj in seq_along(pattern_inds)) {
                         pattern_list[[patj]] <- substr(files, 
                                                        sub_list[[pattern_inds[patj]]]$replacement_inds[1],
@@ -1001,7 +1004,7 @@ if (nvars > 0) {
                 } else {
                     message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. ",
                             "of based on `cdo showdate` of found files ...")
-                    years_filenames <- vector("list", l=length(files))
+                    years_filenames <- vector("list", length=length(files))
                     for (fi in seq_along(files)) {
                         cmd <- paste0(cdo, " showdate ", datainpaths[vari], "/", files[fi])
                         message("run `", cmd, "`")
@@ -1132,7 +1135,7 @@ if (nvars > 0) {
                         if (!any(names(df) == "YYYY_from") || !any(names(df) == "YYYY_to")) {
                             stop("this should not happen")
                         }
-                        inds <- rep(F, t=length(files))
+                        inds <- rep(F, times=length(files))
                         for (fi in seq_along(files)) {
                             years_to_check <- df$YYYY_from[fi]:df$YYYY_to[fi]
                             if (any(years_to_check %in% years_wanted)) {
@@ -1156,7 +1159,7 @@ if (nvars > 0) {
             } # length(outside_years_inds) > 0
              
             #files_list[[vari]] <- paste0(datainpaths[vari], "/", files)
-            tmp <- vector("list", l=length(files))
+            tmp <- vector("list", length=length(files))
             for (fi in seq_along(tmp)) {
                 tmp[[fi]] <- as.list(df[fi,])
                 tmp[[fi]]$files <- paste0(datainpaths[vari], "/", tmp[[fi]]$files)
@@ -1189,7 +1192,7 @@ if (nvars > 0) {
     #stop("asd")
     fnames_of_first_year <- sapply(lapply(files_list, "[[", 1), "[[", 1)
     fnames_of_first_year_unique <- unique(fnames_of_first_year)
-    ncids <- vector("list", l=length(fnames_of_first_year_unique))
+    ncids <- vector("list", length=length(fnames_of_first_year_unique))
     message(indent, "\nGet variable dimension infos from ", 
             length(fnames_of_first_year_unique), " first file", 
             ifelse(length(fnames_of_first_year_unique) > 1, "s", ""), " ...")
@@ -1205,9 +1208,9 @@ if (nvars > 0) {
     } # for all files
 
     ## check if needed variables exist in input files
-    var_nc_inds <- rep(NA, t=length(varname_nc)) # which variable is in which file
+    var_nc_inds <- rep(NA, times=length(varname_nc)) # which variable is in which file
     names(var_nc_inds) <- varname_nc
-    var_nc_infos <- vector("list", l=length(varname_nc))
+    var_nc_infos <- vector("list", length=length(varname_nc))
     names(var_nc_infos) <- varname_nc
     for (nci in seq_along(ncids)) {
         for (vari in seq_along(varname_nc)) {
@@ -1220,7 +1223,7 @@ if (nvars > 0) {
                 var_nc_inds[vari] <- nci
                 if (ncdf.tools_tag == T) {
                     var_natts <- RNetCDF::var.inq.nc(ncids[[nci]], varname_nc[vari])$natts
-                    tmp <- vector("list", l=var_natts)
+                    tmp <- vector("list", length=var_natts)
                     for (atti in seq_len(var_natts)) {
                         names(tmp)[atti] <- RNetCDF::att.inq.nc(ncids[[nci]], varname_nc[vari], attribute=atti-1)$name
                         tmp[[atti]] <- RNetCDF::att.get.nc(ncids[[nci]], varname_nc[vari], attribute=atti-1)
@@ -1243,12 +1246,12 @@ if (nvars > 0) {
     # finished check if all varname_nc can be loaded from provided files
 
     ## get dimensions of all wanted variables
-    dims_of_vars <- vector("list", l=nvars)
+    dims_of_vars <- vector("list", length=nvars)
     names(dims_of_vars) <- varname_nc
     for (vari in seq_len(nvars)) { # all varname_nc
         if (ncdf.tools_tag == F) {
             tmp <- ncids[[var_nc_inds[vari]]]$var[[varname_nc[vari]]]$dim
-            tmplist <- vector("list", l=length(tmp))
+            tmplist <- vector("list", length=length(tmp))
             for (di in seq_along(tmplist)) {
                 names(tmplist)[di] <- tmp[[di]]$id
                 tmplist[[di]]$name <- tmp[[di]]$name
@@ -1256,7 +1259,7 @@ if (nvars > 0) {
             }
         } else if (ncdf.tools_tag == T) {
             dimids <- RNetCDF::var.inq.nc(ncids[[var_nc_inds[vari]]], varname_nc[vari])$dimids
-            tmplist <- vector("list", l=length(dimids))
+            tmplist <- vector("list", length=length(dimids))
             for (di in seq_along(tmplist)) {
                 tmp <- RNetCDF::dim.inq.nc(ncids[[var_nc_inds[vari]]], dimids[di])
                 names(tmplist)[di] <- dimids[di]
@@ -1399,7 +1402,7 @@ if (nvars > 0) {
         if (verbose > 0) {
             message("\nGet time information ...")
         }
-        timeobj <- vector("list", l=length(first_nc_with_time_ind)) # saves time attributes of nc file
+        timeobj <- vector("list", length=length(first_nc_with_time_ind)) # saves time attributes of nc file
         names(timeobj) <- varname_nc[first_nc_with_time_ind]
         for (time_vari in seq_along(first_nc_with_time_ind)) { # this loop only goes to 1 
             if (verbose > 0) message(indent, "variable ", time_vari, "/", length(first_nc_with_time_ind), ": \"",
@@ -1532,7 +1535,7 @@ if (nvars > 0) {
                         ntimepf <- as.integer(ntimepf)
                     } else if (timevalue_strat == "sub") {
                         cmd <- paste0("ncdump -v ", time_var, " ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
-                        if (verbose > 0 && fi == 1) message(indent, "   run `", cmd, "` ...")
+                        if (verbose > 0) message(indent, "   run `", cmd, "` ...")
                         ntimepf <- system(cmd, intern=T) 
                         ntimepf <- ntimepf[(which(ntimepf == "data:")+2):(length(ntimepf)-1)]
                         ntimepf <- sub("time = ", "", ntimepf)
@@ -1552,7 +1555,7 @@ if (nvars > 0) {
                     if (any(names(files_list[[first_nc_with_time_ind[time_vari]]][[fi]]) == "YYYY")) {
                         dates <- files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$YYYY # use YYYY of filename
                         if (ntimepf == 12) {
-                            dates <- seq.Date(as.Date(paste0(dates, "-1-15")), as.Date(paste0(dates, "-12-15")), l=ntimepf)
+                            dates <- seq.Date(as.Date(paste0(dates, "-1-15")), as.Date(paste0(dates, "-12-15")), length.out=ntimepf)
                         } else if (ntimepf == 1) {
                             dates <- as.Date(paste0(dates, "-12-31")) # minus dt
                         } else {
@@ -1569,6 +1572,7 @@ if (nvars > 0) {
                 } else if (timevalue_strat == "new") { # `cdo showtimestamp` successful
                     if (F) { # cdo showtimestamp too slow
                         cmd <- paste0("cdo -s showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
+                        if (verbose > 0) message(indent, "   run `", cmd, "` ...")
                         dates <- system(cmd, intern=T)
                         if (all(dates == "")) {
                             stop("cdo showtimestamp ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files,
@@ -1578,6 +1582,7 @@ if (nvars > 0) {
                         dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
                     } else if (T) { # ncdump faster than cdo showtimestamp
                         cmd <- paste0("ncdump -ci ", files_list[[first_nc_with_time_ind[time_vari]]][[fi]]$files)
+                        if (verbose > 0) message(indent, "   run `", cmd, "` ...")
                         dates <- system(cmd, intern=T)
                         ind <- grep(" time = \"", dates)
                         if (length(ind) != 1) stop("this should not happen")
@@ -1590,7 +1595,7 @@ if (nvars > 0) {
                         dates <- sub(" ;", "", dates)
                         dates <- unlist(strsplit(dates, ", "))
                         if (all(grepl("T", dates))) { # `ncdump -ci` returned complete datetime 
-                            dates <- strptime(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC") # = posixlt object
+                            dates <- strptime(dates, format="%Y-%m-%dT%H:%M", tz="UTC") # = posixlt object
                         } else { # `ncdump -ci` returned only date
                             dates <- strptime(dates, format="%Y-%m-%d", tz="UTC") # = posixlt object
                         }
@@ -1714,7 +1719,7 @@ if (nvars > 0) {
                     years_in <- unique(dates$year + 1900)
                     if (grepl("^mon", frequency_post)) { # e.g. -monmean, -monmax, -monsum
                         # --> monthly timepoints
-                        dates_new <- rep(dates[1], t=12*length(years_in))
+                        dates_new <- rep(dates[1], times=12*length(years_in))
                         for (yi in seq_along(years_in)) {
                             yinds <- which(dates$year + 1900 == years_in[yi])
                             for (mi in seq_len(12)) {
@@ -1728,7 +1733,7 @@ if (nvars > 0) {
                         } # for yi
                     } else if (grepl("^year", frequency_post)) { # e.g. -yearmean, -yearmax, -yearsum
                         # --> annual timepoints
-                        dates_new <- rep(dates[1], t=length(years_in))
+                        dates_new <- rep(dates[1], times=length(years_in))
                         for (yi in seq_along(years_in)) {
                             dates_new[yi] <- mean(c(as.POSIXlt(paste0(years_in[yi], "-1-1"), tz="UTC"),
                                                     as.POSIXlt(paste0(years_in[yi], "-12-31"), tz="UTC")))
@@ -2064,7 +2069,7 @@ if (nvars > 0) {
         ndepths_all <- length(fesom_depths)
         depthobj$ndepths_all <- ndepths_all
         if (ndepths_all > 1) {
-            deltaz_all <- rep(0, t=ndepths_all - 1)
+            deltaz_all <- rep(0, times=ndepths_all - 1)
             deltaz_all[1] <- (fesom_depths[1] - fesom_depths[2])/2
             deltaz_all[ndepths_all] <- (fesom_depths[ndepths_all - 1]- fesom_depths[ndepths_all])/2
             for (n in 2:(ndepths_all - 1)) {
@@ -2163,7 +2168,7 @@ if (nvars > 0) {
         nmiddepths_all <- length(fesom_middepths)
         middepthobj$nmiddepths_all <- nmiddepths_all
         if (nmiddepths_all > 1) {
-            deltazmid_all <- rep(0, t=nmiddepths_all - 1)
+            deltazmid_all <- rep(0, times=nmiddepths_all - 1)
             deltazmid_all[1] <- (fesom_middepths[1] - fesom_middepths[2])/2
             deltazmid_all[nmiddepths_all] <- (fesom_middepths[nmiddepths_all - 1]- fesom_middepths[nmiddepths_all])/2
             for (n in 2:(nmiddepths_all - 1)) {
@@ -2200,7 +2205,7 @@ if (nvars > 0) {
         for (fi in seq_along(files_list[[vari]])) { 
             
             # construct start and count based on dimesions of variable
-            starttmp <- counttmp <- rep(NA, t=length(dimids))
+            starttmp <- counttmp <- rep(NA, times=length(dimids))
             dimids <- dims_of_vars[[vari]]$dimids
             
             # check all dimensions of current variable of current file
@@ -2288,7 +2293,7 @@ if (nvars > 0) {
                             stop("max of provided depth ", max(depths), " ", depthobj$units, 
                                  " > max of fesom depths (", max(fesom_depths), " ", depthobj$units, ")")
                         }
-                        depthinds <- rep(NA, t=length(depths))
+                        depthinds <- rep(NA, times=length(depths))
                         if (any(depths %in% fesom_depths)) { # case 1: user depth same as some fesom depth, e.g. 0, 10 or 5900
                             depthinds <- match(depths, fesom_depths)
                         }
@@ -2344,7 +2349,7 @@ if (nvars > 0) {
                             stop("max of provided depth ", max(depths), " ", middepthobj$units, 
                                  " > max of fesom middepths (", max(fesom_middepths), " ", middepthobj$units, ")")
                         }
-                        middepthinds <- rep(NA, t=length(depths))
+                        middepthinds <- rep(NA, times=length(depths))
                         if (any(depths %in% fesom_middepths)) { # case 1: user middepth same as some fesom middepth, e.g. 0, 10 or 5900
                             middepthinds <- match(depths, fesom_middepths)
                         }
@@ -2673,7 +2678,7 @@ if (!restart || # ... not a restart run
     # plot depth levels
     if (F) {
         png("depths.png", width=1000, height=1600, res=300)
-        plot(1:length(fesom_depths), fesom_depths, t="o", col="blue", 
+        plot(1:length(fesom_depths), fesom_depths, type="o", col="blue", 
              ylim=rev(range(fesom_depths)), 
              xlab="nlevels", ylab="km", yaxt="n")
         axis(2, at=pretty(fesom_depths, n=10), labels=pretty(fesom_depths, n=10)/1000, las=2)
@@ -3013,8 +3018,8 @@ if (F) {
     elem_dim <- ncdim_def("elem2d_n", "",
                           1:elem2d_n, create_dimvar=F)
 
-    xc_global_var <- ncvar_def("xc_global", "degrees east", list(node_per_elem_dim, elem_dim))
-    yc_global_var <- ncvar_def("yc_global", "degrees north", list(node_per_elem_dim, elem_dim))
+    xc_global_var <- ncvar_def("xc_global", "degrees_east", list(node_per_elem_dim, elem_dim))
+    yc_global_var <- ncvar_def("yc_global", "degrees_north", list(node_per_elem_dim, elem_dim))
     elem2d_var <- ncvar_def("elem2d", "", list(node_per_elem_dim, elem_dim))
 
     nc <- nc_create(elem2d_fname, 
@@ -3358,7 +3363,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                 if (!success) stop(helppage)
            
                 # todo: check if plot can be opened
-                map("world", t="n", proj=projection, 
+                map("world", type="n", proj=projection, 
                     orient=orient, par=projection_par,
                     xlim=range(map_geogr_lim_lon), 
                     ylim=range(map_geogr_lim_lat))
@@ -3380,7 +3385,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                     success <- load_package("maps")
                     if (!success) stop(helppage)
 
-                    tmp <- map("world", t="n", proj=projection, orient=orient, 
+                    tmp <- map("world", type="n", proj=projection, orient=orient, 
                                par=projection_par, plot=F)
                     tmp <- na.omit(data.frame(do.call(cbind, tmp[c("x","y")])))
                     poly_proj_lim_lon <- list(range(tmp$x, na.rm=T))
@@ -3433,7 +3438,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                     #                other argument are known to be of storage mode double
                 }
 
-                poly_node_inds_geogr_list <- poly_inds_geogr_list <- vector("list", l=length(poly_geogr_lim_lon))
+                poly_node_inds_geogr_list <- poly_inds_geogr_list <- vector("list", length=length(poly_geogr_lim_lon))
                 for (poli in seq_along(poly_geogr_lim_lon)) {
                     
                     # check
@@ -3456,7 +3461,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                     }
                 
                     # surface elem inds
-                    tmp <- vector("list", l=3)
+                    tmp <- vector("list", length=3)
                     for (i in seq_len(3)) {
                         if (inpoly_pkg == "splancs") {
                             tmp[[i]] <- splancs::inpip(pts=cbind(xc[i,], yc[i,]),
@@ -3568,7 +3573,7 @@ if (out_mode != "csec_mean" && out_mode != "csec_depth" &&
                 
             # check
             if (F && interactive()) {
-                plot(0, t="n", xaxs="i", yaxs="i", xlim=range(xp), ylim=range(yp))
+                plot(0, type="n", xaxs="i", yaxs="i", xlim=range(xp), ylim=range(yp))
                 success <- load_package("maps")
                 if (!success) stop(helppage)
                 if (cycl) { 
@@ -3639,7 +3644,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
 
     csec_n_vertices <- length(map_geogr_lim_lon) ## csection vertices defined by user
     csec_n_edges <- csec_n_vertices - 1
-    csec_norm_edge <- rep(NA, t=csec_n_edges)
+    csec_norm_edge <- rep(NA, times=csec_n_edges)
     csec_e_vec_edge <- array(NA, c(2, csec_n_edges))
 
     for (i in 2:length(map_geogr_lim_lon)) {
@@ -3827,15 +3832,15 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
     } # if F show csection
 
     ## analyse cross-section: which trianglse are crossed by section...
-    P <- rep(NA, t=6)
-    csec_crossed_tri <- rep(0, t=elem2d_n)
-    csec_crossed_nodes <- rep(0, t=nod2d_n)
-    csec_edge_pointsx <- vector("list", l=csec_n_edges)
+    P <- rep(NA, times=6)
+    csec_crossed_tri <- rep(0, times=elem2d_n)
+    csec_crossed_nodes <- rep(0, times=nod2d_n)
+    csec_edge_pointsx <- vector("list", length=csec_n_edges)
     csec_edge_pointsy <- csec_edge_pointsx
-    min_norm <- rep(NA, t=csec_n_edges)
+    min_norm <- rep(NA, times=csec_n_edges)
     max_norm <- min_norm
     eps <- .Machine$double.eps
-    elem_area_inds <- rep(0, t=elem2d_n)
+    elem_area_inds <- rep(0, times=elem2d_n)
     offset <- 0.1
 
     ## calculate regional limited triangles for every csection edge:
@@ -4013,7 +4018,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
                 }
 
                 # SEARCH both boundary points
-                XXX <- rep(0, t=6)
+                XXX <- rep(0, times=6)
                 if ((X[1] >= 0 && (X[1] - norm_tri_edge1) <= eps) && 
                     (X[2] >= 0 && (X[2] - csec_norm_edge[j-1]) <= eps)) {
                     XXX[2] <- 1
@@ -4077,7 +4082,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
 
     csec_BND_point1 <- array(NA, c(2, csec_n_edges))
     csec_BND_point2 <- csec_BND_point1
-    csec_support_points <- vector("list", l=csec_n_edges)
+    csec_support_points <- vector("list", length=csec_n_edges)
     csec_interp_points <- csec_support_points
     csec_DeltaR <- csec_support_points
     csec_interp_index <- csec_support_points 
@@ -4111,10 +4116,10 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             step <- (max_norm[i-1] - min_norm[i-1])/nr_support_points
             
             csec_support_points[[i-1]] = rbind(drop(csec_BND_point1[1,i-1]) + 
-                                               seq(0, max_norm[i-1] - min_norm[i-1], b=step)*
+                                               seq(0, max_norm[i-1] - min_norm[i-1], by=step)*
                                                drop(csec_e_vec_edge[1,i-1]),
                                                drop(csec_BND_point1[2,i-1]) + 
-                                               seq(0, max_norm[i-1] - min_norm[i-1], b=step)*
+                                               seq(0, max_norm[i-1] - min_norm[i-1], by=step)*
                                                drop(csec_e_vec_edge[2,i-1]))
                                               
         # CROSS-SECTION CONSISTS OF MORE THAN TWO POINTS
@@ -4144,10 +4149,10 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
                           (csec_BND_point2[2,i-1] - csec_BND_point1[2,i-1])^2))/nr_support_points
 
             csec_support_points[[i-1]] <- rbind(drop(csec_BND_point1[1,i-1]) + 
-                                                seq(0, auxnorm_edge, b=step)*
+                                                seq(0, auxnorm_edge, by=step)*
                                                 drop(csec_e_vec_edge[1,i-1]),
                                                 drop(csec_BND_point1[2,i-1]) + 
-                                                seq(0, auxnorm_edge, b=step)*
+                                                seq(0, auxnorm_edge, by=step)*
                                                 drop(csec_e_vec_edge[2,i-1]))
         
         } # if csec_n_vertices == 2 or not
@@ -4187,8 +4192,8 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
 
         #___CALC: TRIANGULAR INDEX OF INTERPOLATION POINT !!!!______________
         #       --> FOR HORIZONTAL INTERPOALTION 
-        csec_interp_index[[i-1]] <- rep(0, t=length(csec_interp_points[[i-1]][1,])) # interp_tri_i_ip
-        csec_interp_index2[[i-1]] <- rep(0, t=length(csec_edge_pointsx[[i-1]])) # interp_tri_i_ep
+        csec_interp_index[[i-1]] <- rep(0, times=length(csec_interp_points[[i-1]][1,])) # interp_tri_i_ip
+        csec_interp_index2[[i-1]] <- rep(0, times=length(csec_edge_pointsx[[i-1]])) # interp_tri_i_ep
 
         XC <- xc[,which(csec_crossed_tri == 1)]
         YC <- yc[,which(csec_crossed_tri == 1)]
@@ -4207,7 +4212,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             #A <- rbind(XC[,j], YC[,j], c(1, 1, 1)) # with default `[`
             A <- t(cbind(XC[,j], YC[,j], c(1, 1, 1))) # with drop=F
             P <- rbind(csec_interp_points[[i-1]],
-                       rep(1, t=length(csec_interp_points[[i-1]][1,])))
+                       rep(1, times=length(csec_interp_points[[i-1]][1,])))
             X <- solve(A, P)
 
             inds <- which(X[1,] >= 0 & X[1,] <= 1 & X[2,] >= 0 & X[2,] <= 1 & X[3,] >= 0 & X[3,] <= 1)
@@ -4215,7 +4220,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
 
             P <- rbind(csec_edge_pointsx[[i-1]],
                        csec_edge_pointsy[[i-1]],
-                       rep(1, t=length(csec_edge_pointsx[[i-1]])))
+                       rep(1, times=length(csec_edge_pointsx[[i-1]])))
             X <- solve(A, P)
 
             inds <- which(X[1,] >= 0 & X[1,] <= 1 & X[2,] >= 0 & X[2,] <= 1 & X[3,] >= 0 & X[3,] <=1)
@@ -4285,7 +4290,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             csec_dist_list[[i-1]] <- cumsum(aux_dr1 + aux_dr2) # [m]
         } else if (T) {
             csec_dist_tot <- dim(csec_support_points[[i-1]])[2] * unique(csec_DeltaR[[i-1]])[1]
-            csec_dist_list[[i-1]] <- seq(from=0, to=csec_dist_tot, l=dim(csec_interp_points[[i-1]])[2])
+            csec_dist_list[[i-1]] <- seq(from=0, to=csec_dist_tot, length.out=dim(csec_interp_points[[i-1]])[2])
         }
 
     } # for i csec_n_vertices 
@@ -4298,7 +4303,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
     csec_crossed_nodes_n <- length(csec_node_inds)
     csec_crossed_tri_n <- length(csec_elem_inds)
     nod2d_csec_n <- csec_crossed_nodes_n 
-    pos_csec <- rep(NA, t=nod2d_n) 
+    pos_csec <- rep(NA, times=nod2d_n) 
     pos_csec[csec_node_inds] <- 1:csec_crossed_nodes_n
     aux3d_csec <- aux3d[,csec_node_inds]
     
@@ -4371,7 +4376,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             }
 
             # xlim ylim asp needs to be true for having a proper arrow
-            xlim <- vector("list", l=length(csec_interp_points))
+            xlim <- vector("list", length=length(csec_interp_points))
             ylim <- xlim
             for (i in 1:length(csec_interp_points)) { # for every segment of cross section
                 xlim[[i]] <- c(mean(csec_interp_points[[i]][1,]) - 
@@ -4391,7 +4396,7 @@ if (transient_out && any(out_mode == c("csec_mean", "csec_depth"))) {
             ylim <- range(ylim)
 
             # open plot
-            plot(0, 0, t="n", xlim=xlim, ylim=ylim, las=1, 
+            plot(0, 0, times="n", xlim=xlim, ylim=ylim, las=1, 
                  xlab="Longitude [°]", ylab="Latitude [°]")
 
             # add bathy first if available 
@@ -4488,7 +4493,7 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
     }
 
     # regular lats for binning
-    moc_reg_lat_global <- seq(-90+regular_dy_moc/2, 90-regular_dy_moc/2, b=regular_dy_moc)
+    moc_reg_lat_global <- seq(-90+regular_dy_moc/2, 90-regular_dy_moc/2, by=regular_dy_moc)
     
     ## mask for MOC calculation
     # moc_mask must be 0 (outside) or 1 (inside) and not T or F
@@ -4525,7 +4530,8 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
                     "`moc_mask_file` is given", "\n",
                     indent, "--> find moc mask now in an interactive plot", "\n",
                     indent, "--> the last point does not need to close the polygon ",
-                    "(the first and last points will be connected automatically)")
+                    ", the first and last points will be connected automatically\n",
+                    indent, "--> resize plot before you click the points")
             if (!interactive()) stop("run this script in an interactive session")
             
             # select MOC area in interactive session
@@ -4572,27 +4578,48 @@ if (any(out_mode == c("moc_mean", "moc_depth"))) {
 
         } # which region 
         
-        # save mask file in fpost1.4 format
+        # save moc mask file
         if (file.access(meshpath, mode=2) == 0) { # write permission
             moc_mask_file <- meshpath
         } else {
             message(indent, "No write permission in `meshpath` ", meshpath, " --> use `dirname(derivpath)` = ", dirname(derivpath), " instead ...")
             moc_mask_file <- dirname(derivpath)
         }
+
+        # save mask file in fpost1.4 ascii format
         moc_mask_file <- paste0(moc_mask_file, "/moc_mask_area_", area, "_mesh_", meshid, ".txt")
         if (verbose > 0) {
             message(indent, "Save surface indices of `area` = \"", area, "\" for MOC calculation to file", "\n",
                     indent, "   `moc_mask_file` = \"", moc_mask_file, "\" ...")
         }
-        write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
-    
+        base::write(c(length(moc_mask_inds), moc_mask_inds), file=moc_mask_file, ncolumns=1)
+        
+        # save mask file as nc
+        if (F) moc_mask_inds <- scan(moc_mask_file, what=integer(), skip=1) # my debug
+        if (F) moc_mask_inds <- as.integer(scan(moc_mask_file, skip=1)) # my debug
+        moc_mask_file <- sub(".txt", ".nc", moc_mask_file)
+        if (verbose > 0) {
+            message(indent, "Save surface indices of `area` = \"", area, "\" for MOC calculation to file", "\n",
+                    indent, "   `moc_mask_file` = \"", moc_mask_file, "\" ...")
+        }
+        tmp <- rep(0L, times=nod2d_n)
+        tmp[moc_mask_inds] <- 1L
+        node_dim <- ncdf4::ncdim_def(name="nod2d", units="", vals=seq_len(nod2d_n), create_dimvar=F)
+        moc_mask_var <- ncdf4::ncvar_def(name="moc_mask", units="", dim=node_dim, missval=NA)
+        outnc <- ncdf4::nc_create(moc_mask_file, vars=moc_mask_var, force_v4=force_v4)
+        ncdf4::ncatt_put(outnc, 0, "meshpath", meshpath)
+        ncdf4::ncatt_put(outnc, 0, "area", area)
+        ncdf4::ncvar_put(outnc, moc_mask_var, tmp)
+        ncdf4::nc_close(outnc)
+        rm(tmp)
+
     } # if exists("moc_mask_file")
     
     if (verbose > 0) {
         message(indent, "--> ", length(moc_mask_inds), " indices in `moc_mask_inds` from ", 
                 min(moc_mask_inds), " to ", max(moc_mask_inds))
     }
-    moc_mask <- rep(0, t=nod2d_n)
+    moc_mask <- rep(0, times=nod2d_n)
     moc_mask[moc_mask_inds] <- 1
 
     # save moc area if wanted
@@ -4852,7 +4879,7 @@ if (nvars > 0) {
                 ## this deltaz is used for vertical average between specific depth levels `depths`
                 if (ndepths >= 3) {
                     ndepths <- length(interpolate_depths)
-                    deltaz <- rep(0, t=ndepths - 1)
+                    deltaz <- rep(0, times=ndepths - 1)
                     deltaz[1] <- (interpolate_depths[1] - interpolate_depths[2])/2
                     deltaz[ndepths] <- (interpolate_depths[ndepths - 1]- interpolate_depths[ndepths])/2
                     for (n in 2:(ndepths - 1)) {
@@ -4869,7 +4896,7 @@ if (nvars > 0) {
                 if (!all(sapply(sapply(dims_of_vars, "[[", "middepthdim_ind"), is.null))) {
                     if (nmiddepths >= 3) {
                         nmiddepths <- length(interpolate_middepths)
-                        deltazmid <- rep(0, t=nmiddepths - 1)
+                        deltazmid <- rep(0, times=nmiddepths - 1)
                         deltazmid[1] <- (interpolate_middepths[1] - interpolate_middepths[2])/2
                         deltazmid[nmiddepths] <- (interpolate_middepths[nmiddepths - 1]- interpolate_middepths[nmiddepths])/2
                         for (n in 2:(nmiddepths - 1)) {
@@ -5049,7 +5076,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
     # Thats why a timestep (e.g. month, day, hour, etc.)
     # and year loop is chosen to read in the data and
     # average "by hand" (-> mean(x) = 1/n sum(x)).
-    total_rec <- rep(0, t=maxnrecpf) # counter over all time steps per file
+    total_rec <- rep(0, times=maxnrecpf) # counter over all time steps per file
     fname_cnt <- 0
     
     ## Fname loop
@@ -5060,12 +5087,12 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
         fname_cnt <- fname_cnt + 1
 
         ## open all necessary nc files necessary to load all necessary variables to process wanted varname
-        fnames <- rep(NA, t=nvars)
+        fnames <- rep(NA, times=nvars)
         for (vari in seq_len(nvars)) {
             fnames[vari] <- files_list[[vari]][[fi]]$files
         }
         fnames_unique <- unique(fnames)
-        ncids <- vector("list", l=length(fnames_unique))
+        ncids <- vector("list", length=length(fnames_unique))
         for (vari in seq_along(fnames_unique)) {
             
             # calc temporal reduction (e.g. daily -> monthly) before any other analysis
@@ -5136,13 +5163,13 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
             # need to take care of leap year: clean time of last year
             # because it could include day 366 of leap year
-            #dimnames(data_node)[[4]] <- rep(NA, t=dim(data_node)[4])
+            #dimnames(data_node)[[4]] <- rep(NA, times=dim(data_node)[4])
             #dimnames(data_node)[[4]][1:length(timei)] <- timei
 
             # declare matrix necessary for every year
             declare_time <- system.time({
                 # dimensions of data vector
-                dims <- rep(NA, t=4) # max(sapply(lapply(dims_of_vars, "[[", "dimids"), length)) + 1)
+                dims <- rep(NA, times=4) # max(sapply(lapply(dims_of_vars, "[[", "dimids"), length)) + 1)
                 dimnames <- list(var=varname_nc)
                 # 1st dim: variable
                 dims[1] <- nvars
@@ -5694,7 +5721,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                         # set values outside "area" to NA before interp
                                         # this is possible due to patricks nice interp method
                                         tmp <- drop(data_elem[i,,,,j])
-                                        nainds <- rep(T, t=elem2d_n)
+                                        nainds <- rep(T, times=elem2d_n)
                                         if (!exists("poly_inds_geogr")) {
                                             stop("need to update the elem index within area. still depends on used projection")
                                         }
@@ -6141,7 +6168,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 } else {
                                     transient_count <- transient_count[c(1, 3)] # nodes2d, time
                                 }
-                                data_var <- vector("list", l=dim(data_vert)[1]) 
+                                data_var <- vector("list", length=dim(data_vert)[1]) 
                                 for (i in seq_len(length(data_var))) {
                                     name <- dimnames(data_vert)[[1]][i]
                                     if (dim(data_vert)[3] > 1) { # with depth dim
@@ -6247,7 +6274,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                                 }
 
 
-                                data_reg_var <- vector("list", l=dim(datamat_reg)[1]) # nvars
+                                data_reg_var <- vector("list", length=dim(datamat_reg)[1]) # nvars
                                 if (out_mode == "select") {
 
                                     for (i in seq_along(data_reg_var)) {
@@ -6457,7 +6484,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                             if (F) {
                                 interpolate_depths <- interpolate_depths
                                 ndepths = length(interpolate_depths)
-                                deltaz=rep(0, t=ndepths-1)
+                                deltaz=rep(0, times=ndepths-1)
                                 deltaz[1]=(interpolate_depths[1]-interpolate_depths[2])/2
                                 deltaz[ndepths]=(interpolate_depths[ndepths-1]-interpolate_depths[ndepths])/2
                                 for (n in 2:(ndepths-1)) {
@@ -6530,7 +6557,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
                     # Apply csec conditions
                     if (out_mode == "csec_mean" && csec_conds_n > 0) {
 
-                        cond_inds <- vector("list", l=csec_conds_n)
+                        cond_inds <- vector("list", length=csec_conds_n)
                         for (j in 1:csec_conds_n) {
 
                             if (csec_conds[j] == "gt") cond <- ">"
@@ -7073,16 +7100,16 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             }
 
             if (out_mode == "csec_depth") {
-                csec_lon_var <- ncvar_def(name="csec_lon_vec", units="degrees east", 
+                csec_lon_var <- ncvar_def(name="csec_lon_vec", units="degrees_east",
                                           dim=csec_lon_dim, missval=mv)
-                csec_lat_var <- ncvar_def(name="csec_lat_vec", units="degrees north",
+                csec_lat_var <- ncvar_def(name="csec_lat_vec", units="degrees_north",
                                           dim=csec_lat_dim, missval=mv)
                 csec_dist_var <- ncvar_def(name="csec_dist_vec", units="m",
                                            dim=csec_dist_dim, missval=mv)
             }
 
             if (out_mode == "moc_depth") {
-                moc_reg_lat_var <- ncvar_def(name="moc_reg_lat", units="degrees north",
+                moc_reg_lat_var <- ncvar_def(name="moc_reg_lat", units="degrees_north",
                                              dim=moc_reg_lat_dim, missval=mv)
                 moc_topo_var <- ncvar_def(name="moc_topo", units="#",
                                           dim=list(moc_reg_lat_dim, depth_dim),
@@ -7090,7 +7117,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
             }
 
             ## Set data variables for nc file
-            data_fun_var <- vector("list", l=dim(data_funi)[1]) # nvars
+            data_fun_var <- vector("list", length=dim(data_funi)[1]) # nvars
             if (out_mode == "max3D") {
                 depth_var <- data_fun_var
             }
@@ -7130,7 +7157,7 @@ if (nvars == 0) { # derive variable from mesh files, e.g. resolution
 
             if (any(out_mode == c("csec_mean", "csec_depth"))) {
 
-                #data_fun_var <- vector("list", l=dim(data_funi)[1])
+                #data_fun_var <- vector("list", length=dim(data_funi)[1])
                 for (i in 1:length(data_fun_var)) {
                     if (dimnames(data_funi)[[1]][i] == "u" ||
                         dimnames(data_funi)[[1]][i] == "v") {
@@ -7879,7 +7906,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                         # set values outside "area" to NA before interp
                         # this is possible due to patricks nice interp method
                         tmp <- drop(data_elem_ltm[i,,,,j])
-                        nainds <- rep(T, t=elem2d_n)
+                        nainds <- rep(T, times=elem2d_n)
                         if (!exists("poly_inds_geogr")) {
                             stop("need to update the elem index within area. still depends on used projection")
                         }
@@ -8150,7 +8177,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                 dim=dim_list, missval=mv)
         }
 
-        data_var <- vector("list", l=dim(datamat_ltm)[1])
+        data_var <- vector("list", length=dim(datamat_ltm)[1])
         for (i in 1:length(data_var)) {
             name <- dimnames(datamat_ltm)[[1]][i]
             data_var[[i]] <- ncvar_def(name=name, units=units_out, 
@@ -8240,7 +8267,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                    vals=-interpolate_depths)
         }
             
-        datamat_reg_var <- vector("list", l=dim(datamat_reg_ltm)[1]) # nvars
+        datamat_reg_var <- vector("list", length=dim(datamat_reg_ltm)[1]) # nvars
         for (i in 1:length(datamat_reg_var)) {
             name <- dimnames(datamat_reg_ltm)[[1]][i]
             if (dim(datamat_reg_ltm)[4] > 1) { # ndepths {
@@ -8333,12 +8360,12 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
         moc_reg_lat_dim <- ncdim_def(name="lat", units="", vals=moc_reg_lat)
         depth_var <- ncvar_def(name="depthvec", units="m",
                                dim=depth_dim, missval=9999)
-        moc_reg_lat_var <- ncvar_def(name="moc_reg_lat", units="degrees north",
+        moc_reg_lat_var <- ncvar_def(name="moc_reg_lat", units="degrees_north",
                                      dim=moc_reg_lat_dim, missval=mv)
         moc_topo_var <- ncvar_def(name="moc_topo", units="#",
                                   dim=list(moc_reg_lat_dim, depth_dim),
                                   missval=mv)
-        data_fun_var <- vector("list", l=dim(data_node_ltm)[1])
+        data_fun_var <- vector("list", length=dim(data_node_ltm)[1])
         for (i in 1:length(data_fun_var)) {
             name <- paste0(dimnames(data_node_ltm)[[1]][i], "_", out_mode)
             data_fun_var[[i]] <- ncvar_def(name=name, units=units_out,
@@ -8513,11 +8540,11 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     #                         min(yp[,which(yp == max(yp), arr.ind=T)[,2]])) # top
                     poly_extreme_coords <- c(min(xp), max(xp), min(yp), max(yp))
 
-                    plot(0, 0, xlim=poly_extreme_coords[1:2], ylim=poly_extreme_coords[3:4], t="n", 
+                    plot(0, 0, xlim=poly_extreme_coords[1:2], ylim=poly_extreme_coords[3:4], type="n", 
                          xlab="", ylab="", xaxs="i", yaxs="i", xaxt="n", yaxt="n")
             
                 } else if (area == "global") {
-                    plot(0, 0, xlim=range(map_geogr_lim_lon), ylim=range(map_geogr_lim_lat), t="n",
+                    plot(0, 0, xlim=range(map_geogr_lim_lon), ylim=range(map_geogr_lim_lat), type="n",
                          xlab="", ylab="", xaxs="i", yaxs="i", xaxt="n", yaxt="n")
                 }
                 plot_coords <- par("usr")
@@ -8549,7 +8576,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 success <- load_package("maps")
                 if (!success) stop(helppage)
                 
-                map(continentdata, t="n", 
+                map(continentdata, type="n", 
                     proj=projection, orient=orient, par=projection_par,
                     xlim=range(map_geogr_lim_lon), ylim=range(map_geogr_lim_lat))
                 mtext(side=1, xlab, line=2)
@@ -8750,8 +8777,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     ypsur <- ypsur_save
                 }
 
-                xo <- seq(min(xpsur), max(xpsur), b=interp_dlon_plot)
-                yo <- seq(min(ypsur), max(ypsur), b=interp_dlat_plot)
+                xo <- seq(min(xpsur), max(xpsur), by=interp_dlon_plot)
+                yo <- seq(min(ypsur), max(ypsur), by=interp_dlat_plot)
                 if (verbose > 0) {
                     message(indent, "   `plot_type` = \"interp\":\n",
                             indent, "      ", interp_method_plot, " (= `interp_method`) interpolation of ",
@@ -8910,7 +8937,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     xc_lims <- apply(xc_global, 2, range)
                     yc_lims <- apply(yc_global, 2, range)
                     coords <- expand.grid(xo, yo)
-                    inds <- rep(F, t=dim(coords)[1])
+                    inds <- rep(F, times=dim(coords)[1])
                     for (i in 1:dim(coords)[1]) {
                         xinds <- which(coords[i,1] >= xc_lims[1,] & coords[i,1] <= xc_lims[2,])
                         yinds <- which(coords[i,2] >= yc_lims[1,] & coords[i,2] <= yc_lims[2,])
@@ -8992,8 +9019,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     #y <- yp[,67]
                     #z <- datamat[,67]
                     vertices <- cbind(x,y,z)
-                    interp_x <- seq(range(x)[1], range(x)[2], l=interp_res)
-                    interp_y <- seq(range(y)[1], range(y)[2], l=interp_res)
+                    interp_x <- seq(range(x)[1], range(x)[2], length.out=interp_res)
+                    interp_y <- seq(range(y)[1], range(y)[2], length.out=interp_res)
                     interp_grid <- expand.grid(x=interp_x, y=interp_y)
                     interp_grid$z <- NA
                     interp_grid_indices <- splancs::inpip(interp_grid, vertices[,1:2], bound=T)
@@ -9006,7 +9033,7 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                     if (bla) {
                         image.plot(interp_x, interp_y, matrix(interp_grid$z, nrow=length(interp_x)), 
                                    col=cols, breaks=levels, xlab="Longitude", ylab="Latitude")
-                        vertice_cols <- rep("NA", t=3)
+                        vertice_cols <- rep("NA", times=3)
                         for (j in 1:3) {
                             # UPDATE THAT    
                             tmp <- which(abs(levels - z[j]) == min(abs(levels - z[j])))[1]
@@ -9017,8 +9044,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                         points(x, y, pch=21, bg=vertice_cols, cex=2)
                         abline(h=interp_y, lty=3, col="gray")
                         abline(v=interp_x, lty=3, col="gray")
-                        text(interp_x, rep(interp_y[1], t=interp_res), 1:interp_res)
-                        text(rep(interp_x[1], t=interp_res), interp_y, 1:interp_res)
+                        text(interp_x, rep(interp_y[1], times=interp_res), 1:interp_res)
+                        text(rep(interp_x[1], times=interp_res), interp_y, 1:interp_res)
                         legend("topright", "original mesh element", lty=1, col="black", bty="n")
                     } # end if bla
                 } # for i elements
@@ -9037,7 +9064,8 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                 ypvec <- as.vector(rbind(yp, NA))
 
                 # find levels in data
-                col_inds_vec <- findInterval(x=data_mean_vec, vec=ip$levels, all.inside=T)
+                # todo: findInterval() gets new arguments checkSorted and checkNA which allow skipping relatively costly checks; related to PR#16567
+                col_inds_vec <- base::findInterval(x=data_mean_vec, vec=ip$levels, all.inside=T)
 
                 if (verbose > 1) {
                     message(indent, "   Add ", dim(z)[2],
@@ -9348,11 +9376,9 @@ if (any(plot_map, ltm_out, regular_ltm_out, moc_ltm_out, csec_ltm_out)) {
                                       labels=ip$axis.labels))
 
             ## Close plot
+            if (verbose > 1) message(indent, "   Save plot:")
             dev.off()
-            if (verbose > 1) {
-                message(paste0(indent, "   Save plot:"))
-                message(paste0(indent, "      ", plotname))
-            }
+            if (verbose > 1) message(indent, "      ", plotname, " (", utils:::format.object_size(file.info(plotname)[,"size"], units="auto"), ")")
         
         } # end for ploti=1:nplots
 

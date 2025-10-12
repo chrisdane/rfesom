@@ -21,10 +21,10 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     }
     x_len <- diff(xlim)
     y_len <- diff(ylim)
-    xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, l=x_len/regular_dx)
-    yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, l=y_len/regular_dy)
-    #xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, b=regular_dx)
-    #yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, b=regular_dy)
+    xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, length.out=x_len/regular_dx)
+    yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, length.out=y_len/regular_dy)
+    #xi = seq(xlim[1]+regular_dx/2, xlim[2]-regular_dx/2, by=regular_dx)
+    #yi = seq(ylim[1]+regular_dy/2, ylim[2]-regular_dy/2, by=regular_dy)
     nxi <- length(xi)
     nyi <- length(yi)
     message("   --> regular longitudes will have ", nxi, " points with dlon = ", diff(xi)[1])
@@ -34,8 +34,8 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
     message("   --> nxi x nyi = ", nxi, " x ", nyi, " = ", nxi*nyi)
     
     # save interpolation weights
-    XI <- array(rep(xi, e=nyi), c(nyi,nxi))
-    YI <- array(rep(yi, t=nxi), c(nyi,nxi))
+    XI <- array(rep(xi, each=nyi), c(nyi,nxi))
+    YI <- array(rep(yi, times=nxi), c(nyi,nxi))
     IMAT <- array(0, c(nyi, nxi))
     
     pb <- mytxtProgressBar(min=0, max=dim(xp)[2], style=pb_style,
@@ -68,9 +68,9 @@ sub_calc_load_regular_IMAT <- function(regular_dx, regular_dy,
         IN  = splancs::inpip(cbind(as.vector(AUX_XI), as.vector(AUX_YI)), 
                              cbind(xp[,ii], yp[,ii]))
                     
-        kk_x   = array(rep(kk_xs:kk_xe, e=kk_ye-kk_ys+1), 
+        kk_x   = array(rep(kk_xs:kk_xe, each=kk_ye-kk_ys+1), 
                        c(kk_ye-kk_ys+1, length(kk_xs:kk_xe)))
-        kk_y   = array(rep(kk_ys:kk_ye, t=kk_xe-kk_xs+1),
+        kk_y   = array(rep(kk_ys:kk_ye, times=kk_xe-kk_xs+1),
                        c(length(kk_ys:kk_ye), kk_xe-kk_xs+1))
         
         IMAT[kk_y[IN],kk_x[IN]] = ii    

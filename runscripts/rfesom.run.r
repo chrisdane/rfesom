@@ -177,12 +177,14 @@ if (F) { # lackermann
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl
     workpath <- "/work/ba1103/a270073"
-    #model <- "fesom"
-    model <- "recom"
-    datainpaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
+    model <- "fesom"
+    #model <- "recom"
+    #datainpaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
     #datainpaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk 3
-    fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
+    datainpaths <- "/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk 3
+    fpatterns <- "<varname_nc>_fesom_<YYYY>0101.nc"
+    #fpatterns <- "<varname>_fesom_<YYYY>0101.nc"
     #datainpaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/restart/oasis3mct"
     #fpatterns <- "o2a_flux_<YYYY>0101-<YYYY>231"
     postprefix <- "awi-esm-1-1-lr_kh800_piControl"
@@ -190,16 +192,19 @@ if (F) { # lackermann
     #meshpath <- "/work/ab0995/a270046/meshes_default/core"
     meshpath <- "/pool/data/AWICM/FESOM1/MESHES/core"
     #years <- 1950:1951
-    years <- 1950:2029 # chunk 1: 1950:2029
+    #years <- 1950:2029 # chunk 1: 1950:2029
     #years <- 2030:2685 # chunk 2: 2030:2685
     #years <- 2586:2685 # last 100 years chunk 2
     #years <- 2676:2685 # last 10 years chunk 2
     #years <- 2686
     #years <- 2901:3000
-    #years <- 2686:3000 # chunk 3: 2686:3000
+    #years <- 2686 # chunk 3: 2686:3000
+    years <- 2686:2936 # chunk 3 251 hist+scen years
+    #years <- 2686:3000
     #years <- 3000
     #varname <- "tos"
     #varname <- "thetao"
+    varname <- "MOCw"
     #varname <- "bgc02" # dic
     #varname <- "bgc03" # alkalinity
     #varname <- "bgc05" # phyc intracellular carbon concentration in small phytoplankton
@@ -209,7 +214,7 @@ if (F) { # lackermann
     #varname <- "bgc16" # silica concentration in diatoms
     #varname <- "bgc17" # silicate in detritus
     #varname <- "bgc18" # dissolved silicic acid
-    varname <- "benSi" # benthic silicate
+    #varname <- "benSi" # benthic silicate
     #varname <- "bgc20" # phycal calcite associated with nanophytoplankton
     #varname <- "bgc21" # detcal calcite associated with detritus
     #varname <- "CO2f"
@@ -223,18 +228,21 @@ if (F) { # lackermann
     #varname <- "co2c_oce" # co2 concentration from the atmosphere
     #varname <- "sst_feom"
     #varname <- "co2_feom"
-    #frequency_post <- "monmen"
+    #frequency_post <- "monmean"
+    frequency_post <- "yearmean"
     transient_out <- T
     regular_ltm_out <- F
     regular_transient_out <- F
     #out_mode <- "select"
     #out_mode <- "fldmean"
-    out_mode <- "fldint"
+    #out_mode <- "fldint"
     #out_mode <- "depth"
     #out_mode <- "areadepth"
+    out_mode <- "moc_depth"; plot_moc_mask <- F
     #depths <- 0
-    #depths <- c(0, "max")
+    depths <- c(0, "max")
     #integrate_depth <- T
+    area <- "atlantic_arctic_ocean"; moc_mask_file <- "/work/ba1103/a270073/mesh/fesom/core/moc_mask_area_atlantic_arctic_ocean_mesh_core.txt"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical historical2 historical3
     workpath <- "/work/ba1103/a270073"
@@ -880,7 +888,7 @@ if (F) { # lackermann
     #out_mode <- "fldmean"
     #out_mode <- "depth"
 
-} else if (T) { # ogurses
+} else if (F) { # ogurses
     if (F) {
         workpath <- "/work/ba1103/a270073"
         datainpaths <- "/scratch/a/a270094/MOC/wo"
@@ -1136,6 +1144,26 @@ if (F) { # lackermann
     transient_out <- F
     out_mode <- "select"
     #out_mode <- "fldmean"
+
+} else if (T) { # my fesom2
+    workpath <- "/work/ba1103/a270073"
+    datainpaths <- "/work/ab1095/a270073/out/awiesm3-develop-cc/5yr2/run_19000101-19041231/work"
+    model <- "fesom2"
+    fesom_version <- "fesom2"
+    #fpatterns <- "MLD3.fesom.1900.nc"
+    fpatterns <- "w.fesom.1900.nc"
+    postprefix <- "awi-esm-3-recom"
+    meshid <- "core2"
+    meshpath <- "/work/ab0246/a270092/input/fesom2/core2"
+    years <- 1900
+    #varname <- "MLD3"
+    varname <- "MOCw"
+    regular_ltm_out <- F
+    transient_out <- T
+    #out_mode <- "fldmean"
+    out_mode <- "moc_depth"; plot_moc_mask <- T
+    area <- "atlantic_ocean"
+    #area <- "atlantic_arctic_ocean"
 
 } # which setting
 
